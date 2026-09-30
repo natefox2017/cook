@@ -1,0 +1,41 @@
+name: Bug
+description: 缺陷修复
+title: "[Bug] "
+labels: []
+body:
+  - type: textarea
+    id: actual
+    attributes:
+      label: 当前行为
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 证据
+      description: 日志、截图、录屏、fixture、commit 等。
+  - type: textarea
+    id: scope
+    attributes:
+      label: 修复范围
+      description: 先确认问题在当前代码仍存在，再限制修复范围。
+    validations:
+      required: true
+  - type: textarea
+    id: verify
+    attributes:
+      label: 验证
+    validations:
+      required: true
