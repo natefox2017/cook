@@ -1,0 +1,55 @@
+name: Feature
+description: 功能开发任务
+title: "[Feature] "
+labels: []
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目标
+      description: 这项功能解决什么问题？
+    validations:
+      required: true
+  - type: textarea
+    id: input
+    attributes:
+      label: 输入
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: 输出
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: 文件范围
+      description: 允许修改的目录/文件。
+    validations:
+      required: true
+  - type: input
+    id: design
+    attributes:
+      label: 设计资源 ID
+      description: UI 任务必须引用 APPROVED 的 UI-xxx；非 UI 填 N/A。
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: 依赖
+      description: Issue/API/Schema/设计等依赖。
+  - type: textarea
+    id: tests
+    attributes:
+      label: 测试要求
+    validations:
+      required: true
