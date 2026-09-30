@@ -1,0 +1,22 @@
+name: Auto Merge PR
+
+on:
+  workflow_run:
+    workflows: ["iOS CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  enable-auto-merge:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable auto merge
+        run: |
+          echo "Enable repository auto merge after required checks pass"
+          echo "Use GitHub native auto-merge rules when branch protection is enabled"
