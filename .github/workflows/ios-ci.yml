@@ -1,0 +1,22 @@
+name: iOS CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ios-check:
+    name: Validate iOS project
+    runs-on: macos-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Swift environment
+        run: swift --version
+      - name: Placeholder
+        run: echo "Add xcodebuild commands after iOS project initialization"
