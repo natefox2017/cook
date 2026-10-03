@@ -69,6 +69,15 @@ final class CookUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Start timer"].exists)
         attachScreenshot("Cooking timer controls")
         app.buttons["Close"].tap()
+        app.buttons["Add to groceries"].tap()
+        XCTAssertTrue(app.staticTexts["Adjust servings"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["to taste"].exists)
+        app.buttons["servings.addToGroceries"].tap()
+        app.tabBars.buttons["Groceries"].tap()
+        XCTAssertTrue(app.staticTexts["Salt"].waitForExistence(timeout: 5))
+        app.buttons["Mark Salt bought"].tap()
+        XCTAssertTrue(app.buttons["Mark Salt not bought"].exists)
+        attachScreenshot("Groceries preserve uncertain quantity")
     }
 
     private func attachScreenshot(_ name: String) {

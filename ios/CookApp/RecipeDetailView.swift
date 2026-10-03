@@ -106,7 +106,7 @@ struct ServingsView: View {
                 Button("Add to groceries", systemImage: "cart.badge.plus") {
                     do { try store.addGroceries(from: recipe, servings: servings); dismiss() }
                     catch { failure = error.localizedDescription }
-                }.cookAction()
+                }.cookAction().accessibilityIdentifier("servings.addToGroceries")
                 if let original = recipe.servings {
                     Button("Reset to original servings") { servings = original }.cookAction(prominent: false)
                 }
