@@ -1,0 +1,727 @@
+[
+  {
+    "name": "public URL",
+    "definition": "CreateImport",
+    "valid": true,
+    "value": {
+      "contract_version": "1.0.0",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "input": {
+        "input_type": "url",
+        "url": "https://m.xiachufang.com/recipe/1000357/"
+      }
+    }
+  },
+  {
+    "name": "text",
+    "definition": "CreateImport",
+    "valid": true,
+    "value": {
+      "contract_version": "1.0.0",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "input": {
+        "input_type": "text",
+        "text": "自制示例：盐适量"
+      }
+    }
+  },
+  {
+    "name": "image",
+    "definition": "CreateImport",
+    "valid": true,
+    "value": {
+      "contract_version": "1.0.0",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "input": {
+        "input_type": "image",
+        "artifact_ids": [
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      }
+    }
+  },
+  {
+    "name": "file",
+    "definition": "CreateImport",
+    "valid": true,
+    "value": {
+      "contract_version": "1.0.0",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "input": {
+        "input_type": "file",
+        "artifact_ids": [
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      }
+    }
+  },
+  {
+    "name": "reject mixed inputs",
+    "definition": "CreateImport",
+    "valid": false,
+    "value": {
+      "contract_version": "1.0.0",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "input": {
+        "input_type": "url",
+        "url": "https://m.xiachufang.com/recipe/1000357/",
+        "text": "unexpected"
+      }
+    }
+  },
+  {
+    "name": "reject non-http",
+    "definition": "CreateImport",
+    "valid": false,
+    "value": {
+      "contract_version": "1.0.0",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "input": {
+        "input_type": "url",
+        "url": "file:///etc/hosts"
+      }
+    }
+  },
+  {
+    "name": "reject request id",
+    "definition": "CreateImport",
+    "valid": false,
+    "value": {
+      "contract_version": "1.0.0",
+      "client_request_id": "invalid",
+      "input": {
+        "input_type": "url",
+        "url": "https://m.xiachufang.com/recipe/1000357/"
+      }
+    }
+  },
+  {
+    "name": "state received",
+    "definition": "Job",
+    "valid": true,
+    "value": {
+      "job_id": "00000000-0000-4000-8000-000000000001",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "status": "received",
+      "stage": "receive",
+      "attempt_count": 0,
+      "next_retry_at": null,
+      "recipe_id": null,
+      "review_count": 0,
+      "error": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "updated_at": "2026-10-03T04:00:00Z"
+    }
+  },
+  {
+    "name": "state queued",
+    "definition": "Job",
+    "valid": true,
+    "value": {
+      "job_id": "00000000-0000-4000-8000-000000000001",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "status": "queued",
+      "stage": "enqueue",
+      "attempt_count": 0,
+      "next_retry_at": null,
+      "recipe_id": null,
+      "review_count": 0,
+      "error": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "updated_at": "2026-10-03T04:00:00Z"
+    }
+  },
+  {
+    "name": "state extracting",
+    "definition": "Job",
+    "valid": true,
+    "value": {
+      "job_id": "00000000-0000-4000-8000-000000000001",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "status": "extracting",
+      "stage": "extract",
+      "attempt_count": 0,
+      "next_retry_at": null,
+      "recipe_id": null,
+      "review_count": 0,
+      "error": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "updated_at": "2026-10-03T04:00:00Z"
+    }
+  },
+  {
+    "name": "state parsing",
+    "definition": "Job",
+    "valid": true,
+    "value": {
+      "job_id": "00000000-0000-4000-8000-000000000001",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "status": "parsing",
+      "stage": "parse",
+      "attempt_count": 0,
+      "next_retry_at": null,
+      "recipe_id": null,
+      "review_count": 0,
+      "error": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "updated_at": "2026-10-03T04:00:00Z"
+    }
+  },
+  {
+    "name": "state validating",
+    "definition": "Job",
+    "valid": true,
+    "value": {
+      "job_id": "00000000-0000-4000-8000-000000000001",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "status": "validating",
+      "stage": "deduplicate",
+      "attempt_count": 0,
+      "next_retry_at": null,
+      "recipe_id": null,
+      "review_count": 0,
+      "error": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "updated_at": "2026-10-03T04:00:00Z"
+    }
+  },
+  {
+    "name": "state completed",
+    "definition": "Job",
+    "valid": true,
+    "value": {
+      "job_id": "00000000-0000-4000-8000-000000000001",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "status": "completed",
+      "stage": "done",
+      "attempt_count": 0,
+      "next_retry_at": null,
+      "recipe_id": "00000000-0000-4000-8000-000000000001",
+      "review_count": 0,
+      "error": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "updated_at": "2026-10-03T04:00:00Z"
+    }
+  },
+  {
+    "name": "state needs_review",
+    "definition": "Job",
+    "valid": true,
+    "value": {
+      "job_id": "00000000-0000-4000-8000-000000000001",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "status": "needs_review",
+      "stage": "done",
+      "attempt_count": 0,
+      "next_retry_at": null,
+      "recipe_id": "00000000-0000-4000-8000-000000000001",
+      "review_count": 1,
+      "error": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "updated_at": "2026-10-03T04:00:00Z"
+    }
+  },
+  {
+    "name": "state failed",
+    "definition": "Job",
+    "valid": true,
+    "value": {
+      "job_id": "00000000-0000-4000-8000-000000000001",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "status": "failed",
+      "stage": "done",
+      "attempt_count": 0,
+      "next_retry_at": null,
+      "recipe_id": null,
+      "review_count": 0,
+      "error": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "updated_at": "2026-10-03T04:00:00Z"
+    }
+  },
+  {
+    "name": "reject false terminal stage",
+    "definition": "Job",
+    "valid": false,
+    "value": {
+      "job_id": "00000000-0000-4000-8000-000000000001",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "status": "received",
+      "stage": "done",
+      "attempt_count": 0,
+      "next_retry_at": null,
+      "recipe_id": null,
+      "review_count": 0,
+      "error": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "updated_at": "2026-10-03T04:00:00Z"
+    }
+  },
+  {
+    "name": "completed requires recipe",
+    "definition": "Job",
+    "valid": false,
+    "value": {
+      "job_id": "00000000-0000-4000-8000-000000000001",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "status": "completed",
+      "stage": "done",
+      "attempt_count": 0,
+      "next_retry_at": null,
+      "recipe_id": null,
+      "review_count": 0,
+      "error": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "updated_at": "2026-10-03T04:00:00Z"
+    }
+  },
+  {
+    "name": "vague quantity",
+    "definition": "Ingredient",
+    "valid": true,
+    "value": {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "raw_text": "盐适量",
+      "name": "盐",
+      "quantity": null,
+      "quantity_text": "适量",
+      "unit": null,
+      "preparation": null,
+      "order": 0
+    }
+  },
+  {
+    "name": "negative quantity",
+    "definition": "Ingredient",
+    "valid": false,
+    "value": {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "raw_text": "示例",
+      "name": "盐",
+      "quantity": -5,
+      "quantity_text": null,
+      "unit": "g",
+      "preparation": null,
+      "order": 0
+    }
+  },
+  {
+    "name": "user wins",
+    "definition": "FieldProvenance",
+    "valid": true,
+    "value": {
+      "field_path": "/title",
+      "evidence_ids": [
+        "00000000-0000-4000-8000-000000000001"
+      ],
+      "origin": "user",
+      "confidence": null,
+      "user_confirmed": true,
+      "revision": 1
+    }
+  },
+  {
+    "name": "user cannot be unconfirmed",
+    "definition": "FieldProvenance",
+    "valid": false,
+    "value": {
+      "field_path": "/title",
+      "evidence_ids": [
+        "00000000-0000-4000-8000-000000000001"
+      ],
+      "origin": "user",
+      "confidence": null,
+      "user_confirmed": false,
+      "revision": 1
+    }
+  },
+  {
+    "name": "offline envelope",
+    "definition": "LocalEnvelope",
+    "valid": true,
+    "value": {
+      "contract_version": "1.0.0",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "account_id": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "local_status": "received",
+      "input_type": "image",
+      "original_url": null,
+      "shared_text": null,
+      "attachments": [
+        {
+          "relative_path": "files/image.png",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "size_bytes": 1,
+          "mime_type": "image/png"
+        }
+      ],
+      "server_job_id": null,
+      "attempt_count": 0,
+      "next_retry_at": null
+    }
+  },
+  {
+    "name": "reject traversal",
+    "definition": "LocalEnvelope",
+    "valid": false,
+    "value": {
+      "contract_version": "1.0.0",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "account_id": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "local_status": "received",
+      "input_type": "image",
+      "original_url": null,
+      "shared_text": null,
+      "attachments": [
+        {
+          "relative_path": "../outside",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "size_bytes": 1,
+          "mime_type": "image/png"
+        }
+      ],
+      "server_job_id": null,
+      "attempt_count": 0,
+      "next_retry_at": null
+    }
+  },
+  {
+    "name": "source may be image only",
+    "definition": "Source",
+    "value": {
+      "platform": "unknown",
+      "original_url": null,
+      "canonical_url": null,
+      "external_content_id": null,
+      "author_name": null,
+      "source_title": null,
+      "captured_at": "2026-10-03T04:00:00Z"
+    },
+    "valid": true
+  },
+  {
+    "name": "retryable error",
+    "definition": "Error",
+    "value": {
+      "code": "FETCH_TIMEOUT",
+      "message": "示例超时",
+      "recoverable": true,
+      "suggested_action": "retry",
+      "request_id": "00000000-0000-4000-8000-000000000001",
+      "retry_after_seconds": 10
+    },
+    "valid": true
+  },
+  {
+    "name": "unknown error rejected",
+    "definition": "Error",
+    "value": {
+      "code": "MADE_UP",
+      "message": "示例超时",
+      "recoverable": true,
+      "suggested_action": "retry",
+      "request_id": "00000000-0000-4000-8000-000000000001",
+      "retry_after_seconds": 10
+    },
+    "valid": false
+  },
+  {
+    "name": "available artifact",
+    "definition": "Artifact",
+    "value": {
+      "artifact_id": "00000000-0000-4000-8000-000000000001",
+      "owner_id": "00000000-0000-4000-8000-000000000001",
+      "kind": "screenshot",
+      "storage_key": "00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000001/original",
+      "mime_type": "image/png",
+      "size_bytes": 1,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "available",
+      "parent_artifact_id": null,
+      "retention_policy": "source_until_user_delete"
+    },
+    "valid": true
+  },
+  {
+    "name": "bad checksum",
+    "definition": "Artifact",
+    "value": {
+      "artifact_id": "00000000-0000-4000-8000-000000000001",
+      "owner_id": "00000000-0000-4000-8000-000000000001",
+      "kind": "screenshot",
+      "storage_key": "00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000001/original",
+      "mime_type": "image/png",
+      "size_bytes": 1,
+      "sha256": "broken",
+      "status": "available",
+      "parent_artifact_id": null,
+      "retention_policy": "source_until_user_delete"
+    },
+    "valid": false
+  },
+  {
+    "name": "evidence without media",
+    "definition": "Evidence",
+    "value": {
+      "evidence_id": "00000000-0000-4000-8000-000000000001",
+      "job_id": "00000000-0000-4000-8000-000000000001",
+      "source_type": "user",
+      "artifact_id": null,
+      "excerpt": "自制测试",
+      "timestamp_start_seconds": null,
+      "timestamp_end_seconds": null,
+      "frame_ref": null
+    },
+    "valid": true
+  },
+  {
+    "name": "step without invented time",
+    "definition": "Step",
+    "value": {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "order": 0,
+      "instruction": "自制测试步骤",
+      "duration_seconds": null,
+      "temperature_celsius": null,
+      "linked_ingredient_ids": [
+        "00000000-0000-4000-8000-000000000001"
+      ]
+    },
+    "valid": true
+  },
+  {
+    "name": "missing title marker",
+    "definition": "ReviewMarker",
+    "value": {
+      "field_path": "/title",
+      "reason": "missing",
+      "evidence_ids": []
+    },
+    "valid": true
+  },
+  {
+    "name": "partial recipe preserves source",
+    "definition": "Recipe",
+    "value": {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "owner_id": "00000000-0000-4000-8000-000000000001",
+      "revision": 1,
+      "title": null,
+      "status": "needs_review",
+      "source": {
+        "platform": "unknown",
+        "original_url": null,
+        "canonical_url": null,
+        "external_content_id": null,
+        "author_name": null,
+        "source_title": null,
+        "captured_at": "2026-10-03T04:00:00Z"
+      },
+      "ingredients": [],
+      "steps": [],
+      "provenance": [],
+      "review_markers": [
+        {
+          "field_path": "/title",
+          "reason": "missing",
+          "evidence_ids": []
+        }
+      ],
+      "cover_artifact_id": null,
+      "servings": null,
+      "prep_time_seconds": null,
+      "cook_time_seconds": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "updated_at": "2026-10-03T04:00:00Z"
+    },
+    "valid": true
+  },
+  {
+    "name": "empty recipe cannot be ready",
+    "definition": "Recipe",
+    "value": {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "owner_id": "00000000-0000-4000-8000-000000000001",
+      "revision": 1,
+      "title": null,
+      "status": "ready",
+      "source": {
+        "platform": "unknown",
+        "original_url": null,
+        "canonical_url": null,
+        "external_content_id": null,
+        "author_name": null,
+        "source_title": null,
+        "captured_at": "2026-10-03T04:00:00Z"
+      },
+      "ingredients": [],
+      "steps": [],
+      "provenance": [],
+      "review_markers": [
+        {
+          "field_path": "/title",
+          "reason": "missing",
+          "evidence_ids": []
+        }
+      ],
+      "cover_artifact_id": null,
+      "servings": null,
+      "prep_time_seconds": null,
+      "cook_time_seconds": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "updated_at": "2026-10-03T04:00:00Z"
+    },
+    "valid": false
+  },
+  {
+    "name": "ready with vague quantity",
+    "definition": "Recipe",
+    "value": {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "owner_id": "00000000-0000-4000-8000-000000000001",
+      "revision": 1,
+      "title": "自制测试",
+      "status": "ready",
+      "source": {
+        "platform": "unknown",
+        "original_url": null,
+        "canonical_url": null,
+        "external_content_id": null,
+        "author_name": null,
+        "source_title": null,
+        "captured_at": "2026-10-03T04:00:00Z"
+      },
+      "ingredients": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "raw_text": "盐适量",
+          "name": "盐",
+          "quantity": null,
+          "quantity_text": "适量",
+          "unit": null,
+          "preparation": null,
+          "order": 0
+        }
+      ],
+      "steps": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "order": 0,
+          "instruction": "自制测试步骤",
+          "duration_seconds": null,
+          "temperature_celsius": null,
+          "linked_ingredient_ids": [
+            "00000000-0000-4000-8000-000000000001"
+          ]
+        }
+      ],
+      "provenance": [],
+      "review_markers": [],
+      "cover_artifact_id": null,
+      "servings": null,
+      "prep_time_seconds": null,
+      "cook_time_seconds": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "updated_at": "2026-10-03T04:00:00Z"
+    },
+    "valid": true
+  },
+  {
+    "name": "explicit user clear",
+    "definition": "RecipePatch",
+    "value": {
+      "expected_revision": 1,
+      "edits": [
+        {
+          "field_path": "/servings",
+          "value": null,
+          "operation": "set"
+        }
+      ]
+    },
+    "valid": true
+  },
+  {
+    "name": "owner patch rejected",
+    "definition": "RecipePatch",
+    "value": {
+      "expected_revision": 1,
+      "edits": [
+        {
+          "field_path": "/owner_id",
+          "value": "00000000-0000-4000-8000-000000000001",
+          "operation": "set"
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "name": "receipt is not completion",
+    "definition": "Receipt",
+    "value": {
+      "job": {
+        "job_id": "00000000-0000-4000-8000-000000000001",
+        "client_request_id": "00000000-0000-4000-8000-000000000001",
+        "status": "received",
+        "stage": "receive",
+        "attempt_count": 0,
+        "next_retry_at": null,
+        "recipe_id": null,
+        "review_count": 0,
+        "error": null,
+        "created_at": "2026-10-03T04:00:00Z",
+        "updated_at": "2026-10-03T04:00:00Z"
+      },
+      "deduplication": "none"
+    },
+    "valid": true
+  },
+  {
+    "name": "image needs durable attachment",
+    "definition": "LocalEnvelope",
+    "value": {
+      "contract_version": "1.0.0",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "account_id": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "local_status": "received",
+      "input_type": "image",
+      "original_url": null,
+      "shared_text": null,
+      "attachments": [],
+      "server_job_id": null,
+      "attempt_count": 0,
+      "next_retry_at": null
+    },
+    "valid": false
+  },
+  {
+    "name": "ack requires server id",
+    "definition": "LocalEnvelope",
+    "value": {
+      "contract_version": "1.0.0",
+      "client_request_id": "00000000-0000-4000-8000-000000000001",
+      "account_id": null,
+      "created_at": "2026-10-03T04:00:00Z",
+      "local_status": "acknowledged",
+      "input_type": "image",
+      "original_url": null,
+      "shared_text": null,
+      "attachments": [
+        {
+          "relative_path": "files/image.png",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "size_bytes": 1,
+          "mime_type": "image/png"
+        }
+      ],
+      "server_job_id": null,
+      "attempt_count": 0,
+      "next_retry_at": null
+    },
+    "valid": false
+  }
+]

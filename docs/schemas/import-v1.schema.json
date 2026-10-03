@@ -1,0 +1,1261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cook.invalid/schemas/import-v1.schema.json",
+  "title": "Cook import contract 1.0.0 (review candidate)",
+  "$defs": {
+    "Error": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "INVALID_INPUT",
+            "UNSUPPORTED_SOURCE",
+            "PRIVATE_OR_LOGIN_REQUIRED",
+            "FETCH_BLOCKED",
+            "FETCH_TIMEOUT",
+            "MEDIA_TOO_LARGE",
+            "ARTIFACT_NOT_READY",
+            "PARSE_INCOMPLETE",
+            "PROVIDER_TIMEOUT",
+            "RATE_LIMITED",
+            "AUTH_REQUIRED",
+            "IDEMPOTENCY_CONFLICT",
+            "REVISION_CONFLICT",
+            "INTERNAL_ERROR"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recoverable": {
+          "type": "boolean"
+        },
+        "suggested_action": {
+          "type": "string",
+          "enum": [
+            "retry",
+            "reauthenticate",
+            "add_text",
+            "add_image",
+            "edit_partial",
+            "contact_support",
+            "none"
+          ]
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "retry_after_seconds": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "recoverable",
+        "suggested_action",
+        "request_id",
+        "retry_after_seconds"
+      ]
+    },
+    "Source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "platform": {
+          "type": "string",
+          "minLength": 1
+        },
+        "original_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "canonical_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "external_content_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "author_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "captured_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "platform",
+        "original_url",
+        "canonical_url",
+        "external_content_id",
+        "author_name",
+        "source_title",
+        "captured_at"
+      ]
+    },
+    "Input": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "input_type": {
+              "const": "url"
+            },
+            "url": {
+              "type": "string",
+              "pattern": "^https?://",
+              "format": "uri"
+            },
+            "shared_text": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "input_type",
+            "url"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "input_type": {
+              "const": "text"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "input_type",
+            "text"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "input_type": {
+              "type": "string",
+              "enum": [
+                "image",
+                "file"
+              ]
+            },
+            "artifact_ids": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          "required": [
+            "input_type",
+            "artifact_ids"
+          ]
+        }
+      ]
+    },
+    "CreateImport": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "contract_version": {
+          "const": "1.0.0"
+        },
+        "client_request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "input": {
+          "$ref": "#/$defs/Input"
+        },
+        "platform_hint": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "contract_version",
+        "client_request_id",
+        "input"
+      ]
+    },
+    "Job": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "client_request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "received",
+            "queued",
+            "extracting",
+            "parsing",
+            "validating",
+            "completed",
+            "needs_review",
+            "failed"
+          ]
+        },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "receive",
+            "enqueue",
+            "resolve",
+            "extract",
+            "parse",
+            "validate",
+            "deduplicate",
+            "done"
+          ]
+        },
+        "attempt_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "next_retry_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "recipe_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "review_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Error"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "job_id",
+        "client_request_id",
+        "status",
+        "stage",
+        "attempt_count",
+        "next_retry_at",
+        "recipe_id",
+        "review_count",
+        "error",
+        "created_at",
+        "updated_at"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "received"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "stage": {
+                "enum": [
+                  "receive"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "queued"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "stage": {
+                "enum": [
+                  "enqueue"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "extracting"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "stage": {
+                "enum": [
+                  "resolve",
+                  "extract"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "parsing"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "stage": {
+                "enum": [
+                  "parse"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "validating"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "stage": {
+                "enum": [
+                  "validate",
+                  "deduplicate"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "completed",
+                  "needs_review",
+                  "failed"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "stage": {
+                "enum": [
+                  "done"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "completed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "error": {
+                "type": "null"
+              },
+              "recipe_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "review_count": {
+                "const": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "needs_review"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "recipe_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "review_count": {
+                "minimum": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "job": {
+          "$ref": "#/$defs/Job"
+        },
+        "deduplication": {
+          "type": "string",
+          "enum": [
+            "none",
+            "request_replay",
+            "source_match"
+          ]
+        }
+      },
+      "required": [
+        "job",
+        "deduplication"
+      ]
+    },
+    "LocalEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "contract_version": {
+          "const": "1.0.0"
+        },
+        "client_request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "account_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "local_status": {
+          "type": "string",
+          "enum": [
+            "received",
+            "uploading",
+            "acknowledged",
+            "blocked"
+          ]
+        },
+        "input_type": {
+          "type": "string",
+          "enum": [
+            "url",
+            "text",
+            "image",
+            "file"
+          ]
+        },
+        "original_url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "shared_text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "relative_path": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "size_bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "mime_type": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "relative_path",
+              "sha256",
+              "size_bytes",
+              "mime_type"
+            ]
+          }
+        },
+        "server_job_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "attempt_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "next_retry_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "contract_version",
+        "client_request_id",
+        "account_id",
+        "created_at",
+        "local_status",
+        "input_type",
+        "original_url",
+        "shared_text",
+        "attachments",
+        "server_job_id",
+        "attempt_count",
+        "next_retry_at"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "input_type": {
+                "enum": [
+                  "image",
+                  "file"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "attachments": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "input_type": {
+                "const": "url"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "original_url": {
+                "type": "string",
+                "pattern": "^https?://",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "input_type": {
+                "const": "text"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "shared_text": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "local_status": {
+                "const": "acknowledged"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "server_job_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "owner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "original",
+            "screenshot",
+            "audio",
+            "transcript",
+            "ocr",
+            "keyframe",
+            "cover"
+          ]
+        },
+        "storage_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mime_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "available",
+            "rejected",
+            "deleted"
+          ]
+        },
+        "parent_artifact_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "retention_policy": {
+          "type": "string",
+          "enum": [
+            "source_until_user_delete",
+            "derived_rebuildable"
+          ]
+        }
+      },
+      "required": [
+        "artifact_id",
+        "owner_id",
+        "kind",
+        "storage_key",
+        "mime_type",
+        "size_bytes",
+        "sha256",
+        "status",
+        "parent_artifact_id",
+        "retention_policy"
+      ]
+    },
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "job_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source_type": {
+          "type": "string",
+          "enum": [
+            "webpage_structured_data",
+            "caption",
+            "article_body",
+            "subtitle",
+            "asr",
+            "ocr",
+            "visual",
+            "user"
+          ]
+        },
+        "artifact_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "excerpt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timestamp_start_seconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "timestamp_end_seconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "frame_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "evidence_id",
+        "job_id",
+        "source_type",
+        "artifact_id",
+        "excerpt",
+        "timestamp_start_seconds",
+        "timestamp_end_seconds",
+        "frame_ref"
+      ]
+    },
+    "FieldProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "field_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uniqueItems": true
+        },
+        "origin": {
+          "type": "string",
+          "enum": [
+            "extracted",
+            "inferred",
+            "user"
+          ]
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "user_confirmed": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "field_path",
+        "evidence_ids",
+        "origin",
+        "confidence",
+        "user_confirmed",
+        "revision"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "origin": {
+                "const": "user"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "user_confirmed": {
+                "const": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Ingredient": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "raw_text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "quantity": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "quantity_text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "preparation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "raw_text",
+        "name",
+        "quantity",
+        "quantity_text",
+        "unit",
+        "preparation",
+        "order"
+      ]
+    },
+    "Step": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "instruction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_seconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "temperature_celsius": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "linked_ingredient_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "order",
+        "instruction",
+        "duration_seconds",
+        "temperature_celsius",
+        "linked_ingredient_ids"
+      ]
+    },
+    "ReviewMarker": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "field_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "missing",
+            "conflict",
+            "low_confidence",
+            "inferred",
+            "ambiguous_quantity"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "required": [
+        "field_path",
+        "reason",
+        "evidence_ids"
+      ]
+    },
+    "Recipe": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "owner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ready",
+            "needs_review",
+            "archived"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/Source"
+        },
+        "ingredients": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Ingredient"
+          }
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Step"
+          }
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldProvenance"
+          }
+        },
+        "review_markers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ReviewMarker"
+          }
+        },
+        "cover_artifact_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "servings": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "prep_time_seconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "cook_time_seconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "owner_id",
+        "revision",
+        "title",
+        "status",
+        "source",
+        "ingredients",
+        "steps",
+        "provenance",
+        "review_markers",
+        "cover_artifact_id",
+        "servings",
+        "prep_time_seconds",
+        "cook_time_seconds",
+        "created_at",
+        "updated_at"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "ready"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "ingredients": {
+                "minItems": 1
+              },
+              "steps": {
+                "minItems": 1
+              },
+              "review_markers": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "RecipePatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "edits": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "field_path": {
+                "type": "string",
+                "pattern": "^/(title|servings|prep_time_seconds|cook_time_seconds|cover_artifact_id|ingredients|steps)(/.*)?$"
+              },
+              "value": {},
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "set",
+                  "remove"
+                ]
+              }
+            },
+            "required": [
+              "field_path",
+              "value",
+              "operation"
+            ]
+          }
+        }
+      },
+      "required": [
+        "expected_revision",
+        "edits"
+      ]
+    }
+  },
+  "x-state-transitions": {
+    "received": [
+      "queued",
+      "failed"
+    ],
+    "queued": [
+      "extracting",
+      "failed"
+    ],
+    "extracting": [
+      "parsing",
+      "queued",
+      "failed"
+    ],
+    "parsing": [
+      "validating",
+      "queued",
+      "failed"
+    ],
+    "validating": [
+      "completed",
+      "needs_review",
+      "queued",
+      "failed"
+    ],
+    "completed": [],
+    "needs_review": [],
+    "failed": [
+      "queued"
+    ]
+  }
+}
