@@ -30,8 +30,24 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.modelhub.cook
+  CookUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: CookAppTests/UITests
+    dependencies:
+      - target: Cook
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.modelhub.cook.uitests
+        TEST_TARGET_NAME: Cook
 schemes:
   Cook:
     build:
       targets:
         Cook: all
+        CookUITests: [test]
+    test:
+      targets:
+        - CookUITests
+      gatherCoverageData: false

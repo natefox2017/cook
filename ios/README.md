@@ -19,3 +19,7 @@ Run `swift test --package-path .` for local model, persistence and timer tests o
 ## External storage for local verification
 
 The current machine uses `/Volumes/Lexar/DevStorage/Xcode/RuntimeDownloads` as the runtime **export** destination and `/Volumes/Lexar/DevStorage/Xcode/DerivedData/Cook` for build output. The download is still pending. Exporting a DMG does not redirect the installed system-managed runtime; installation remains a separate step. `/Volumes/Lexar/DevStorage/Xcode/SimulatorDevices` is reserved for an explicit `simctl --set` device set; no device has been created yet. Keep Lexar connected when using these paths.
+
+UI automation is in `CookAppTests/UITests`. Run `xcodebuild -project Cook.xcodeproj -scheme Cook -destination 'platform=iOS Simulator,id=<device UUID>' -derivedDataPath <external path> test`. The suite covers native tabs, invalid-link feedback, manual creation and relaunch persistence, and initialized timer controls. Its target compiles; execution is pending a usable runtime. Xcode 27 may download into temporary system-managed storage before exporting the DMG.
+
+The default `~/Library/Developer/CoreSimulator/Devices` directory now links to the Lexar device directory on this machine. The previous empty device directory is preserved as `Devices.before-cook-external`. Device startup has not yet been verified; this changes device data storage, not the installed runtime location.
