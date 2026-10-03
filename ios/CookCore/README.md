@@ -11,4 +11,4 @@ swift test --package-path ios/CookCore
 
 该类型是本地领域工具，不是冻结的 API/数据库模型。导入合同冻结后由独立 adapter 接入，禁止直接添加 Codable 把它当传输格式。
 
-Package 没有设置产品最低系统版本；Swift 6 工具链仅用于当前基础验证。App 的 deployment target、bundle id、team、App Group 均待确认。
+产品最低版本为 iOS 18.0，主 App Bundle ID 为用户指定的 `com.modelhub.cook`。Package 尚未接入 App target，不承担 Bundle ID 或签名配置；team、App Group 实际 provisioning 待验证。Swift 6 工具链用于当前基础验证。

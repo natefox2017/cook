@@ -69,14 +69,14 @@ V1 内测前必须验证：
 | Xcode | 27.0 / 27A266a | `xcodebuild -version` |
 | Swift | Apple Swift 6.4 | `swift --version` |
 | SDK | iOS / iOS Simulator 27.0 | SDK 是编译工具，不是运行时 |
-| 模拟设备类型 | 包含 iPhone 18 Pro、iPhone 18 Pro Max | 用户口述名称尚待确认 |
+| 模拟设备类型 | 包含 iPhone 18 Pro、iPhone 18 Pro Max | 用户已确认 iPhone 18 Pro Max |
 | Simulator Runtime | 0 | `xcrun simctl list runtimes` |
 | 可用模拟器 | 0 | `xcrun simctl list devices available` |
 | 连接真机 | 0 | `xcrun devicectl list devices`，仅当前发现结果 |
 | 签名 identity | 0 valid identities | 当前默认 keychain 搜索范围 |
 | provisioning profile | 两个标准用户目录均为 0 | 不代表服务端没有 profile |
 | Xcode 团队缓存 | 一个 free provisioning team 记录 | 缓存不证明当前登录/服务端可用；不提交账号/Team ID |
-| 仓库 App 配置 | 无 xcodeproj、xcconfig、entitlements | bundle id、最低系统、签名尚未定义 |
+| 仓库 App 配置 | 无 xcodeproj、xcconfig、entitlements | 主 App 标识和最低系统已决定；App target 与签名尚未建立 |
 
 未安装 Runtime，未创建证书/标识/profile，未改系统设置，也未触碰其他项目。
 
@@ -88,11 +88,12 @@ V1 内测前必须验证：
 
 Share Extension 真机验收仍需：选定团队与标识 → 主 App/扩展分别生成 profile → 检查二者签名 entitlements 中相同 App Group → 安装同一构建 → 从第三方 App 分享 → 扩展成功持久入队后完成 host request → 主 App 可读取任务 → 重启后仍可继续。现阶段没有 App/扩展 target、可用 profile 或连接设备，以上全部未验证。
 
-### 配置候选（待用户明确决定，未写入工程）
+### 已决定配置与剩余门禁（2026-10-03）
 
-- 模拟器：iPhone 18 Pro Max。存在此设备类型；需安装匹配 iOS Runtime 后才能创建/运行，具体下载体积与版本先在 Xcode Components 确认。
-- 最低版本：候选 iOS 18；已有基础库只用 Foundation，可在该目标 SDK 下编译。此选项是兼容范围建议，不是正式产品基线。
-- 开发标识候选：`com.natefox.cook.dev`；扩展 `com.natefox.cook.dev.share`；共享组 `group.com.natefox.cook.dev`。借用仓库 owner 作为候选命名来源，尚未验证归属或可注册性，不是生产标识。
+- 用户确认的模拟器：iPhone 18 Pro Max。存在此设备类型；需安装匹配 iOS Runtime 后才能创建/运行，具体下载体积与版本先在 Xcode Components 确认。
+- 最低版本：iOS 18.0。用户授权开发侧决定；采用此版本兼顾较广设备支持，当前纯 Foundation 库已经完成该目标 SDK 编译。后续 App 与扩展 target 均采用该下限；这不构成 iOS 18 真机或模拟器运行验证。
+- 用户指定主 App Bundle ID：`com.modelhub.cook`，替代此前开发标识候选。尚未验证服务端可注册性。
+- 后续扩展/共享组建议分别使用 `com.modelhub.cook.share` / `group.com.modelhub.cook`；它们是由主标识派生的工程候选，未注册、未配置 entitlements，实际团队能力与共享容器验收仍为门禁。
 - 签名：使用本机已有个人团队，经 Xcode 当前登录状态及实际 provisioning 校验；不把账号信息提交到 Git。
 
 ### 本次验证与可复现命令
