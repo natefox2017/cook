@@ -1,0 +1,37 @@
+name: Cook
+options:
+  deploymentTarget:
+    iOS: "18.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_STRICT_CONCURRENCY: complete
+    IPHONEOS_DEPLOYMENT_TARGET: "18.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_CFBundleDisplayName: Cook
+    INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.food-and-drink
+    INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+    INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+    INFOPLIST_KEY_CFBundleDevelopmentRegion: en
+    INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+    CODE_SIGN_STYLE: Automatic
+targets:
+  Cook:
+    type: application
+    platform: iOS
+    sources:
+      - path: CookApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.modelhub.cook
+schemes:
+  Cook:
+    build:
+      targets:
+        Cook: all

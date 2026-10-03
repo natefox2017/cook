@@ -105,3 +105,7 @@ iOS 使用 SwiftUI 与 Apple Human Interface Guidelines。
 - [SwiftUI glassProminent](https://developer.apple.com/documentation/swiftui/primitivebuttonstyle/glassprominent)：强调按钮玻璃样式；[Glass](https://developer.apple.com/documentation/swiftui/glass) 支持材质与 tint。
 
 以上是设计依据，不是 Cook 已有实现。iOS 部署版本与旧系统回退由工程任务确定，本设计不自行更改技术基线。
+
+## 主 App 代码约定（2026-10-03）
+
+用户授权直接实现后，界面开发语言为英文，所有产品文案通过 English-source String Catalog 管理，为后续语言和复数形式预留框架。用户内容与来源保持原文。使用 NavigationStack、原生 toolbar、TabView 与系统 Button；iOS 26 的玻璃材质和悬浮 tab 由系统提供，旧版本采用对应原生组件。标题使用系统 serif 字体接近参考气质，不打包 Claude 的专有字体。内容背景保持温暖实色，避免所有卡片都叠加玻璃。
