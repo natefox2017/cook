@@ -21,7 +21,7 @@ struct CookingView: View {
                 Text(step.instruction).font(.title2).fixedSize(horizontal: false, vertical: true)
                 Button("View all ingredients", systemImage: "list.bullet") { showingIngredients = true }
                     .cookAction(prominent: false)
-                if timers[step.id] == nil, let seconds = step.durationSeconds, seconds > 0 {
+                if let seconds = step.durationSeconds, seconds > 0 {
                     timerControls(seconds: seconds)
                 }
                 HStack {

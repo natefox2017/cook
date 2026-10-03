@@ -15,3 +15,7 @@ Numeric ingredient input currently recognizes English decimal notation only; amb
 Local recipes, photo covers, original sources, favorites, search, servings, groceries and cooking timers persist or operate locally. Captured URLs/text/images/PDFs are saved locally. Automatic parsing, backend sync, accounts and Share Extension are not connected; captured content is never reported as successfully parsed. Cooking timers catch up by deadline after suspension but do not schedule background notifications.
 
 Run `swift test --package-path .` for local model, persistence and timer tests on macOS. Build with `xcodebuild -project Cook.xcodeproj -scheme Cook -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build`. Generic builds do not establish visual or device acceptance.
+
+## External storage for local verification
+
+The current machine uses `/Volumes/Lexar/DevStorage/Xcode/RuntimeDownloads` as the runtime **export** destination and `/Volumes/Lexar/DevStorage/Xcode/DerivedData/Cook` for build output. The download is still pending. Exporting a DMG does not redirect the installed system-managed runtime; installation remains a separate step. `/Volumes/Lexar/DevStorage/Xcode/SimulatorDevices` is reserved for an explicit `simctl --set` device set; no device has been created yet. Keep Lexar connected when using these paths.
