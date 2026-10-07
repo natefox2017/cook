@@ -32,13 +32,13 @@ private struct SettingsRow:View{
 
 struct CloudSyncSettingsView:View{
  @AppStorage("cook.sync.mode")private var mode="Automatic"
- var body:some View{Form{Section("Status"){LabeledContent("Account",value:"Not connected");LabeledContent("Last synced",value:"Never");LabeledContent("Status",value:"Local only");Button("Sync Now"){}.disabled(true)};Section("Sync behavior"){Picker("Update",selection:$mode){Text("Automatic").tag("Automatic");Text("Wi-Fi Only").tag("Wi-Fi Only");Text("Manually").tag("Manually")}};Section{Text("Cloud Sync activates after a Cook account is connected. Existing local recipes are never silently overwritten.").foregroundStyle(.secondary)}}.navigationTitle("Cloud Sync")}
+ var body:some View{Form{Section("Status"){LabeledContent("Account",value:"Not connected");LabeledContent("Last synced",value:"Never");LabeledContent("Status",value:"Local only");LabeledContent("Manual Sync", value: "Available after sign in")};Section("Sync behavior"){Picker("Update",selection:$mode){Text("Automatic").tag("Automatic");Text("Wi-Fi Only").tag("Wi-Fi Only");Text("Manually").tag("Manually")}};Section{Text("Cloud Sync activates after a Cook account is connected. Existing local recipes are never silently overwritten.").foregroundStyle(.secondary)}}.navigationTitle("Cloud Sync")}
 }
 
 struct AppearanceSettingsView:View{
  @Environment(CookStore.self)private var store
  @State private var error:String?
- var body:some View{Form{Section("Theme"){Picker("Appearance",selection:Binding(get:{store.settings.appearance},set:{v in update{ $0.appearance=v }})){ForEach(AppAppearance.allCases){Text($0.rawValue).tag($0)}}};Section("Recipe display"){Toggle("Show image placeholders",isOn:.constant(true));Text("Cook uses Dynamic Type automatically. Text size follows iOS Settings → Display & Brightness → Text Size.").font(.footnote).foregroundStyle(.secondary)}}.navigationTitle("Appearance").alert("Couldn’t save",isPresented:.init(get:{error != nil},set:{if !$0{error=nil}})){Button("OK",role:.cancel){error=nil}}message:{Text(error ?? "")}}
+ var body:some View{Form{Section("Theme"){Picker("Appearance",selection:Binding(get:{store.settings.appearance},set:{v in update{ $0.appearance=v }})){ForEach(AppAppearance.allCases){Text($0.rawValue).tag($0)}}};Section("Recipe display"){LabeledContent("Recipe image placeholders", value: "On");Text("Cook uses Dynamic Type automatically. Text size follows iOS Settings → Display & Brightness → Text Size.").font(.footnote).foregroundStyle(.secondary)}}.navigationTitle("Appearance").alert("Couldn’t save",isPresented:.init(get:{error != nil},set:{if !$0{error=nil}})){Button("OK",role:.cancel){error=nil}}message:{Text(error ?? "")}}
  func update(_ body:(inout CookSettings)->Void){var s=store.settings;body(&s);do{try store.updateSettings(s)}catch{self.error=error.localizedDescription}}
 }
 
