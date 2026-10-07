@@ -406,7 +406,7 @@ private struct RecipeMealPlanSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") {
                         do {
-                            try store.upsertMeal(MealPlanEntry(date: date, slot: slot, recipeID: recipeID))
+                            try store.upsertMeal(MealPlanEntry(recipeID: recipeID, date: date, slot: slot))
                             dismiss()
                         } catch { errorMessage = error.localizedDescription }
                     }
