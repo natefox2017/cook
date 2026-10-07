@@ -37,7 +37,7 @@ public enum RecipeDocumentParser {
             if ["notes", "tips", "备注"].contains(heading) { section = "notes"; continue }
             switch section {
             case "ingredients": result.ingredients.append(ingredient(line))
-            case "steps": result.steps.append(RecipeStep(instruction: removingBullet(line)))
+            case "steps": result.steps.append(structuredStep(title: "", instruction: removingBullet(line)))
             case "notes": result.notes += (result.notes.isEmpty ? "" : "\n") + line
             default:
                 if result.title == "Imported recipe", line.count < 120 { result.title = line }
@@ -99,7 +99,8 @@ public enum RecipeDocumentParser {
         let name = clean(json["name"] as? String ?? "")
         guard !name.isEmpty else { return nil }
         let rawIngredients = (json["recipeIngredient"] as? [String]) ?? []
-        let steps = stepList(json["recipeInstructions"], depth: 0)
+        let ingredients = rawIngredients.prefix(250).map(ingredient)
+        let steps = enrichSteps(Array(stepList(json["recipeInstructions"], depth: 0).prefix(250)), ingredients: ingredients)
         let author = (json["author"] as? String)
             ?? (json["author"] as? [String: Any])?["name"] as? String
             ?? (json["author"] as? [[String: Any]])?.first?["name"] as? String
@@ -108,8 +109,8 @@ public enum RecipeDocumentParser {
             servings: servings(json["recipeYield"]),
             prepMinutes: minutes(json["prepTime"] as? String),
             cookMinutes: minutes(json["cookTime"] as? String),
-            ingredients: rawIngredients.prefix(250).map(ingredient),
-            steps: Array(steps.prefix(250)), sourceURL: sourceURL.absoluteString,
+            ingredients: ingredients,
+            steps: steps, sourceURL: sourceURL.absoluteString,
             sourceText: "Ingredients\n" + rawIngredients.joined(separator: "\n") + "\nInstructions\n" + steps.map(\.instruction).joined(separator: "\n"),
             sourceName: clean(author ?? sourceURL.host() ?? "Recipe website")
         )
@@ -125,14 +126,96 @@ public enum RecipeDocumentParser {
     private static func stepList(_ value: Any?, depth: Int) -> [RecipeStep] {
         guard depth < 24 else { return [] }
         if let text = value as? String {
-            return text.components(separatedBy: .newlines).map(clean).filter { !$0.isEmpty }.map { RecipeStep(instruction: removingBullet($0)) }
+            return text.components(separatedBy: .newlines).map(clean).filter { !$0.isEmpty }.map { structuredStep(title: "", instruction: removingBullet($0)) }
         }
         if let values = value as? [Any] { return values.flatMap { stepList($0, depth: depth + 1) } }
         guard let object = value as? [String: Any] else { return [] }
         if let children = object["itemListElement"] { return stepList(children, depth: depth + 1) }
         let text = clean(object["text"] as? String ?? object["name"] as? String ?? "")
         guard !text.isEmpty else { return [] }
-        return [RecipeStep(title: clean(object["name"] as? String ?? ""), instruction: text)]
+        return [structuredStep(title: clean(object["name"] as? String ?? ""), instruction: text)]
+    }
+
+
+    private static func structuredStep(title: String, instruction: String) -> RecipeStep {
+        let cleanedTitle = clean(title)
+        let cleanedInstruction = clean(instruction)
+        return RecipeStep(
+            title: cleanedTitle,
+            instruction: cleanedInstruction,
+            temperature: temperature(in: cleanedInstruction),
+            timers: timerCandidates(in: cleanedInstruction, stepTitle: cleanedTitle)
+        )
+    }
+
+    private static func enrichSteps(_ steps: [RecipeStep], ingredients: [RecipeIngredient]) -> [RecipeStep] {
+        steps.map { step in
+            var updated = step
+            let haystack = normalizedWords(step.instruction)
+            updated.linkedIngredientIDs = ingredients.compactMap { ingredient in
+                let needle = normalizedWords(ingredient.name)
+                guard needle.count >= 3, haystack.contains(needle) else { return nil }
+                return ingredient.id
+            }
+            return updated
+        }
+    }
+
+    private static func normalizedWords(_ text: String) -> String {
+        " " + text
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .lowercased()
+            .replacingOccurrences(of: #"[^\p{L}\p{N}]+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines) + " "
+    }
+
+    private static func timerCandidates(in text: String, stepTitle: String) -> [RecipeStepTimer] {
+        let pattern = #"\b(\d{1,3})\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)\b"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { return [] }
+        let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
+        var timers: [RecipeStepTimer] = []
+
+        for match in matches {
+            guard let fullRange = Range(match.range(at: 0), in: text),
+                  let valueRange = Range(match.range(at: 1), in: text),
+                  let unitRange = Range(match.range(at: 2), in: text),
+                  let value = Int(text[valueRange]) else { continue }
+
+            let before = fullRange.lowerBound > text.startIndex ? text[text.index(before: fullRange.lowerBound)] : " "
+            let after = fullRange.upperBound < text.endIndex ? text[fullRange.upperBound] : " "
+            if "-–—".contains(before) || "-–—".contains(after) { continue }
+
+            let unit = text[unitRange].lowercased()
+            let seconds: Int
+            if unit.hasPrefix("hour") || unit.hasPrefix("hr") {
+                seconds = value * 3_600
+            } else if unit.hasPrefix("second") || unit.hasPrefix("sec") {
+                seconds = value
+            } else {
+                seconds = value * 60
+            }
+            guard seconds > 0, seconds <= 43_200 else { continue }
+
+            let sourceLabel = String(text[fullRange])
+            let base = stepTitle.isEmpty ? "Step timer" : stepTitle
+            let label = matches.count > 1 ? "\(base) · \(sourceLabel)" : base
+            timers.append(RecipeStepTimer(label: label, durationSeconds: seconds))
+        }
+        return timers
+    }
+
+    private static func temperature(in text: String) -> CookingTemperature? {
+        let patterns = [
+            #"\b\d{2,3}\s*°?\s*[CF]\b"#,
+            #"\b(?:low|medium-low|medium|medium-high|high)\s+heat\b"#
+        ]
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+                  let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+                  let range = Range(match.range(at: 0), in: text) else { continue }
+            return CookingTemperature(text: String(text[range]))
+        }
+        return nil
     }
 
     private static func ingredient(_ raw: String) -> RecipeIngredient {
