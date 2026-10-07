@@ -15,12 +15,34 @@ enum CookTheme {
     })
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
 
+    static func text(_ size: CGFloat, weight: Font.Weight = .regular, relativeTo style: Font.TextStyle = .body) -> Font {
+        let name = weight == .regular
+            ? "SourceSans3-Regular"
+            : (weight == .bold || weight == .heavy || weight == .black ? "SourceSans3-Bold" : "SourceSans3-Semibold")
+        return .custom(name, size: size, relativeTo: style)
+    }
+
     static func title(_ size: CGFloat = 32) -> Font {
-        .custom("SourceSans3-Semibold", size: size, relativeTo: .title)
+        text(size, weight: .semibold, relativeTo: .title)
     }
 
     static func body(_ size: CGFloat = 17) -> Font {
-        .custom("SourceSans3-Regular", size: size, relativeTo: .body)
+        text(size, relativeTo: .body)
+    }
+
+    @MainActor
+    static func installUIKitTypography() {
+        guard let regular = UIFont(name: "SourceSans3-Regular", size: 17),
+              let semibold = UIFont(name: "SourceSans3-Semibold", size: 17),
+              let bold = UIFont(name: "SourceSans3-Bold", size: 17) else { return }
+
+        let navigation = UINavigationBar.appearance()
+        navigation.titleTextAttributes = [.font: UIFontMetrics(forTextStyle: .headline).scaledFont(for: semibold)]
+        navigation.largeTitleTextAttributes = [.font: UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: UIFont(descriptor: bold.fontDescriptor, size: 34))]
+
+        let tabItem = UITabBarItem.appearance()
+        tabItem.setTitleTextAttributes([.font: UIFontMetrics(forTextStyle: .caption2).scaledFont(for: regular.withSize(10))], for: .normal)
+        tabItem.setTitleTextAttributes([.font: UIFontMetrics(forTextStyle: .caption2).scaledFont(for: semibold.withSize(10))], for: .selected)
     }
 }
 
@@ -28,7 +50,7 @@ struct PrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.custom("SourceSans3-Semibold", size: 18, relativeTo: .headline))
+            .font(CookTheme.text(18, weight: .semibold, relativeTo: .headline))
             .frame(maxWidth: .infinity, minHeight: 50)
             .foregroundStyle(.white)
             .background(Color(red: 0.13, green: 0.42, blue: 0.26), in: Capsule())

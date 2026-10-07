@@ -12,7 +12,7 @@
 | UI-006 | 做饭模式 | TBD | PENDING | 单步骤大字号 |
 | UI-007 | 购物清单 | TBD | PENDING | 合并/勾选/编辑 |
 | UI-008 | 简单周计划 | TBD | PENDING | 二级能力 |
-| UI-009 | 我的/设置 | TBD | PENDING | 账户/导入/数据 |
+| UI-009 | 我的/设置（文字精简） | 用户截图（本次对话） | APPROVED | 仅删除辅助性小字；保留全部页面模块、入口和操作，不调整布局 |
 | UI-010 | Share Extension 成功 | TBD | PENDING | 快速结束 |
 | UI-011 | Share Extension 失败/降级 | TBD | PENDING | 可继续操作 |
 | UI-013 | RecipePouch App 启动页 | [RecipePouch 启动页方案](DESIGN/proposals/2026-10-07/recipepouch-launch-screen.svg) | PENDING | Apple HIG 系统启动画面：浅色/深色使用首屏画布纯色背景，不放文字或品牌图标；待用户确认后接入 |

@@ -94,7 +94,7 @@ struct CookingView: View {
                     RecipeImage(recipe: recipe, height: 170)
                         .clipShape(RoundedRectangle(cornerRadius: 22))
                 }
-                Text(recipe.title.isEmpty ? "Untitled Recipe" : recipe.title).font(.headline).foregroundStyle(.secondary)
+                Text(recipe.title.isEmpty ? "Untitled Recipe" : recipe.title).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline)).foregroundStyle(.secondary)
                 progress(index: index, count: recipe.steps.count)
                 VStack(alignment: .leading, spacing: 14) {
                     Text(step.title.isEmpty ? "Step \(index + 1)" : step.title)
@@ -131,7 +131,7 @@ struct CookingView: View {
     private func progress(index: Int, count: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Step \(index + 1) of \(count)")
-                .font(.subheadline.weight(.medium))
+                .font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                 .foregroundStyle(CookTheme.accent)
                 .accessibilityIdentifier("cookingStepProgress")
             ProgressView(value: Double(index + 1), total: Double(count))
@@ -177,7 +177,7 @@ struct CookingView: View {
         if !otherSteps.isEmpty {
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Other Step Timers").font(.subheadline.weight(.semibold))
+                    Text("Other Step Timers").font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                     ForEach(otherSteps, id: \.element.id) { index, step in
                         if let timer = session.timers[step.id] {
                             let remaining = timer.remaining(at: context.date)
@@ -185,7 +185,7 @@ struct CookingView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Label("Step \(index + 1)\(step.title.isEmpty ? "" : ": \(step.title)")", systemImage: "timer")
                                     Text(remaining == 0 ? "Time’s up" : "\(remaining / 60)m \(remaining % 60)s remaining")
-                                        .font(.caption).monospacedDigit()
+                                        .font(CookTheme.text(12, weight: .regular, relativeTo: .caption)).monospacedDigit()
                                 }
                                 .frame(minHeight: 44, alignment: .leading)
                             }
@@ -266,7 +266,7 @@ struct CookingView: View {
                                     Image(systemName: session.usedIngredientIDs.contains(ingredient.id) ? "checkmark.circle.fill" : "circle")
                                         .foregroundStyle(session.usedIngredientIDs.contains(ingredient.id) ? CookTheme.accent : Color.secondary)
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(ingredient.name).font(.headline)
+                                        Text(ingredient.name).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
                                         let amount = ingredient.displayAmount(servings: session.servings, originalServings: recipe.servings)
                                         if !amount.isEmpty { Text(amount).foregroundStyle(.secondary) }
                                     }
@@ -492,7 +492,7 @@ private struct CookingStepTimerPanel: View {
             let remaining = timer.remaining(at: context.date)
             VStack(alignment: .leading, spacing: 14) {
                 Label(remaining == 0 ? "Time’s up" : "Step Timer", systemImage: remaining == 0 ? "bell.badge" : "timer")
-                    .font(.subheadline.weight(.semibold))
+                    .font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                     .foregroundStyle(CookTheme.accent)
                 Text(clockText(remaining))
                     .font(CookTheme.title(52))
@@ -505,7 +505,7 @@ private struct CookingStepTimerPanel: View {
                     .lineLimit(1)
                 timerControls(remaining: remaining)
                 Text(remaining == 0 ? "Continue when you’re ready. The next step is up to you." : notificationMessage)
-                    .font(.caption)
+                    .font(CookTheme.text(12, weight: .regular, relativeTo: .caption))
                     .foregroundStyle(.secondary)
             }
             .padding(20)

@@ -2,11 +2,13 @@ import SwiftUI
 import CookCore
 
 @main
+@MainActor
 struct CookApp: App {
     @State private var store: CookStore
     @State private var subscriptions = SubscriptionStore()
 
     init() {
+        CookTheme.installUIKitTypography()
         _ = CookAuthService.shared
         let isUITesting = ProcessInfo.processInfo.arguments.contains("--uitesting")
         let localStore = CookStore(fileURL: isUITesting ? nil : CookStore.defaultFileURL())

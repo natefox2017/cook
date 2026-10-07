@@ -31,12 +31,9 @@ struct AccountView: View {
                 .frame(height: 50)
                 .allowsHitTesting(false)
                 .opacity(0.5)
-            } footer: {
-                Text("Cook never treats your App Store subscription account as your Cook recipe account.")
             }
             Section("Sync") {
                 LabeledContent("Status", value: "Not connected")
-                Text("Your current library stays on this iPhone until a Cook account is connected. It will not be overwritten silently.")
             }
         }
         .navigationTitle("Cook Account")

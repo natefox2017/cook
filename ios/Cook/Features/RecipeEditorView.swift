@@ -80,21 +80,21 @@ struct RecipeEditorView: View {
                         if let url = RecipeDocumentParser.validatedSourceURL(value) {
                             Link(destination: url) { Label(original.sourceName ?? "Open original recipe", systemImage: "arrow.up.right.square") }
                         }
-                        Text(value).font(.footnote).foregroundStyle(.secondary).textSelection(.enabled)
+                        Text(value).font(CookTheme.text(13, weight: .regular, relativeTo: .footnote)).foregroundStyle(.secondary).textSelection(.enabled)
                     } else {
                         TextField("Original link (optional)", text: $sourceText)
                             .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
                     }
                     if let text = original.sourceText, !text.isEmpty {
                         DisclosureGroup("Original recipe text") {
-                            Text(text).font(.footnote).textSelection(.enabled)
+                            Text(text).font(CookTheme.text(13, weight: .regular, relativeTo: .footnote)).textSelection(.enabled)
                         }
                     }
                 }
                 if previewNeedsReview {
                     Section {
                         Label("Missing ingredients or steps? Save a draft and finish it later.", systemImage: "pencil.circle")
-                            .font(.subheadline).foregroundStyle(.secondary)
+                            .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -226,11 +226,11 @@ private struct IngredientEditorRow: View {
                     .accessibilityLabel("Remove ingredient \(ingredient.name)")
             }
             TextField("Amount, e.g. 2 tbsp or to taste", text: $ingredient.amountText)
-                .font(.subheadline)
+                .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
                 .accessibilityIdentifier("ingredientAmount")
             Picker("Shopping group", selection: $ingredient.category) {
                 ForEach(GroceryCategory.allCases) { Text($0.rawValue).tag($0) }
-            }.font(.subheadline)
+            }.font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
         }
         .padding(.vertical, 4)
     }
@@ -255,7 +255,7 @@ private struct StepEditorRow: View {
                     let remainder = seconds % 60
                     return remainder == 0 ? "Timer: \(minutes) min" : "Timer: \(minutes) min \(remainder) sec"
                 } ?? "Timer: none")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)

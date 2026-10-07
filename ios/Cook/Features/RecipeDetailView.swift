@@ -105,13 +105,13 @@ struct RecipeDetailView: View {
                 HStack(spacing: 16) { recipeMetadata(recipe) }
                 VStack(alignment: .leading, spacing: 8) { recipeMetadata(recipe) }
             }
-            .font(.subheadline)
+            .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
             .foregroundStyle(.secondary)
             if !recipe.summary.isEmpty { Text(recipe.summary).foregroundStyle(.secondary).textSelection(.enabled) }
             if recipe.needsReview {
                 Button { isEditing = true } label: {
                     Label("Needs Review · Add missing recipe details", systemImage: "pencil.line")
-                        .font(.subheadline)
+                        .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
                         .frame(minHeight: 44, alignment: .leading)
                 }
             }
@@ -135,12 +135,12 @@ struct RecipeDetailView: View {
                     .accessibilityIdentifier("recipeServingsStepper")
                 if servings != originalServings {
                     Text("Numeric amounts adjust with servings. Amounts such as “to taste” stay as written.")
-                        .font(.caption)
+                        .font(CookTheme.text(12, weight: .regular, relativeTo: .caption))
                         .foregroundStyle(.secondary)
                 }
             } else {
                 Text("Original amounts · servings not specified")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
             }
             if recipe.ingredients.isEmpty {
                 Text("No ingredients yet. Edit this recipe to add them.")
@@ -174,16 +174,16 @@ struct RecipeDetailView: View {
                 ForEach(Array(recipe.steps.enumerated()), id: \.element.id) { index, step in
                     HStack(alignment: .top, spacing: 14) {
                         Text("\(index + 1)")
-                            .font(.headline)
+                            .font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
                             .foregroundStyle(CookTheme.accent)
                             .frame(minWidth: 32, minHeight: 32)
                             .background(CookTheme.accent.opacity(0.1), in: Circle())
                         VStack(alignment: .leading, spacing: 6) {
-                            if !step.title.isEmpty { Text(step.title).font(.headline) }
+                            if !step.title.isEmpty { Text(step.title).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline)) }
                             Text(step.instruction).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                             if let seconds = step.durationSeconds, seconds > 0 {
                                 Label(timerDurationLabel(seconds), systemImage: "timer")
-                                    .font(.caption).foregroundStyle(CookTheme.accent)
+                                    .font(CookTheme.text(12, weight: .regular, relativeTo: .caption)).foregroundStyle(CookTheme.accent)
                             }
                         }
                     }
@@ -198,17 +198,17 @@ struct RecipeDetailView: View {
         if recipe.sourceName != nil || recipe.sourceURL != nil || recipe.sourceText != nil {
             VStack(alignment: .leading, spacing: 10) {
                 sectionTitle("Source")
-                if let name = recipe.sourceName, !name.isEmpty { Text(name).font(.subheadline).foregroundStyle(.secondary) }
+                if let name = recipe.sourceName, !name.isEmpty { Text(name).font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary) }
                 if let original = recipe.sourceURL, !original.isEmpty {
                     if let url = URL(string: original), ["https", "http"].contains(url.scheme?.lowercased() ?? ""), url.host != nil {
                         Link(destination: url) { Label("Open Original Recipe", systemImage: "arrow.up.right.square") }
                             .frame(minHeight: 44, alignment: .leading)
                     } else {
-                        Text(original).font(.footnote).textSelection(.enabled)
+                        Text(original).font(CookTheme.text(13, weight: .regular, relativeTo: .footnote)).textSelection(.enabled)
                     }
                 }
                 if let text = recipe.sourceText, !text.isEmpty {
-                    DisclosureGroup("Original Text") { Text(text).font(.subheadline).textSelection(.enabled).padding(.top, 8) }
+                    DisclosureGroup("Original Text") { Text(text).font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline)).textSelection(.enabled).padding(.top, 8) }
                 }
             }
         }
@@ -345,7 +345,7 @@ private struct RecipeIngredientsSelectionView: View {
                         HStack(spacing: 12) {
                             Image(systemName: selection.contains(ingredient.id) ? "checkmark.circle.fill" : "circle")
                                 .foregroundStyle(selection.contains(ingredient.id) ? CookTheme.accent : Color.secondary)
-                                .font(.title3)
+                                .font(.system(size: 20))
                             RecipeIngredientLine(ingredient: ingredient, servings: servings, originalServings: recipe.servings)
                                 .foregroundStyle(.primary)
                         }
