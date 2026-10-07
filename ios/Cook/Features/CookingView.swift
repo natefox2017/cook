@@ -132,7 +132,7 @@ struct CookingView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Step \(index + 1) of \(count)")
                 .font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
-                .foregroundStyle(CookTheme.accent)
+                .foregroundStyle(CookTheme.accentForeground)
                 .accessibilityIdentifier("cookingStepProgress")
             ProgressView(value: Double(index + 1), total: Double(count))
                 .tint(CookTheme.accent)
@@ -204,7 +204,7 @@ struct CookingView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 24))
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 54))
-                    .foregroundStyle(CookTheme.accent)
+                    .foregroundStyle(CookTheme.accentForeground)
                     .accessibilityHidden(true)
                 Text("Ready to enjoy")
                     .font(CookTheme.title(32))
@@ -264,7 +264,7 @@ struct CookingView: View {
                             Button { toggleIngredient(ingredient.id) } label: {
                                 HStack(spacing: 12) {
                                     Image(systemName: session.usedIngredientIDs.contains(ingredient.id) ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(session.usedIngredientIDs.contains(ingredient.id) ? CookTheme.accent : Color.secondary)
+                                        .foregroundStyle(session.usedIngredientIDs.contains(ingredient.id) ? CookTheme.accentForeground : Color.secondary)
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(ingredient.name).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
                                         let amount = ingredient.displayAmount(servings: session.servings, originalServings: recipe.servings)
@@ -493,7 +493,7 @@ private struct CookingStepTimerPanel: View {
             VStack(alignment: .leading, spacing: 14) {
                 Label(remaining == 0 ? "Time’s up" : "Step Timer", systemImage: remaining == 0 ? "bell.badge" : "timer")
                     .font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
-                    .foregroundStyle(CookTheme.accent)
+                    .foregroundStyle(CookTheme.accentForeground)
                 Text(clockText(remaining))
                     .font(CookTheme.title(52))
                     .monospacedDigit()

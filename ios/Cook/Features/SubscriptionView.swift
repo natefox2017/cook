@@ -9,12 +9,12 @@ struct SubscriptionView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 22) {
-                Image(systemName: "leaf.circle.fill").font(.system(size: 64)).foregroundStyle(CookTheme.accent)
+                Image(systemName: "leaf.circle.fill").font(.system(size: 64)).foregroundStyle(CookTheme.accentForeground)
                 Text("Cook Premium").font(CookTheme.title(34))
 
                 switch subscriptions.state {
                 case .active:
-                    Label("Subscription active", systemImage: "checkmark.seal.fill").foregroundStyle(CookTheme.accent)
+                    Label("Subscription active", systemImage: "checkmark.seal.fill").foregroundStyle(CookTheme.accentForeground)
                     Button("Manage subscription") { isManagingSubscriptions = true }
                 case .loading:
                     ProgressView("Checking subscription…")

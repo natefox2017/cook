@@ -36,10 +36,9 @@
 
 iOS 使用 SwiftUI 与 Apple Human Interface Guidelines。
 
-在 UI 设计未 APPROVED 前：
-- 不锁定最终品牌色
-- 不锁定最终圆角/阴影 token
-- 不提交正式页面实现
+当前填充/控件主色：`#42A85A`，浅色与深色模式一致。浅色模式的文字与图标使用高对比同色系前景 `#216B42`。
+
+圆角与阴影 token 暂不锁定。
 
 ## 4. 页面信息层级
 

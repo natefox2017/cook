@@ -3,9 +3,10 @@ import UIKit
 import CookCore
 
 enum CookTheme {
-    static let accent = Color(uiColor: UIColor { traits in
+    static let accent = Color(red: 66.0 / 255, green: 168.0 / 255, blue: 90.0 / 255)
+    static let accentForeground = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.36, green: 0.73, blue: 0.48, alpha: 1)
+            ? UIColor(red: 66.0 / 255, green: 168.0 / 255, blue: 90.0 / 255, alpha: 1)
             : UIColor(red: 0.13, green: 0.42, blue: 0.26, alpha: 1)
     })
     static let canvas = Color(uiColor: UIColor { traits in
@@ -48,7 +49,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .font(CookTheme.text(18, weight: .semibold, relativeTo: .headline))
             .frame(maxWidth: .infinity, minHeight: 50)
             .foregroundStyle(.white)
-            .background(Color(red: 0.13, green: 0.42, blue: 0.26), in: Capsule())
+            .background(CookTheme.accent, in: Capsule())
             .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.45)
     }
 }
@@ -64,7 +65,7 @@ struct EmptyStateView: View {
         VStack(spacing: 18) {
             Image(systemName: systemImage)
                 .font(.system(size: 44, weight: .light))
-                .foregroundStyle(CookTheme.accent)
+                .foregroundStyle(CookTheme.accentForeground)
                 .accessibilityHidden(true)
             Text(title).font(CookTheme.title(27)).multilineTextAlignment(.center)
             Text(message).foregroundStyle(.secondary).multilineTextAlignment(.center)
@@ -93,7 +94,7 @@ struct RecipeImage: View {
                         CookTheme.accent.opacity(0.09)
                         Image(systemName: "fork.knife")
                             .font(.system(size: 35, weight: .light))
-                            .foregroundStyle(CookTheme.accent.opacity(0.65))
+                            .foregroundStyle(CookTheme.accentForeground)
                     }
                 }
             }

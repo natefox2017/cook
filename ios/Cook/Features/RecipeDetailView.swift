@@ -175,7 +175,7 @@ struct RecipeDetailView: View {
                     HStack(alignment: .top, spacing: 14) {
                         Text("\(index + 1)")
                             .font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
-                            .foregroundStyle(CookTheme.accent)
+                            .foregroundStyle(CookTheme.accentForeground)
                             .frame(minWidth: 32, minHeight: 32)
                             .background(CookTheme.accent.opacity(0.1), in: Circle())
                         VStack(alignment: .leading, spacing: 6) {
@@ -183,7 +183,7 @@ struct RecipeDetailView: View {
                             Text(step.instruction).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                             if let seconds = step.durationSeconds, seconds > 0 {
                                 Label(timerDurationLabel(seconds), systemImage: "timer")
-                                    .font(CookTheme.text(12, weight: .regular, relativeTo: .caption)).foregroundStyle(CookTheme.accent)
+                                    .font(CookTheme.text(12, weight: .regular, relativeTo: .caption)).foregroundStyle(CookTheme.accentForeground)
                             }
                         }
                     }
@@ -344,7 +344,7 @@ private struct RecipeIngredientsSelectionView: View {
                     Button { toggle(ingredient.id) } label: {
                         HStack(spacing: 12) {
                             Image(systemName: selection.contains(ingredient.id) ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(selection.contains(ingredient.id) ? CookTheme.accent : Color.secondary)
+                                .foregroundStyle(selection.contains(ingredient.id) ? CookTheme.accentForeground : Color.secondary)
                                 .font(.system(size: 20))
                             RecipeIngredientLine(ingredient: ingredient, servings: servings, originalServings: recipe.servings)
                                 .foregroundStyle(.primary)
