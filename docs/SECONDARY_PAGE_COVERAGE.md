@@ -4,12 +4,19 @@ Updated: 2026-10-07
 
 This document is the UI completeness checklist for the current codebase. Production services are intentionally allowed to remain unconfigured until the later production test pass.
 
+## First launch
+
+- Welcome / value proposition — implemented.
+- First-use recipe saving guide — implemented and reusable from Settings/Profile.
+- Optional Premium plan step — implemented with App Store product data, Restore Purchases, legal links, and a visible Continue Free path.
+- Production follows the device locale; UI automation remains English and bypasses first launch.
+
 ## Profile / Settings
 
 - Profile overview — implemented.
 - Edit local profile — implemented.
 - Settings hub — implemented.
-- Cook Account — implemented UI: sign in/sign up/forgot password/Sign in with Apple/sync explanation; production Supabase actions deferred.
+- Cook Account — implemented UI + Supabase Auth actions: sign in/sign up/forgot password/password recovery/Sign in with Apple/sign out; provider delivery still requires production verification.
 - Subscription — implemented UI + StoreKit 2 service: products/purchase/status/restore/manage; real App Store products deferred.
 - Cloud Sync — implemented settings/status/mode page; production Supabase connection deferred.
 - Notifications — implemented.
