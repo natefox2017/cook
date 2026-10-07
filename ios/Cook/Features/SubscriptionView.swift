@@ -25,7 +25,6 @@ struct SubscriptionView: View {
         .navigationTitle("Subscription")
         .navigationBarTitleDisplayMode(.inline)
         .manageSubscriptionsSheet(isPresented: $isManagingSubscriptions)
-        .task { await subscriptions.load() }
         .alert(
             "Subscription",
             isPresented: Binding(
@@ -156,6 +155,13 @@ struct PremiumPaywallContent: View {
                 .frame(maxWidth: .infinity)
                 .padding(20)
                 .background(CookTheme.card, in: RoundedRectangle(cornerRadius: 22))
+
+                Button("Try Again") {
+                    Task { await subscriptions.load(force: true) }
+                }
+                .buttonStyle(.bordered)
+                .disabled(subscriptions.isWorking)
+                .accessibilityIdentifier("subscription.retry")
             } else {
                 ForEach(subscriptions.products, id: \.id) { product in
                     Button {

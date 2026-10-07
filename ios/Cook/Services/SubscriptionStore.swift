@@ -37,30 +37,34 @@ final class SubscriptionStore {
         guard force || !hasLoaded else { return }
 
         isWorking = true
-        defer {
-            isWorking = false
-            hasLoaded = true
-        }
+        defer { isWorking = false }
 
         do {
             let ids = Self.productIDs
             guard !ids.isEmpty else {
                 products = []
                 state = .unavailable("Subscription products have not been configured in App Store Connect.")
+                hasLoaded = true
                 return
             }
 
             let loadedProducts = try await Product.products(for: ids).sorted { $0.price < $1.price }
             guard !loadedProducts.isEmpty else {
                 products = []
-                state = .unavailable("No App Store subscription products are available for this build.")
+                await refreshEntitlements()
+                if state != .active {
+                    state = .unavailable("No App Store subscription products are available for this storefront right now.")
+                }
+                // Product availability can be transient; keep load retryable.
                 return
             }
 
             products = loadedProducts
             await refreshEntitlements()
+            hasLoaded = true
         } catch {
             state = .unavailable(error.localizedDescription)
+            // Do not cache transient StoreKit failures.
         }
     }
 

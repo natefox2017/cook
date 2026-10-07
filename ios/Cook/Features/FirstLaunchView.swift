@@ -100,7 +100,7 @@ private struct FirstLaunchWelcomePage: View {
                     FirstLaunchValueRow(
                         icon: "link",
                         title: "Save from anywhere",
-                        detail: "Paste a recipe link from the web or a social app."
+                        detail: "Use the iOS share sheet from a recipe or social app; paste a link only as a fallback."
                     )
                     FirstLaunchValueRow(
                         icon: "checklist",
@@ -168,7 +168,7 @@ struct GettingStartedGuideContent: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Save your first recipe")
                     .font(CookTheme.title(32))
-                Text("The fastest path is a link. You can also use a photo, pasted text, a document, or create a recipe manually.")
+                Text("The normal path is Share → RecipePouch. You can also paste a link, use a photo, paste text, import a document, or create a recipe manually.")
                     .font(CookTheme.body())
                     .foregroundStyle(.secondary)
             }
@@ -177,15 +177,15 @@ struct GettingStartedGuideContent: View {
                 guideStep(
                     1,
                     icon: "square.and.arrow.up",
-                    title: "Copy a recipe link",
-                    detail: "From Safari, TikTok, Instagram, YouTube, or another app, copy the recipe or post link. If Cook appears in the iOS share sheet, you can send the link directly to Cook."
+                    title: "Share to RecipePouch",
+                    detail: "From Safari, TikTok, Instagram, YouTube, or another supported app, open Share and choose RecipePouch. The share extension should acknowledge receipt quickly so you can return to the source app."
                 )
                 Divider().padding(.leading, 56)
                 guideStep(
                     2,
                     icon: "plus.circle",
-                    title: "Open Add Recipe",
-                    detail: "In Recipes, tap Add Recipe. Paste the link into “From a link,” then choose Import recipe."
+                    title: "Use Add Recipe as fallback",
+                    detail: "If RecipePouch is not available in the share sheet, copy the link, open Recipes → Add Recipe, paste it into “From a link,” then choose Import recipe."
                 )
                 Divider().padding(.leading, 56)
                 guideStep(
