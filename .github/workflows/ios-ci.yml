@@ -2,23 +2,23 @@ name: iOS CI
 
 on:
   workflow_dispatch:
+  push:
+    branches: [codex/complete-secondary-ui]
 
 permissions:
   contents: read
 
 jobs:
   ios-check:
-    name: Validate iOS project
-    runs-on: macos-latest
+    name: Final iOS simulator validation
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
-      - name: Install XcodeGen
-        run: brew install xcodegen
-      - name: Generate project
-        run: cd ios/CookApp && xcodegen generate
-      - name: Build and test
+      - name: CookCore tests
+        run: swift test --package-path ios/CookCore
+      - name: Select simulator and test app
         run: |
-          cd ios/CookApp
-          DESTINATION=$(xcrun simctl list devices available | grep -m1 -E 'iPhone' | sed -E 's/.*\(([0-9A-F-]{36})\).*/id=\1/')
-          test -n "$DESTINATION"
-          xcodebuild -project Cook.xcodeproj -scheme Cook -destination "$DESTINATION" test
+          DEVICE=$(xcrun simctl list devices available | grep -m1 'iPhone 17 Pro Max' | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+          if [ -z "$DEVICE" ]; then DEVICE=$(xcrun simctl list devices available | grep -m1 -E 'iPhone' | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/'); fi
+          test -n "$DEVICE"
+          xcodebuild -project ios/Cook.xcodeproj -scheme Cook -destination "platform=iOS Simulator,id=$DEVICE" CODE_SIGNING_ALLOWED=NO test
