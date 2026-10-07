@@ -3,6 +3,8 @@
 
 # Xcode
 DerivedData/
+TestResults/
+ios-test.log
 build/
 *.xcuserstate
 xcuserdata/

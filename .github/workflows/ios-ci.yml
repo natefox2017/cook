@@ -1,10 +1,7 @@
 name: iOS CI
 
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,10 +10,15 @@ jobs:
   ios-check:
     name: Validate iOS project
     runs-on: macos-latest
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Swift environment
-        run: swift --version
-      - name: Placeholder
-        run: echo "Add xcodebuild commands after iOS project initialization"
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: cd ios/CookApp && xcodegen generate
+      - name: Build and test
+        run: |
+          cd ios/CookApp
+          DESTINATION=$(xcrun simctl list devices available | grep -m1 -E 'iPhone' | sed -E 's/.*\(([0-9A-F-]{36})\).*/id=\1/')
+          test -n "$DESTINATION"
+          xcodebuild -project Cook.xcodeproj -scheme Cook -destination "$DESTINATION" test
