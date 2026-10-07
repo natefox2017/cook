@@ -24,7 +24,7 @@ Required:
 - Local data migration/linking decision when signing in on a device that already has local recipes.
 - Auth errors, offline state, cancelled Apple sign-in, email verification state.
 
-Implementation status: **NOT IMPLEMENTED**. Current Profile is deliberately local-only.
+Implementation status: **CLIENT FLOW IMPLEMENTED / PRODUCTION VERIFICATION PENDING**. First launch now includes the value proposition, first-use guide and Premium plan step. Email sign-up/sign-in/reset, Sign in with Apple and sign-out call the Supabase Auth service. Local-data merge policy, cloud account deletion and production provider verification remain incomplete.
 
 ### 2. Subscription
 Required:
@@ -38,7 +38,7 @@ Required:
 - Purchase pending/cancelled/failed and restore-no-purchase states.
 - Core user data must remain readable when premium expires; premium-only creation/import limits may be enforced by product policy.
 
-Implementation status: **NOT IMPLEMENTED**. No StoreKit entitlement layer or paywall exists.
+Implementation status: **CLIENT FLOW IMPLEMENTED / APP STORE CONFIGURATION PENDING**. The first-launch paywall and Settings subscription page use StoreKit 2 products, purchases, current entitlements, restore and the system manage-subscription sheet. Product IDs/offers and sandbox/production purchase behavior still require App Store Connect verification.
 
 ### 3. Recipe library
 Required:
@@ -134,7 +134,7 @@ Implementation status: **NOT IMPLEMENTED**.
 
 ## Navigation and UI contract
 
-Primary navigation remains Recipes / Groceries / Profile with a floating/native Liquid Glass treatment where the OS supports it. Add is a Recipes action, not a fourth permanent tab. Cooking is full-screen and hides global navigation.
+Primary navigation remains Recipes / Plan / Groceries / Profile with a floating/native Liquid Glass treatment where the OS supports it. Add is a Recipes action, not a fourth permanent tab. Cooking is full-screen and hides global navigation.
 
 Visual requirements:
 - warm cream canvas, green accent, rounded food photography/cards;
