@@ -59,7 +59,7 @@ struct FirstLaunchFlowView: View {
             .toolbar {
                 if step < 2 {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("Skip") { onComplete() }
+                        Button("Skip") {\n                            withAnimation(.easeInOut(duration: 0.2)) { step = 2 }\n                        }
                             .accessibilityIdentifier("onboarding.skip")
                     }
                 }
