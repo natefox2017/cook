@@ -471,6 +471,7 @@ private struct PersistedCookingSession: Codable {
     var timers: [UUID: CookingTimer] = [:]
     var isComplete = false
     var servings: Int? = nil
+    var usedIngredientIDs: Set<UUID> = []
 }
 
 private struct CookingStepTimerPanel: View {
