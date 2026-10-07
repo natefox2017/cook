@@ -1,25 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-    <key>CFBundleDevelopmentRegion</key><string>en</string>
-    <key>CFBundleLocalizations</key><array><string>en</string><string>zh-Hans</string><string>zh-Hant</string><string>ja</string><string>es</string><string>fr</string><string>de</string><string>ko</string><string>pt-BR</string></array>
-    <key>CFBundleDisplayName</key><string>Cook</string>
-    <key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
-    <key>CFBundleIdentifier</key><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-    <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
-    <key>CFBundleName</key><string>$(PRODUCT_NAME)</string>
-    <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
-    <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
-    <key>LSRequiresIPhoneOS</key><true/>
-    <key>UIApplicationSceneManifest</key><dict><key>UIApplicationSupportsMultipleScenes</key><false/></dict>
-    <key>UILaunchScreen</key><dict/>
-    <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string></array>
-    <key>CookSubscriptionProductIDs</key><string>$(COOK_SUBSCRIPTION_PRODUCT_IDS)</string>
-    <key>NSCameraUsageDescription</key><string>Photograph a recipe to read its text and save it to your recipe library.</string>
-    <key>UIAppFonts</key><array>
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>zh-Hans</string>
+        <string>zh-Hant</string>
+        <string>ja</string>
+        <string>es</string>
+        <string>fr</string>
+        <string>de</string>
+        <string>ko</string>
+        <string>pt-BR</string>
+    </array>
+    <key>CFBundleDisplayName</key>
+    <string>RecipePouch</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>RecipePouch</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(MARKETING_VERSION)</string>
+    <key>CFBundleVersion</key>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.modelhub.cook.auth</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>cook</string>
+            </array>
+        </dict>
+    </array>
+    <key>CookSupabaseURL</key>
+    <string>https://semsjyrqjnumpvanibip.supabase.co</string>
+    <key>CookSupabasePublishableKey</key>
+    <string>sb_publishable_yhwoE_GwRNtohok44YUwKQ_hi_1uhCO</string>
+    <key>CookSubscriptionProductIDs</key>
+    <string>$(COOK_SUBSCRIPTION_PRODUCT_IDS)</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>NSCameraUsageDescription</key>
+    <string>Photograph a recipe to read its text and save it to your recipe library.</string>
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <false/>
+    </dict>
+    <key>UILaunchScreen</key>
+    <dict/>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+    </array>
+    <key>UIAppFonts</key>
+    <array>
         <string>SourceSans3-Regular.ttf</string>
         <string>SourceSans3-Semibold.ttf</string>
         <string>SourceSans3-Bold.ttf</string>
     </array>
-</dict></plist>
+</dict>
+</plist>

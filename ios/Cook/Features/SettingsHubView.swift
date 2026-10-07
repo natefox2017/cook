@@ -46,7 +46,7 @@ struct AppearanceSettingsView:View{
 struct CookingSettingsView:View{
  @Environment(CookStore.self)private var store;@State private var error:String?
  var body:some View{Form{Section{Toggle("Keep Screen Awake",isOn:binding(\.keepScreenAwake));Toggle("Timer Notifications",isOn:binding(\.timerNotifications))};Section("During cooking"){LabeledContent("Navigation",value:"Full screen");LabeledContent("Ingredient checkoff",value:"Remembered per session");LabeledContent("Interrupted session",value:"Restored")}}.navigationTitle("Cooking")}
- func binding(_ key:WritableKeyPath<CookSettings,Bool>)->Binding<Bool>{Binding(get:{store.settings[keyPath:key]},set:{v in var s=store.settings;s[keyPath:key]=v;do{try store.updateSettings(s)}catch{error=error.localizedDescription}})}
+ func binding(_ key:WritableKeyPath<CookSettings,Bool>)->Binding<Bool>{Binding(get:{store.settings[keyPath:key]},set:{v in var s=store.settings;s[keyPath:key]=v;do{try store.updateSettings(s)}catch let saveError{error=saveError.localizedDescription}})}
 }
 
 struct GrocerySettingsView:View{

@@ -273,7 +273,7 @@ private struct LocalProfileEditorView: View {
     }
 }
 
-private struct NotificationPreferencesView: View {
+struct NotificationPreferencesView: View {
     @Environment(CookStore.self) private var store
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
@@ -443,7 +443,7 @@ private struct CookAboutView: View {
     }
 }
 
-private enum CookVersion {
+enum CookVersion {
     static var display: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String

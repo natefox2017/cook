@@ -17,4 +17,4 @@ The sample resources are exact copies of the user's existing Cook designs:
 
 ## App icon
 
-`AppIcon.svg` is the repository-native book-and-leaf icon; `AppIcon.png` is its 1024-pixel asset-catalog render. Its green and cream follow the existing direction. The icon is reviewable with this UI PR and does not alter historical visual approvals.
+`AppIcon.png` is the user-approved RecipePouch cooking-pot icon used by the asset catalog. `AppIcon.svg` is a lightweight editable vector companion. The selected white-background, full-color design was approved on 2026-10-07.
