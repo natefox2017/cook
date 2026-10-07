@@ -130,9 +130,10 @@ struct ProfileView: View {
             .listRowBackground(CookTheme.card)
         }
         .listStyle(.insetGrouped)
+        .listSectionSpacing(CookSpacing.medium)
         .scrollContentBackground(.hidden)
         .background(CookTheme.canvas)
-        .navigationTitle("Profile")
+        .navigationTitle("Profile").navigationBarTitleDisplayMode(.large)
         .tint(CookTheme.accent)
         .sheet(isPresented: $editsProfile) { LocalProfileEditorView() }
         .fileExporter(
@@ -196,12 +197,11 @@ private struct ProfileRowLabel: View {
     let systemImage: String
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: CookSpacing.small) {
             Image(systemName: systemImage)
                 .font(.system(size: 19))
                 .foregroundStyle(CookTheme.accent)
-                .frame(width: 38, height: 38)
-                .background(CookTheme.accent.opacity(0.08), in: Circle())
+                .frame(width: 24)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(CookTheme.text(17, weight: .regular, relativeTo: .body)).foregroundStyle(.primary)
@@ -238,8 +238,7 @@ private struct LocalProfileEditorView: View {
             }
             .scrollContentBackground(.hidden)
             .background(CookTheme.canvas)
-            .navigationTitle("Edit Profile")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Edit Profile").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -323,8 +322,7 @@ struct NotificationPreferencesView: View {
         }
         .scrollContentBackground(.hidden)
         .background(CookTheme.canvas)
-        .navigationTitle("Notifications")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Notifications").navigationBarTitleDisplayMode(.inline)
         .tint(CookTheme.accent)
         .task { await refreshPermission() }
         .onChange(of: scenePhase) { _, phase in
@@ -408,10 +406,10 @@ private struct CookHelpView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .listSectionSpacing(CookSpacing.medium)
         .scrollContentBackground(.hidden)
         .background(CookTheme.canvas)
-        .navigationTitle("Using Cook")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Using Cook").navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -435,10 +433,10 @@ private struct CookAboutView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .listSectionSpacing(CookSpacing.medium)
         .scrollContentBackground(.hidden)
         .background(CookTheme.canvas)
-        .navigationTitle("About & Your Data")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("About & Your Data").navigationBarTitleDisplayMode(.inline)
     }
 }
 

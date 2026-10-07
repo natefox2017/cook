@@ -36,7 +36,8 @@ struct AccountView: View {
                 LabeledContent("Status", value: "Not connected")
             }
         }
-        .navigationTitle("Cook Account")
+        .listSectionSpacing(CookSpacing.medium)
+        .navigationTitle("Cook Account").navigationBarTitleDisplayMode(.inline)
         .alert("Account", isPresented: Binding(get:{message != nil},set:{if !$0{message=nil}})) {
             Button("OK",role:.cancel){message=nil}
         } message: { Text(message ?? "") }

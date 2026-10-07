@@ -9,6 +9,7 @@ struct RecipesView: View {
     @State private var sort: RecipeLibrarySort = .recent
     @State private var isAdding = false
     @State private var errorMessage: String?
+    @FocusState private var isSearchFocused: Bool
 
     private var visibleRecipes: [Recipe] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -37,7 +38,8 @@ struct RecipesView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: CookSpacing.large) {
+                searchField
                 Text("Your saved recipes, all in one place.")
                     .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
                     .foregroundStyle(.secondary)
@@ -47,14 +49,13 @@ struct RecipesView: View {
                 }
                 libraryContent
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
+            .padding(.horizontal, CookSpacing.pageInset)
+            .padding(.top, CookSpacing.xSmall)
+            .padding(.bottom, CookSpacing.large)
         }
         .accessibilityIdentifier("recipeLibraryScroll")
         .background(CookTheme.canvas)
-        .navigationTitle("My Recipes")
-        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search recipes, ingredients, steps")
+        .navigationTitle("My Recipes").navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Add Recipe", systemImage: "plus") { isAdding = true }
@@ -66,6 +67,32 @@ struct RecipesView: View {
         .alert("Unable to Update Recipe", isPresented: errorPresented) {
             Button("OK", role: .cancel) { errorMessage = nil }
         } message: { Text(errorMessage ?? "") }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: CookSpacing.small) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            TextField("Search recipes, ingredients, steps", text: $searchText)
+                .focused($isSearchFocused)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.search)
+                .accessibilityIdentifier("recipeSearchField")
+            if !searchText.isEmpty {
+                Button("Clear search", systemImage: "xmark.circle.fill") {
+                    searchText = ""
+                    isSearchFocused = true
+                }
+                .labelStyle(.iconOnly)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
+        .padding(.horizontal, CookSpacing.medium)
+        .frame(minHeight: 44)
+        .background(Color.primary.opacity(0.05), in: Capsule())
     }
 
     @ViewBuilder
@@ -102,7 +129,7 @@ struct RecipesView: View {
             )
             .padding(.top, 24)
         } else {
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 24) {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: CookSpacing.large) {
                 ForEach(visibleRecipes) { recipe in
                     RecipeLibraryCard(recipe: recipe) {
                         do { try store.toggleFavorite(id: recipe.id) }

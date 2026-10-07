@@ -22,7 +22,8 @@ struct SettingsHubView: View {
                 NavigationLink { AboutSettingsView() } label: { SettingsRow("About Cook","info.circle") }
             }
         }
-        .navigationTitle("Settings")
+        .listSectionSpacing(CookSpacing.medium)
+        .navigationTitle("Settings").navigationBarTitleDisplayMode(.large)
     }
 }
 private struct SettingsRow:View{
@@ -33,29 +34,29 @@ private struct SettingsRow:View{
 
 struct CloudSyncSettingsView:View{
  @AppStorage("cook.sync.mode")private var mode="Automatic"
- var body:some View{Form{Section("Status"){LabeledContent("Account",value:"Not connected");LabeledContent("Last synced",value:"Never");LabeledContent("Status",value:"Local only");LabeledContent("Manual Sync", value: "Available after sign in")};Section("Sync behavior"){Picker("Update",selection:$mode){Text("Automatic").tag("Automatic");Text("Wi-Fi Only").tag("Wi-Fi Only");Text("Manually").tag("Manually")}}}.navigationTitle("Cloud Sync")}
+ var body:some View{Form{Section("Status"){LabeledContent("Account",value:"Not connected");LabeledContent("Last synced",value:"Never");LabeledContent("Status",value:"Local only");LabeledContent("Manual Sync", value: "Available after sign in")};Section("Sync behavior"){Picker("Update",selection:$mode){Text("Automatic").tag("Automatic");Text("Wi-Fi Only").tag("Wi-Fi Only");Text("Manually").tag("Manually")}}}.navigationTitle("Cloud Sync").navigationBarTitleDisplayMode(.inline)}
 }
 
 struct AppearanceSettingsView:View{
  @Environment(CookStore.self)private var store
  @State private var error:String?
- var body:some View{Form{Section("Theme"){Picker("Appearance",selection:Binding(get:{store.settings.appearance},set:{v in update{ $0.appearance=v }})){ForEach(AppAppearance.allCases){Text($0.rawValue).tag($0)}}};Section("Recipe display"){LabeledContent("Recipe image placeholders", value: "On")}}.navigationTitle("Appearance").alert("Couldn’t save",isPresented:.init(get:{error != nil},set:{if !$0{error=nil}})){Button("OK",role:.cancel){error=nil}}message:{Text(error ?? "")}}
+ var body:some View{Form{Section("Theme"){Picker("Appearance",selection:Binding(get:{store.settings.appearance},set:{v in update{ $0.appearance=v }})){ForEach(AppAppearance.allCases){Text($0.rawValue).tag($0)}}};Section("Recipe display"){LabeledContent("Recipe image placeholders", value: "On")}}.navigationTitle("Appearance").navigationBarTitleDisplayMode(.inline).alert("Couldn’t save",isPresented:.init(get:{error != nil},set:{if !$0{error=nil}})){Button("OK",role:.cancel){error=nil}}message:{Text(error ?? "")}}
  func update(_ body:(inout CookSettings)->Void){var s=store.settings;body(&s);do{try store.updateSettings(s)}catch{self.error=error.localizedDescription}}
 }
 
 struct CookingSettingsView:View{
  @Environment(CookStore.self)private var store;@State private var error:String?
- var body:some View{Form{Section{Toggle("Keep Screen Awake",isOn:binding(\.keepScreenAwake));Toggle("Timer Notifications",isOn:binding(\.timerNotifications))};Section("During cooking"){LabeledContent("Navigation",value:"Full screen");LabeledContent("Ingredient checkoff",value:"Remembered per session");LabeledContent("Interrupted session",value:"Restored")}}.navigationTitle("Cooking")}
+ var body:some View{Form{Section{Toggle("Keep Screen Awake",isOn:binding(\.keepScreenAwake));Toggle("Timer Notifications",isOn:binding(\.timerNotifications))};Section("During cooking"){LabeledContent("Navigation",value:"Full screen");LabeledContent("Ingredient checkoff",value:"Remembered per session");LabeledContent("Interrupted session",value:"Restored")}}.navigationTitle("Cooking").navigationBarTitleDisplayMode(.inline)}
  func binding(_ key:WritableKeyPath<CookSettings,Bool>)->Binding<Bool>{Binding(get:{store.settings[keyPath:key]},set:{v in var s=store.settings;s[keyPath:key]=v;do{try store.updateSettings(s)}catch let saveError{error=saveError.localizedDescription}})}
 }
 
 struct GrocerySettingsView:View{
  @AppStorage("cook.grocery.consolidate")private var consolidate=true
  @AppStorage("cook.grocery.sources")private var sources=true
- var body:some View{Form{Section{Toggle("Consolidate compatible ingredients",isOn:$consolidate);Toggle("Show recipe names",isOn:$sources)};Section("Organization"){LabeledContent("Grouping",value:"Grocery category");LabeledContent("Bought items",value:"Can be hidden or cleared")}}.navigationTitle("Groceries")}
+ var body:some View{Form{Section{Toggle("Consolidate compatible ingredients",isOn:$consolidate);Toggle("Show recipe names",isOn:$sources)};Section("Organization"){LabeledContent("Grouping",value:"Grocery category");LabeledContent("Bought items",value:"Can be hidden or cleared")}}.navigationTitle("Groceries").navigationBarTitleDisplayMode(.inline)}
 }
 
 struct MealPlanSettingsView:View{
  @AppStorage("cook.meal.weekStart")private var weekStart="System Default"
- var body:some View{Form{Section{Picker("Week Starts On",selection:$weekStart){Text("System Default").tag("System Default");Text("Sunday").tag("Sunday");Text("Monday").tag("Monday")}};Section("Meal types"){ForEach(["Breakfast","Lunch","Dinner"],id:\.self){Text($0)}}}.navigationTitle("Meal Plan")}
+ var body:some View{Form{Section{Picker("Week Starts On",selection:$weekStart){Text("System Default").tag("System Default");Text("Sunday").tag("Sunday");Text("Monday").tag("Monday")}};Section("Meal types"){ForEach(["Breakfast","Lunch","Dinner"],id:\.self){Text($0)}}}.navigationTitle("Meal Plan").navigationBarTitleDisplayMode(.inline)}
 }

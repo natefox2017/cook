@@ -44,7 +44,7 @@ struct SubscriptionView: View {
             }.padding(24)
         }
         .background(CookTheme.canvas)
-        .navigationTitle("Subscription")
+        .navigationTitle("Subscription").navigationBarTitleDisplayMode(.inline)
         .manageSubscriptionsSheet(isPresented: $isManagingSubscriptions)
         .task { await subscriptions.load() }
         .alert("Subscription", isPresented: Binding(get:{subscriptions.message != nil},set:{if !$0{subscriptions.message=nil}})) {

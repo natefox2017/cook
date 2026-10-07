@@ -25,8 +25,7 @@ struct RecipeDetailView: View {
             }
         }
         .background(CookTheme.canvas)
-        .navigationTitle("Recipe")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Recipe").navigationBarTitleDisplayMode(.inline)
         .toolbar { detailToolbar }
         .sheet(isPresented: $isEditing) {
             if let recipe = store.recipe(id: recipeID) { RecipeEditorView(recipe: recipe) }
@@ -310,8 +309,7 @@ private struct RecipeIngredientsSelectionView: View {
                     EmptyStateView(title: "Recipe unavailable", message: "This recipe is no longer in your library.", systemImage: "book.closed")
                 }
             }
-            .navigationTitle("Add to Groceries")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Add to Groceries").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             }
@@ -402,8 +400,7 @@ private struct RecipeMealPlanSheet: View {
                     ForEach(MealSlot.allCases) { Text($0.rawValue).tag($0) }
                 }
             }
-            .navigationTitle("Add to Meal Plan")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Add to Meal Plan").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

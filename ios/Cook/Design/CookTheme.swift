@@ -2,6 +2,14 @@ import SwiftUI
 import UIKit
 import CookCore
 
+enum CookSpacing {
+    static let xSmall: CGFloat = 8
+    static let small: CGFloat = 12
+    static let medium: CGFloat = 16
+    static let large: CGFloat = 24
+    static let pageInset: CGFloat = 20
+}
+
 enum CookTheme {
     static let accent = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
@@ -32,6 +40,7 @@ enum CookTheme {
         guard let regular = UIFont(name: "Lora-Regular", size: 17) else { return }
 
         let navigation = UINavigationBar.appearance()
+        navigation.prefersLargeTitles = true
         navigation.titleTextAttributes = [.font: UIFontMetrics(forTextStyle: .headline).scaledFont(for: regular)]
         navigation.largeTitleTextAttributes = [.font: UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: regular.withSize(34))]
 

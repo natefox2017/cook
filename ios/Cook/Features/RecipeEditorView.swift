@@ -101,8 +101,7 @@ struct RecipeEditorView: View {
             .scrollContentBackground(.hidden)
             .background(CookTheme.canvas)
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle(isExisting ? "Edit recipe" : "New recipe")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(isExisting ? "Edit recipe" : "New recipe").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { if isDirty { showDiscard = true } else { dismiss() } }

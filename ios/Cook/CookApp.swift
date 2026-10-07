@@ -67,13 +67,18 @@ private struct CookRootView: View {
             }
         } else {
             TabView(selection: $selectedTab) {
-                NavigationStack { RecipesView().toolbar(.hidden, for: .tabBar) }.tag(CookTab.recipes)
-                NavigationStack { MealPlanView().toolbar(.hidden, for: .tabBar) }.tag(CookTab.plan)
-                NavigationStack { GroceriesView().toolbar(.hidden, for: .tabBar) }.tag(CookTab.groceries)
-                NavigationStack { ProfileView().toolbar(.hidden, for: .tabBar) }.tag(CookTab.profile)
-            }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                CookTabBar(selection: $selectedTab)
+                NavigationStack { RecipesView().toolbar(.hidden, for: .tabBar) }
+                    .safeAreaInset(edge: .bottom, spacing: 0) { CookTabBar(selection: $selectedTab) }
+                    .tag(CookTab.recipes)
+                NavigationStack { MealPlanView().toolbar(.hidden, for: .tabBar) }
+                    .safeAreaInset(edge: .bottom, spacing: 0) { CookTabBar(selection: $selectedTab) }
+                    .tag(CookTab.plan)
+                NavigationStack { GroceriesView().toolbar(.hidden, for: .tabBar) }
+                    .safeAreaInset(edge: .bottom, spacing: 0) { CookTabBar(selection: $selectedTab) }
+                    .tag(CookTab.groceries)
+                NavigationStack { ProfileView().toolbar(.hidden, for: .tabBar) }
+                    .safeAreaInset(edge: .bottom, spacing: 0) { CookTabBar(selection: $selectedTab) }
+                    .tag(CookTab.profile)
             }
         }
     }
@@ -132,9 +137,9 @@ private struct CookTabBar: View {
             }
         }
         .padding(5)
-        .background(.ultraThinMaterial, in: Capsule())
+        .background(CookTheme.canvas, in: Capsule())
         .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12)))
-        .padding(.horizontal, 20)
+        .padding(.horizontal, CookSpacing.pageInset)
         .padding(.bottom, 4)
     }
 }

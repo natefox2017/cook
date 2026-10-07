@@ -50,8 +50,7 @@ struct CookingView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(CookTheme.canvas)
-            .navigationTitle("Cooking Mode")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Cooking Mode").navigationBarTitleDisplayMode(.inline)
             .toolbar { cookingToolbar }
             .sheet(isPresented: $isShowingIngredients) { ingredientSheet }
             .confirmationDialog("Finish and stop active timers?", isPresented: $isConfirmingFinish, titleVisibility: .visible) {
@@ -284,8 +283,7 @@ struct CookingView: View {
             }
             .scrollContentBackground(.hidden)
             .background(CookTheme.canvas)
-            .navigationTitle("Ingredients")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Ingredients").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { isShowingIngredients = false } } }
         }
     }
