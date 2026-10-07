@@ -9,8 +9,8 @@ This document is the UI completeness checklist for the current codebase. Product
 - Profile overview — implemented.
 - Edit local profile — implemented.
 - Settings hub — implemented.
-- Cook Account — implemented UI: sign in/sign up/forgot password/Sign in with Apple/sync explanation; production Supabase actions deferred.
-- Subscription — implemented UI + StoreKit 2 service: products/purchase/status/restore/manage; real App Store products deferred.
+- First launch — implemented: welcome/value proposition → first-use recipe import guide → App Store-backed Premium plan page → explicit free continue path.\n- Getting Started — implemented as a reusable Settings page after onboarding.\n- Cook Account — implemented client actions: email sign in/sign up/password reset/Sign in with Apple/sign out; production Supabase email delivery and Apple provider behavior still require integration verification.
+- Subscription — implemented first-launch paywall + Settings management UI + StoreKit 2 service: localized products, purchase, verified entitlement status, restore and manage; real App Store products/offers still require sandbox/production verification.
 - Cloud Sync — implemented settings/status/mode page; production Supabase connection deferred.
 - Notifications — implemented.
 - Appearance — implemented.
@@ -71,7 +71,7 @@ No screen should claim those production services succeeded while they are unconf
 Corrections applied after static path review:
 - Root navigation is now four tabs: Recipes / Plan / Groceries / Profile.
 - Fixed a literal escaped newline in CookApp.swift that could prevent compilation.
-- Injected SubscriptionStore into the SwiftUI environment so Subscription does not crash on access.
+- Injected SubscriptionStore into the SwiftUI environment so both first-launch paywall and Settings subscription surfaces use one entitlement source.
 - Removed a no-op Sync Now button.
 - Replaced a fake always-on appearance toggle with truthful read-only state.
 - Unconfigured account/auth controls are visibly disabled instead of accepting taps that only show placeholder messages.
