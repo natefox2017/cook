@@ -23,7 +23,7 @@ struct ProfileView: View {
                 HStack(alignment: .top, spacing: 18) {
                     Image(systemName: "leaf.fill")
                         .font(.system(size: 30, weight: .light))
-                        .foregroundStyle(CookTheme.accent)
+                        .foregroundStyle(CookTheme.accentForeground)
                         .frame(width: 72, height: 72)
                         .background(CookTheme.accent.opacity(0.10), in: Circle())
                         .accessibilityHidden(true)
@@ -199,7 +199,7 @@ private struct ProfileRowLabel: View {
         HStack(spacing: 12) {
             Image(systemName: systemImage)
                 .font(.system(size: 19))
-                .foregroundStyle(CookTheme.accent)
+                .foregroundStyle(CookTheme.accentForeground)
                 .frame(width: 38, height: 38)
                 .background(CookTheme.accent.opacity(0.08), in: Circle())
                 .accessibilityHidden(true)

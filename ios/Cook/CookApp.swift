@@ -116,7 +116,7 @@ private struct CookTabBar: View {
                         Text(tab.title)
                             .font(CookTheme.text(10, relativeTo: .caption2))
                     }
-                    .foregroundStyle(selection == tab ? CookTheme.accent : Color.primary)
+                    .foregroundStyle(selection == tab ? CookTheme.accentForeground : Color.primary)
                     .frame(maxWidth: .infinity, minHeight: 52)
                     .background {
                         if selection == tab {

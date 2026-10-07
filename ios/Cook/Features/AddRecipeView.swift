@@ -131,7 +131,7 @@ struct AddRecipeView: View {
             action()
         } label: {
             HStack(spacing: 16) {
-                Image(systemName: icon).font(.system(size: 22)).foregroundStyle(CookTheme.accent)
+                Image(systemName: icon).font(.system(size: 22)).foregroundStyle(CookTheme.accentForeground)
                     .frame(width: 46, height: 46).background(CookTheme.accent.opacity(0.09), in: Circle())
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline)).foregroundStyle(.primary)
@@ -149,7 +149,7 @@ struct AddRecipeView: View {
     private func savedCard(_ recipe: Recipe) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Label(recipe.needsReview ? "Source saved — add the missing details" : "Saved to your recipes", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(CookTheme.accent).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
+                .foregroundStyle(CookTheme.accentForeground).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
             Text(recipe.title)
             Button(recipe.needsReview ? "Complete recipe" : "Open recipe") {
                 if recipe.needsReview { editor = recipe } else { detailID = recipe.id }
