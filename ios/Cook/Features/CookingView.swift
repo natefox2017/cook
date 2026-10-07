@@ -290,7 +290,12 @@ struct CookingView: View {
         }
     }
 
-    private func toggleIngredient(_ id: UUID) {\n        if session.usedIngredientIDs.contains(id) { session.usedIngredientIDs.remove(id) } else { session.usedIngredientIDs.insert(id) }\n        persistSession()\n    }\n\n    private func appear() {
+    private func toggleIngredient(_ id: UUID) {
+        if session.usedIngredientIDs.contains(id) { session.usedIngredientIDs.remove(id) } else { session.usedIngredientIDs.insert(id) }
+        persistSession()
+    }
+
+    private func appear() {
         if originalIdleTimerDisabled == nil { originalIdleTimerDisabled = UIApplication.shared.isIdleTimerDisabled }
         guard !didRestoreSession else { updateScreenAwake(); return }
         didRestoreSession = true

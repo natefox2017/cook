@@ -12,7 +12,7 @@ final class SubscriptionStore {
     private(set) var state: SubscriptionState = .loading
     private(set) var isWorking = false
     var message: String?
-    private var updatesTask: Task<Void, Never>?
+    @ObservationIgnored nonisolated(unsafe) private var updatesTask: Task<Void, Never>?
 
     init() {
         updatesTask = Task { [weak self] in

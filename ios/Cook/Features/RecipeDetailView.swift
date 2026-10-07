@@ -13,7 +13,8 @@ struct RecipeDetailView: View {
     @State private var isChoosingIngredients = false
     @State private var isDeleting = false
     @State private var feedbackMessage: String?
-    @State private var addedIngredientCount: Int?\n    @State private var isPlanningMeal = false
+    @State private var addedIngredientCount: Int?
+    @State private var isPlanningMeal = false
 
     var body: some View {
         Group {
@@ -30,7 +31,8 @@ struct RecipeDetailView: View {
         .sheet(isPresented: $isEditing) {
             if let recipe = store.recipe(id: recipeID) { RecipeEditorView(recipe: recipe) }
         }
-        .sheet(isPresented: $isPlanningMeal) { RecipeMealPlanSheet(recipeID: recipeID) }\n        .sheet(isPresented: $isChoosingIngredients, onDismiss: showAddedFeedback) {
+        .sheet(isPresented: $isPlanningMeal) { RecipeMealPlanSheet(recipeID: recipeID) }
+        .sheet(isPresented: $isChoosingIngredients, onDismiss: showAddedFeedback) {
             RecipeIngredientsSelectionView(recipeID: recipeID, initialServings: servings) { addedIngredientCount = $0 }
         }
         .fullScreenCover(isPresented: $isCooking) {
@@ -222,7 +224,8 @@ struct RecipeDetailView: View {
                 } label: { Image(systemName: recipe.isFavorite ? "heart.fill" : "heart") }
                 .accessibilityLabel(recipe.isFavorite ? "Remove from Favorites" : "Add to Favorites")
                 Menu {
-                    Button("Add to Meal Plan", systemImage: "calendar.badge.plus") { isPlanningMeal = true }\n                    Button("Edit Recipe", systemImage: "pencil") { isEditing = true }
+                    Button("Add to Meal Plan", systemImage: "calendar.badge.plus") { isPlanningMeal = true }
+                    Button("Edit Recipe", systemImage: "pencil") { isEditing = true }
                     Button("Delete Recipe", systemImage: "trash", role: .destructive) { isDeleting = true }
                 } label: { Label("Recipe Options", systemImage: "ellipsis") }
             }

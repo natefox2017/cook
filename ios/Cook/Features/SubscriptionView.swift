@@ -4,6 +4,7 @@ import StoreKit
 struct SubscriptionView: View {
     @Environment(SubscriptionStore.self) private var subscriptions
     @Environment(\.dismiss) private var dismiss
+    @State private var isManagingSubscriptions = false
 
     var body: some View {
         ScrollView {
@@ -16,7 +17,7 @@ struct SubscriptionView: View {
                 switch subscriptions.state {
                 case .active:
                     Label("Subscription active", systemImage: "checkmark.seal.fill").foregroundStyle(CookTheme.accent)
-                    ManageSubscriptionsButton()
+                    Button("Manage subscription") { isManagingSubscriptions = true }
                 case .loading:
                     ProgressView("Checking subscription…")
                 case .free, .unavailable:
@@ -48,6 +49,7 @@ struct SubscriptionView: View {
         }
         .background(CookTheme.canvas)
         .navigationTitle("Subscription")
+        .manageSubscriptionsSheet(isPresented: $isManagingSubscriptions)
         .task { await subscriptions.load() }
         .alert("Subscription", isPresented: Binding(get:{subscriptions.message != nil},set:{if !$0{subscriptions.message=nil}})) {
             Button("OK",role:.cancel){subscriptions.message=nil}
