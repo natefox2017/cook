@@ -1,10 +1,10 @@
 # Bundled assets
 
-## Source Sans 3
+## Lora
 
-Source: [Adobe's Source Sans repository](https://github.com/adobe-fonts/source-sans/tree/release/TTF), release branch, retrieved 2026-10-07.
+Source: [Google Fonts Lora](https://github.com/google/fonts/tree/main/ofl/lora), retrieved 2026-10-07.
 
-Files: SourceSans3-Regular.ttf, SourceSans3-Semibold.ttf, SourceSans3-Bold.ttf. The complete SIL Open Font License is retained in `Fonts/OFL-SourceSans3.txt`. PostScript names were checked against each font's name table. No proprietary Claude/Anthropic font is embedded.
+File: `Fonts/Lora-Variable.ttf`. It includes regular, medium, semibold, and bold weights. The SIL Open Font License is retained in `Fonts/OFL-Lora.txt`.
 
 ## Sample recipe photography
 

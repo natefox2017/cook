@@ -18,7 +18,7 @@ struct MealPlanView: View {
 
     private var weekDescription: String {
         guard let start = weekDates.first, let end = weekDates.last else { return "This week" }
-        return "\(start.formatted(.dateTime.month(.abbreviated).day())) – \(end.formatted(.dateTime.month(.abbreviated).day().year()))"
+        return "\(englishDate(start, format: "MMM d")) – \(englishDate(end, format: "MMM d, yyyy"))"
     }
 
     private var weeklyMealCount: Int {
@@ -132,9 +132,9 @@ struct MealPlanView: View {
             selectedDate = date
         } label: {
             VStack(spacing: 7) {
-                Text(date.formatted(.dateTime.weekday(.abbreviated)))
+                Text(englishDate(date, format: "EEE"))
                     .font(CookTheme.text(12, weight: .regular, relativeTo: .caption))
-                Text(date.formatted(.dateTime.day()))
+                Text(englishDate(date, format: "d"))
                     .font(CookTheme.text(20, weight: .semibold, relativeTo: .title3))
                 Circle()
                     .fill(hasMeals ? (selected ? Color.white : CookTheme.accent) : Color.clear)
@@ -147,7 +147,7 @@ struct MealPlanView: View {
             .background(selected ? CookTheme.accent : CookTheme.card, in: RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(date.formatted(date: .complete, time: .omitted))
+        .accessibilityLabel(englishDate(date, format: "EEEE, MMMM d, yyyy"))
         .accessibilityValue("\(selected ? "Selected. " : "")\(hasMeals ? "Meals planned" : "No meals planned")")
         .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
@@ -199,6 +199,13 @@ struct MealPlanView: View {
             selectedDate = date
         }
     }
+}
+
+private func englishDate(_ date: Date, format: String) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en")
+    formatter.dateFormat = format
+    return formatter.string(from: date)
 }
 
 private struct MealPlanPickerPresentation: Identifiable {
@@ -267,7 +274,7 @@ private struct MealPlanRecipePicker: View {
                                 .disabled(alreadyAdded)
                             }
                         } header: {
-                            Text("\(slot.rawValue) · \(date.formatted(date: .abbreviated, time: .omitted))")
+                            Text("\(slot.rawValue) · \(englishDate(date, format: "MMM d, yyyy"))")
                                 .textCase(nil)
                         }
                         .listRowBackground(CookTheme.card)
@@ -301,7 +308,7 @@ private struct MealPlanRecipePicker: View {
                     }
                 }
             } message: {
-                Text("This changes \(slot.rawValue.lowercased()) for \(date.formatted(date: .abbreviated, time: .omitted)). Both recipes stay in your library.")
+                Text("This changes \(slot.rawValue.lowercased()) for \(englishDate(date, format: "MMM d, yyyy")). Both recipes stay in your library.")
             }
             .alert("Couldn’t plan recipe", isPresented: Binding(
                 get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
