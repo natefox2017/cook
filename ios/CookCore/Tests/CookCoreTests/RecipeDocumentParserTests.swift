@@ -81,3 +81,35 @@ func invalidDurationComponentDoesNotBecomeAPartialTime(_ duration: String) throw
     #expect(RecipeDocumentParser.sourceKey(a) == RecipeDocumentParser.sourceKey(b))
     #expect(RecipeDocumentParser.sourceKey(a) != RecipeDocumentParser.sourceKey(c))
 }
+
+
+@Test func structuredStepsExtractExplicitCookingSignalsWithoutGuessing() throws {
+    let html = #"<script type='application/ld+json'>{"@type":"Recipe","name":"Roast chicken","recipeIngredient":["500 g chicken","2 tbsp olive oil","salt to taste"],"recipeInstructions":[{"@type":"HowToStep","name":"Roast","text":"Rub chicken with olive oil. Roast at 200°C for 20 minutes, turn, then cook 10 minutes more."},{"@type":"HowToStep","name":"Rest","text":"Rest until ready to carve."}]}</script>"#
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/chicken")!))
+    let roast = recipe.steps[0]
+    #expect(roast.temperature?.text == "200°C")
+    #expect(roast.timers.map(\.durationSeconds) == [1_200, 600])
+    #expect(roast.linkedIngredientIDs.contains(recipe.ingredients[0].id))
+    #expect(roast.linkedIngredientIDs.contains(recipe.ingredients[1].id))
+    #expect(recipe.steps[1].timers.isEmpty)
+    #expect(recipe.steps[1].temperature == nil)
+}
+
+@Test func timeRangesDoNotBecomeFakePreciseTimers() throws {
+    let html = #"<script type='application/ld+json'>{"@type":"Recipe","name":"Soup","recipeIngredient":["1 l water"],"recipeInstructions":[{"@type":"HowToStep","text":"Simmer for 10-15 minutes over medium heat."}]}</script>"#
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/soup")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+    #expect(recipe.steps[0].temperature?.text.lowercased() == "medium heat")
+}
+
+@Test func legacySingleTimerStepDecodesIntoTimerCollection() throws {
+    let id = UUID()
+    let json = #"{"id":"\#(id.uuidString)","title":"Bake","instruction":"Bake until golden.","durationSeconds":600}"#
+    let step = try JSONDecoder().decode(RecipeStep.self, from: Data(json.utf8))
+    #expect(step.timers.count == 1)
+    #expect(step.timers[0].id == id)
+    #expect(step.timers[0].durationSeconds == 600)
+
+    let roundTrip = try JSONDecoder().decode(RecipeStep.self, from: JSONEncoder().encode(step))
+    #expect(roundTrip == step)
+}
