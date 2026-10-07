@@ -7,6 +7,7 @@ struct CookApp: App {
     @State private var subscriptions = SubscriptionStore()
 
     init() {
+        _ = CookAuthService.shared
         let isUITesting = ProcessInfo.processInfo.arguments.contains("--uitesting")
         let localStore = CookStore(fileURL: isUITesting ? nil : CookStore.defaultFileURL())
         if isUITesting {
@@ -23,6 +24,7 @@ struct CookApp: App {
         WindowGroup {
             CookRootView()
                 .environment(store)
+                .onOpenURL { CookAuthService.shared.handleAuthCallback($0) }
                 .tint(CookTheme.accent)
                 .font(CookTheme.body())
                 .preferredColorScheme(colorScheme)
