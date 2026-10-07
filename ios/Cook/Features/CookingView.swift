@@ -261,14 +261,21 @@ struct CookingView: View {
                             Text("This recipe has no ingredients yet.").foregroundStyle(.secondary)
                         }
                         ForEach(recipe.ingredients) { ingredient in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(ingredient.name).font(.headline)
-                                if !ingredient.displayAmount(servings: session.servings, originalServings: recipe.servings).isEmpty {
-                                    Text(ingredient.displayAmount(servings: session.servings, originalServings: recipe.servings)).foregroundStyle(.secondary)
+                            Button { toggleIngredient(ingredient.id) } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: session.usedIngredientIDs.contains(ingredient.id) ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(session.usedIngredientIDs.contains(ingredient.id) ? CookTheme.accent : Color.secondary)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(ingredient.name).font(.headline)
+                                        let amount = ingredient.displayAmount(servings: session.servings, originalServings: recipe.servings)
+                                        if !amount.isEmpty { Text(amount).foregroundStyle(.secondary) }
+                                    }
+                                    Spacer()
                                 }
+                                .padding(.vertical, 4)
                             }
-                            .padding(.vertical, 4)
-                            .accessibilityElement(children: .combine)
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("\(ingredient.name), \(session.usedIngredientIDs.contains(ingredient.id) ? "used" : "not used")")
                         }
                     } header: {
                         Text(recipe.servings.map { $0 > 0 ? "Cooking portions" : "Original recipe amounts" } ?? "Original recipe amounts")
