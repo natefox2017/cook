@@ -51,7 +51,7 @@ struct ProfileView: View {
             }
             .listRowBackground(Color.clear)
 
-            Section("Account & subscription") {\n                NavigationLink { AccountView() } label: { ProfileRowLabel(title: "Cook Account", subtitle: "Sign in and sync across devices", systemImage: "person.badge.key") }\n                NavigationLink { SubscriptionView() } label: { ProfileRowLabel(title: "Cook Premium", subtitle: "Subscribe, restore or manage", systemImage: "sparkles") }\n            }\n            .listRowBackground(CookTheme.card)\n\n            Section("Your kitchen") {
+            Section {\n                NavigationLink { SettingsHubView() } label: { ProfileRowLabel(title: "Settings", subtitle: "Account, subscription, sync and preferences", systemImage: "gearshape") }\n            }\n            .listRowBackground(CookTheme.card)\n\n            Section("Account & subscription") {\n                NavigationLink { AccountView() } label: { ProfileRowLabel(title: "Cook Account", subtitle: "Sign in and sync across devices", systemImage: "person.badge.key") }\n                NavigationLink { SubscriptionView() } label: { ProfileRowLabel(title: "Cook Premium", subtitle: "Subscribe, restore or manage", systemImage: "sparkles") }\n            }\n            .listRowBackground(CookTheme.card)\n\n            Section("Your kitchen") {
                 NavigationLink {
                     RecipesView()
                 } label: {
