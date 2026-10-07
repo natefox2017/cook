@@ -59,6 +59,9 @@ private struct CookRootView: View {
                 Tab("Recipes", systemImage: "book.closed") {
                     NavigationStack { RecipesView() }
                 }
+                Tab("Plan", systemImage: "calendar") {
+                    NavigationStack { MealPlanView() }
+                }
                 Tab("Groceries", systemImage: "basket") {
                     NavigationStack { GroceriesView() }
                 }
