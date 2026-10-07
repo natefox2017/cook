@@ -17,7 +17,16 @@ struct CookApp: App {
 
         _ = CookAuthService.shared
 
-        let localStore = CookStore(fileURL: isUITesting ? nil : CookStore.defaultFileURL())
+        let libraryURL = CookStore.defaultFileURL()
+        if !isUITesting,
+           FileManager.default.fileExists(atPath: libraryURL.path),
+           UserDefaults.standard.object(forKey: FirstLaunchFlowView.completionKey) == nil {
+            // Existing installs with a persisted library should not be mistaken for new users
+            // when this onboarding key is introduced for the first time.
+            UserDefaults.standard.set(true, forKey: FirstLaunchFlowView.completionKey)
+        }
+
+        let localStore = CookStore(fileURL: isUITesting ? nil : libraryURL)
         if isUITesting {
             for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("cook.cookingSession.") {
                 UserDefaults.standard.removeObject(forKey: key)
