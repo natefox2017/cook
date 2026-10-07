@@ -70,7 +70,7 @@ struct EmptyStateView: View {
     var action: (() -> Void)? = nil
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: CookSpacing.medium) {
             Image(systemName: systemImage)
                 .font(.system(size: 44, weight: .light))
                 .foregroundStyle(CookTheme.accent)
@@ -81,7 +81,8 @@ struct EmptyStateView: View {
                 Button(actionTitle, action: action).buttonStyle(PrimaryButtonStyle())
             }
         }
-        .padding(28)
+        .padding(.horizontal, CookSpacing.large)
+        .padding(.bottom, CookSpacing.large)
         .frame(maxWidth: .infinity)
     }
 }

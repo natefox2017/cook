@@ -118,7 +118,7 @@ struct RecipesView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
             }
-            .padding(.top, 24)
+            .padding(.top, CookSpacing.large)
         } else if visibleRecipes.isEmpty {
             EmptyStateView(
                 title: searchText.isEmpty ? filter.emptyTitle : "No recipes found",
@@ -127,7 +127,7 @@ struct RecipesView: View {
                 actionTitle: "Show All Recipes",
                 action: { searchText = ""; filter = .all }
             )
-            .padding(.top, 24)
+            .padding(.top, CookSpacing.large)
         } else {
             LazyVGrid(columns: columns, alignment: .leading, spacing: CookSpacing.large) {
                 ForEach(visibleRecipes) { recipe in
