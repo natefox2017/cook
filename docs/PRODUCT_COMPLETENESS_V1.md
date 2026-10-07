@@ -155,8 +155,8 @@ Visual requirements:
 - profile → local preferences/export/reset.
 
 ### Flows that cannot currently close
-- register/sign in/forgot password/sign out;
-- subscribe/restore/manage entitlement;
+- production-verified email/Apple authentication and local-data merge behavior;
+- App Store sandbox/production subscription purchase validation;
 - authenticated multi-device sync;
 - Share Extension durable receipt;
 - TikTok/Instagram/YouTube backend AI extraction;
