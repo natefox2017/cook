@@ -24,11 +24,11 @@ struct CookApp: App {
                 .environment(store)
                 .tint(CookTheme.accent)
                 .font(CookTheme.body())
-                .preferredColorScheme(colorScheme)
+                .preferredColorScheme(colorScheme)\n                .environment(\\.locale, appLocale)
         }
     }
 
-    private var colorScheme: ColorScheme? {
+    private var appLocale: Locale {\n        ProcessInfo.processInfo.arguments.contains("--uitesting") ? Locale(identifier: "en") : .autoupdatingCurrent\n    }\n\n    private var colorScheme: ColorScheme? {
         switch store.settings.appearance {
         case .system: nil
         case .light: .light
