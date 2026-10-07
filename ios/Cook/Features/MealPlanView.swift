@@ -36,7 +36,7 @@ struct MealPlanView: View {
                             .frame(width: 44, height: 44)
                         Spacer(minLength: 0)
                         Text(weekDescription)
-                            .font(.subheadline.weight(.semibold))
+                            .font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                             .multilineTextAlignment(.center)
                         Spacer(minLength: 0)
                         Button("Next week", systemImage: "chevron.right") { moveWeek(by: 1) }
@@ -52,12 +52,12 @@ struct MealPlanView: View {
                     }
                     HStack {
                         Text("\(weeklyMealCount) \(weeklyMealCount == 1 ? "meal" : "meals") planned this week")
-                            .font(.footnote)
+                            .font(CookTheme.text(13, weight: .regular, relativeTo: .footnote))
                             .foregroundStyle(.secondary)
                         Spacer()
                     }
                     DatePicker("Choose a date", selection: $selectedDate, displayedComponents: .date)
-                        .font(.subheadline)
+                        .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
                 }
             }
             .listRowBackground(Color.clear)
@@ -79,14 +79,14 @@ struct MealPlanView: View {
                     }
                     .accessibilityIdentifier("mealplan.add.\(slot.rawValue.lowercased())")
                 } header: {
-                    Text(slot.rawValue).textCase(nil).font(.headline)
+                    Text(slot.rawValue).textCase(nil).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
                 }
                 .listRowBackground(CookTheme.card)
             }
 
             Section {
                 Text("Choose from your saved recipes. Open a planned recipe when you’re ready to cook or add its ingredients to Groceries.")
-                    .font(.footnote)
+                    .font(CookTheme.text(13, weight: .regular, relativeTo: .footnote))
                     .foregroundStyle(.secondary)
             }
             .listRowBackground(Color.clear)
@@ -133,9 +133,9 @@ struct MealPlanView: View {
         } label: {
             VStack(spacing: 7) {
                 Text(date.formatted(.dateTime.weekday(.abbreviated)))
-                    .font(.caption)
+                    .font(CookTheme.text(12, weight: .regular, relativeTo: .caption))
                 Text(date.formatted(.dateTime.day()))
-                    .font(.title3.weight(.semibold))
+                    .font(CookTheme.text(20, weight: .semibold, relativeTo: .title3))
                 Circle()
                     .fill(hasMeals ? (selected ? Color.white : CookTheme.accent) : Color.clear)
                     .frame(width: 5, height: 5)
@@ -164,14 +164,14 @@ struct MealPlanView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                             .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(recipe.title).font(.body.weight(.medium))
+                            Text(recipe.title).font(CookTheme.text(17, weight: .semibold, relativeTo: .body))
                             if let minutes = recipe.totalMinutes {
                                 Label("\(minutes) min", systemImage: "clock")
-                                    .font(.caption)
+                                    .font(CookTheme.text(12, weight: .regular, relativeTo: .caption))
                                     .foregroundStyle(.secondary)
                             }
                             if recipe.needsReview {
-                                Text("Needs review").font(.caption).foregroundStyle(.secondary)
+                                Text("Needs review").font(CookTheme.text(12, weight: .regular, relativeTo: .caption)).foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -253,7 +253,7 @@ private struct MealPlanRecipePicker: View {
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text(recipe.title).foregroundStyle(.primary)
                                             if alreadyAdded {
-                                                Text("Already planned").font(.caption).foregroundStyle(.secondary)
+                                                Text("Already planned").font(CookTheme.text(12, weight: .regular, relativeTo: .caption)).foregroundStyle(.secondary)
                                             }
                                         }
                                         Spacer()

@@ -30,17 +30,17 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(displayName).font(CookTheme.title(28))
                         if !store.settings.email.isEmpty {
-                            Text(store.settings.email).font(.subheadline).foregroundStyle(.secondary)
+                            Text(store.settings.email).font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
                                 .textSelection(.enabled)
                         }
                         Text("Local profile · On this iPhone")
-                            .font(.caption)
+                            .font(CookTheme.text(12, weight: .regular, relativeTo: .caption))
                             .foregroundStyle(.secondary)
                         Button {
                             editsProfile = true
                         } label: {
                             Label("Edit Profile", systemImage: "pencil")
-                                .font(.subheadline.weight(.semibold))
+                                .font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                                 .frame(minHeight: 44)
                         }
                         .buttonStyle(.borderless)
@@ -51,7 +51,18 @@ struct ProfileView: View {
             }
             .listRowBackground(Color.clear)
 
-            Section {\n                NavigationLink { SettingsHubView() } label: { ProfileRowLabel(title: "Settings", subtitle: "Account, subscription, sync and preferences", systemImage: "gearshape") }\n            }\n            .listRowBackground(CookTheme.card)\n\n            Section("Account & subscription") {\n                NavigationLink { AccountView() } label: { ProfileRowLabel(title: "Cook Account", subtitle: "Sign in and sync across devices", systemImage: "person.badge.key") }\n                NavigationLink { SubscriptionView() } label: { ProfileRowLabel(title: "Cook Premium", subtitle: "Subscribe, restore or manage", systemImage: "sparkles") }\n            }\n            .listRowBackground(CookTheme.card)\n\n            Section("Your kitchen") {
+            Section {
+                NavigationLink { SettingsHubView() } label: { ProfileRowLabel(title: "Settings", subtitle: "Account, subscription, sync and preferences", systemImage: "gearshape") }
+            }
+            .listRowBackground(CookTheme.card)
+
+            Section("Account & subscription") {
+                NavigationLink { AccountView() } label: { ProfileRowLabel(title: "Cook Account", subtitle: "Sign in and sync across devices", systemImage: "person.badge.key") }
+                NavigationLink { SubscriptionView() } label: { ProfileRowLabel(title: "Cook Premium", subtitle: "Subscribe, restore or manage", systemImage: "sparkles") }
+            }
+            .listRowBackground(CookTheme.card)
+
+            Section("Your kitchen") {
                 NavigationLink {
                     RecipesView()
                 } label: {
@@ -98,19 +109,19 @@ struct ProfileView: View {
                 NavigationLink {
                     CookHelpView()
                 } label: {
-                    ProfileRowLabel(title: "Using Cook", subtitle: "Saving, shopping and cooking", systemImage: "questionmark.circle")
+                    ProfileRowLabel(title: "Using Cook", subtitle: "Save, shop and cook", systemImage: "questionmark.circle")
                 }
                 NavigationLink {
                     CookAboutView()
                 } label: {
-                    ProfileRowLabel(title: "About & Your Data", subtitle: "How your local library is stored", systemImage: "info.circle")
+                    ProfileRowLabel(title: "About & Your Data", subtitle: "Your library and privacy", systemImage: "info.circle")
                 }
             }
             .listRowBackground(CookTheme.card)
 
             Section {
                 Button(action: prepareExport) {
-                    ProfileRowLabel(title: "Export All Data", subtitle: "Save a JSON copy of your local library", systemImage: "square.and.arrow.up")
+                    ProfileRowLabel(title: "Export All Data", subtitle: "Save a copy of your data", systemImage: "square.and.arrow.up")
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("profile.export")
@@ -122,7 +133,7 @@ struct ProfileView: View {
             } header: {
                 Text("On this iPhone")
             } footer: {
-                Text("Exported files include your recipes, source information, notes, grocery list, meal plan and local profile. Choose where to save your copy.")
+                Text("Includes recipes, sources, notes, groceries, meal plans and your local profile.")
             }
             .listRowBackground(CookTheme.card)
 
@@ -132,7 +143,7 @@ struct ProfileView: View {
                     Spacer()
                     Text("Cook \(CookVersion.display)")
                 }
-                .font(.caption)
+                .font(CookTheme.text(12, weight: .regular, relativeTo: .caption))
                 .foregroundStyle(.secondary)
             }
             .listRowBackground(Color.clear)
@@ -207,7 +218,7 @@ private struct ProfileRowLabel: View {
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: systemImage)
-                .font(.title3)
+                .font(.system(size: 20))
                 .foregroundStyle(CookTheme.accent)
                 .frame(width: 42, height: 42)
                 .background(CookTheme.accent.opacity(0.08), in: Circle())
@@ -215,7 +226,7 @@ private struct ProfileRowLabel: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(CookTheme.title(20)).foregroundStyle(.primary)
                 if let subtitle {
-                    Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
+                    Text(subtitle).font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
                 }
             }
         }
@@ -340,7 +351,7 @@ private struct NotificationPreferencesView: View {
             if authorization == .denied {
                 Section {
                     Text("To receive reminders, allow notifications for Cook in iOS Settings, then turn on cooking timer reminders here.")
-                        .font(.subheadline)
+                        .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
                         .foregroundStyle(.secondary)
                 }
             }

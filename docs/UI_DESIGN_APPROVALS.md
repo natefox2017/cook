@@ -12,7 +12,7 @@
 | UI-006 | 做饭模式 | TBD | PENDING | 单步骤大字号 |
 | UI-007 | 购物清单 | TBD | PENDING | 合并/勾选/编辑 |
 | UI-008 | 简单周计划 | TBD | PENDING | 二级能力 |
-| UI-009 | 我的/设置 | TBD | PENDING | 账户/导入/数据 |
+| UI-009 | 我的/设置（数据区域） | [精简版草图](designs/settings-data-area-v2.svg) | APPROVED | 用户已确认；保留全部入口/操作，仅精简副标题和说明。图标沿用原截图的问号/信息符号；全局字体使用 Source Sans 3 |
 | UI-010 | Share Extension 成功 | TBD | PENDING | 快速结束 |
 | UI-011 | Share Extension 失败/降级 | TBD | PENDING | 可继续操作 |
 

@@ -25,8 +25,8 @@ struct SubscriptionView: View {
                             Task { await subscriptions.purchase(product) }
                         } label: {
                             VStack(spacing: 4) {
-                                Text(product.displayName).font(.headline)
-                                Text(product.displayPrice).font(.subheadline)
+                                Text(product.displayName).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
+                                Text(product.displayPrice).font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
                             }.frame(maxWidth: .infinity)
                         }
                         .buttonStyle(PrimaryButtonStyle())
@@ -43,7 +43,7 @@ struct SubscriptionView: View {
 
                 Link("Terms of Use", destination: URL(string:"https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
                 Text("Prices, billing periods and introductory offers are supplied by the App Store.")
-                    .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    .font(CookTheme.text(12, weight: .regular, relativeTo: .caption)).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }.padding(24)
         }
         .background(CookTheme.canvas)

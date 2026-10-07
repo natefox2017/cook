@@ -1,4 +1,5 @@
 import SwiftUI
+import CookCore
 
 struct SettingsHubView: View {
     var body: some View {
@@ -27,7 +28,7 @@ struct SettingsHubView: View {
 private struct SettingsRow:View{
  let title:String;let subtitle:String;let icon:String
  init(_ title:String,_ subtitle:String,_ icon:String){self.title=title;self.subtitle=subtitle;self.icon=icon}
- var body:some View{HStack(spacing:14){Image(systemName:icon).frame(width:32).foregroundStyle(CookTheme.accent);VStack(alignment:.leading,spacing:3){Text(title);Text(subtitle).font(.caption).foregroundStyle(.secondary)}}.frame(minHeight:50)}
+ var body:some View{HStack(spacing:14){Image(systemName:icon).frame(width:32).foregroundStyle(CookTheme.accent);VStack(alignment:.leading,spacing:3){Text(title);Text(subtitle).font(CookTheme.text(12, weight: .regular, relativeTo: .caption)).foregroundStyle(.secondary)}}.frame(minHeight:50)}
 }
 
 struct CloudSyncSettingsView:View{
@@ -38,7 +39,7 @@ struct CloudSyncSettingsView:View{
 struct AppearanceSettingsView:View{
  @Environment(CookStore.self)private var store
  @State private var error:String?
- var body:some View{Form{Section("Theme"){Picker("Appearance",selection:Binding(get:{store.settings.appearance},set:{v in update{ $0.appearance=v }})){ForEach(AppAppearance.allCases){Text($0.rawValue).tag($0)}}};Section("Recipe display"){LabeledContent("Recipe image placeholders", value: "On");Text("Cook uses Dynamic Type automatically. Text size follows iOS Settings → Display & Brightness → Text Size.").font(.footnote).foregroundStyle(.secondary)}}.navigationTitle("Appearance").alert("Couldn’t save",isPresented:.init(get:{error != nil},set:{if !$0{error=nil}})){Button("OK",role:.cancel){error=nil}}message:{Text(error ?? "")}}
+ var body:some View{Form{Section("Theme"){Picker("Appearance",selection:Binding(get:{store.settings.appearance},set:{v in update{ $0.appearance=v }})){ForEach(AppAppearance.allCases){Text($0.rawValue).tag($0)}}};Section("Recipe display"){LabeledContent("Recipe image placeholders", value: "On");Text("Cook uses Dynamic Type automatically. Text size follows iOS Settings → Display & Brightness → Text Size.").font(CookTheme.text(13, weight: .regular, relativeTo: .footnote)).foregroundStyle(.secondary)}}.navigationTitle("Appearance").alert("Couldn’t save",isPresented:.init(get:{error != nil},set:{if !$0{error=nil}})){Button("OK",role:.cancel){error=nil}}message:{Text(error ?? "")}}
  func update(_ body:(inout CookSettings)->Void){var s=store.settings;body(&s);do{try store.updateSettings(s)}catch{self.error=error.localizedDescription}}
 }
 
@@ -56,5 +57,5 @@ struct GrocerySettingsView:View{
 
 struct MealPlanSettingsView:View{
  @AppStorage("cook.meal.weekStart")private var weekStart="System Default"
- var body:some View{Form{Section{Picker("Week Starts On",selection:$weekStart){Text("System Default").tag("System Default");Text("Sunday").tag("Sunday");Text("Monday").tag("Monday")}};Section("Meal types"){ForEach(["Breakfast","Lunch","Dinner"],id:\.self){Text($0)};Text("Custom meal types are reserved for a later release.").font(.footnote).foregroundStyle(.secondary)}}.navigationTitle("Meal Plan")}
+ var body:some View{Form{Section{Picker("Week Starts On",selection:$weekStart){Text("System Default").tag("System Default");Text("Sunday").tag("Sunday");Text("Monday").tag("Monday")}};Section("Meal types"){ForEach(["Breakfast","Lunch","Dinner"],id:\.self){Text($0)};Text("Custom meal types are reserved for a later release.").font(CookTheme.text(13, weight: .regular, relativeTo: .footnote)).foregroundStyle(.secondary)}}.navigationTitle("Meal Plan")}
 }

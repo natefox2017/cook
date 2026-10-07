@@ -2,10 +2,13 @@ import SwiftUI
 import CookCore
 
 @main
+@MainActor
 struct CookApp: App {
-    @State private var store: CookStore\n    @State private var subscriptions = SubscriptionStore()
+    @State private var store: CookStore
+    @State private var subscriptions = SubscriptionStore()
 
     init() {
+        CookTheme.installUIKitTypography()
         let isUITesting = ProcessInfo.processInfo.arguments.contains("--uitesting")
         let localStore = CookStore(fileURL: isUITesting ? nil : CookStore.defaultFileURL())
         if isUITesting {
@@ -24,11 +27,16 @@ struct CookApp: App {
                 .environment(store)
                 .tint(CookTheme.accent)
                 .font(CookTheme.body())
-                .preferredColorScheme(colorScheme)\n                .environment(\\.locale, appLocale)
+                .preferredColorScheme(colorScheme)
+                .environment(\.locale, appLocale)
         }
     }
 
-    private var appLocale: Locale {\n        ProcessInfo.processInfo.arguments.contains("--uitesting") ? Locale(identifier: "en") : .autoupdatingCurrent\n    }\n\n    private var colorScheme: ColorScheme? {
+    private var appLocale: Locale {
+        ProcessInfo.processInfo.arguments.contains("--uitesting") ? Locale(identifier: "en") : .autoupdatingCurrent
+    }
+
+    private var colorScheme: ColorScheme? {
         switch store.settings.appearance {
         case .system: nil
         case .light: .light

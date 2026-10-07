@@ -39,7 +39,7 @@ struct RecipesView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 Text("Your saved recipes, all in one place.")
-                    .font(.subheadline)
+                    .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
                     .foregroundStyle(.secondary)
                 if !store.recipes.isEmpty {
                     filterBar
@@ -86,7 +86,7 @@ struct RecipesView: View {
                 .frame(minHeight: 44)
                 .accessibilityIdentifier("loadSampleRecipes")
                 Text("Explore a few sample recipes. You can edit or delete them at any time.")
-                    .font(.footnote)
+                    .font(CookTheme.text(13, weight: .regular, relativeTo: .footnote))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
@@ -119,7 +119,7 @@ struct RecipesView: View {
                 ForEach(RecipeLibraryFilter.allCases) { item in
                     Button { filter = item } label: {
                         Text(item.title)
-                            .font(.subheadline.weight(filter == item ? .semibold : .regular))
+                            .font(CookTheme.text(15, weight: filter == item ? .semibold : .regular, relativeTo: .subheadline))
                             .padding(.horizontal, 18)
                             .frame(minHeight: 44)
                             .background(filter == item ? CookTheme.accent : CookTheme.card, in: Capsule())
@@ -135,7 +135,7 @@ struct RecipesView: View {
     private var resultsHeader: some View {
         HStack {
             Text("\(visibleRecipes.count) \(visibleRecipes.count == 1 ? "Recipe" : "Recipes")")
-                .font(.subheadline)
+                .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("recipeCount")
             Spacer()
@@ -145,7 +145,7 @@ struct RecipesView: View {
                 }
             } label: {
                 Label("Sort", systemImage: "arrow.up.arrow.down")
-                    .font(.subheadline)
+                    .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
                     .frame(minHeight: 44)
             }
             .accessibilityValue(sort.rawValue)
@@ -188,11 +188,11 @@ private struct RecipeLibraryCard: View {
                             Text(recipe.category.rawValue)
                         }
                     }
-                    .font(.caption)
+                    .font(CookTheme.text(12, weight: .regular, relativeTo: .caption))
                     .foregroundStyle(.secondary)
                     if recipe.needsReview {
                         Label("Needs Review", systemImage: "pencil.line")
-                            .font(.caption.weight(.medium))
+                            .font(CookTheme.text(12, weight: .semibold, relativeTo: .caption))
                             .foregroundStyle(CookTheme.accent)
                     }
                 }
@@ -203,7 +203,7 @@ private struct RecipeLibraryCard: View {
             .accessibilityIdentifier("recipe.\(recipe.id.uuidString)")
             Button(action: toggleFavorite) {
                 Image(systemName: recipe.isFavorite ? "heart.fill" : "heart")
-                    .font(.title3)
+                    .font(.system(size: 20))
                     .foregroundStyle(CookTheme.accent)
                     .frame(width: 44, height: 44)
                     .background(.regularMaterial, in: Circle())

@@ -51,7 +51,7 @@ struct AddRecipeView: View {
                         .accessibilityIdentifier("createManually")
                     }
                     Text("Recipe websites with structured ingredients and steps can be imported directly. For private pages and social videos, keep the source and add text or photos.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                        .font(CookTheme.text(13, weight: .regular, relativeTo: .footnote)).foregroundStyle(.secondary)
                 }
                 .padding(22)
             }
@@ -111,7 +111,7 @@ struct AddRecipeView: View {
 
     private var linkCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("From a link", systemImage: "link").font(.headline)
+            Label("From a link", systemImage: "link").font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
             TextField("https://…", text: $sourceLink)
                 .textInputAutocapitalization(.never).autocorrectionDisabled()
                 .keyboardType(.URL).textContentType(.URL)
@@ -131,14 +131,14 @@ struct AddRecipeView: View {
             action()
         } label: {
             HStack(spacing: 16) {
-                Image(systemName: icon).font(.title2).foregroundStyle(CookTheme.accent)
+                Image(systemName: icon).font(.system(size: 22)).foregroundStyle(CookTheme.accent)
                     .frame(width: 46, height: 46).background(CookTheme.accent.opacity(0.09), in: Circle())
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title).font(.headline).foregroundStyle(.primary)
-                    Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
+                    Text(title).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline)).foregroundStyle(.primary)
+                    Text(subtitle).font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                Image(systemName: "chevron.right").font(.system(size: 12)).foregroundStyle(.secondary)
             }
             .padding(17).frame(maxWidth: .infinity, alignment: .leading)
             .background(CookTheme.card, in: RoundedRectangle(cornerRadius: 20))
@@ -149,7 +149,7 @@ struct AddRecipeView: View {
     private func savedCard(_ recipe: Recipe) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Label(recipe.needsReview ? "Source saved — add the missing details" : "Saved to your recipes", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(CookTheme.accent).font(.headline)
+                .foregroundStyle(CookTheme.accent).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
             Text(recipe.title)
             Button(recipe.needsReview ? "Complete recipe" : "Open recipe") {
                 if recipe.needsReview { editor = recipe } else { detailID = recipe.id }

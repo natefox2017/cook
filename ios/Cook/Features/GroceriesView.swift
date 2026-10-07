@@ -32,12 +32,12 @@ struct GroceriesView: View {
                             Text("\(store.groceries.count) items")
                                 .font(CookTheme.title(25))
                             Text("From \(sourceCount) saved \(sourceCount == 1 ? "recipe" : "recipes")")
-                                .font(.subheadline)
+                                .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
                         Text("\(purchasedCount) bought")
-                            .font(.subheadline)
+                            .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
                             .foregroundStyle(CookTheme.accent)
                     }
                     Picker("Grocery filter", selection: $filter) {
@@ -94,7 +94,7 @@ struct GroceriesView: View {
                                     Image(systemName: collapsedCategories.contains(category.rawValue)
                                           ? "chevron.down" : "chevron.up")
                                 }
-                                .font(.subheadline.weight(.semibold))
+                                .font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                                 .foregroundStyle(.primary)
                                 .frame(minHeight: 44)
                                 .contentShape(Rectangle())
@@ -165,7 +165,7 @@ struct GroceriesView: View {
                 perform { try store.toggleGrocery(id: item.id) }
             } label: {
                 Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
+                    .font(.system(size: 22))
                     .foregroundStyle(item.isChecked ? CookTheme.accent : Color.secondary)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
@@ -181,21 +181,21 @@ struct GroceriesView: View {
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.name)
-                            .font(.body.weight(.medium))
+                            .font(CookTheme.text(17, weight: .semibold, relativeTo: .body))
                             .strikethrough(item.isChecked)
                             .foregroundStyle(item.isChecked ? Color.secondary : Color.primary)
                         if !item.amountText.isEmpty {
-                            Text(item.amountText).font(.subheadline).foregroundStyle(.secondary)
+                            Text(item.amountText).font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
                         }
                         if !item.recipeIDs.isEmpty {
                             Text("From \(item.recipeIDs.count) \(item.recipeIDs.count == 1 ? "recipe" : "recipes")")
-                                .font(.caption)
+                                .font(CookTheme.text(12, weight: .regular, relativeTo: .caption))
                                 .foregroundStyle(.secondary)
                         }
                     }
                     Spacer(minLength: 4)
                     Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.tertiary)
                 }
                 .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
@@ -278,7 +278,7 @@ private struct GroceryItemEditorView: View {
                 }
                 Section {
                     Text("Amounts can be numbers, ranges or words such as “to taste”. Keep the amount that works for your shop.")
-                        .font(.footnote)
+                        .font(CookTheme.text(13, weight: .regular, relativeTo: .footnote))
                         .foregroundStyle(.secondary)
                 }
                 if !draft.recipeIDs.isEmpty {
