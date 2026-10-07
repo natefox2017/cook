@@ -1,0 +1,290 @@
+import Foundation
+
+public enum RecipeCategory: String, Codable, CaseIterable, Identifiable, Sendable {
+    case meals = "Meals", breakfast = "Breakfast", desserts = "Desserts"
+    case drinks = "Drinks", sides = "Sides"
+    public var id: String { rawValue }
+}
+
+public enum GroceryCategory: String, Codable, CaseIterable, Identifiable, Sendable {
+    case produce = "Produce", proteins = "Proteins", dairy = "Dairy & eggs"
+    case pantry = "Pantry", other = "Other"
+    public var id: String { rawValue }
+}
+
+public enum MealSlot: String, Codable, CaseIterable, Identifiable, Sendable {
+    case breakfast = "Breakfast", lunch = "Lunch", dinner = "Dinner"
+    public var id: String { rawValue }
+}
+
+public enum AppAppearance: String, Codable, CaseIterable, Identifiable, Sendable {
+    case system = "System", light = "Light", dark = "Dark"
+    public var id: String { rawValue }
+}
+
+public struct Recipe: Identifiable, Codable, Hashable, Sendable {
+    public var id: UUID
+    public var title: String
+    public var summary: String
+    public var category: RecipeCategory
+    public var servings: Int?
+    public var prepMinutes: Int?
+    public var cookMinutes: Int?
+    public var ingredients: [RecipeIngredient]
+    public var steps: [RecipeStep]
+    public var sourceURL: String?
+    public var sourceText: String?
+    public var sourceName: String?
+    public var coverData: Data?
+    public var coverAsset: String?
+    public var isFavorite: Bool
+    public var notes: String
+    public var createdAt: Date
+    public var updatedAt: Date
+
+    public init(
+        id: UUID = UUID(), title: String, summary: String = "",
+        category: RecipeCategory = .meals, servings: Int? = 2,
+        prepMinutes: Int? = nil, cookMinutes: Int? = nil,
+        ingredients: [RecipeIngredient] = [], steps: [RecipeStep] = [],
+        sourceURL: String? = nil, sourceText: String? = nil, sourceName: String? = nil,
+        coverData: Data? = nil, coverAsset: String? = nil,
+        isFavorite: Bool = false, notes: String = "",
+        createdAt: Date = .now, updatedAt: Date = .now
+    ) {
+        self.id = id
+        self.title = title
+        self.summary = summary
+        self.category = category
+        self.servings = servings
+        self.prepMinutes = prepMinutes
+        self.cookMinutes = cookMinutes
+        self.ingredients = ingredients
+        self.steps = steps
+        self.sourceURL = sourceURL
+        self.sourceText = sourceText
+        self.sourceName = sourceName
+        self.coverData = coverData
+        self.coverAsset = coverAsset
+        self.isFavorite = isFavorite
+        self.notes = notes
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+
+    public var needsReview: Bool {
+        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || ingredients.isEmpty || steps.isEmpty
+            || ingredients.contains { $0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            || steps.contains { $0.instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    public var totalMinutes: Int? {
+        guard prepMinutes != nil || cookMinutes != nil else { return nil }
+        let prep = prepMinutes ?? 0
+        let cook = cookMinutes ?? 0
+        guard prep >= 0, cook >= 0 else { return nil }
+        let (total, overflow) = prep.addingReportingOverflow(cook)
+        return overflow ? nil : total
+    }
+}
+
+public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
+    public var id: UUID
+    public var name: String
+    public var amountText: String
+    public var quantity: Decimal?
+    public var unit: String?
+    public var category: GroceryCategory
+
+    public init(id: UUID = UUID(), name: String, amountText: String = "",
+                quantity: Decimal? = nil, unit: String? = nil,
+                category: GroceryCategory = .other) {
+        self.id = id
+        self.name = name
+        self.amountText = amountText
+        self.quantity = quantity
+        self.unit = unit
+        self.category = category
+    }
+
+    public func displayAmount(multiplier: Decimal = 1) -> String {
+        do {
+            let amount = try IngredientAmount(originalText: amountText, value: quantity, unit: unit)
+            let scaled = try amount.scaled(by: multiplier)
+            guard let value = scaled.value else { return amountText }
+            return Self.formatted(value, unit: unit)
+        } catch {
+            // Preserve the source if a caller supplied an invalid or inexact scale.
+            return amountText
+        }
+    }
+
+    /// Calculate quantity × requested / original before displaying a portion change.
+    /// A Decimal multiplier alone cannot retain an exact ratio such as one third.
+    public func displayAmount(servings: Int?, originalServings: Int?) -> String {
+        guard quantity != nil else { return amountText }
+        guard let servings, let originalServings, servings > 0, originalServings > 0,
+              servings != originalServings else { return displayAmount() }
+        let expression = "\(displayAmount()) × \(servings)/\(originalServings)"
+        do {
+            let source = try IngredientAmount(originalText: amountText, value: quantity, unit: unit)
+            let multiplied = try source.scaled(by: Decimal(servings))
+            guard var numerator = multiplied.value else { return amountText }
+            var denominator = Decimal(originalServings)
+            var result = Decimal()
+            guard NSDecimalDivide(&result, &numerator, &denominator, .plain) == .noError else {
+                return expression
+            }
+            return Self.formatted(result, unit: unit)
+        } catch {
+            // An exact expression also remains truthful when arithmetic would overflow.
+            return expression
+        }
+    }
+
+    /// A deliberately narrow amount-field parser, not an ingredient sentence parser.
+    /// Ranges, approximate quantities and nonterminating fractions stay as source text.
+    public static func from(name: String, amountText: String,
+                            category: GroceryCategory = .other) -> RecipeIngredient {
+        var result = RecipeIngredient(name: name, amountText: amountText, category: category)
+        var text = amountText.trimmingCharacters(in: .whitespacesAndNewlines)
+        for (symbol, fraction) in [
+            ("¼", "1/4"), ("½", "1/2"), ("¾", "3/4"), ("⅛", "1/8"),
+            ("⅜", "3/8"), ("⅝", "5/8"), ("⅞", "7/8")
+        ] {
+            text = text.replacingOccurrences(of: symbol, with: " " + fraction)
+        }
+        text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let pattern = #"^((?:[0-9]+\s+)?[0-9]+/[0-9]+|[0-9]+(?:\.[0-9]+)?|\.[0-9]+)\s*([\p{L}µμ]+\.?(?:\s+(?:oz|ounces?))?)?$"#
+        do {
+            let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
+            let fullRange = NSRange(text.startIndex..., in: text)
+            guard let match = regex.firstMatch(in: text, range: fullRange),
+                  let numberRange = Range(match.range(at: 1), in: text),
+                  let value = exactNumber(String(text[numberRange])) else { return result }
+            if let unitRange = Range(match.range(at: 2), in: text) {
+                let unit = String(text[unitRange])
+                let vague = ["about", "approximately", "approx", "roughly", "heaped",
+                             "heaping", "scant", "optional", "or", "to", "taste"]
+                guard !vague.contains(unit.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))) else {
+                    return result
+                }
+                result.unit = unit
+            }
+            result.quantity = value
+        } catch {
+            // An unsupported amount remains editable verbatim.
+        }
+        return result
+    }
+
+    static func formatted(_ value: Decimal, unit: String?) -> String {
+        let number = NSDecimalNumber(decimal: value).stringValue
+        guard let unit, !unit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return number
+        }
+        return number + " " + unit
+    }
+
+    private static func exactNumber(_ text: String) -> Decimal? {
+        let pieces = text.split(whereSeparator: \.isWhitespace)
+        let locale = Locale(identifier: "en_US_POSIX")
+        guard let last = pieces.last else { return nil }
+        // Decimal has finite precision; never silently round a longer source token.
+        let numericTokens = text.split { $0.isWhitespace || $0 == "/" }
+        guard numericTokens.allSatisfy({
+            $0.filter(\.isNumber).drop(while: { $0 == "0" }).count <= 38
+        }) else { return nil }
+        if !last.contains("/") {
+            guard let value = Decimal(string: String(last), locale: locale), !value.isNaN else { return nil }
+            return value
+        }
+        let fraction = last.split(separator: "/")
+        guard fraction.count == 2,
+              var numerator = Decimal(string: String(fraction[0]), locale: locale),
+              var denominator = Decimal(string: String(fraction[1]), locale: locale),
+              denominator > 0 else { return nil }
+        var value = Decimal()
+        guard NSDecimalDivide(&value, &numerator, &denominator, .plain) == .noError else { return nil }
+        if pieces.count == 2 {
+            guard var whole = Decimal(string: String(pieces[0]), locale: locale) else { return nil }
+            var total = Decimal()
+            guard NSDecimalAdd(&total, &whole, &value, .plain) == .noError else { return nil }
+            value = total
+        }
+        return value.isNaN ? nil : value
+    }
+}
+
+public struct RecipeStep: Identifiable, Codable, Hashable, Sendable {
+    public var id: UUID
+    public var title: String
+    public var instruction: String
+    public var durationSeconds: Int?
+
+    public init(id: UUID = UUID(), title: String = "", instruction: String,
+                durationSeconds: Int? = nil) {
+        self.id = id
+        self.title = title
+        self.instruction = instruction
+        self.durationSeconds = durationSeconds
+    }
+}
+
+public struct GroceryItem: Identifiable, Codable, Hashable, Sendable {
+    public var id: UUID
+    public var name: String
+    public var amountText: String
+    public var quantity: Decimal?
+    public var unit: String?
+    public var category: GroceryCategory
+    public var isChecked: Bool
+    public var recipeIDs: [UUID]
+
+    public init(id: UUID = UUID(), name: String, amountText: String = "",
+                quantity: Decimal? = nil, unit: String? = nil,
+                category: GroceryCategory = .other, isChecked: Bool = false,
+                recipeIDs: [UUID] = []) {
+        self.id = id
+        self.name = name
+        self.amountText = amountText
+        self.quantity = quantity
+        self.unit = unit
+        self.category = category
+        self.isChecked = isChecked
+        self.recipeIDs = recipeIDs
+    }
+}
+
+public struct MealPlanEntry: Identifiable, Codable, Hashable, Sendable {
+    public var id: UUID
+    public var recipeID: UUID
+    public var date: Date
+    public var slot: MealSlot
+
+    public init(id: UUID = UUID(), recipeID: UUID, date: Date, slot: MealSlot = .dinner) {
+        self.id = id
+        self.recipeID = recipeID
+        self.date = date
+        self.slot = slot
+    }
+}
+
+public struct CookSettings: Codable, Equatable, Sendable {
+    public var displayName: String
+    public var email: String
+    public var appearance: AppAppearance
+    public var keepScreenAwake: Bool
+    public var timerNotifications: Bool
+
+    public init(displayName: String = "", email: String = "",
+                appearance: AppAppearance = .system, keepScreenAwake: Bool = true,
+                timerNotifications: Bool = false) {
+        self.displayName = displayName
+        self.email = email
+        self.appearance = appearance
+        self.keepScreenAwake = keepScreenAwake
+        self.timerNotifications = timerNotifications
+    }
+}

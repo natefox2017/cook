@@ -1,0 +1,268 @@
+import SwiftUI
+import PhotosUI
+import CookCore
+
+struct RecipeEditorView: View {
+    @Environment(CookStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var draft: Recipe
+    @State private var original: Recipe
+    @State private var servingsText: String
+    @State private var prepText: String
+    @State private var cookText: String
+    @State private var sourceText: String
+    @State private var photo: PhotosPickerItem?
+    @State private var errorMessage: String?
+    @State private var showDiscard = false
+    @State private var isLoadingPhoto = false
+    private let isExisting: Bool
+
+    init(recipe: Recipe? = nil) {
+        var value = recipe ?? Recipe(title: "")
+        if value.ingredients.isEmpty { value.ingredients = [RecipeIngredient(name: "")] }
+        if value.steps.isEmpty { value.steps = [RecipeStep(instruction: "")] }
+        _draft = State(initialValue: value)
+        _original = State(initialValue: value)
+        _servingsText = State(initialValue: value.servings.map(String.init) ?? "")
+        _prepText = State(initialValue: value.prepMinutes.map(String.init) ?? "")
+        _cookText = State(initialValue: value.cookMinutes.map(String.init) ?? "")
+        _sourceText = State(initialValue: value.sourceURL ?? "")
+        isExisting = recipe != nil
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    RecipeImage(recipe: draft, height: 180).clipShape(RoundedRectangle(cornerRadius: 18))
+                        .listRowInsets(EdgeInsets())
+                    PhotosPicker(selection: $photo, matching: .images) {
+                        Label(draft.coverData == nil ? "Add a photo" : "Change photo", systemImage: "photo")
+                    }.disabled(isLoadingPhoto)
+                    if isLoadingPhoto { ProgressView("Preparing photo…") }
+                }
+                Section("Recipe") {
+                    TextField("Recipe name", text: $draft.title).accessibilityIdentifier("recipeName")
+                    TextField("A short description", text: $draft.summary, axis: .vertical).lineLimit(2...4)
+                    Picker("Category", selection: $draft.category) {
+                        ForEach(RecipeCategory.allCases) { Text($0.rawValue).tag($0) }
+                    }
+                    numberField("Servings", placeholder: "Unknown", text: $servingsText)
+                    numberField("Prep time (minutes)", placeholder: "Optional", text: $prepText)
+                    numberField("Cook time (minutes)", placeholder: "Optional", text: $cookText)
+                }
+                Section {
+                    ForEach($draft.ingredients) { $ingredient in
+                        IngredientEditorRow(ingredient: $ingredient) {
+                            draft.ingredients.removeAll { $0.id == ingredient.id }
+                        }
+                    }
+                    Button { draft.ingredients.append(RecipeIngredient(name: "")) } label: {
+                        Label("Add ingredient", systemImage: "plus.circle")
+                    }
+                } header: { Text("Ingredients") } footer: {
+                    Text("Keep wording such as “to taste” or “a little”. Only explicit numeric amounts are scaled.")
+                }
+                Section("Steps") {
+                    ForEach($draft.steps) { $step in
+                        StepEditorRow(step: $step) { draft.steps.removeAll { $0.id == step.id } }
+                    }
+                    Button { draft.steps.append(RecipeStep(instruction: "")) } label: {
+                        Label("Add step", systemImage: "plus.circle")
+                    }
+                    .accessibilityIdentifier("addRecipeStep")
+                }
+                Section("Notes") {
+                    TextField("Your notes and changes", text: $draft.notes, axis: .vertical).lineLimit(3...10)
+                }
+                Section("Source") {
+                    if let value = original.sourceURL {
+                        if let url = RecipeDocumentParser.validatedSourceURL(value) {
+                            Link(destination: url) { Label(original.sourceName ?? "Open original recipe", systemImage: "arrow.up.right.square") }
+                        }
+                        Text(value).font(.footnote).foregroundStyle(.secondary).textSelection(.enabled)
+                    } else {
+                        TextField("Original link (optional)", text: $sourceText)
+                            .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                    }
+                    if let text = original.sourceText, !text.isEmpty {
+                        DisclosureGroup("Original recipe text") {
+                            Text(text).font(.footnote).textSelection(.enabled)
+                        }
+                    }
+                }
+                if previewNeedsReview {
+                    Section {
+                        Label("Missing ingredients or steps? Save a draft and finish it later.", systemImage: "pencil.circle")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(CookTheme.canvas)
+            .scrollDismissesKeyboard(.interactively)
+            .navigationTitle(isExisting ? "Edit recipe" : "New recipe")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { if isDirty { showDiscard = true } else { dismiss() } }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(previewNeedsReview ? "Save draft" : "Save") { save() }
+                        .disabled(draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoadingPhoto)
+                        .accessibilityIdentifier("saveRecipe")
+                }
+            }
+            .interactiveDismissDisabled(isDirty)
+            .confirmationDialog("Discard your changes?", isPresented: $showDiscard, titleVisibility: .visible) {
+                Button("Discard changes", role: .destructive) { dismiss() }
+                Button("Keep editing", role: .cancel) {}
+            }
+            .alert("Couldn't save your recipe", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: { Text(errorMessage ?? "") }
+            .task(id: photo) {
+                guard let photo else { return }
+                isLoadingPhoto = true
+                defer { isLoadingPhoto = false }
+                do {
+                    guard let data = try await photo.loadTransferable(type: Data.self) else { throw RecipeImportError.unreadableImage }
+                    try Task.checkCancellation()
+                    draft.coverData = try RecipeImportService.normalizedPhoto(data)
+                    draft.coverAsset = nil
+                } catch is CancellationError { }
+                catch { errorMessage = error.localizedDescription }
+            }
+        }
+    }
+
+    private var isDirty: Bool {
+        draft != original || servingsText != (original.servings.map(String.init) ?? "")
+            || prepText != (original.prepMinutes.map(String.init) ?? "")
+            || cookText != (original.cookMinutes.map(String.init) ?? "")
+            || sourceText != (original.sourceURL ?? "")
+    }
+
+    private var previewNeedsReview: Bool {
+        var preview = draft
+        preview.ingredients = draft.ingredients.filter {
+            !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                || !$0.amountText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                || $0.quantity != nil || !($0.unit ?? "").isEmpty
+        }
+        preview.steps = draft.steps.filter(hasStepContent)
+        return preview.needsReview
+    }
+
+    private func hasStepContent(_ step: RecipeStep) -> Bool {
+        !step.instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !step.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || step.durationSeconds != nil
+    }
+
+    private func numberField(_ title: String, placeholder: String, text: Binding<String>) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            TextField(placeholder, text: text).keyboardType(.numberPad)
+                .multilineTextAlignment(.trailing).frame(maxWidth: 100)
+                .accessibilityLabel(title)
+        }
+    }
+
+    private func save() {
+        do {
+            var recipe = draft
+            recipe.title = recipe.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            recipe.servings = try number(servingsText, name: "Servings", range: 1...100)
+            recipe.prepMinutes = try number(prepText, name: "Prep time", range: 0...10_080)
+            recipe.cookMinutes = try number(cookText, name: "Cook time", range: 0...10_080)
+            recipe.ingredients = try draft.ingredients.compactMap { ingredient in
+                let name = ingredient.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                let amount = ingredient.amountText.trimmingCharacters(in: .whitespacesAndNewlines)
+                if name.isEmpty && amount.isEmpty && ingredient.quantity == nil
+                    && (ingredient.unit ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    return nil
+                }
+                guard !name.isEmpty else { throw EditorError.invalid("Give each ingredient a name, or remove the empty row.") }
+                if let previous = original.ingredients.first(where: { $0.id == ingredient.id }),
+                   previous.amountText.trimmingCharacters(in: .whitespacesAndNewlines) == amount {
+                    var item = ingredient; item.name = name; return item
+                }
+                var item = RecipeIngredient.from(name: name, amountText: amount, category: ingredient.category)
+                item.id = ingredient.id
+                return item
+            }
+            recipe.steps = draft.steps.filter(hasStepContent)
+            if original.sourceURL == nil {
+                let value = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard value.isEmpty || RecipeDocumentParser.validatedSourceURL(value) != nil else { throw RecipeImportError.invalidLink }
+                recipe.sourceURL = value.isEmpty ? nil : value
+            }
+            try store.upsert(recipe)
+            dismiss()
+        } catch { errorMessage = error.localizedDescription }
+    }
+
+    private func number(_ text: String, name: String, range: ClosedRange<Int>) throws -> Int? {
+        let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return nil }
+        guard let number = Int(value), range.contains(number) else {
+            throw EditorError.invalid("\(name) must be a whole number between \(range.lowerBound) and \(range.upperBound), or left blank.")
+        }
+        return number
+    }
+}
+
+private struct IngredientEditorRow: View {
+    @Binding var ingredient: RecipeIngredient
+    let remove: () -> Void
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                TextField("Ingredient name", text: $ingredient.name).accessibilityIdentifier("ingredientName")
+                Button(role: .destructive, action: remove) { Image(systemName: "minus.circle") }
+                    .buttonStyle(.borderless).frame(minWidth: 44, minHeight: 44)
+                    .accessibilityLabel("Remove ingredient \(ingredient.name)")
+            }
+            TextField("Amount, e.g. 2 tbsp or to taste", text: $ingredient.amountText)
+                .font(.subheadline)
+                .accessibilityIdentifier("ingredientAmount")
+            Picker("Shopping group", selection: $ingredient.category) {
+                ForEach(GroceryCategory.allCases) { Text($0.rawValue).tag($0) }
+            }.font(.subheadline)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct StepEditorRow: View {
+    @Binding var step: RecipeStep
+    let remove: () -> Void
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                TextField("Step title (optional)", text: $step.title)
+                Button(role: .destructive, action: remove) { Image(systemName: "minus.circle") }
+                    .buttonStyle(.borderless).frame(minWidth: 44, minHeight: 44)
+                    .accessibilityLabel("Remove step")
+            }
+            TextField("What should the cook do?", text: $step.instruction, axis: .vertical)
+                .lineLimit(3...8).accessibilityIdentifier("stepInstruction")
+            Stepper(value: Binding(get: { step.durationSeconds ?? 0 }, set: { step.durationSeconds = $0 == 0 ? nil : $0 }), in: 0...43_200, step: 60) {
+                Text(step.durationSeconds.map { seconds in
+                    let minutes = seconds / 60
+                    let remainder = seconds % 60
+                    return remainder == 0 ? "Timer: \(minutes) min" : "Timer: \(minutes) min \(remainder) sec"
+                } ?? "Timer: none")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private enum EditorError: LocalizedError {
+    case invalid(String)
+    var errorDescription: String? { if case .invalid(let message) = self { message } else { nil } }
+}
