@@ -101,7 +101,7 @@ struct ProfileView: View {
 
             Section("Help & about") {
                 NavigationLink {
-                    CookHelpView()
+                    GettingStartedGuideView()
                 } label: {
                     ProfileRowLabel(title: "Using Cook", systemImage: "questionmark.circle")
                 }
@@ -382,36 +382,6 @@ private enum CookNotificationCleanup {
         center.removePendingNotificationRequests(withIdentifiers: pending.map(\.identifier).filter { $0.hasPrefix("cook.timer.") })
         let delivered = await center.deliveredNotifications()
         center.removeDeliveredNotifications(withIdentifiers: delivered.map(\.request.identifier).filter { $0.hasPrefix("cook.timer.") })
-    }
-}
-
-private struct CookHelpView: View {
-    var body: some View {
-        List {
-            Section("Save a recipe") {
-                Text("Open the add menu from Recipes. You can save a source link, keep pasted recipe text, add an image, or write a recipe yourself. Review and fill in the details you need before cooking.")
-            }
-            Section("Make it yours") {
-                Text("Open any recipe to edit its ingredients, instructions and notes. The original source stays with the recipe so you can return to it.")
-            }
-            Section("Shop for a meal") {
-                Text("Use Add to Groceries in a recipe, choose the servings and ingredients, then add them to your list. In Groceries, tap a circle to mark an item bought, tap its name to edit, or swipe for more actions.")
-            }
-            Section("Cook step by step") {
-                Text("Start Cooking opens one step at a time. You can move between steps and use timers where a duration is available. Keep Screen Awake in Profile controls whether your screen stays on during cooking.")
-            }
-            Section("Plan your week") {
-                Text("Open Meal Plan from Profile, choose a day and meal, then select a saved recipe. Swipe a planned meal to remove it. Your saved recipe stays in your library.")
-            }
-            Section("Keep a copy") {
-                Text("Export All Data in Profile saves a JSON copy of your library and local preferences. Keep the exported file somewhere you trust. This version does not offer an in-app backup restore flow.")
-            }
-        }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
-        .background(CookTheme.canvas)
-        .navigationTitle("Using Cook")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
