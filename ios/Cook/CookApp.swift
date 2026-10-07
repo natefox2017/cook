@@ -6,7 +6,8 @@ import CookCore
 struct CookApp: App {
     @State private var store: CookStore
     @State private var subscriptions = SubscriptionStore()
-    private let isUITesting: Bool\n    private let bypassOnboarding: Bool
+    private let isUITesting: Bool
+    private let bypassOnboarding: Bool
 
     init() {
         CookTheme.installUIKitTypography()
@@ -14,6 +15,11 @@ struct CookApp: App {
         let arguments = ProcessInfo.processInfo.arguments
         let isUITesting = arguments.contains("--uitesting")
         self.isUITesting = isUITesting
+        self.bypassOnboarding = isUITesting && !arguments.contains("--test-onboarding")
+
+        if arguments.contains("--test-onboarding") {
+            UserDefaults.standard.removeObject(forKey: FirstLaunchFlowView.completionKey)
+        }
 
         _ = CookAuthService.shared
 
