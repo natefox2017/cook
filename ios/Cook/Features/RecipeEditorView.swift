@@ -30,13 +30,14 @@ struct RecipeEditorView: View {
     }
 
     var body: some View {
+        let photoLabel = draft.coverData == nil ? "Add a photo" : "Change photo"
         NavigationStack {
             Form {
                 Section {
                     RecipeImage(recipe: draft, height: 180).clipShape(RoundedRectangle(cornerRadius: 18))
                         .listRowInsets(EdgeInsets())
                     PhotosPicker(selection: $photo, matching: .images) {
-                        Label(draft.coverData == nil ? "Add a photo" : "Change photo", systemImage: "photo")
+                        Label(photoLabel, systemImage: "photo")
                     }.disabled(isLoadingPhoto)
                     if isLoadingPhoto { ProgressView("Preparing photo…") }
                 }

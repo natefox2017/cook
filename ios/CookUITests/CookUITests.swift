@@ -58,16 +58,16 @@ final class CookUITests: XCTestCase {
         name.typeText(recipeTitle)
 
         let ingredient = app.textFields["ingredientName"].firstMatch
-        reveal(ingredient, in: app, maximumSwipes: 1)
+        revealFormField(ingredient, in: app)
         ingredient.tap()
         ingredient.typeText("Tomato")
         let amount = app.textFields["ingredientAmount"].firstMatch
-        waitUntilReady(amount)
+        revealFormField(amount, in: app)
         amount.tap()
         amount.typeText("2")
 
         let instruction = app.descendants(matching: .any).matching(identifier: "stepInstruction").firstMatch
-        reveal(instruction, in: app, maximumSwipes: 1)
+        revealFormField(instruction, in: app)
         instruction.tap()
         instruction.typeText("Slice the tomatoes and arrange them on warm toast.")
 
@@ -111,7 +111,12 @@ final class CookUITests: XCTestCase {
 
         assertCookingStep("Step 1 of 3", in: app)
         XCTAssertFalse(app.buttons["previousStep"].isEnabled)
-        XCTAssertFalse(app.tabBars.firstMatch.exists)
+        waitUntilReady(app.buttons["closeCookingButton"])
+        attachScreenshot("Cooking full-screen presentation", app: app)
+        waitUntilNotHittable(app.tabBars.firstMatch)
+        for title in ["Recipes", "Groceries", "Profile"] {
+            waitUntilNotHittable(app.tabBars.buttons[title])
+        }
         app.buttons["nextStep"].tap()
         assertCookingStep("Step 2 of 3", in: app)
 
@@ -137,7 +142,7 @@ final class CookUITests: XCTestCase {
         waitUntilReady(app.buttons["closeCookingButton"])
         app.buttons["closeCookingButton"].tap()
         waitUntilReady(app.buttons["startCooking"])
-        XCTAssertTrue(app.tabBars.buttons["Recipes"].exists)
+        waitUntilReady(app.tabBars.buttons["Recipes"])
     }
 
     @MainActor
@@ -176,6 +181,46 @@ final class CookUITests: XCTestCase {
     private func waitUntilAbsent(_ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
         let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)
         XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 8), .completed, "Element did not dismiss: \(element)", file: file, line: line)
+    }
+
+    @MainActor
+    private func waitUntilNotHittable(_ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        let predicate = NSPredicate(format: "exists == false OR hittable == false")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 8), .completed, "Underlying navigation remains interactive: \(element)", file: file, line: line)
+    }
+
+    @MainActor
+    private func revealFormField(_ element: XCUIElement, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
+        // Commit the previous single-line field before finding the next row.
+        // The Form also dismisses any remaining keyboard during scrolling.
+        if app.keyboards.firstMatch.exists {
+            for title in ["Done", "Return", "return"] {
+                let key = app.keyboards.firstMatch.buttons[title]
+                if key.exists && key.isHittable { key.tap(); break }
+            }
+        }
+
+        for _ in 0..<4 {
+            if element.exists && element.isHittable { break }
+            let candidates = app.collectionViews.allElementsBoundByIndex
+                + app.tables.allElementsBoundByIndex
+                + app.scrollViews.allElementsBoundByIndex
+            guard let form = candidates.first(where: { $0.exists && $0.isHittable && $0.frame.height > 200 }) else {
+                attachScreenshot("No visible editor form", app: app)
+                XCTFail("No visible form can scroll to \(element)", file: file, line: line)
+                return
+            }
+            if element.exists && element.frame.height > 0 && element.frame.maxY <= form.frame.minY + 12 {
+                form.swipeDown(velocity: .slow)
+            } else {
+                form.swipeUp(velocity: .slow)
+            }
+        }
+        if !element.exists || !element.isHittable {
+            attachScreenshot("Editor field not visible after scrolling", app: app)
+        }
+        waitUntilReady(element, file: file, line: line)
     }
 
     @MainActor

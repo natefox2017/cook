@@ -54,5 +54,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cook-ui-screenshots
-          path: TestResults/Screenshots
+          path: |
+            TestResults/Screenshots/**/*.png
+            TestResults/Screenshots/**/*.jpg
+            TestResults/Screenshots/**/*.jpeg
+            TestResults/Screenshots/**/*.json
+            TestResults/Screenshots/**/*.txt
           if-no-files-found: ignore
