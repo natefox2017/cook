@@ -32,7 +32,15 @@ jobs:
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max,OS=26.2' \
             -resultBundlePath TestResults/Cook.xcresult \
             CODE_SIGNING_ALLOWED=NO test 2>&1 | tee ios-test.log
-      - name: Upload results and screenshots
+      - name: Export UI screenshots
+        if: always()
+        run: |
+          if [ -d TestResults/Cook.xcresult ]; then
+            xcrun xcresulttool export attachments \
+              --path TestResults/Cook.xcresult \
+              --output-path TestResults/Screenshots
+          fi
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -40,4 +48,11 @@ jobs:
           path: |
             TestResults/Cook.xcresult
             ios-test.log
+          if-no-files-found: ignore
+      - name: Upload UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cook-ui-screenshots
+          path: TestResults/Screenshots
           if-no-files-found: ignore

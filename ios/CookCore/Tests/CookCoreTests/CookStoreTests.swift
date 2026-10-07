@@ -129,9 +129,10 @@ func groceryMergeRequiresKnownQuantitiesAndExactlyMatchingUnits() throws {
     #expect(store.groceries.count == 3)
 }
 
-@Test @MainActor
-func shoppingSelectionAndInexactScalePreserveEvidence() throws {
-    let flour = RecipeIngredient.from(name: "Flour", amountText: "1 cup", category: .pantry)
+@Test(arguments: [1, 2]) @MainActor
+func shoppingSelectionAndInexactScalePreserveEvidence(amount: Int) throws {
+    let sourceText = "\(amount) cup"
+    let flour = RecipeIngredient.from(name: "Flour", amountText: sourceText, category: .pantry)
     let salt = RecipeIngredient.from(name: "Salt", amountText: "to taste", category: .pantry)
     var recipe = exampleRecipe(ingredients: [flour, salt])
     recipe.servings = 3
@@ -140,8 +141,8 @@ func shoppingSelectionAndInexactScalePreserveEvidence() throws {
     try store.addToGroceries(recipeID: recipe.id, servings: 1, ingredientIDs: [flour.id])
     #expect(store.groceries.count == 1)
     #expect(store.groceries[0].quantity == nil)
-    #expect(store.groceries[0].amountText == "1 cup × 1/3")
-    #expect(store.recipe(id: recipe.id)?.ingredients[0].amountText == "1 cup")
+    #expect(store.groceries[0].amountText == "\(sourceText) × 1/3")
+    #expect(store.recipe(id: recipe.id)?.ingredients[0].amountText == sourceText)
     #expect(throws: CookStoreError.missingItem) {
         try store.addToGroceries(recipeID: recipe.id, servings: 1, ingredientIDs: [UUID()])
     }

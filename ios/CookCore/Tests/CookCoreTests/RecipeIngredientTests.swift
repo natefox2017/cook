@@ -4,7 +4,8 @@ import Testing
 
 @Test(arguments: ["to taste", "a little", "1-2 tbsp", "1 – 2 tbsp",
                   "1 to 2 cups", "about 1 cup", "1 cup (optional)",
-                  "1/0 cup", "1/3 cup", "1,5 cups",
+                  "1/0 cup", "1/3 cup", "2/3 cup", "1/7 cup", "2 1/3 cups", "1,5 cups",
+                  "99999999999999999999999999999999999999 1/2 cups",
                   "123456789012345678901234567890123456789 g", ""])
 func ambiguousAmountsStayExactlyAsWritten(text: String) {
     let ingredient = RecipeIngredient.from(name: "Ingredient", amountText: text)
@@ -26,6 +27,9 @@ func explicitFractionsDecimalsAndUnitsScaleWithoutChangingSource() {
     #expect(half.quantity == Decimal(string: "0.5"))
     #expect(half.displayAmount(multiplier: 3) == "1.5 tbsp")
     #expect(RecipeIngredient.from(name: "Oil", amountText: ".5 tbsp").quantity == half.quantity)
+    #expect(RecipeIngredient.from(name: "Oil", amountText: "3/6 tbsp").quantity == half.quantity)
+    #expect(RecipeIngredient.from(name: "Oil", amountText: "6/3 tbsp").quantity == 2)
+    #expect(RecipeIngredient.from(name: "Oil", amountText: "0/3 tbsp").quantity == 0)
     let zero = RecipeIngredient.from(name: "Salt", amountText: "0 g")
     #expect(zero.quantity == 0)
     #expect(zero.displayAmount(multiplier: 2) == "0 g")
@@ -55,6 +59,8 @@ func portionPreviewUsesExactRatioInsteadOfARoundedMultiplier() {
     let oneCup = RecipeIngredient.from(name: "Flour", amountText: "1 cup")
     #expect(oneCup.displayAmount(servings: 1, originalServings: 3) == "1 cup × 1/3")
     #expect(oneCup.amountText == "1 cup")
+    let twoCups = RecipeIngredient.from(name: "Flour", amountText: "2 cups")
+    #expect(twoCups.displayAmount(servings: 1, originalServings: 3) == "2 cups × 1/3")
     let enormous = RecipeIngredient(name: "Flour", amountText: "source amount",
                                     quantity: .greatestFiniteMagnitude, unit: "g")
     #expect(enormous.displayAmount(servings: 2, originalServings: 1)

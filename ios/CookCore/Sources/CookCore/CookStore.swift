@@ -330,18 +330,13 @@ public final class CookStore {
         var text = source.originalText
         if quantity != nil, originalServings != requestedServings {
             let multiplied = try source.scaled(by: Decimal(requestedServings))
-            if var numerator = multiplied.value {
-                var denominator = Decimal(originalServings)
-                var divided = Decimal()
-                let result = NSDecimalDivide(&divided, &numerator, &denominator, .plain)
-                if result == .noError {
+            if let numerator = multiplied.value {
+                if let divided = try RecipeIngredient.exactQuotient(numerator, by: Decimal(originalServings)) {
                     quantity = divided
-                } else if result == .lossOfPrecision {
+                } else {
                     // Keep an exact visible expression instead of inventing a rounded quantity.
                     quantity = nil
                     text = "\(ingredient.displayAmount()) × \(requestedServings)/\(originalServings)"
-                } else {
-                    throw IngredientAmount.ValidationError.arithmeticFailure
                 }
             }
         }

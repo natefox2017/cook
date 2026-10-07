@@ -15,7 +15,7 @@ struct RecipeEditorView: View {
     @State private var errorMessage: String?
     @State private var showDiscard = false
     @State private var isLoadingPhoto = false
-    private let isExisting: Bool
+    private var isExisting: Bool { store.recipe(id: draft.id) != nil }
 
     init(recipe: Recipe? = nil) {
         var value = recipe ?? Recipe(title: "")
@@ -27,7 +27,6 @@ struct RecipeEditorView: View {
         _prepText = State(initialValue: value.prepMinutes.map(String.init) ?? "")
         _cookText = State(initialValue: value.cookMinutes.map(String.init) ?? "")
         _sourceText = State(initialValue: value.sourceURL ?? "")
-        isExisting = recipe != nil
     }
 
     var body: some View {

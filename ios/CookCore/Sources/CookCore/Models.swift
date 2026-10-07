@@ -130,10 +130,8 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
         do {
             let source = try IngredientAmount(originalText: amountText, value: quantity, unit: unit)
             let multiplied = try source.scaled(by: Decimal(servings))
-            guard var numerator = multiplied.value else { return amountText }
-            var denominator = Decimal(originalServings)
-            var result = Decimal()
-            guard NSDecimalDivide(&result, &numerator, &denominator, .plain) == .noError else {
+            guard let numerator = multiplied.value else { return amountText }
+            guard let result = try Self.exactQuotient(numerator, by: Decimal(originalServings)) else {
                 return expression
             }
             return Self.formatted(result, unit: unit)
@@ -187,6 +185,39 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
         return number + " " + unit
     }
 
+    /// Foundation can report success for a rounded quotient. Verify it using a
+    /// reverse product whose coefficient fits in 38 digits, so that verification
+    /// itself cannot round (for example, a rounded 2/3 must not multiply back to 2).
+    /// High-precision edge cases conservatively remain source text.
+    static func exactQuotient(_ numerator: Decimal, by denominator: Decimal) throws -> Decimal? {
+        guard !numerator.isNaN, !denominator.isNaN, numerator >= 0, denominator > 0 else {
+            throw IngredientAmount.ValidationError.arithmeticFailure
+        }
+        if numerator == 0 { return 0 }
+        if denominator == 1 { return numerator }
+        if numerator == denominator { return 1 }
+        var dividend = numerator
+        var divisor = denominator
+        var quotient = Decimal()
+        let status = NSDecimalDivide(&quotient, &dividend, &divisor, .plain)
+        if status == .lossOfPrecision { return nil }
+        guard status == .noError, !quotient.isNaN else {
+            throw IngredientAmount.ValidationError.arithmeticFailure
+        }
+        guard coefficientDigits(quotient) + coefficientDigits(divisor) <= 38 else { return nil }
+        var restored = Decimal()
+        guard NSDecimalMultiply(&restored, &quotient, &divisor, .plain) == .noError,
+              restored == numerator else { return nil }
+        return quotient
+    }
+
+    private static func coefficientDigits(_ value: Decimal) -> Int {
+        let coefficient = NSDecimalNumber(decimal: value).stringValue
+            .split(whereSeparator: { $0 == "e" || $0 == "E" }).first ?? ""
+        return coefficient.filter(\.isNumber).drop(while: { $0 == "0" })
+            .reversed().drop(while: { $0 == "0" }).count
+    }
+
     private static func exactNumber(_ text: String) -> Decimal? {
         let pieces = text.split(whereSeparator: \.isWhitespace)
         let locale = Locale(identifier: "en_US_POSIX")
@@ -202,15 +233,22 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
         }
         let fraction = last.split(separator: "/")
         guard fraction.count == 2,
-              var numerator = Decimal(string: String(fraction[0]), locale: locale),
-              var denominator = Decimal(string: String(fraction[1]), locale: locale),
+              let numerator = Decimal(string: String(fraction[0]), locale: locale),
+              let denominator = Decimal(string: String(fraction[1]), locale: locale),
               denominator > 0 else { return nil }
-        var value = Decimal()
-        guard NSDecimalDivide(&value, &numerator, &denominator, .plain) == .noError else { return nil }
+        guard var value = try? exactQuotient(numerator, by: denominator) else { return nil }
         if pieces.count == 2 {
             guard var whole = Decimal(string: String(pieces[0]), locale: locale) else { return nil }
             var total = Decimal()
             guard NSDecimalAdd(&total, &whole, &value, .plain) == .noError else { return nil }
+            // Check this separate operation too; adding a whole number must not
+            // swallow a small but exact fractional part.
+            var recoveredFraction = Decimal()
+            var recoveredWhole = Decimal()
+            guard NSDecimalSubtract(&recoveredFraction, &total, &whole, .plain) == .noError,
+                  recoveredFraction == value,
+                  NSDecimalSubtract(&recoveredWhole, &total, &value, .plain) == .noError,
+                  recoveredWhole == whole else { return nil }
             value = total
         }
         return value.isNaN ? nil : value
