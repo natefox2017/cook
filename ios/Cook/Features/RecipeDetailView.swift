@@ -13,7 +13,7 @@ struct RecipeDetailView: View {
     @State private var isChoosingIngredients = false
     @State private var isDeleting = false
     @State private var feedbackMessage: String?
-    @State private var addedIngredientCount: Int?
+    @State private var addedIngredientCount: Int?\n    @State private var isPlanningMeal = false
 
     var body: some View {
         Group {
@@ -30,7 +30,7 @@ struct RecipeDetailView: View {
         .sheet(isPresented: $isEditing) {
             if let recipe = store.recipe(id: recipeID) { RecipeEditorView(recipe: recipe) }
         }
-        .sheet(isPresented: $isChoosingIngredients, onDismiss: showAddedFeedback) {
+        .sheet(isPresented: $isPlanningMeal) { RecipeMealPlanSheet(recipeID: recipeID) }\n        .sheet(isPresented: $isChoosingIngredients, onDismiss: showAddedFeedback) {
             RecipeIngredientsSelectionView(recipeID: recipeID, initialServings: servings) { addedIngredientCount = $0 }
         }
         .fullScreenCover(isPresented: $isCooking) {
@@ -222,7 +222,7 @@ struct RecipeDetailView: View {
                 } label: { Image(systemName: recipe.isFavorite ? "heart.fill" : "heart") }
                 .accessibilityLabel(recipe.isFavorite ? "Remove from Favorites" : "Add to Favorites")
                 Menu {
-                    Button("Edit Recipe", systemImage: "pencil") { isEditing = true }
+                    Button("Add to Meal Plan", systemImage: "calendar.badge.plus") { isPlanningMeal = true }\n                    Button("Edit Recipe", systemImage: "pencil") { isEditing = true }
                     Button("Delete Recipe", systemImage: "trash", role: .destructive) { isDeleting = true }
                 } label: { Label("Recipe Options", systemImage: "ellipsis") }
             }
@@ -380,5 +380,42 @@ private struct RecipeIngredientsSelectionView: View {
             onAdded(selection.count)
             dismiss()
         } catch { errorMessage = error.localizedDescription }
+    }
+}
+
+private struct RecipeMealPlanSheet: View {
+    let recipeID: UUID
+    @Environment(CookStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var date = Date()
+    @State private var slot = MealSlot.dinner
+    @State private var errorMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                DatePicker("Date", selection: $date, displayedComponents: .date)
+                Picker("Meal", selection: $slot) {
+                    ForEach(MealSlot.allCases) { Text($0.rawValue).tag($0) }
+                }
+            }
+            .navigationTitle("Add to Meal Plan")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") {
+                        do {
+                            try store.upsertMeal(MealPlanEntry(date: date, slot: slot, recipeID: recipeID))
+                            dismiss()
+                        } catch { errorMessage = error.localizedDescription }
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
+            .alert("Couldn’t update meal plan", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+                Button("OK", role: .cancel) { errorMessage = nil }
+            } message: { Text(errorMessage ?? "Please try again.") }
+        }
     }
 }
