@@ -13,7 +13,7 @@
     <key>UIApplicationSceneManifest</key><dict><key>UIApplicationSupportsMultipleScenes</key><false/></dict>
     <key>UILaunchScreen</key><dict/>
     <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string></array>
-    <key>NSCameraUsageDescription</key><string>Photograph a recipe to read its text and save it to your recipe library.</string>
+    <key>CookSubscriptionProductIDs</key><string>$(COOK_SUBSCRIPTION_PRODUCT_IDS)</string>\n    <key>NSCameraUsageDescription</key><string>Photograph a recipe to read its text and save it to your recipe library.</string>
     <key>UIAppFonts</key><array>
         <string>SourceSans3-Regular.ttf</string>
         <string>SourceSans3-Semibold.ttf</string>
