@@ -87,7 +87,7 @@ final class CookUITests: XCTestCase {
         }
         waitUntilReady(libraryAdd)
 
-        let search = app.searchFields.firstMatch
+        let search = app.textFields["recipeSearchField"]
         waitUntilReady(search)
         search.tap()
         search.typeText(recipeTitle)

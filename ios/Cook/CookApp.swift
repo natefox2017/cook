@@ -137,7 +137,7 @@ private struct CookTabBar: View {
             }
         }
         .padding(5)
-        .background(CookTheme.canvas, in: Capsule())
+        .background(.ultraThinMaterial, in: Capsule())
         .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12)))
         .padding(.horizontal, CookSpacing.pageInset)
         .padding(.bottom, 4)
