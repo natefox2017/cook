@@ -15,7 +15,8 @@
 | UI-009 | 我的/设置（文字精简） | 用户截图（本次对话） | APPROVED | 仅删除辅助性小字；保留全部页面模块、入口和操作，不调整布局 |
 | UI-010 | Share Extension 成功 | TBD | PENDING | 快速结束 |
 | UI-011 | Share Extension 失败/降级 | TBD | PENDING | 可继续操作 |
-| UI-013 | RecipePouch App 启动页 | [RecipePouch 启动页方案](DESIGN/proposals/2026-10-07/recipepouch-launch-screen.svg) | PENDING | Apple HIG 系统启动画面：浅色/深色使用首屏画布纯色背景，不放文字或品牌图标；待用户确认后接入 |\n| UI-015 | 首次启动/Premium 计划 | `DESIGN_SYSTEM.md` + IMG-007 个人中心视觉基线 | APPROVED | 2026-10-08 用户明确要求补齐；StoreKit 实时产品信息，保留 Continue Free、Restore、Terms/Privacy |
+| UI-013 | RecipePouch App 启动页 | [RecipePouch 启动页方案](DESIGN/proposals/2026-10-07/recipepouch-launch-screen.svg) | PENDING | Apple HIG 系统启动画面：浅色/深色使用首屏画布纯色背景，不放文字或品牌图标；待用户确认后接入 |
+| UI-015 | 首次启动/Premium 计划 | `DESIGN_SYSTEM.md` + IMG-007 个人中心视觉基线 | APPROVED | 2026-10-08 用户明确要求补齐；StoreKit 实时产品信息，保留 Continue Free、Restore、Terms/Privacy |
 
 ## 状态定义
 - PENDING：未确认

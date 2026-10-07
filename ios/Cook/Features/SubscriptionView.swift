@@ -25,17 +25,6 @@ struct SubscriptionView: View {
         .navigationTitle("Subscription")
         .navigationBarTitleDisplayMode(.inline)
         .manageSubscriptionsSheet(isPresented: $isManagingSubscriptions)
-        .alert(
-            "Subscription",
-            isPresented: Binding(
-                get: { subscriptions.message != nil },
-                set: { if !$0 { subscriptions.message = nil } }
-            )
-        ) {
-            Button("OK", role: .cancel) { subscriptions.message = nil }
-        } message: {
-            Text(subscriptions.message ?? "")
-        }
     }
 }
 
@@ -93,6 +82,17 @@ struct PremiumPaywallContent: View {
         .frame(maxWidth: 560)
         .frame(maxWidth: .infinity)
         .task { await subscriptions.load() }
+        .alert(
+            "Subscription",
+            isPresented: Binding(
+                get: { subscriptions.message != nil },
+                set: { if !$0 { subscriptions.message = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { subscriptions.message = nil }
+        } message: {
+            Text(subscriptions.message ?? "")
+        }
     }
 
     private var premiumValueSummary: some View {

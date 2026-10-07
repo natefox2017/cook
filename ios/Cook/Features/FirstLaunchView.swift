@@ -191,8 +191,8 @@ struct GettingStartedGuideContent: View {
                 guideStep(
                     3,
                     icon: "pencil.and.list.clipboard",
-                    title: "Review before saving",
-                    detail: "Cook keeps uncertain imports editable instead of inventing missing ingredients, quantities, or steps."
+                    title: "Saved automatically",
+                    detail: "Complete imports go straight into your library. If a field is uncertain or incomplete, RecipePouch saves the recipe and marks only those details for review instead of inventing values."
                 )
                 Divider().padding(.leading, 56)
                 guideStep(
