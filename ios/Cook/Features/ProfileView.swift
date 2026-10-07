@@ -388,8 +388,13 @@ private enum CookNotificationCleanup {
 private struct CookHelpView: View {
     var body: some View {
         List {
+            Section("Getting started") {
+                NavigationLink("Save your first recipe") {
+                    GettingStartedGuideView()
+                }
+            }
             Section("Save a recipe") {
-                Text("Open the add menu from Recipes. You can save a source link, keep pasted recipe text, add an image, or write a recipe yourself. Review and fill in the details you need before cooking.")
+                Text("From a recipe or social app, use Share and choose RecipePouch. The share extension receives it quickly and you can return to the source app. If sharing is unavailable, use Add Recipe to paste a link, add text or an image, or create a recipe manually.")
             }
             Section("Make it yours") {
                 Text("Open any recipe to edit its ingredients, instructions and notes. The original source stays with the recipe so you can return to it.")
