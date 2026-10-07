@@ -2,15 +2,13 @@ name: iOS CI
 
 on:
   workflow_dispatch:
-  push:
-    branches: [codex/complete-secondary-ui]
 
 permissions:
   contents: read
 
 jobs:
   ios-check:
-    name: Final iOS simulator validation
+    name: Validate iOS project
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
