@@ -166,3 +166,23 @@ Visual requirements:
 ## Release gate
 
 Do not call V1 functionally complete until every NOT IMPLEMENTED item above is either implemented and tested or explicitly removed from V1 scope in the PRD. Static source review is not a substitute for simulator/device UI validation, StoreKit sandbox testing, Supabase integration testing or Share Extension host-app testing.
+
+
+## 2026-10-07 implementation pass
+
+Implemented in branch `codex/v1-production-integrations`:
+- StoreKit 2 entitlement service, transaction updates, purchase and explicit Restore Purchases.
+- Subscription screen with App Store localized product data and Manage Subscription.
+- Account/sign-in/sign-up/forgot-password/Sign in with Apple surfaces and explicit local-data/sync messaging.
+- Owner-scoped Supabase snapshot migration with RLS policies.
+- Cloud sync protocol boundary that fails explicitly while cloud configuration is unavailable.
+- Share Extension durable App Group inbox source implementation.
+
+External configuration still blocks production-complete status:
+- Supabase project `cookapp` is currently INACTIVE, so Auth/RLS/sync cannot be applied or integration-tested.
+- Apple Developer Sign in with Apple capability/provider settings are not available in this environment.
+- App Store Connect subscription product IDs/offers are not available; the app reads them from `COOK_SUBSCRIPTION_PRODUCT_IDS` and never invents price/trial terms.
+- The Share Extension source exists, but its Xcode extension target/App Group entitlement/provisioning must be created with the Apple team before host-app testing.
+- Social-video AI backend worker/provider credentials remain undeployed.
+
+Therefore these areas are code-complete at the UI/contract boundary, but not production-integrated. Do not label them live until the external configuration and integration tests pass.
