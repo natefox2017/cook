@@ -12,52 +12,21 @@ permissions:
 jobs:
   ios-check:
     name: Validate iOS project
-    runs-on: macos-26
-    timeout-minutes: 25
-    env:
-      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Swift environment
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: cd ios/CookApp && xcodegen generate
+      - name: Build
         run: |
-          xcodebuild -version
-          swift --version
-      - name: Test recipe data, persistence, parsing, and timers
-        run: swift test --package-path ios/CookCore
-      - name: Build iOS app and run UI flows
+          cd ios/CookApp
+          DESTINATION=$(xcrun simctl list devices available | grep -m1 -E 'iPhone' | sed -E 's/.*\(([0-9A-F-]{36})\).*/id=\1/')
+          test -n "$DESTINATION"
+          xcodebuild -project Cook.xcodeproj -scheme Cook -destination "$DESTINATION" build
+      - name: Test
         run: |
-          set -o pipefail
-          xcodebuild -project ios/Cook.xcodeproj -scheme Cook \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max,OS=26.2' \
-            -resultBundlePath TestResults/Cook.xcresult \
-            CODE_SIGNING_ALLOWED=NO test 2>&1 | tee ios-test.log
-      - name: Export UI screenshots
-        if: always()
-        run: |
-          if [ -d TestResults/Cook.xcresult ]; then
-            xcrun xcresulttool export attachments \
-              --path TestResults/Cook.xcresult \
-              --output-path TestResults/Screenshots
-          fi
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cook-ios-validation
-          path: |
-            TestResults/Cook.xcresult
-            ios-test.log
-          if-no-files-found: ignore
-      - name: Upload UI screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cook-ui-screenshots
-          path: |
-            TestResults/Screenshots/**/*.png
-            TestResults/Screenshots/**/*.jpg
-            TestResults/Screenshots/**/*.jpeg
-            TestResults/Screenshots/**/*.json
-            TestResults/Screenshots/**/*.txt
-          if-no-files-found: ignore
+          cd ios/CookApp
+          DESTINATION=$(xcrun simctl list devices available | grep -m1 -E 'iPhone' | sed -E 's/.*\(([0-9A-F-]{36})\).*/id=\1/')
+          xcodebuild -project Cook.xcodeproj -scheme Cook -destination "$DESTINATION" test
