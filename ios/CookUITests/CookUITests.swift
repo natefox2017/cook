@@ -145,6 +145,55 @@ final class CookUITests: XCTestCase {
         waitUntilReady(app.tabBars.buttons["Recipes"])
     }
 
+
+    @MainActor
+    func testRecipeCanBeAddedDirectlyToMealPlan() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+        openSamplePasta(in: app)
+
+        let options = app.buttons["Recipe Options"]
+        waitUntilReady(options)
+        options.tap()
+        let plan = app.buttons["Add to Meal Plan"]
+        waitUntilReady(plan)
+        plan.tap()
+
+        let add = app.buttons["Add"]
+        waitUntilReady(add)
+        add.tap()
+
+        app.navigationBars.buttons.firstMatch.tap()
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+        let mealPlan = app.buttons["Meal Plan"]
+        waitUntilReady(mealPlan)
+        mealPlan.tap()
+        XCTAssertTrue(app.staticTexts["Tomato Basil Pasta"].waitForExistence(timeout: 8))
+        attachScreenshot("Recipe added directly to meal plan", app: app)
+    }
+
+
+    @MainActor
+    func testCookingIngredientCheckoffPersistsInSession() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+        openSamplePasta(in: app)
+        app.buttons["startCooking"].tap()
+        waitUntilReady(app.buttons["Ingredients"])
+        app.buttons["Ingredients"].tap()
+        let tomato = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Tomatoes")).firstMatch
+        waitUntilReady(tomato)
+        tomato.tap()
+        XCTAssertTrue(tomato.label.contains("used"))
+        app.navigationBars.buttons["Done"].tap()
+        app.buttons["Ingredients"].tap()
+        let restored = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Tomatoes")).firstMatch
+        waitUntilReady(restored)
+        XCTAssertTrue(restored.label.contains("used"))
+    }
+
     @MainActor
     private func launchSeededApp() -> XCUIApplication {
         let app = XCUIApplication()

@@ -261,14 +261,21 @@ struct CookingView: View {
                             Text("This recipe has no ingredients yet.").foregroundStyle(.secondary)
                         }
                         ForEach(recipe.ingredients) { ingredient in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(ingredient.name).font(.headline)
-                                if !ingredient.displayAmount(servings: session.servings, originalServings: recipe.servings).isEmpty {
-                                    Text(ingredient.displayAmount(servings: session.servings, originalServings: recipe.servings)).foregroundStyle(.secondary)
+                            Button { toggleIngredient(ingredient.id) } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: session.usedIngredientIDs.contains(ingredient.id) ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(session.usedIngredientIDs.contains(ingredient.id) ? CookTheme.accent : Color.secondary)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(ingredient.name).font(.headline)
+                                        let amount = ingredient.displayAmount(servings: session.servings, originalServings: recipe.servings)
+                                        if !amount.isEmpty { Text(amount).foregroundStyle(.secondary) }
+                                    }
+                                    Spacer()
                                 }
+                                .padding(.vertical, 4)
                             }
-                            .padding(.vertical, 4)
-                            .accessibilityElement(children: .combine)
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("\(ingredient.name), \(session.usedIngredientIDs.contains(ingredient.id) ? "used" : "not used")")
                         }
                     } header: {
                         Text(recipe.servings.map { $0 > 0 ? "Cooking portions" : "Original recipe amounts" } ?? "Original recipe amounts")
@@ -283,7 +290,7 @@ struct CookingView: View {
         }
     }
 
-    private func appear() {
+    private func toggleIngredient(_ id: UUID) {\n        if session.usedIngredientIDs.contains(id) { session.usedIngredientIDs.remove(id) } else { session.usedIngredientIDs.insert(id) }\n        persistSession()\n    }\n\n    private func appear() {
         if originalIdleTimerDisabled == nil { originalIdleTimerDisabled = UIApplication.shared.isIdleTimerDisabled }
         guard !didRestoreSession else { updateScreenAwake(); return }
         didRestoreSession = true
@@ -464,6 +471,7 @@ private struct PersistedCookingSession: Codable {
     var timers: [UUID: CookingTimer] = [:]
     var isComplete = false
     var servings: Int? = nil
+    var usedIngredientIDs: Set<UUID> = []
 }
 
 private struct CookingStepTimerPanel: View {
