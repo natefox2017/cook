@@ -66,9 +66,7 @@
     </array>
     <key>UIAppFonts</key>
     <array>
-        <string>SourceSans3-Regular.ttf</string>
-        <string>SourceSans3-Semibold.ttf</string>
-        <string>SourceSans3-Bold.ttf</string>
+        <string>Lora-Variable.ttf</string>
     </array>
 </dict>
 </plist>

@@ -196,19 +196,18 @@ private struct ProfileRowLabel: View {
     let systemImage: String
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             Image(systemName: systemImage)
-                .font(.system(size: 20))
+                .font(.system(size: 19))
                 .foregroundStyle(CookTheme.accent)
-                .frame(width: 42, height: 42)
+                .frame(width: 38, height: 38)
                 .background(CookTheme.accent.opacity(0.08), in: Circle())
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(CookTheme.title(20)).foregroundStyle(.primary)
+                Text(title).font(CookTheme.text(17, weight: .regular, relativeTo: .body)).foregroundStyle(.primary)
             }
         }
-        .frame(minHeight: 56)
-        .padding(.vertical, 2)
+        .frame(minHeight: 44)
     }
 }
 

@@ -16,10 +16,7 @@ enum CookTheme {
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
 
     static func text(_ size: CGFloat, weight: Font.Weight = .regular, relativeTo style: Font.TextStyle = .body) -> Font {
-        let name = weight == .regular
-            ? "SourceSans3-Regular"
-            : (weight == .bold || weight == .heavy || weight == .black ? "SourceSans3-Bold" : "SourceSans3-Semibold")
-        return .custom(name, size: size, relativeTo: style)
+        .custom("Lora-Regular", size: size, relativeTo: style).weight(weight)
     }
 
     static func title(_ size: CGFloat = 32) -> Font {
@@ -32,17 +29,15 @@ enum CookTheme {
 
     @MainActor
     static func installUIKitTypography() {
-        guard let regular = UIFont(name: "SourceSans3-Regular", size: 17),
-              let semibold = UIFont(name: "SourceSans3-Semibold", size: 17),
-              let bold = UIFont(name: "SourceSans3-Bold", size: 17) else { return }
+        guard let regular = UIFont(name: "Lora-Regular", size: 17) else { return }
 
         let navigation = UINavigationBar.appearance()
-        navigation.titleTextAttributes = [.font: UIFontMetrics(forTextStyle: .headline).scaledFont(for: semibold)]
-        navigation.largeTitleTextAttributes = [.font: UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: UIFont(descriptor: bold.fontDescriptor, size: 34))]
+        navigation.titleTextAttributes = [.font: UIFontMetrics(forTextStyle: .headline).scaledFont(for: regular)]
+        navigation.largeTitleTextAttributes = [.font: UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: regular.withSize(34))]
 
         let tabItem = UITabBarItem.appearance()
         tabItem.setTitleTextAttributes([.font: UIFontMetrics(forTextStyle: .caption2).scaledFont(for: regular.withSize(10))], for: .normal)
-        tabItem.setTitleTextAttributes([.font: UIFontMetrics(forTextStyle: .caption2).scaledFont(for: semibold.withSize(10))], for: .selected)
+        tabItem.setTitleTextAttributes([.font: UIFontMetrics(forTextStyle: .caption2).scaledFont(for: regular.withSize(10))], for: .selected)
     }
 }
 
