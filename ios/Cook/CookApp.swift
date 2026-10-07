@@ -6,26 +6,37 @@ import CookCore
 struct CookApp: App {
     @State private var store: CookStore
     @State private var subscriptions = SubscriptionStore()
+    private let isUITesting: Bool
 
     init() {
         CookTheme.installUIKitTypography()
+
+        let arguments = ProcessInfo.processInfo.arguments
+        let isUITesting = arguments.contains("--uitesting")
+        self.isUITesting = isUITesting
+
         _ = CookAuthService.shared
-        let isUITesting = ProcessInfo.processInfo.arguments.contains("--uitesting")
+
         let localStore = CookStore(fileURL: isUITesting ? nil : CookStore.defaultFileURL())
         if isUITesting {
             for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("cook.cookingSession.") {
                 UserDefaults.standard.removeObject(forKey: key)
             }
-            do { try localStore.loadSampleRecipes() }
-            catch { assertionFailure("UI test fixtures could not be loaded: \(error)") }
+            do {
+                try localStore.loadSampleRecipes()
+            } catch {
+                assertionFailure("UI test fixtures could not be loaded: \(error)")
+            }
         }
+
         _store = State(initialValue: localStore)
     }
 
     var body: some Scene {
         WindowGroup {
-            CookRootView()
+            CookRootView(bypassOnboarding: isUITesting)
                 .environment(store)
+                .environment(subscriptions)
                 .onOpenURL { CookAuthService.shared.handleAuthCallback($0) }
                 .tint(CookTheme.accent)
                 .font(CookTheme.body())
@@ -35,7 +46,7 @@ struct CookApp: App {
     }
 
     private var appLocale: Locale {
-        Locale(identifier: "en")
+        isUITesting ? Locale(identifier: "en") : .autoupdatingCurrent
     }
 
     private var colorScheme: ColorScheme? {
@@ -49,7 +60,10 @@ struct CookApp: App {
 
 private struct CookRootView: View {
     @Environment(CookStore.self) private var store
+    @AppStorage(FirstLaunchFlowView.completionKey) private var hasCompletedOnboarding = false
     @State private var selectedTab: CookTab = .recipes
+
+    let bypassOnboarding: Bool
 
     var body: some View {
         if let message = store.loadError {
@@ -65,12 +79,35 @@ private struct CookRootView: View {
                 .navigationTitle("Cook")
                 .background(CookTheme.canvas)
             }
+        } else if !hasCompletedOnboarding && !bypassOnboarding {
+            FirstLaunchFlowView {
+                hasCompletedOnboarding = true
+            }
         } else {
             TabView(selection: $selectedTab) {
-                NavigationStack { RecipesView().toolbar(.hidden, for: .tabBar) }.tag(CookTab.recipes)
-                NavigationStack { MealPlanView().toolbar(.hidden, for: .tabBar) }.tag(CookTab.plan)
-                NavigationStack { GroceriesView().toolbar(.hidden, for: .tabBar) }.tag(CookTab.groceries)
-                NavigationStack { ProfileView().toolbar(.hidden, for: .tabBar) }.tag(CookTab.profile)
+                NavigationStack {
+                    RecipesView()
+                        .toolbar(.hidden, for: .tabBar)
+                }
+                .tag(CookTab.recipes)
+
+                NavigationStack {
+                    MealPlanView()
+                        .toolbar(.hidden, for: .tabBar)
+                }
+                .tag(CookTab.plan)
+
+                NavigationStack {
+                    GroceriesView()
+                        .toolbar(.hidden, for: .tabBar)
+                }
+                .tag(CookTab.groceries)
+
+                NavigationStack {
+                    ProfileView()
+                        .toolbar(.hidden, for: .tabBar)
+                }
+                .tag(CookTab.profile)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 CookTabBar(selection: $selectedTab)
@@ -80,9 +117,13 @@ private struct CookRootView: View {
 }
 
 private enum CookTab: String, CaseIterable, Identifiable {
-    case recipes, plan, groceries, profile
+    case recipes
+    case plan
+    case groceries
+    case profile
 
     var id: Self { self }
+
     var title: String {
         switch self {
         case .recipes: "Recipes"
@@ -91,6 +132,7 @@ private enum CookTab: String, CaseIterable, Identifiable {
         case .profile: "Profile"
         }
     }
+
     var symbol: String {
         switch self {
         case .recipes: "book.closed"
