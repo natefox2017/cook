@@ -15,6 +15,7 @@
 | UI-009 | 我的/设置 | TBD | PENDING | 账户/导入/数据 |
 | UI-010 | Share Extension 成功 | TBD | PENDING | 快速结束 |
 | UI-011 | Share Extension 失败/降级 | TBD | PENDING | 可继续操作 |
+| UI-013 | RecipePouch App 启动页 | [RecipePouch 启动页方案](DESIGN/proposals/2026-10-07/recipepouch-launch-screen.svg) | PENDING | Apple HIG 系统启动画面：浅色/深色使用首屏画布纯色背景，不放文字或品牌图标；待用户确认后接入 |
 
 ## 状态定义
 - PENDING：未确认
