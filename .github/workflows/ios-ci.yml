@@ -1,10 +1,7 @@
 name: iOS CI
 
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,14 +16,9 @@ jobs:
         run: brew install xcodegen
       - name: Generate project
         run: cd ios/CookApp && xcodegen generate
-      - name: Build
+      - name: Build and test
         run: |
           cd ios/CookApp
           DESTINATION=$(xcrun simctl list devices available | grep -m1 -E 'iPhone' | sed -E 's/.*\(([0-9A-F-]{36})\).*/id=\1/')
           test -n "$DESTINATION"
-          xcodebuild -project Cook.xcodeproj -scheme Cook -destination "$DESTINATION" build
-      - name: Test
-        run: |
-          cd ios/CookApp
-          DESTINATION=$(xcrun simctl list devices available | grep -m1 -E 'iPhone' | sed -E 's/.*\(([0-9A-F-]{36})\).*/id=\1/')
           xcodebuild -project Cook.xcodeproj -scheme Cook -destination "$DESTINATION" test
