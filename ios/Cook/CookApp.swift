@@ -132,6 +132,11 @@ private struct FirstLaunchGateView: View {
         case show
     }
 
+    // First production release that contains this onboarding.
+    // Existing App Store customers purchased before this cutoff should not be
+    // treated as first-time users, even if an earlier version never wrote library.json.
+    private static let onboardingReleaseCutoff = Date(timeIntervalSince1970: 1_791_417_600)
+
     @State private var decision: Decision = .checking
     let onComplete: () -> Void
 
@@ -158,10 +163,10 @@ private struct FirstLaunchGateView: View {
                 return
             }
 
-            // A verified production App Store transaction can identify an upgrade
-            // even when the previous version never created library.json.
+            // appVersionID is nil for local/sandbox transactions. Apply the release
+            // cutoff only to verified production App Store history.
             if appTransaction.appVersionID != nil,
-               appTransaction.originalAppVersion != appTransaction.appVersion {
+               appTransaction.originalPurchaseDate < Self.onboardingReleaseCutoff {
                 onComplete()
                 return
             }
