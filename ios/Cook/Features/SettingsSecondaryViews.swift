@@ -1,10 +1,43 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import CookCore
 
 struct DataPrivacySettingsView:View{
  @Environment(CookStore.self)private var store
  @State private var export=false;@State private var doc=SettingsExportDocument(data:Data());@State private var confirmLocal=false;@State private var confirmAccount=false;@State private var message:String?
- var body:some View{List{Section("Your data"){Button("Export All Local Data"){prepareExport()};NavigationLink("What Cook Stores"){StoredDataView()};NavigationLink("Privacy Summary"){PrivacySummaryView()}};Section("Delete"){Button("Delete All Local Data",role:.destructive){confirmLocal=true};HStack { Text("Delete Cook Account & Cloud Data").foregroundStyle(.secondary); Spacer(); Text("Sign in required").font(.caption).foregroundStyle(.secondary) }}footer:{Text("Account deletion requires a connected Cook account. Deleting local data does not cancel an App Store subscription.")}}.navigationTitle("Data & Privacy").fileExporter(isPresented:$export,document:doc,contentType:.json,defaultFilename:"Cook-Export"){_ in}.confirmationDialog("Delete all local Cook data?",isPresented:$confirmLocal,titleVisibility:.visible){Button("Delete Local Data",role:.destructive){do{try store.resetLibrary();message="Local Cook data deleted."}catch{message=error.localizedDescription}}}.confirmationDialog("Delete Cook account?",isPresented:$confirmAccount,titleVisibility:.visible){Button("Delete Account & Cloud Data",role:.destructive){message="Connect a Cook account before deleting cloud data."}}message:{Text("This is separate from cancelling your App Store subscription.")}.alert("Data & Privacy",isPresented:.init(get:{message != nil},set:{if !$0{message=nil}})){Button("OK",role:.cancel){message=nil}}message:{Text(message ?? "")}}
+ var body:some View{
+  List{
+   Section("Your data"){
+    Button("Export All Local Data"){prepareExport()}
+    NavigationLink("What Cook Stores"){StoredDataView()}
+    NavigationLink("Privacy Summary"){PrivacySummaryView()}
+   }
+   Section {
+    Button("Delete All Local Data",role:.destructive){confirmLocal=true}
+    HStack {
+     Text("Delete Cook Account & Cloud Data").foregroundStyle(.secondary)
+     Spacer()
+     Text("Sign in required").font(.caption).foregroundStyle(.secondary)
+    }
+   } header: { Text("Delete") } footer: {
+    Text("Account deletion requires a connected Cook account. Deleting local data does not cancel an App Store subscription.")
+   }
+  }
+  .navigationTitle("Data & Privacy")
+  .fileExporter(isPresented:$export,document:doc,contentType:.json,defaultFilename:"Cook-Export"){_ in}
+  .confirmationDialog("Delete all local Cook data?",isPresented:$confirmLocal,titleVisibility:.visible){
+   Button("Delete Local Data",role:.destructive){
+    do{try store.resetLibrary();message="Local Cook data deleted."}
+    catch{message=error.localizedDescription}
+   }
+  }
+  .confirmationDialog("Delete Cook account?",isPresented:$confirmAccount,titleVisibility:.visible){
+   Button("Delete Account & Cloud Data",role:.destructive){message="Connect a Cook account before deleting cloud data."}
+  }message:{Text("This is separate from cancelling your App Store subscription.")}
+  .alert("Data & Privacy",isPresented:.init(get:{message != nil},set:{if !$0{message=nil}})){
+   Button("OK",role:.cancel){message=nil}
+  }message:{Text(message ?? "")}
+ }
  func prepareExport(){do{doc=SettingsExportDocument(data:try store.exportData());export=true}catch{message=error.localizedDescription}}
 }
 private struct SettingsExportDocument:FileDocument{
@@ -16,9 +49,9 @@ struct StoredDataView:View{var body:some View{List{Label("Recipes, notes and ori
 struct PrivacySummaryView:View{var body:some View{ScrollView{VStack(alignment:.leading,spacing:18){Text("Privacy Summary").font(CookTheme.title(30));Text("Cook is designed as a private recipe utility. It does not publish your recipes to a public feed.");Text("Automated imports may send source material to Cook’s backend only when the import feature requires processing. Provider secrets remain server-side.");Text("App Store purchases are managed by Apple. Your App Store purchase identity and Cook recipe account are treated as separate identities.");Text("You can export local data and request deletion of your Cook account data from Settings.")}.padding()}.navigationTitle("Privacy")}}
 
 struct HelpCenterView:View{
- var body:some View{List{Section("Getting started"){NavigationLink("Add or import a recipe"){HelpArticleView(title:"Add or import a recipe",body:"Use Add Recipe to paste a link, import text or a document, scan a photo, or create a recipe manually. Incomplete imports remain editable instead of inventing missing details.")};NavigationLink("Cook with timers"){HelpArticleView(title:"Cook with timers",body:"Start Cooking opens a focused full-screen flow. Step timers can run independently, ingredients can be checked off, and Cook restores the session when possible.")};NavigationLink("Plan meals and shop"){HelpArticleView(title:"Plan meals and shop",body:"Add saved recipes to the Meal Plan, then add ingredients to Groceries. Cook preserves recipe sources and only consolidates compatible quantities.")}};Section("Troubleshooting"){NavigationLink("Subscription not showing"){HelpArticleView(title:"Subscription not showing",body:"Check that you are using the intended Cook account and App Store account. Then open Subscription and choose Restore Purchases. Restoring an App Store purchase does not select which Cook cloud account contains your recipes.")};NavigationLink("Sync problems"){HelpArticleView(title:"Sync problems",body:"Open Cloud Sync to review account, last sync and status. Your local library remains available while sync is unavailable.")};NavigationLink("Import needs review"){HelpArticleView(title:"Import needs review",body:"Cook keeps the original source and marks uncertain or missing recipe details for review rather than guessing quantities or steps.")}}}.navigationTitle("Help & Support")}
+ var body:some View{List{Section("Getting started"){NavigationLink("Add or import a recipe"){HelpArticleView(title:"Add or import a recipe",content:"Use Add Recipe to paste a link, import text or a document, scan a photo, or create a recipe manually. Incomplete imports remain editable instead of inventing missing details.")};NavigationLink("Cook with timers"){HelpArticleView(title:"Cook with timers",content:"Start Cooking opens a focused full-screen flow. Step timers can run independently, ingredients can be checked off, and Cook restores the session when possible.")};NavigationLink("Plan meals and shop"){HelpArticleView(title:"Plan meals and shop",content:"Add saved recipes to the Meal Plan, then add ingredients to Groceries. Cook preserves recipe sources and only consolidates compatible quantities.")}};Section("Troubleshooting"){NavigationLink("Subscription not showing"){HelpArticleView(title:"Subscription not showing",content:"Check that you are using the intended Cook account and App Store account. Then open Subscription and choose Restore Purchases. Restoring an App Store purchase does not select which Cook cloud account contains your recipes.")};NavigationLink("Sync problems"){HelpArticleView(title:"Sync problems",content:"Open Cloud Sync to review account, last sync and status. Your local library remains available while sync is unavailable.")};NavigationLink("Import needs review"){HelpArticleView(title:"Import needs review",content:"Cook keeps the original source and marks uncertain or missing recipe details for review rather than guessing quantities or steps.")}}}.navigationTitle("Help & Support")}
 }
-private struct HelpArticleView:View{let title:String;let body:String;var bodyView:some View{EmptyView()};var body:some View{ScrollView{VStack(alignment:.leading,spacing:16){Text(title).font(CookTheme.title(30));Text(body).font(.body)}.padding()}.navigationTitle(title)}}
+private struct HelpArticleView:View{let title:String;let content:String;var body:some View{ScrollView{VStack(alignment:.leading,spacing:16){Text(title).font(CookTheme.title(30));Text(content).font(.body)}.padding()}.navigationTitle(title)}}
 
 struct AboutSettingsView:View{
  var body:some View{List{Section{HStack{Image(systemName:"leaf.fill").font(.largeTitle).foregroundStyle(CookTheme.accent);VStack(alignment:.leading){Text("Cook").font(CookTheme.title(28));Text("Good food. Brighter days.").foregroundStyle(.secondary)}}};Section("App"){LabeledContent("Version",value:CookVersion.display);NavigationLink("Open Source Licenses"){LicensesView()};NavigationLink("Acknowledgements"){AcknowledgementsView()}};Section("Legal"){Link("Apple Standard EULA",destination:URL(string:"https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)}}.navigationTitle("About Cook")}

@@ -51,7 +51,24 @@ struct ProfileView: View {
             }
             .listRowBackground(Color.clear)
 
-            Section {\n                NavigationLink { SettingsHubView() } label: { ProfileRowLabel(title: "Settings", subtitle: "Account, subscription, sync and preferences", systemImage: "gearshape") }\n            }\n            .listRowBackground(CookTheme.card)\n\n            Section("Account & subscription") {\n                NavigationLink { AccountView() } label: { ProfileRowLabel(title: "Cook Account", subtitle: "Sign in and sync across devices", systemImage: "person.badge.key") }\n                NavigationLink { SubscriptionView() } label: { ProfileRowLabel(title: "Cook Premium", subtitle: "Subscribe, restore or manage", systemImage: "sparkles") }\n            }\n            .listRowBackground(CookTheme.card)\n\n            Section("Your kitchen") {
+            Section {
+                NavigationLink { SettingsHubView() } label: {
+                    ProfileRowLabel(title: "Settings", subtitle: "Account, subscription, sync and preferences", systemImage: "gearshape")
+                }
+            }
+            .listRowBackground(CookTheme.card)
+
+            Section("Account & subscription") {
+                NavigationLink { AccountView() } label: {
+                    ProfileRowLabel(title: "Cook Account", subtitle: "Sign in and sync across devices", systemImage: "person.badge.key")
+                }
+                NavigationLink { SubscriptionView() } label: {
+                    ProfileRowLabel(title: "Cook Premium", subtitle: "Subscribe, restore or manage", systemImage: "sparkles")
+                }
+            }
+            .listRowBackground(CookTheme.card)
+
+            Section("Your kitchen") {
                 NavigationLink {
                     RecipesView()
                 } label: {
@@ -287,7 +304,7 @@ private struct LocalProfileEditorView: View {
     }
 }
 
-private struct NotificationPreferencesView: View {
+struct NotificationPreferencesView: View {
     @Environment(CookStore.self) private var store
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
@@ -467,7 +484,7 @@ private struct CookAboutView: View {
     }
 }
 
-private enum CookVersion {
+enum CookVersion {
     static var display: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
