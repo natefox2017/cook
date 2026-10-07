@@ -6,6 +6,33 @@ final class CookUITests: XCTestCase {
     }
 
     @MainActor
+    func testFirstLaunchShowsUsageGuideAndFreePath() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--test-onboarding"]
+        app.launch()
+        defer { app.terminate() }
+
+        let primary = app.buttons["onboarding.primary"]
+        waitUntilReady(primary)
+        XCTAssertTrue(app.staticTexts["Keep every recipe in one place"].exists)
+        primary.tap()
+
+        XCTAssertTrue(app.staticTexts["Save your first recipe"].waitForExistence(timeout: 8))
+        let seePlans = app.buttons["onboarding.primary"]
+        waitUntilReady(seePlans)
+        XCTAssertEqual(seePlans.label, "See Plans")
+        seePlans.tap()
+
+        XCTAssertTrue(app.staticTexts["Cook Premium"].waitForExistence(timeout: 8))
+        let continueFree = app.buttons["onboarding.continueFree"]
+        waitUntilReady(continueFree)
+        continueFree.tap()
+
+        waitUntilReady(app.buttons["addRecipeButton"])
+        waitUntilReady(app.buttons["tab.recipes"])
+    }
+
+    @MainActor
     func testRecipeIngredientsBecomeRealGroceryItems() {
         let app = launchSeededApp()
         defer { app.terminate() }
