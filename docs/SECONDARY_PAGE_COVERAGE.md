@@ -9,7 +9,9 @@ This document is the UI completeness checklist for the current codebase. Product
 - Profile overview — implemented.
 - Edit local profile — implemented.
 - Settings hub — implemented.
-- First launch — implemented: welcome/value proposition → first-use recipe import guide → App Store-backed Premium plan page → explicit free continue path.\n- Getting Started — implemented as a reusable Settings page after onboarding.\n- Cook Account — implemented client actions: email sign in/sign up/password reset/Sign in with Apple/sign out; production Supabase email delivery and Apple provider behavior still require integration verification.
+- First launch — implemented: welcome/value proposition → first-use recipe import guide → App Store-backed Premium plan page → explicit free continue path.
+- Getting Started — implemented as a reusable Settings page after onboarding.
+- Cook Account — implemented client actions: email sign in/sign up/password reset/Sign in with Apple/sign out; production Supabase email delivery and Apple provider behavior still require integration verification.
 - Subscription — implemented first-launch paywall + Settings management UI + StoreKit 2 service: localized products, purchase, verified entitlement status, restore and manage; real App Store products/offers still require sandbox/production verification.
 - Cloud Sync — implemented settings/status/mode page; production Supabase connection deferred.
 - Notifications — implemented.
