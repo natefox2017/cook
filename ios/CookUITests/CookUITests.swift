@@ -174,6 +174,26 @@ final class CookUITests: XCTestCase {
         attachScreenshot("Recipe added directly to meal plan", app: app)
     }
 
+
+    @MainActor
+    func testCookingIngredientCheckoffPersistsInSession() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+        openSamplePasta(in: app)
+        app.buttons["startCooking"].tap()
+        waitUntilReady(app.buttons["Ingredients"])
+        app.buttons["Ingredients"].tap()
+        let tomato = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Tomatoes")).firstMatch
+        waitUntilReady(tomato)
+        tomato.tap()
+        XCTAssertTrue(tomato.label.contains("used"))
+        app.navigationBars.buttons["Done"].tap()
+        app.buttons["Ingredients"].tap()
+        let restored = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Tomatoes")).firstMatch
+        waitUntilReady(restored)
+        XCTAssertTrue(restored.label.contains("used"))
+    }
+
     @MainActor
     private func launchSeededApp() -> XCUIApplication {
         let app = XCUIApplication()
