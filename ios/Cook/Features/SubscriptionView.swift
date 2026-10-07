@@ -10,8 +10,6 @@ struct SubscriptionView: View {
             VStack(spacing: 22) {
                 Image(systemName: "leaf.circle.fill").font(.system(size: 64)).foregroundStyle(CookTheme.accent)
                 Text("Cook Premium").font(CookTheme.title(34))
-                Text("Keep automated imports and cloud sync available across your devices.")
-                    .multilineTextAlignment(.center).foregroundStyle(.secondary)
 
                 switch subscriptions.state {
                 case .active:
@@ -42,8 +40,6 @@ struct SubscriptionView: View {
                 }
 
                 Link("Terms of Use", destination: URL(string:"https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
-                Text("Prices, billing periods and introductory offers are supplied by the App Store.")
-                    .font(CookTheme.text(12, weight: .regular, relativeTo: .caption)).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }.padding(24)
         }
         .background(CookTheme.canvas)
