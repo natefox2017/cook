@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="820" viewBox="0 0 1000 820">
+  <rect width="1000" height="820" fill="#f1f2f0"/>
+  <g font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="22" fill="#454a46" text-anchor="middle">
+    <text x="275" y="64">Light appearance</text>
+    <text x="725" y="64">Dark appearance</text>
+  </g>
+  <g>
+    <rect x="150" y="94" width="250" height="650" rx="36" fill="#242824"/>
+    <rect x="160" y="104" width="230" height="630" rx="28" fill="#f8f7f1"/>
+    <rect x="600" y="94" width="250" height="650" rx="36" fill="#242824"/>
+    <rect x="610" y="104" width="230" height="630" rx="28" fill="#131714"/>
+  </g>
+</svg>
