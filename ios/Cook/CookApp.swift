@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 import CookCore
 
@@ -89,7 +90,7 @@ private struct CookRootView: View {
                 .background(CookTheme.canvas)
             }
         } else if !hasCompletedOnboarding && !bypassOnboarding {
-            FirstLaunchFlowView {
+            FirstLaunchGateView {
                 hasCompletedOnboarding = true
             }
         } else {
@@ -122,6 +123,54 @@ private struct CookRootView: View {
                 CookTabBar(selection: $selectedTab)
             }
         }
+    }
+}
+
+private struct FirstLaunchGateView: View {
+    private enum Decision {
+        case checking
+        case show
+    }
+
+    @State private var decision: Decision = .checking
+    let onComplete: () -> Void
+
+    var body: some View {
+        Group {
+            switch decision {
+            case .checking:
+                ProgressView("Preparing RecipePouch…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(CookTheme.canvas)
+                    .task { await resolveExistingInstall() }
+
+            case .show:
+                FirstLaunchFlowView(onComplete: onComplete)
+            }
+        }
+    }
+
+    private func resolveExistingInstall() async {
+        do {
+            let result = try await AppTransaction.shared
+            guard case .verified(let appTransaction) = result else {
+                decision = .show
+                return
+            }
+
+            // A verified production App Store transaction can identify an upgrade
+            // even when the previous version never created library.json.
+            if appTransaction.appVersionID != nil,
+               appTransaction.originalAppVersion != appTransaction.appVersion {
+                onComplete()
+                return
+            }
+        } catch {
+            // AppTransaction may be unavailable offline. Prefer skippable onboarding
+            // over blocking a genuine new user from the app.
+        }
+
+        decision = .show
     }
 }
 
