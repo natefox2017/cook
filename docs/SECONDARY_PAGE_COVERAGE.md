@@ -7,7 +7,7 @@ This document is the UI completeness checklist for the current codebase. Product
 ## First launch
 
 - Welcome / value proposition — implemented.
-- First-use recipe saving guide — implemented and reusable from Settings/Profile.
+- First-use recipe saving guide — implemented and reusable from Profile.
 - Optional Premium plan step — implemented with App Store product data, Restore Purchases, legal links, and a visible Continue Free path.
 - Production follows the device locale; UI automation remains English and bypasses first launch.
 
