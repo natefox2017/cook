@@ -28,7 +28,7 @@ struct AccountView: View {
                     message = "Sign in with Apple is wired to the native credential UI; Supabase Apple provider configuration is required to exchange the token."
                 }
                 .signInWithAppleButtonStyle(.black)
-                .frame(height: 50)
+                .frame(height: 50)\n                .allowsHitTesting(false)\n                .opacity(0.5)
             } footer: {
                 Text("Cook never treats your App Store subscription account as your Cook recipe account.")
             }
