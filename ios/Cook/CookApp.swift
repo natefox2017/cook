@@ -6,7 +6,7 @@ import CookCore
 struct CookApp: App {
     @State private var store: CookStore
     @State private var subscriptions = SubscriptionStore()
-    private let isUITesting: Bool
+    private let isUITesting: Bool\n    private let bypassOnboarding: Bool
 
     init() {
         CookTheme.installUIKitTypography()
@@ -34,7 +34,7 @@ struct CookApp: App {
 
     var body: some Scene {
         WindowGroup {
-            CookRootView(bypassOnboarding: isUITesting)
+            CookRootView(bypassOnboarding: bypassOnboarding)
                 .environment(store)
                 .environment(subscriptions)
                 .onOpenURL { CookAuthService.shared.handleAuthCallback($0) }
