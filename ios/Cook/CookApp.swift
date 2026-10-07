@@ -3,7 +3,7 @@ import CookCore
 
 @main
 struct CookApp: App {
-    @State private var store: CookStore
+    @State private var store: CookStore\n    @State private var subscriptions = SubscriptionStore()
 
     init() {
         let isUITesting = ProcessInfo.processInfo.arguments.contains("--uitesting")
