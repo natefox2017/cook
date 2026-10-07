@@ -5,7 +5,8 @@
 	};
 	objectVersion = 56;
 	objects = {
-		AAA100000000000000000001 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cook/Features/AccountView.swift"; sourceTree = "<group>"; };\n\t\tFL1000000000000000000001 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cook/Features/FirstLaunchView.swift"; sourceTree = "<group>"; };
+		AAA100000000000000000001 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cook/Features/AccountView.swift"; sourceTree = "<group>"; };
+		FL1000000000000000000001 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cook/Features/FirstLaunchView.swift"; sourceTree = "<group>"; };
 		AAA100000000000000000002 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cook/Features/SubscriptionView.swift"; sourceTree = "<group>"; };
 		AAA100000000000000000003 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cook/Features/SettingsHubView.swift"; sourceTree = "<group>"; };
 		AAA100000000000000000004 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cook/Features/SettingsSecondaryViews.swift"; sourceTree = "<group>"; };
@@ -14,7 +15,8 @@
 		AAA100000000000000000007 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cook/Services/CloudSyncService.swift"; sourceTree = "<group>"; };
 		CA2500000000000000000001 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cook/Services/CookAuthService.swift"; sourceTree = "<group>"; };
 		CA2500000000000000000002 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cook/Services/SupabaseConfiguration.swift"; sourceTree = "<group>"; };
-		AAA200000000000000000001 = { isa = PBXBuildFile; fileRef = "AAA100000000000000000001"; };\n\t\tFL2000000000000000000001 = { isa = PBXBuildFile; fileRef = "FL1000000000000000000001"; };
+		AAA200000000000000000001 = { isa = PBXBuildFile; fileRef = "AAA100000000000000000001"; };
+		FL2000000000000000000001 = { isa = PBXBuildFile; fileRef = "FL1000000000000000000001"; };
 		AAA200000000000000000002 = { isa = PBXBuildFile; fileRef = "AAA100000000000000000002"; };
 		AAA200000000000000000003 = { isa = PBXBuildFile; fileRef = "AAA100000000000000000003"; };
 		AAA200000000000000000004 = { isa = PBXBuildFile; fileRef = "AAA100000000000000000004"; };
