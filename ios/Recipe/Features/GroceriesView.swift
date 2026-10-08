@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Implements the grocery list, editing, grouping, source references, and purchase state.
+
 import RecipeCore
 import SwiftUI
 
