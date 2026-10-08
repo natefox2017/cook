@@ -101,6 +101,14 @@ Deno.serve(async (request: Request): Promise<Response> => {
         continue;
       }
 
+      if (job.queue_message_id !== queueID) {
+        // A retried job can have a newer committed queue message. The old
+        // message is superseded and must not occupy the queue forever; archive
+        // it only after verifying the persisted job points to a different ID.
+        await archive(queueID);
+        continue;
+      }
+
       if (job.status === "completed" || job.status === "failed") {
         await archive(queueID);
         continue;
