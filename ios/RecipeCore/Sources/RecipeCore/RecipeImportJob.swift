@@ -343,10 +343,17 @@ public enum RecipeImportResultStatus: String, Codable, Sendable {
 public struct RecipeImportRecord: Codable, Hashable, Sendable {
     public let jobID: UUID
     public let result: RecipeImportJobResponse.Result
+    /// Records explicit local review without altering server fields or evidence.
+    public var reviewedAt: Date?
 
-    public init(jobID: UUID, result: RecipeImportJobResponse.Result) {
+    public init(
+        jobID: UUID,
+        result: RecipeImportJobResponse.Result,
+        reviewedAt: Date? = nil
+    ) {
         self.jobID = jobID
         self.result = result
+        self.reviewedAt = reviewedAt
     }
 }
 

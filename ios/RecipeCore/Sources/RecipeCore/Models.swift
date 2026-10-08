@@ -79,7 +79,8 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
     }
 
     public var needsReview: Bool {
-        importRecord?.result.resultStatus == .needsReview
+        (importRecord?.result.resultStatus == .needsReview
+            && importRecord?.reviewedAt == nil)
             || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || ingredients.isEmpty || steps.isEmpty
             || ingredients.contains { $0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
