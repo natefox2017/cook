@@ -40,11 +40,11 @@ struct AccountView: View {
             }
         }
         .background(RecipeTheme.canvas)
-        .navigationTitle("Recipe Account")
+        .navigationTitle("RecipePouch Account")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
         .alert(
-            "Recipe Account",
+            "RecipePouch Account",
             isPresented: Binding(
                 get: { localMessage != nil },
                 set: { if !$0 { localMessage = nil } }
@@ -91,8 +91,8 @@ struct AccountView: View {
                 Text("Account")
             } footer: {
                 Text(mode == .signIn
-                     ? "Sign in to reconnect the same Recipe account on another device."
-                     : "Create one Recipe account for future cloud sync. App Store purchases remain a separate Apple account entitlement.")
+                     ? "Sign in to reconnect the same RecipePouch account on another device."
+                     : "Create one RecipePouch account for future cloud sync. App Store purchases remain a separate Apple account entitlement.")
             }
 
             if mode == .signIn {
@@ -118,7 +118,7 @@ struct AccountView: View {
                 .disabled(isAuthenticating)
                 .accessibilityIdentifier("account.apple")
             } footer: {
-                Text("Apple sign-in uses the native Apple authorization sheet, then exchanges the verified identity token with Recipe’s Supabase Auth project.")
+                Text("Apple sign-in uses the native Apple authorization sheet, then exchanges the verified identity token with RecipePouch’s Supabase Auth project.")
             }
 
             if let statusMessage {
@@ -142,11 +142,11 @@ struct AccountView: View {
                     LabeledContent("Email", value: email)
                 }
             } header: {
-                Text("Recipe Account")
+                Text("RecipePouch Account")
             }
 
             Section {
-                Text("Your Recipe account identifies future private cloud data. It is separate from the Apple ID that owns an App Store subscription.")
+                Text("Your RecipePouch account identifies future private cloud data. It is separate from the Apple ID that owns an App Store subscription.")
                     .foregroundStyle(.secondary)
             }
 
@@ -220,7 +220,7 @@ struct AccountView: View {
     private var statusMessage: String? {
         switch auth.state {
         case .needsEmailVerification(let address):
-            return "Check \(address) to verify your account, then return to Recipe."
+            return "Check \(address) to verify your account, then return to RecipePouch."
         case .passwordResetSent(let address):
             return "A password reset link was sent to \(address)."
         case .error(let message):
