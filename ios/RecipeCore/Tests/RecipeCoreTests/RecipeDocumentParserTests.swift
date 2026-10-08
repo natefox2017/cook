@@ -20,6 +20,18 @@ import Testing
     #expect(recipe.sourceURL == "https://example.com/pasta")
 }
 
+@Test func sourceURLAndVagueRawIngredientStayTraceableWhenStepsAreMissing() throws {
+    let sourceURL = URL(string: "https://example.com/soy-soup?share=original")!
+    let html = #"<script type='application/ld+json'>{"@type":"Recipe","name":"Soy soup","recipeIngredient":["salt to taste"]}</script>"#
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: sourceURL))
+
+    #expect(recipe.sourceURL == sourceURL.absoluteString)
+    #expect(recipe.sourceText?.contains("salt to taste") == true)
+    #expect(recipe.ingredients.first?.quantity == nil)
+    #expect(recipe.steps.isEmpty)
+    #expect(recipe.needsReview)
+}
+
 @Test func nonRecipePageNeverBecomesDemoContent() {
     #expect(RecipeDocumentParser.recipe(inHTML: "<title>Private video</title>", sourceURL: URL(string: "https://example.com/video")!) == nil)
     let recipe = RecipeDocumentParser.recipe(fromText: "A little salt and cook until ready.")
