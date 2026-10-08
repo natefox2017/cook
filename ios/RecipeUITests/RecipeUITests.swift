@@ -329,6 +329,31 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testAccountScreenShowsAvailableSignInOptions() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let account = app.buttons["RecipePouch Account"]
+        waitUntilReady(account)
+        account.tap()
+
+        XCTAssertTrue(app.buttons["account.submit"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.textFields["Email"].exists)
+        XCTAssertTrue(app.secureTextFields["Password"].exists)
+        XCTAssertTrue(
+            app.buttons.matching(
+                NSPredicate(format: "label CONTAINS[c] %@", "Apple")
+            ).firstMatch.exists
+        )
+        XCTAssertTrue(app.buttons["Forgot Password?"].exists)
+        attachScreenshot("Account sign in options", app: app)
+    }
+
+    @MainActor
     func testCookingIngredientCheckoffPersistsInSession() {
         let app = launchSeededApp()
         defer { app.terminate() }
