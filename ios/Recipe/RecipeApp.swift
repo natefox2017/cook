@@ -40,7 +40,9 @@ struct RecipeApp: App {
 
         let localStore = RecipeStore(fileURL: isUITesting ? nil : libraryURL)
         if isUITesting {
-            for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("recipe.cookingSession.") || key.hasPrefix("cook.cookingSession.") {
+            for key in UserDefaults.standard.dictionaryRepresentation().keys
+            where key.hasPrefix("recipe.cookingSession.")
+                || key.hasPrefix("cook.cookingSession.") {
                 UserDefaults.standard.removeObject(forKey: key)
             }
             do {
