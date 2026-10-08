@@ -720,9 +720,9 @@ struct CookingView: View {
                 session.stepID = recipe.steps.first?.id
             }
 
-            session.completedStepIDs = session.completedStepIDs.filter { completedID in
+            session.completedStepIDs = Set(session.completedStepIDs.filter { completedID in
                 recipe.steps.contains(where: { $0.id == completedID })
-            }
+            })
 
             if let original = recipe.servings, original > 0 {
                 session.servings = max(1, servings ?? session.servings ?? original)
