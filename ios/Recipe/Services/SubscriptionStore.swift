@@ -28,6 +28,9 @@ enum SubscriptionState: Equatable {
 
 @MainActor @Observable
 final class SubscriptionStore {
+    private static let unconfiguredProductsMessage =
+        "Subscription products have not been configured in App Store Connect."
+
     private(set) var products: [Product] = []
     private(set) var trialEligibleProductIDs = Set<String>()
     private(set) var state: SubscriptionState = .loading
@@ -63,7 +66,7 @@ final class SubscriptionStore {
             let ids = Self.productIDs
             guard !ids.isEmpty else {
                 products = []
-                state = .unavailable("Subscription products have not been configured in App Store Connect.")
+                state = .unavailable(Self.unconfiguredProductsMessage)
                 hasLoaded = true
                 return
             }
@@ -131,6 +134,12 @@ final class SubscriptionStore {
 
     func restore() async {
         guard !isWorking else { return }
+        guard !Self.productIDs.isEmpty else {
+            state = .unavailable(Self.unconfiguredProductsMessage)
+            message = Self.unconfiguredProductsMessage
+            return
+        }
+
         isWorking = true
         defer { isWorking = false }
 
@@ -139,6 +148,8 @@ final class SubscriptionStore {
             await refreshEntitlements()
             if state.hasEntitlement {
                 message = "Your active RecipePouch subscription has been restored."
+            } else if case .unavailable(let reason) = state {
+                message = reason
             } else {
                 message = "No active RecipePouch subscription was found for this App Store account."
             }
@@ -179,7 +190,7 @@ final class SubscriptionStore {
     func refreshEntitlements() async -> Set<String> {
         let configuredProductIDs = Set(Self.productIDs)
         guard !configuredProductIDs.isEmpty else {
-            state = .unavailable("Subscription products have not been configured.")
+            state = .unavailable(Self.unconfiguredProductsMessage)
             return []
         }
 
