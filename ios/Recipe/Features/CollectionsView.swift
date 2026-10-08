@@ -179,9 +179,10 @@ private struct FavoriteRecipesView: View {
     @Environment(RecipeStore.self) private var store
 
     var body: some View {
-        List {
-            if store.recipes.contains(where: \.isFavorite) {
-                ForEach(store.recipes.filter(\.isFavorite)) { recipe in
+        let favorites = store.recipes.filter(\.isFavorite)
+        return List {
+            if !favorites.isEmpty {
+                ForEach(favorites) { recipe in
                     NavigationLink {
                         RecipeDetailView(recipeID: recipe.id)
                     } label: {
