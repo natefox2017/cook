@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Tests safe ingredient amount parsing and scaling.
+
 import Foundation
 import Testing
 @testable import RecipeCore
