@@ -97,9 +97,35 @@ public final class RecipeStore {
     }
 
     public static func defaultFileURL() -> URL {
-        URL.applicationSupportDirectory
+        let supportDirectory = URL.applicationSupportDirectory
+        let recipeDirectory = supportDirectory
+            .appendingPathComponent("Recipe", isDirectory: true)
+        let recipeFile = recipeDirectory.appendingPathComponent("library.json")
+
+        // Preserve existing installs that stored the library under the old Cook
+        // directory. Copy once so the technical rename never loses user data.
+        let legacyFile = supportDirectory
             .appendingPathComponent("Cook", isDirectory: true)
             .appendingPathComponent("library.json")
+        let fileManager = FileManager.default
+
+        guard !fileManager.fileExists(atPath: recipeFile.path),
+              fileManager.fileExists(atPath: legacyFile.path) else {
+            return recipeFile
+        }
+
+        do {
+            try fileManager.createDirectory(
+                at: recipeDirectory,
+                withIntermediateDirectories: true
+            )
+            try fileManager.copyItem(at: legacyFile, to: recipeFile)
+            return recipeFile
+        } catch {
+            // If migration cannot safely copy the file, keep using the original
+            // location rather than risking an empty library.
+            return legacyFile
+        }
     }
 
     public func recipe(id: UUID) -> Recipe? {
