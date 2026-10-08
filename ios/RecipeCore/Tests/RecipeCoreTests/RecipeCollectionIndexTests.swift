@@ -22,14 +22,8 @@ func membershipsAreIndexedByCollectionAndRecipe() {
     // Duplicate input must not inflate collection counts.
     #expect(index.count(inCollection: firstCollection) == 2)
     #expect(index.count(inCollection: secondCollection) == 1)
-    #expect(
-        index.recipeIDs(inCollection: firstCollection)
-            == Set([firstRecipe, secondRecipe])
-    )
-    #expect(
-        index.collectionIDs(forRecipe: firstRecipe)
-            == Set([firstCollection, secondCollection])
-    )
+    #expect(index.recipeIDs(inCollection: firstCollection) == Set([firstRecipe, secondRecipe]))
+    #expect(index.collectionIDs(forRecipe: firstRecipe) == Set([firstCollection, secondCollection]))
     #expect(index.contains(recipeID: firstRecipe, inCollection: secondCollection))
     #expect(!index.contains(recipeID: secondRecipe, inCollection: secondCollection))
 }
