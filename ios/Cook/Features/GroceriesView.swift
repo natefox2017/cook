@@ -38,7 +38,7 @@ struct GroceriesView: View {
                         Spacer()
                         Text("\(purchasedCount) bought")
                             .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
-                            .foregroundStyle(CookTheme.accent)
+                            .foregroundStyle(CookTheme.accentForeground)
                     }
                     Picker("Grocery filter", selection: $filter) {
                         ForEach(GroceryFilter.allCases) { filter in
@@ -167,7 +167,7 @@ struct GroceriesView: View {
             } label: {
                 Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22))
-                    .foregroundStyle(item.isChecked ? CookTheme.accent : Color.secondary)
+                    .foregroundStyle(item.isChecked ? CookTheme.accentForeground : Color.secondary)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }

@@ -29,7 +29,7 @@ struct SettingsHubView: View {
 private struct SettingsRow:View{
  let title:String;let icon:String
  init(_ title:String,_ icon:String){self.title=title;self.icon=icon}
- var body:some View{HStack(spacing:14){Image(systemName:icon).frame(width:32).foregroundStyle(CookTheme.accent);Text(title)}.frame(minHeight:50)}
+ var body:some View{HStack(spacing:14){Image(systemName:icon).frame(width:32).foregroundStyle(CookTheme.accentForeground);Text(title)}.frame(minHeight:50)}
 }
 
 struct CloudSyncSettingsView:View{

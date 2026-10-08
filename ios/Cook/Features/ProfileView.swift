@@ -23,7 +23,7 @@ struct ProfileView: View {
                 HStack(alignment: .top, spacing: 18) {
                     Image(systemName: "leaf.fill")
                         .font(.system(size: 30, weight: .light))
-                        .foregroundStyle(CookTheme.accent)
+                        .foregroundStyle(CookTheme.accentForeground)
                         .frame(width: 72, height: 72)
                         .background(CookTheme.accent.opacity(0.10), in: Circle())
                         .accessibilityHidden(true)
@@ -200,7 +200,7 @@ private struct ProfileRowLabel: View {
         HStack(spacing: CookSpacing.small) {
             Image(systemName: systemImage)
                 .font(.system(size: 19))
-                .foregroundStyle(CookTheme.accent)
+                .foregroundStyle(CookTheme.accentForeground)
                 .frame(width: 24)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
@@ -386,8 +386,13 @@ private enum CookNotificationCleanup {
 private struct CookHelpView: View {
     var body: some View {
         List {
+            Section("Getting started") {
+                NavigationLink("Save your first recipe") {
+                    GettingStartedGuideView()
+                }
+            }
             Section("Save a recipe") {
-                Text("Open the add menu from Recipes. You can save a source link, keep pasted recipe text, add an image, or write a recipe yourself. Review and fill in the details you need before cooking.")
+                Text("From a recipe or social app, use Share and choose RecipePouch. The share extension receives it quickly and you can return to the source app. If sharing is unavailable, use Add Recipe to paste a link, add text or an image, or create a recipe manually.")
             }
             Section("Make it yours") {
                 Text("Open any recipe to edit its ingredients, instructions and notes. The original source stays with the recipe so you can return to it.")

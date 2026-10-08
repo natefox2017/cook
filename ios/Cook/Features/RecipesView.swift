@@ -220,7 +220,7 @@ private struct RecipeLibraryCard: View {
                     if recipe.needsReview {
                         Label("Needs Review", systemImage: "pencil.line")
                             .font(CookTheme.text(12, weight: .semibold, relativeTo: .caption))
-                            .foregroundStyle(CookTheme.accent)
+                            .foregroundStyle(CookTheme.accentForeground)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -231,7 +231,7 @@ private struct RecipeLibraryCard: View {
             Button(action: toggleFavorite) {
                 Image(systemName: recipe.isFavorite ? "heart.fill" : "heart")
                     .font(.system(size: 20))
-                    .foregroundStyle(CookTheme.accent)
+                    .foregroundStyle(CookTheme.accentForeground)
                     .frame(width: 44, height: 44)
                     .background(.regularMaterial, in: Circle())
             }

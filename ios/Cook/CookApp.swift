@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 import CookCore
 
@@ -6,26 +7,46 @@ import CookCore
 struct CookApp: App {
     @State private var store: CookStore
     @State private var subscriptions = SubscriptionStore()
+    private let isUITesting: Bool
 
     init() {
         CookTheme.installUIKitTypography()
+
+        let arguments = ProcessInfo.processInfo.arguments
+        let isUITesting = arguments.contains("--uitesting")
+        self.isUITesting = isUITesting
+
         _ = CookAuthService.shared
-        let isUITesting = ProcessInfo.processInfo.arguments.contains("--uitesting")
-        let localStore = CookStore(fileURL: isUITesting ? nil : CookStore.defaultFileURL())
+
+        let libraryURL = CookStore.defaultFileURL()
+        if !isUITesting,
+           FileManager.default.fileExists(atPath: libraryURL.path),
+           UserDefaults.standard.object(forKey: FirstLaunchFlowView.completionKey) == nil {
+            // Existing installs with a persisted library should not be mistaken for new users
+            // when this onboarding key is introduced for the first time.
+            UserDefaults.standard.set(true, forKey: FirstLaunchFlowView.completionKey)
+        }
+
+        let localStore = CookStore(fileURL: isUITesting ? nil : libraryURL)
         if isUITesting {
             for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("cook.cookingSession.") {
                 UserDefaults.standard.removeObject(forKey: key)
             }
-            do { try localStore.loadSampleRecipes() }
-            catch { assertionFailure("UI test fixtures could not be loaded: \(error)") }
+            do {
+                try localStore.loadSampleRecipes()
+            } catch {
+                assertionFailure("UI test fixtures could not be loaded: \(error)")
+            }
         }
+
         _store = State(initialValue: localStore)
     }
 
     var body: some Scene {
         WindowGroup {
-            CookRootView()
+            CookRootView(bypassOnboarding: isUITesting)
                 .environment(store)
+                .environment(subscriptions)
                 .onOpenURL { CookAuthService.shared.handleAuthCallback($0) }
                 .tint(CookTheme.accent)
                 .font(CookTheme.body())
@@ -35,7 +56,7 @@ struct CookApp: App {
     }
 
     private var appLocale: Locale {
-        Locale(identifier: "en")
+        isUITesting ? Locale(identifier: "en") : .autoupdatingCurrent
     }
 
     private var colorScheme: ColorScheme? {
@@ -49,7 +70,10 @@ struct CookApp: App {
 
 private struct CookRootView: View {
     @Environment(CookStore.self) private var store
+    @AppStorage(FirstLaunchFlowView.completionKey) private var hasCompletedOnboarding = false
     @State private var selectedTab: CookTab = .recipes
+
+    let bypassOnboarding: Bool
 
     var body: some View {
         if let message = store.loadError {
@@ -65,29 +89,104 @@ private struct CookRootView: View {
                 .navigationTitle("Cook")
                 .background(CookTheme.canvas)
             }
+        } else if !hasCompletedOnboarding && !bypassOnboarding {
+            FirstLaunchGateView {
+                hasCompletedOnboarding = true
+            }
         } else {
             TabView(selection: $selectedTab) {
-                NavigationStack { RecipesView().toolbar(.hidden, for: .tabBar) }
-                    .safeAreaInset(edge: .bottom, spacing: 0) { CookTabBar(selection: $selectedTab) }
-                    .tag(CookTab.recipes)
-                NavigationStack { MealPlanView().toolbar(.hidden, for: .tabBar) }
-                    .safeAreaInset(edge: .bottom, spacing: 0) { CookTabBar(selection: $selectedTab) }
-                    .tag(CookTab.plan)
-                NavigationStack { GroceriesView().toolbar(.hidden, for: .tabBar) }
-                    .safeAreaInset(edge: .bottom, spacing: 0) { CookTabBar(selection: $selectedTab) }
-                    .tag(CookTab.groceries)
-                NavigationStack { ProfileView().toolbar(.hidden, for: .tabBar) }
-                    .safeAreaInset(edge: .bottom, spacing: 0) { CookTabBar(selection: $selectedTab) }
-                    .tag(CookTab.profile)
+                NavigationStack {
+                    RecipesView()
+                        .toolbar(.hidden, for: .tabBar)
+                }
+                .tag(CookTab.recipes)
+
+                NavigationStack {
+                    MealPlanView()
+                        .toolbar(.hidden, for: .tabBar)
+                }
+                .tag(CookTab.plan)
+
+                NavigationStack {
+                    GroceriesView()
+                        .toolbar(.hidden, for: .tabBar)
+                }
+                .tag(CookTab.groceries)
+
+                NavigationStack {
+                    ProfileView()
+                        .toolbar(.hidden, for: .tabBar)
+                }
+                .tag(CookTab.profile)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                CookTabBar(selection: $selectedTab)
             }
         }
     }
 }
 
+private struct FirstLaunchGateView: View {
+    private enum Decision {
+        case checking
+        case show
+    }
+
+    // First production release that contains this onboarding.
+    // Existing App Store customers purchased before this cutoff should not be
+    // treated as first-time users, even if an earlier version never wrote library.json.
+    private static let onboardingReleaseCutoff = Date(timeIntervalSince1970: 1_791_417_600)
+
+    @State private var decision: Decision = .checking
+    let onComplete: () -> Void
+
+    var body: some View {
+        Group {
+            switch decision {
+            case .checking:
+                ProgressView("Preparing RecipePouch…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(CookTheme.canvas)
+                    .task { await resolveExistingInstall() }
+
+            case .show:
+                FirstLaunchFlowView(onComplete: onComplete)
+            }
+        }
+    }
+
+    private func resolveExistingInstall() async {
+        do {
+            let result = try await AppTransaction.shared
+            guard case .verified(let appTransaction) = result else {
+                decision = .show
+                return
+            }
+
+            // appVersionID is nil for local/sandbox transactions. Apply the release
+            // cutoff only to verified production App Store history.
+            if appTransaction.appVersionID != nil,
+               appTransaction.originalPurchaseDate < Self.onboardingReleaseCutoff {
+                onComplete()
+                return
+            }
+        } catch {
+            // AppTransaction may be unavailable offline. Prefer skippable onboarding
+            // over blocking a genuine new user from the app.
+        }
+
+        decision = .show
+    }
+}
+
 private enum CookTab: String, CaseIterable, Identifiable {
-    case recipes, plan, groceries, profile
+    case recipes
+    case plan
+    case groceries
+    case profile
 
     var id: Self { self }
+
     var title: String {
         switch self {
         case .recipes: "Recipes"
@@ -96,6 +195,7 @@ private enum CookTab: String, CaseIterable, Identifiable {
         case .profile: "Profile"
         }
     }
+
     var symbol: String {
         switch self {
         case .recipes: "book.closed"
@@ -121,7 +221,7 @@ private struct CookTabBar: View {
                         Text(tab.title)
                             .font(CookTheme.text(10, relativeTo: .caption2))
                     }
-                    .foregroundStyle(selection == tab ? CookTheme.accent : Color.primary)
+                    .foregroundStyle(selection == tab ? CookTheme.accentForeground : Color.primary)
                     .frame(maxWidth: .infinity, minHeight: 52)
                     .background {
                         if selection == tab {

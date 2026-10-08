@@ -4,7 +4,7 @@
 
 | ID | 页面/状态 | 设计资源 | 状态 | 备注 |
 |---|---|---|---|---|
-| UI-001 | 首次启动/导入教学 | TBD | PENDING | 只教“如何收藏食谱” |
+| UI-001 | 首次启动/导入教学 | `DESIGN_SYSTEM.md` + IMG-002/IMG-007 现有 iOS 视觉基线 | APPROVED | 2026-10-08 用户明确要求补齐；主路径为 Share → RecipePouch，Add Recipe 仅作兜底 |
 | UI-002 | 食谱库 | TBD | PENDING | 默认首页 |
 | UI-003 | 添加食谱菜单 | TBD | PENDING | 自动导入优先 |
 | UI-004 | 待完善 | TBD | PENDING | 只展示异常字段 |
@@ -17,6 +17,7 @@
 | UI-011 | Share Extension 失败/降级 | TBD | PENDING | 可继续操作 |
 | UI-013 | RecipePouch App 启动页 | [RecipePouch 启动页方案](DESIGN/proposals/2026-10-07/recipepouch-launch-screen.svg) | PENDING | Apple HIG 系统启动画面：浅色/深色使用首屏画布纯色背景，不放文字或品牌图标；待用户确认后接入 |
 | UI-014 | 全部页面间距与菜单图标统一 | [当前页面截图与间距修正提案](DESIGN/proposals/2026-10-07/spacing-normalization/README.md) | APPROVED | 统一页面标题、分组标题和卡片间距；菜单图标取消圆形底；保留全部模块与功能 |
+| UI-015 | 首次启动/Premium 计划 | `DESIGN_SYSTEM.md` + IMG-007 个人中心视觉基线 | APPROVED | 2026-10-08 用户明确要求补齐；StoreKit 实时产品信息，保留 Continue Free、Restore、Terms/Privacy |
 
 ## 状态定义
 - PENDING：未确认

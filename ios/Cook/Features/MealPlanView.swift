@@ -265,7 +265,7 @@ private struct MealPlanRecipePicker: View {
                                         }
                                         Spacer()
                                         Image(systemName: alreadyAdded ? "checkmark.circle.fill" : "plus.circle")
-                                            .foregroundStyle(CookTheme.accent)
+                                            .foregroundStyle(CookTheme.accentForeground)
                                     }
                                     .frame(minHeight: 60)
                                     .contentShape(Rectangle())
