@@ -137,7 +137,7 @@ struct CloudSyncSettingsView: View {
             Section("Sync behavior") {
                 Picker("Update", selection: modeBinding) {
                     ForEach(CloudSyncMode.allCases, id: \.rawValue) { mode in
-                        Text(mode.rawValue).tag(mode)
+                        Text(LocalizedStringKey(mode.rawValue)).tag(mode)
                     }
                 }
             }
@@ -361,7 +361,7 @@ struct AppearanceSettingsView: View {
                     )
                 ) {
                     ForEach(AppAppearance.allCases) { appearance in
-                        Text(appearance.rawValue).tag(appearance)
+                        Text(LocalizedStringKey(appearance.rawValue)).tag(appearance)
                     }
                 }
             }
