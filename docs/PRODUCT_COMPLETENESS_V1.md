@@ -61,7 +61,7 @@ Required:
 - Share Extension: third-party app → Share → RecipePouch → durable receipt → return immediately.
 - Social source backend fallback (caption/article/ASR/OCR/visual evidence) without fabricating quantities.
 
-Implementation status: local URL/text/photo/PDF/manual paths are **IMPLEMENTED**; Share Extension, durable backend import worker and social-video AI pipeline are **NOT IMPLEMENTED**.
+Implementation status: local URL/text/photo/PDF/manual paths are **IMPLEMENTED**. Embedded Share Extension with durable local URL/text receipts is proposed in **draft [PR #72](https://github.com/natefox2017/cook/pull/72)**; transactional Supabase job API plus text-only queue worker in **draft [PR #73](https://github.com/natefox2017/cook/pull/73)**. They are not in main or production; server URL/video extraction, client handoff and signed device tests remain **NOT IMPLEMENTED/UNVERIFIED**.
 
 ### 5. Recipe detail/edit
 Required:
@@ -119,7 +119,7 @@ Required:
 - Delete account/server data.
 - Help/privacy/about/version.
 
-Implementation status: local settings/export/reset/help are **IMPLEMENTED**; account/sync/subscription/server deletion are **NOT IMPLEMENTED**.
+Implementation status: local settings, JSON/HTML export, two local-data deletion entry points, account Auth UI, Cloud Sync UI and StoreKit purchase/restore/manage surfaces are **IMPLEMENTED IN CLIENT CODE**. The Supabase `delete-account` Edge Function is deployed. None of these are equivalent to an accepted production flow: real Apple/email provider, subscription purchase, cloud deletion and device tests remain #27–#29/#34; interrupted local erase is being hardened in draft #66.
 
 ### 10. Cloud sync
 Required:
@@ -130,15 +130,15 @@ Required:
 - Account deletion.
 - Never put service role/provider secrets in the client.
 
-Implementation status: **PARTIALLY IMPLEMENTED**. Supabase `user_snapshots`, RLS, revision/CAS migrations, and account deletion infrastructure exist in the active `cookapp` project. The production client sync/conflict UI and two-device acceptance remain #29/#34.
+Implementation status: **PARTIALLY IMPLEMENTED**. The active `cookapp` project has `user_snapshots`, RLS, revision/CAS migrations and account deletion infrastructure; current client offers automatic/Wi-Fi/manual modes, first-sync choice, three-way merge, error and per-conflict UI. This remains **unverified** without real two-account/two-device and interrupted-erasure tests (#18/#29/#34).
 
 ## Navigation and UI contract
 
-Primary navigation is Recipes / Plan / Groceries / Profile with native platform treatment. Add is a Recipes action. Cooking is full-screen and hides global navigation. Cooking is full-screen and hides global navigation.
+Primary navigation is Recipes / Plan / Groceries / Profile with native platform treatment. Add is a Recipes action. Cooking is full-screen and hides global navigation.
 
 Visual requirements:
 - warm cream canvas, green accent, rounded food photography/cards;
-- serif-like display hierarchy + Source Sans 3 body/control typography with system/CJK fallback;
+- current `Lora-Regular` title/body/control/navigation typography, with system/CJK glyph fallback; older Source Sans 3 plans are superseded, and latest four-language visual acceptance remains open (#26/#33);
 - native safe areas, Dynamic Type and 44pt minimum interactive targets;
 - regular material/glass for navigation and compact controls, not every content card;
 - every actionable row has pressed/disabled/error/loading state;
