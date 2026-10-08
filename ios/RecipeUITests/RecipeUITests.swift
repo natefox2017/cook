@@ -345,7 +345,7 @@ final class RecipeUITests: XCTestCase {
         waitUntilReady(profile)
         profile.tap()
 
-        let account = app.buttons["RecipePouch Account"]
+        let account = app.buttons["Account"]
         waitUntilReady(account)
         account.tap()
 
@@ -456,7 +456,7 @@ final class RecipeUITests: XCTestCase {
         waitUntilReady(profile)
         profile.tap()
 
-        let premium = app.buttons["RecipePouch Premium"]
+        let premium = app.buttons["Premium"]
         reveal(premium, in: app, maximumSwipes: 4)
         premium.tap()
         XCTAssertTrue(app.staticTexts["RecipePouch Premium"].waitForExistence(timeout: 8))
@@ -589,15 +589,17 @@ final class RecipeUITests: XCTestCase {
     func testFourLocaleTabLabelsUseStringCatalog() {
         // Each launch uses --uitesting fixtures, but only explicit locale
         // smoke cases override the usual deterministic English UI policy.
-        let examples: [(String, String, String, String, String, String, String)] = [
-            ("en", "en_US", "Recipes", "Recipe", "Profile", "Settings", "RecipePouch Account"),
-            ("zh-Hans", "zh_CN", "食谱", "份食谱", "我的", "设置", "RecipePouch 账号"),
-            ("zh-Hant", "zh_TW", "食譜", "份食譜", "個人", "設定", "RecipePouch 帳號"),
-            ("ja", "ja_JP", "レシピ", "件のレシピ", "マイページ", "設定", "RecipePouch アカウント"),
+        let examples: [(String, String, String, String, String, String, String, String, String)] = [
+            ("en", "en_US", "Recipes", "Recipe", "Profile", "Settings", "Account", "Premium", "Your kitchen"),
+            ("zh-Hans", "zh_CN", "食谱", "份食谱", "我的", "设置", "账号", "会员", "我的厨房"),
+            ("zh-Hant", "zh_TW", "食譜", "份食譜", "個人", "設定", "帳號", "會員", "我的廚房"),
+            ("ja", "ja_JP", "レシピ", "件のレシピ", "マイページ", "設定", "アカウント", "プレミアム", "マイキッチン"),
         ]
 
-        for (language, region, recipesLabel, countNoun, profileLabel, settingsTitle, accountLabel)
-            in examples
+        for (
+            language, region, recipesLabel, countNoun, profileLabel, settingsTitle,
+            accountLabel, premiumLabel, kitchenLabel
+        ) in examples
         {
             let app = XCUIApplication()
             app.launchArguments = [
@@ -625,6 +627,18 @@ final class RecipeUITests: XCTestCase {
             let profileTab = app.tabBars.buttons[profileLabel]
             XCTAssertTrue(profileTab.waitForExistence(timeout: 8))
             profileTab.tap()
+            XCTAssertTrue(
+                app.staticTexts[kitchenLabel].waitForExistence(timeout: 8),
+                "Default kitchen name not localized for \(language)"
+            )
+            XCTAssertTrue(
+                app.buttons[accountLabel].exists,
+                "Profile account row not localized for \(language)"
+            )
+            XCTAssertTrue(
+                app.buttons[premiumLabel].exists,
+                "Profile premium row not localized for \(language)"
+            )
             let settingsLink = app.buttons[settingsTitle]
             XCTAssertTrue(settingsLink.waitForExistence(timeout: 8))
             settingsLink.tap()
@@ -645,11 +659,11 @@ final class RecipeUITests: XCTestCase {
     func testSettingsRemainReachableAtAccessibilityDynamicType() {
         let locales: [(String, String, String, String, String, String, String)] = [
             (
-                "en", "en_US", "Profile", "Settings", "RecipePouch Account", "Subscription",
+                "en", "en_US", "Profile", "Settings", "Account", "Subscription",
                 "Cloud Sync"
             ),
             (
-                "ja", "ja_JP", "マイページ", "設定", "RecipePouch アカウント", "サブスクリプション",
+                "ja", "ja_JP", "マイページ", "設定", "アカウント", "サブスクリプション",
                 "クラウド同期"
             ),
         ]
@@ -740,7 +754,7 @@ final class RecipeUITests: XCTestCase {
         waitUntilReady(profile)
         profile.tap()
 
-        let premium = app.buttons["RecipePouch Premium"]
+        let premium = app.buttons["Premium"]
         reveal(premium, in: app, maximumSwipes: 4)
         premium.tap()
         XCTAssertTrue(app.staticTexts["RecipePouch Premium"].waitForExistence(timeout: 8))

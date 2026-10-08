@@ -11,7 +11,7 @@ struct SettingsHubView: View {
                 NavigationLink {
                     AccountView()
                 } label: {
-                    SettingsRow("RecipePouch Account", "person.crop.circle")
+                    SettingsRow("Account", "person.crop.circle")
                 }
 
                 NavigationLink {
@@ -129,11 +129,6 @@ struct CloudSyncSettingsView: View {
                         Task { await cloudSync.syncNow() }
                     }
                     .disabled(isSyncing)
-                } else {
-                    LabeledContent(
-                        "Manual Sync",
-                        value: "Available after sign in"
-                    )
                 }
             }
 
@@ -173,7 +168,7 @@ struct CloudSyncSettingsView: View {
                 )
                 LabeledContent(
                     "Cloud",
-                    value: cloud.map(countSummary) ?? "Empty"
+                    value: cloud.map(countSummary) ?? String(localized: "Empty")
                 )
 
                 Button("Merge Local + Cloud") {
@@ -386,9 +381,6 @@ struct AppearanceSettingsView: View {
                 }
             }
 
-            Section("Recipe display") {
-                LabeledContent("Recipe image placeholders", value: "On")
-            }
         }
         .navigationTitle("Appearance")
         .navigationBarTitleDisplayMode(.inline)
@@ -434,17 +426,12 @@ struct CookingSettingsView: View {
                     HStack {
                         Text("Timer Notifications")
                         Spacer()
-                        Text(store.settings.timerNotifications ? "On" : "Off")
+                        Text(LocalizedStringKey(store.settings.timerNotifications ? "On" : "Off"))
                             .foregroundStyle(.secondary)
                     }
                 }
             }
 
-            Section("During cooking") {
-                LabeledContent("Navigation", value: "Full screen")
-                LabeledContent("Ingredient checkoff", value: "Remembered per session")
-                LabeledContent("Interrupted session", value: "Restored")
-            }
         }
         .navigationTitle("Cooking")
         .navigationBarTitleDisplayMode(.inline)
@@ -494,10 +481,6 @@ struct GrocerySettingsView: View {
                 Toggle("Show recipe names", isOn: $sources)
             }
 
-            Section("Organization") {
-                LabeledContent("Grouping", value: "Grocery category")
-                LabeledContent("Bought items", value: "Can be hidden or cleared")
-            }
         }
         .navigationTitle("Groceries")
         .navigationBarTitleDisplayMode(.inline)
@@ -517,11 +500,6 @@ struct MealPlanSettingsView: View {
                 }
             }
 
-            Section("Meal types") {
-                ForEach(["Breakfast", "Lunch", "Dinner"], id: \.self) { mealType in
-                    Text(mealType)
-                }
-            }
         }
         .navigationTitle("Meal Plan")
         .navigationBarTitleDisplayMode(.inline)

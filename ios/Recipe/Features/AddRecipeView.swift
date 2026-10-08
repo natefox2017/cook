@@ -45,40 +45,23 @@ struct AddRecipeView: View {
                     }
                     if let savedID, let recipe = store.recipe(id: savedID) { savedCard(recipe) }
                     VStack(spacing: 12) {
-                        importOption(
-                            "Take a photo", subtitle: "Read a recipe from a book or a note.",
-                            icon: "camera"
-                        ) { requestCamera() }
-                        importOption(
-                            "Import from Photos", subtitle: "Choose a screenshot or recipe photo.",
-                            icon: "photo.on.rectangle"
-                        ) { showPhotos = true }
-                        importOption(
-                            "Paste recipe text",
-                            subtitle: "Keep ingredients and directions together.",
-                            icon: "doc.on.clipboard"
-                        ) { showText = true }
-                        importOption(
-                            "Import a document",
-                            subtitle: "Choose a text file or a PDF with selectable text.",
-                            icon: "doc"
-                        ) { showFile = true }
-                        importOption(
-                            "Create manually", subtitle: "Write down a recipe of your own.",
-                            icon: "square.and.pencil"
-                        ) {
+                        importOption("Take a photo", icon: "camera") { requestCamera() }
+                        importOption("Import from Photos", icon: "photo.on.rectangle") {
+                            showPhotos = true
+                        }
+                        importOption("Paste recipe text", icon: "doc.on.clipboard") {
+                            showText = true
+                        }
+                        importOption("Import a document", icon: "doc") {
+                            showFile = true
+                        }
+                        importOption("Create manually", icon: "square.and.pencil") {
                             let recipe = Recipe(title: "")
                             savedID = recipe.id
                             editor = recipe
                         }
                         .accessibilityIdentifier("createManually")
                     }
-                    Text(
-                        "Recipe websites with structured ingredients and steps can be imported directly. For private pages and social videos, keep the source and add text or photos."
-                    )
-                    .font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote))
-                    .foregroundStyle(
-                        .secondary)
                 }
                 .padding(22)
             }
@@ -173,7 +156,7 @@ struct AddRecipeView: View {
     }
 
     private func importOption(
-        _ title: String, subtitle: String, icon: String, action: @escaping () -> Void
+        _ title: String, icon: String, action: @escaping () -> Void
     ) -> some View {
         Button {
             failedURL = nil
@@ -189,9 +172,6 @@ struct AddRecipeView: View {
                     Text(LocalizedStringKey(title))
                         .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
                         .foregroundStyle(.primary)
-                    Text(LocalizedStringKey(subtitle))
-                        .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(.system(size: 12)).foregroundStyle(.secondary)
@@ -228,10 +208,6 @@ struct AddRecipeView: View {
                         .accessibilityIdentifier("recipeText")
                 } header: {
                     Text("Recipe text")
-                } footer: {
-                    Text(
-                        "Include Ingredients and Instructions headings when available. The original text is always kept."
-                    )
                 }
             }
             .navigationTitle("Paste recipe text").navigationBarTitleDisplayMode(.inline)

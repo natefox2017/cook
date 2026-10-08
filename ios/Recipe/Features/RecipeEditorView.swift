@@ -40,7 +40,11 @@ struct RecipeEditorView: View {
                     RecipeImage(recipe: draft, height: 180).clipShape(RoundedRectangle(cornerRadius: 18))
                         .listRowInsets(EdgeInsets())
                     PhotosPicker(selection: $photo, matching: .images) {
-                        Label(photoLabel, systemImage: "photo")
+                        Label {
+                            Text(LocalizedStringKey(photoLabel))
+                        } icon: {
+                            Image(systemName: "photo")
+                        }
                     }.disabled(isLoadingPhoto)
                     if isLoadingPhoto { ProgressView("Preparing photo…") }
                 }
@@ -48,7 +52,7 @@ struct RecipeEditorView: View {
                     TextField("Recipe name", text: $draft.title).accessibilityIdentifier("recipeName")
                     TextField("A short description", text: $draft.summary, axis: .vertical).lineLimit(2...4)
                     Picker("Category", selection: $draft.category) {
-                        ForEach(RecipeCategory.allCases) { Text($0.rawValue).tag($0) }
+                        ForEach(RecipeCategory.allCases) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
                     }
                     numberField("Servings", placeholder: "Unknown", text: $servingsText)
                     numberField("Prep time (minutes)", placeholder: "Optional", text: $prepText)
@@ -208,11 +212,11 @@ struct RecipeEditorView: View {
         -> some View
     {
         HStack {
-            Text(title)
+            Text(LocalizedStringKey(title))
             Spacer()
             TextField(placeholder, text: text).keyboardType(.numberPad)
                 .multilineTextAlignment(.trailing).frame(maxWidth: 100)
-                .accessibilityLabel(title)
+                .accessibilityLabel(Text(LocalizedStringKey(title)))
         }
     }
 
@@ -308,7 +312,7 @@ private struct IngredientEditorRow: View {
                 .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
                 .accessibilityIdentifier("ingredientAmount")
             Picker("Shopping group", selection: $ingredient.category) {
-                ForEach(GroceryCategory.allCases) { Text($0.rawValue).tag($0) }
+                ForEach(GroceryCategory.allCases) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
             }.font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
         }
         .padding(.vertical, 4)

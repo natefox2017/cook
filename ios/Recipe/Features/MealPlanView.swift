@@ -96,14 +96,6 @@ struct MealPlanView: View {
                 .listRowBackground(RecipeTheme.card)
             }
 
-            Section {
-                Text(
-                    "Choose from your saved recipes. Open a planned recipe when you’re ready to cook or add its ingredients to Groceries."
-                )
-                    .font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote))
-                    .foregroundStyle(.secondary)
-            }
-            .listRowBackground(Color.clear)
         }
         .listStyle(.insetGrouped)
         .listSectionSpacing(RecipeSpacing.medium)

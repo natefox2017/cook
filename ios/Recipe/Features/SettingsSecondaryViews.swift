@@ -238,28 +238,19 @@ struct HelpCenterView: View {
                 NavigationLink("Add or import a recipe") {
                     HelpArticleView(
                         title: "Add or import a recipe",
-                        articleBody: "Use Add Recipe to paste a link, import text "
-                            + "or a document, scan a photo, or create a recipe "
-                            + "manually. Incomplete imports remain editable instead "
-                            + "of inventing missing details."
+                        articleBody: "Share a link or add a photo to save a recipe."
                     )
                 }
-
                 NavigationLink("Cook with timers") {
                     HelpArticleView(
                         title: "Cook with timers",
-                        articleBody: "Start Cooking opens a focused full-screen flow. "
-                            + "Step timers can run independently, ingredients can be "
-                            + "checked off, and RecipePouch restores the session when possible."
+                        articleBody: "Open a recipe and start cooking with timers."
                     )
                 }
-
                 NavigationLink("Plan meals and shop") {
                     HelpArticleView(
                         title: "Plan meals and shop",
-                        articleBody: "Add saved recipes to the Meal Plan, then add "
-                            + "ingredients to Groceries. RecipePouch preserves recipe "
-                            + "sources and only consolidates compatible quantities."
+                        articleBody: "Plan meals and add ingredients to Groceries."
                     )
                 }
             }
@@ -268,27 +259,19 @@ struct HelpCenterView: View {
                 NavigationLink("Subscription not showing") {
                     HelpArticleView(
                         title: "Subscription not showing",
-                        articleBody: "Check that you are using the intended RecipePouch "
-                            + "account and App Store account. Then open Subscription "
-                            + "and choose Restore Purchases."
+                        articleBody: "Restore purchases from the Subscription screen."
                     )
                 }
-
                 NavigationLink("Sync problems") {
                     HelpArticleView(
                         title: "Sync problems",
-                        articleBody: "Open Cloud Sync to review account, last sync, "
-                            + "and status. Your local library remains available while "
-                            + "sync is unavailable."
+                        articleBody: "Check your account and Cloud Sync status."
                     )
                 }
-
                 NavigationLink("Import needs review") {
                     HelpArticleView(
                         title: "Import needs review",
-                        articleBody: "RecipePouch keeps the original source and marks "
-                            + "uncertain or missing recipe details for review rather "
-                            + "than guessing quantities or steps."
+                        articleBody: "Review missing details using the original source."
                     )
                 }
             }
@@ -306,7 +289,7 @@ private struct HelpArticleView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text(title)
+                Text(LocalizedStringKey(title))
                     .font(RecipeTheme.title(30))
                 Text(LocalizedStringKey(articleBody))
                     .font(
@@ -319,7 +302,7 @@ private struct HelpArticleView: View {
             }
             .padding()
         }
-        .navigationTitle(title)
+        .navigationTitle(Text(LocalizedStringKey(title)))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
     }

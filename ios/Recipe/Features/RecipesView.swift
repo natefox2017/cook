@@ -107,9 +107,6 @@ struct RecipesView: View {
                         Text("\(shareInbox.pendingReceipts.count) sources saved")
                             .font(RecipeTheme.text(16, weight: .semibold))
                             .foregroundStyle(.primary)
-                        Text("On this iPhone · waiting for recipe processing")
-                            .font(RecipeTheme.text(13))
-                            .foregroundStyle(.secondary)
                     }
                     Spacer()
                     Image(systemName: "chevron.right")
@@ -125,6 +122,7 @@ struct RecipesView: View {
 
         if let failure = shareInbox.failureMessage {
             Text(failure)
+                .lineLimit(1)
                 .font(RecipeTheme.text(13, relativeTo: .footnote))
                 .foregroundStyle(.secondary)
         }
@@ -173,11 +171,6 @@ struct RecipesView: View {
                 }
                 .frame(minHeight: 44)
                 .accessibilityIdentifier("loadSampleRecipes")
-                Text("Explore a few sample recipes. You can edit or delete them at any time.")
-                    .font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
             }
             .padding(.top, RecipeSpacing.large)
         } else if visibleRecipes.isEmpty {
@@ -271,7 +264,7 @@ struct RecipesView: View {
 
     private var emptyScopeMessage: String {
         if selectedCollectionID != nil {
-            return "Add recipes from a recipe page or from Collections."
+            return String(localized: "Add recipes to this collection.")
         }
         return filter.emptyMessage
     }
@@ -321,7 +314,7 @@ private struct RecipeLibraryCard: View {
                     }
                     .aspectRatio(1.4, contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 18))
-                    Text(recipe.title.isEmpty ? "Untitled Recipe" : recipe.title)
+                    Text(recipe.title.isEmpty ? String(localized: "Untitled Recipe") : recipe.title)
                         .font(RecipeTheme.title(20))
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.leading)
@@ -432,9 +425,10 @@ private struct PendingSharesView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("These sources are safely stored on this iPhone. They have not been accepted by the cloud or converted into recipes yet.")
+                    Text("Saved locally. Import is pending.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
                 ForEach(inbox.pendingReceipts) { receipt in
                     PendingShareRow(receipt: receipt)
@@ -474,7 +468,8 @@ private struct PendingShareRow: View {
                     .lineLimit(4)
                     .textSelection(.enabled)
             }
-            Text("Received \(receipt.receivedAt.formatted(date: .abbreviated, time: .shortened)) · Not queued")
+            Text("Received \(receipt.receivedAt.formatted(date: .abbreviated, time: .shortened))")
+                .lineLimit(1)
                 .font(RecipeTheme.text(12))
                 .foregroundStyle(.secondary)
         }

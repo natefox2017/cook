@@ -115,7 +115,7 @@ struct RecipeDetailView: View {
 
     private func overview(_ recipe: Recipe) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(recipe.title.isEmpty ? "Untitled Recipe" : recipe.title)
+            Text(recipe.title.isEmpty ? String(localized: "Untitled Recipe") : recipe.title)
                 .font(RecipeTheme.title(34))
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
@@ -185,11 +185,6 @@ struct RecipeDetailView: View {
             if let originalServings = recipe.servings, originalServings > 0 {
                 Stepper("\(servings) servings", value: servingsSelection, in: 1...max(100, max(originalServings, servings)))
                     .accessibilityIdentifier("recipeServingsStepper")
-                if servings != originalServings {
-                    Text("Numeric amounts adjust with servings. Amounts such as “to taste” stay as written.")
-                        .font(RecipeTheme.text(12, weight: .regular, relativeTo: .caption))
-                        .foregroundStyle(.secondary)
-                }
             } else {
                 Text("Original amounts · servings not specified")
                     .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
@@ -424,7 +419,7 @@ struct RecipeDetailView: View {
     }
 
     private func sectionTitle(_ title: String) -> some View {
-        Text(title).font(RecipeTheme.title(24)).accessibilityAddTraits(.isHeader)
+        Text(LocalizedStringKey(title)).font(RecipeTheme.title(24)).accessibilityAddTraits(.isHeader)
     }
 
     private var servingsSelection: Binding<Int> {
@@ -745,7 +740,7 @@ private struct RecipeMealPlanSheet: View {
             Form {
                 DatePicker("Date", selection: $date, displayedComponents: .date)
                 Picker("Meal", selection: $slot) {
-                    ForEach(MealSlot.allCases) { Text($0.rawValue).tag($0) }
+                    ForEach(MealSlot.allCases) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
                 }
             }
             .navigationTitle("Add to Meal Plan").navigationBarTitleDisplayMode(.inline)
