@@ -30,6 +30,7 @@ struct RecipeDetailView: View {
             }
         }
         .background(RecipeTheme.canvas)
+        .toolbar(.hidden, for: .tabBar)
         .navigationTitle("Recipe").navigationBarTitleDisplayMode(.inline)
         .toolbar { detailToolbar }
         .sheet(isPresented: $isEditing) {
