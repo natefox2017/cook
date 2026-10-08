@@ -739,10 +739,7 @@ struct CookingView: View {
                 session = try JSONDecoder().decode(PersistedCookingSession.self, from: data)
             } catch {
                 requiresSessionRecovery = true
-                errorMessage = String(
-                    localized:
-                        "Your previous cooking session could not be restored. \(error.localizedDescription)"
-                )
+                errorMessage = String(localized: LocalizedStringResource("Your previous cooking session could not be restored. \(error.localizedDescription)", locale: RecipeLanguage.active))
             }
         }
 
@@ -967,10 +964,7 @@ struct CookingView: View {
                 forKey: sessionKey
             )
         } catch {
-            errorMessage = String(
-                localized:
-                    "Your cooking progress could not be saved. \(error.localizedDescription)"
-            )
+            errorMessage = String(localized: LocalizedStringResource("Your cooking progress could not be saved. \(error.localizedDescription)", locale: RecipeLanguage.active))
         }
     }
 
@@ -1089,10 +1083,7 @@ struct CookingView: View {
                 }
             } catch {
                 if !Task.isCancelled {
-                    errorMessage = String(
-                        localized:
-                            "The timer is running, but its notification could not be scheduled. \(error.localizedDescription)"
-                    )
+                    errorMessage = String(localized: LocalizedStringResource("The timer is running, but its notification could not be scheduled. \(error.localizedDescription)", locale: RecipeLanguage.active))
                 }
             }
         }

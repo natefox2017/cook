@@ -157,10 +157,7 @@ struct CloudSyncSettingsView: View {
         case .initialChoice(let local, let cloud):
             Section("First sync") {
                 Text(
-                    String(
-                        localized:
-                            "Choose how to connect this iPhone’s local library to your RecipePouch account."
-                    ))
+                    String(localized: LocalizedStringResource("Choose how to connect this iPhone’s local library to your RecipePouch account.", locale: RecipeLanguage.active)))
 
                 LabeledContent(
                     "This iPhone",
@@ -188,10 +185,7 @@ struct CloudSyncSettingsView: View {
         case .conflicts(let conflicts):
             Section("Conflicts") {
                 Text(
-                    String(
-                        localized:
-                            "Both this iPhone and the cloud changed the same data. Choose which version to keep for each conflict."
-                    )
+                    String(localized: LocalizedStringResource("Both this iPhone and the cloud changed the same data. Choose which version to keep for each conflict.", locale: RecipeLanguage.active))
                 )
                 .foregroundStyle(.secondary)
 

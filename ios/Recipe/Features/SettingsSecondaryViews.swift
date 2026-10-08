@@ -128,10 +128,7 @@ struct DataPrivacySettingsView: View {
                 Task {
                     do {
                         try await cloudSync.deleteAccountAndCloudData()
-                        message = String(
-                            localized:
-                                "RecipePouch account and cloud data deleted. Local data on this iPhone was kept."
-                        )
+                        message = String(localized: LocalizedStringResource("RecipePouch account and cloud data deleted. Local data on this iPhone was kept.", locale: RecipeLanguage.active))
                     } catch {
                         message = error.localizedDescription
                     }
@@ -139,10 +136,7 @@ struct DataPrivacySettingsView: View {
             }
         } message: {
             Text(
-                String(
-                    localized:
-                        "This deletes the signed-in RecipePouch account and cloud data. Local data on this iPhone stays until you delete it separately. This does not cancel an App Store subscription."
-                ))
+                String(localized: LocalizedStringResource("This deletes the signed-in RecipePouch account and cloud data. Local data on this iPhone stays until you delete it separately. This does not cancel an App Store subscription.", locale: RecipeLanguage.active)))
         }
         .alert(
             "Data & Privacy",
@@ -167,10 +161,7 @@ struct DataPrivacySettingsView: View {
             exportDocument = try format.makeDocument(from: store)
             exportsData = true
         } catch {
-            message = String(
-                localized:
-                    "Export failed: \(error.localizedDescription)"
-            )
+            message = String(localized: LocalizedStringResource("Export failed: \(error.localizedDescription)", locale: RecipeLanguage.active))
         }
     }
 }
@@ -200,28 +191,16 @@ struct PrivacySummaryView: View {
                     .font(RecipeTheme.title(30))
 
                 Text(
-                    String(
-                        localized:
-                            "RecipePouch is designed as a private recipe utility. It does not publish your recipes to a public feed."
-                    ))
+                    String(localized: LocalizedStringResource("RecipePouch is designed as a private recipe utility. It does not publish your recipes to a public feed.", locale: RecipeLanguage.active)))
 
                 Text(
-                    String(
-                        localized:
-                            "Automated imports may send source material to RecipePouch’s backend only when processing is required. Provider secrets remain server-side."
-                    ))
+                    String(localized: LocalizedStringResource("Automated imports may send source material to RecipePouch’s backend only when processing is required. Provider secrets remain server-side.", locale: RecipeLanguage.active)))
 
                 Text(
-                    String(
-                        localized:
-                            "App Store purchases are managed by Apple. Your App Store purchase identity and RecipePouch account are treated as separate identities."
-                    ))
+                    String(localized: LocalizedStringResource("App Store purchases are managed by Apple. Your App Store purchase identity and RecipePouch account are treated as separate identities.", locale: RecipeLanguage.active)))
 
                 Text(
-                    String(
-                        localized:
-                            "You can export local data and request deletion of your RecipePouch account data from Settings."
-                    ))
+                    String(localized: LocalizedStringResource("You can export local data and request deletion of your RecipePouch account data from Settings.", locale: RecipeLanguage.active)))
             }
             .padding()
         }
@@ -353,18 +332,12 @@ private struct LicensesView: View {
         List {
             Section("Lora") {
                 Text(
-                    String(
-                        localized:
-                            "Copyright The Lora Project Authors. Licensed under the SIL Open Font License 1.1."
-                    ))
+                    String(localized: LocalizedStringResource("Copyright The Lora Project Authors. Licensed under the SIL Open Font License 1.1.", locale: RecipeLanguage.active)))
             }
 
             Section("System frameworks") {
                 Text(
-                    String(
-                        localized:
-                            "SwiftUI, StoreKit, AuthenticationServices, Vision, and related Apple frameworks are used under Apple platform terms."
-                    ))
+                    String(localized: LocalizedStringResource("SwiftUI, StoreKit, AuthenticationServices, Vision, and related Apple frameworks are used under Apple platform terms.", locale: RecipeLanguage.active)))
             }
         }
         .navigationTitle("Licenses")
@@ -377,10 +350,7 @@ private struct AcknowledgementsView: View {
     var body: some View {
         ScrollView {
             Text(
-                String(
-                    localized:
-                        "RecipePouch’s interaction model is informed by established private recipe managers: collect recipes, organize them, cook step-by-step, plan meals, and shop from ingredients. RecipePouch’s implementation and visual system remain its own."
-                )
+                String(localized: LocalizedStringResource("RecipePouch’s interaction model is informed by established private recipe managers: collect recipes, organize them, cook step-by-step, plan meals, and shop from ingredients. RecipePouch’s implementation and visual system remain its own.", locale: RecipeLanguage.active))
             )
             .padding()
         }

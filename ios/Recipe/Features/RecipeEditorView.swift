@@ -286,10 +286,7 @@ struct RecipeEditorView: View {
         guard !value.isEmpty else { return nil }
         guard let number = Int(value), range.contains(number) else {
             throw EditorError.invalid(
-                String(
-                    localized:
-                        "\(name) must be a whole number between \(range.lowerBound) and \(range.upperBound), or left blank."
-                )
+                String(localized: LocalizedStringResource("\(name) must be a whole number between \(range.lowerBound) and \(range.upperBound), or left blank.", locale: RecipeLanguage.active))
             )
         }
         return number

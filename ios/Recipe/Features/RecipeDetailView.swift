@@ -382,16 +382,12 @@ struct RecipeDetailView: View {
             guard case .signedIn(let currentOwnerID, _) = RecipeAuthService.shared.state,
                   currentOwnerID == ownerID
             else {
-                feedbackMessage = String(
-                    localized: "Your signed-in account changed. The saved source was kept for the correct account."
-                )
+                feedbackMessage = String(localized: LocalizedStringResource("Your signed-in account changed. The saved source was kept for the correct account.", locale: RecipeLanguage.active))
                 return
             }
             openURL(url)
         } catch {
-            feedbackMessage = String(
-                localized: "The shared source is unavailable. It may have expired."
-            )
+            feedbackMessage = String(localized: LocalizedStringResource("The shared source is unavailable. It may have expired.", locale: RecipeLanguage.active))
         }
     }
 
