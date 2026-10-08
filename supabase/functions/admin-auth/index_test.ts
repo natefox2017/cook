@@ -70,6 +70,33 @@ Deno.test("production bootstrap rejects missing and invalid tokens before its ha
   }
 });
 
+Deno.test("production bootstrap rejects prefixes, suffixes and oversized headers", async () => {
+  for (const token of [
+    "prefix-expected-secret",
+    "expected-secret-extra",
+    "expected-secre",
+    "x".repeat(513),
+  ]) {
+    let handlerCalled = false;
+    await expectAppError(
+      () =>
+        withAdminBootstrapAuthorization(
+          request({ "X-CookApp-Bootstrap-Token": token }),
+          "expected-secret",
+          true,
+          async () => {
+            handlerCalled = true;
+          },
+        ),
+      "forbidden",
+      403,
+    );
+    if (handlerCalled) {
+      throw new Error("A partial or oversized bootstrap token was accepted.");
+    }
+  }
+});
+
 Deno.test("production bootstrap accepts the configured header or bearer token", async () => {
   const acceptedHeaders: HeadersInit[] = [
     { "X-CookApp-Bootstrap-Token": "expected-secret" },

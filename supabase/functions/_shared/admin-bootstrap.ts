@@ -1,4 +1,5 @@
 import { AppError } from "./errors.ts";
+import { securelyEqualTokens } from "./secure-token.ts";
 
 export async function withAdminBootstrapAuthorization<T>(
   req: Request,
@@ -25,7 +26,7 @@ export async function withAdminBootstrapAuthorization<T>(
     : "";
   const presented = header || bearer;
 
-  if (!presented || presented !== expectedToken) {
+  if (!presented || !securelyEqualTokens(presented, expectedToken)) {
     throw new AppError(
       "forbidden",
       "Invalid or missing bootstrap token",

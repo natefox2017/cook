@@ -108,6 +108,23 @@ Confirm a rollback strategy before the separate production release window.
 For a migration failure, restore from the planned recovery point or deploy a
 forward migration; never delete user data or casually drop the job queue.
 
+## Admin Auth hardening
+
+The checked-in `admin-auth` handler uses a **16 KiB** bounded JSON reader for
+login, bootstrap and password changes. Invalid JSON returns 400, while both
+declared and actual oversized bodies return 413. The server-side bootstrap
+credential uses a bounded comparison that does not stop at the first different
+byte. Deployment must retain `verify_jwt=false` for this custom admin bearer
+protocol; the handler authorizes each admin session and independently gates
+bootstrap with `COOKAPP_ADMIN_BOOTSTRAP_TOKEN`.
+
+The `_shared/bounded-json_test.ts` and `admin-auth/index_test.ts` pure request
+tests were checked against the GitHub blob hashes and executed with Node 22's
+TypeScript adapter. Those checks do not exercise the deployed Deno runtime.
+Validate the live admin-login, owner bootstrap and change-password routes in
+staging before updating `admin-auth` production version; do not include a
+bootstrap token, password or admin session in test output.
+
 ## Existing production Edge drift
 
 The production project also runs `revenuecat-webhook`, `admin-subscriptions`,
