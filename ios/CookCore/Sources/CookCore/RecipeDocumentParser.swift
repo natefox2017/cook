@@ -183,9 +183,7 @@ public enum RecipeDocumentParser {
                   let unitRange = Range(match.range(at: 2), in: text),
                   let value = Int(text[valueRange]) else { continue }
 
-            let before = fullRange.lowerBound > text.startIndex ? text[text.index(before: fullRange.lowerBound)] : " "
-            let after = fullRange.upperBound < text.endIndex ? text[fullRange.upperBound] : " "
-            if "-–—".contains(before) || "-–—".contains(after) { continue }
+            if isAmbiguousTimeMatch(in: text, range: fullRange) { continue }
 
             let unit = text[unitRange].lowercased()
             let seconds: Int
@@ -204,6 +202,20 @@ public enum RecipeDocumentParser {
             timers.append(RecipeStepTimer(label: label, durationSeconds: seconds))
         }
         return timers
+    }
+
+    private static func isAmbiguousTimeMatch(in text: String, range: Range<String.Index>) -> Bool {
+        let prefixStart = text.index(range.lowerBound, offsetBy: -min(24, text.distance(from: text.startIndex, to: range.lowerBound)))
+        let suffixEnd = text.index(range.upperBound, offsetBy: min(24, text.distance(from: range.upperBound, to: text.endIndex)))
+        let prefix = String(text[prefixStart..<range.lowerBound]).lowercased()
+        let suffix = String(text[range.upperBound..<suffixEnd]).lowercased()
+
+        let ambiguousPrefix = #"(?:about|approximately|approx\.?|around|roughly|up to|\d+\s*(?:-|–|—|to))\s*$"#
+        let ambiguousSuffix = #"^\s*(?:(?:-|–|—|to)\s*\d+|or\s+until)"#
+
+        if prefix.range(of: ambiguousPrefix, options: .regularExpression) != nil { return true }
+        if suffix.range(of: ambiguousSuffix, options: .regularExpression) != nil { return true }
+        return false
     }
 
     private static func temperature(in text: String) -> CookingTemperature? {
