@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Validates and scales ingredient amounts without inventing precision.
+
 import Foundation
 
 /// A local cooking value, not an API DTO. No text parser infers a number or unit.
