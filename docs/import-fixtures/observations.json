@@ -1,0 +1,56 @@
+{
+  "recorded_at": "2026-10-08",
+  "environment": "Public official documentation searched by web retrieval. Raw source HTTP status, redirects, body content and iOS Share host behavior were not probed.",
+  "purpose": "Ground contract expectations without misreporting app/backend functionality. Source documentation is not a recipe extraction test.",
+  "observations": [
+    {
+      "url": "https://recime.app/help/en/articles/11625015-import-from-tiktok",
+      "source_kind": "competitor_help_documentation",
+      "recorded_at": "2026-10-08",
+      "original_page_updated": "2026-08-09",
+      "http_status": null,
+      "network_probe_completed": false,
+      "document_readable_in_search": true,
+      "evidence": "ReciMe describes a TikTok Share workflow using caption, audio and a possible original website as sequential content sources.",
+      "evidence_kind": "public_help_page",
+      "can_accept_link_in_recipepouch": false,
+      "source_evidence_fetched_for_recipe": false,
+      "structured_recipe_parsed": false,
+      "native_end_to_end_tested": false,
+      "limitations": "Public feature description only, not access to a TikTok video, article body, platform API or native Share receipt."
+    },
+    {
+      "url": "https://supabase.com/docs/guides/queues/consuming-messages-with-edge-functions",
+      "source_kind": "platform_queue_documentation",
+      "recorded_at": "2026-10-08",
+      "http_status": null,
+      "network_probe_completed": false,
+      "document_readable_in_search": true,
+      "evidence": "Supabase shows durable queue messages consumed by an Edge Function and removed after processing; failures leave them available for retry.",
+      "evidence_kind": "official_platform_guide",
+      "can_accept_link_in_recipepouch": false,
+      "source_evidence_fetched_for_recipe": false,
+      "structured_recipe_parsed": false,
+      "native_end_to_end_tested": false,
+      "limitations": "Documentation only: not evidence of deployed RecipePouch import routes, queue or worker."
+    }
+  ],
+  "pending_real_probes": [
+    {
+      "kind": "public_schema_org_recipe_url",
+      "url": null,
+      "http_status": null,
+      "evidence_captured": false,
+      "recipe_parsed": false,
+      "native_end_to_end": false
+    },
+    {
+      "kind": "publicly_accessible_video_recipe",
+      "url": null,
+      "http_status": null,
+      "evidence_captured": false,
+      "recipe_parsed": false,
+      "native_end_to_end": false
+    }
+  ]
+}
