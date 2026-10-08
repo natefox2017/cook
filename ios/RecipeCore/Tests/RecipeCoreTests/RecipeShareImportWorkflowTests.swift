@@ -589,7 +589,7 @@ func lateCompletionFillsOnlyUneditedMissingSections() async throws {
     )
     let savedAfter = try #require(fixture.store.recipe(id: recipeID))
     #expect(savedAfter.title == "Soup")
-    #expect(savedAfter.ingredients.first?.amountText.contains("to taste") == true)
+    #expect(savedAfter.ingredients.first?.name.contains("to taste") == true)
     #expect(savedAfter.steps.first?.instruction == "Simmer until tender")
     #expect(savedAfter.importRecord?.result.fields["title"]?.rawValue == "Soup")
     #expect(savedAfter.importRecord?.result.fields["ingredients[0].raw_text"]?
