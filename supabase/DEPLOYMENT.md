@@ -27,7 +27,7 @@ Apply missing migration versions only, in dependency order, in an isolated
 Supabase branch/test project after checking snapshot history drift:
 
 1. `20261008103818_restrict_untrusted_security_definer_rpcs.sql` — removes
-   public/admin DEFNER entry points; admin Edge function uses service role.
+   public/admin SECURITY DEFINER entry points; admin Edge function uses service role.
 2. `20261008155000_recipe_import_jobs_v1.sql` — owner-scoped import jobs and
    dedicated logged PGMQ queue.
 3. `20261008195255_preserve_recipe_import_source_url.sql` — source metadata.
