@@ -23,6 +23,28 @@
         }
       }
     },
+    "A recipe can belong to more than one collection. Favorites stays separate.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一份食谱可属于多个食谱册；喜欢的食谱单独管理。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一份食譜可屬於多個食譜集；喜愛的食譜另行管理。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピは複数のコレクションに入れられます。お気に入りは別に管理されます。"
+          }
+        }
+      }
+    },
     "A short description": {
       "localizations": {
         "zh-Hans": {
@@ -133,6 +155,28 @@
         }
       }
     },
+    "Acknowledgements": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "致谢"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "致謝"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "謝辞"
+          }
+        }
+      }
+    },
     "Add": {
       "localizations": {
         "zh-Hans": {
@@ -217,6 +261,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "項目を追加"
+          }
+        }
+      }
+    },
+    "Add or import a recipe": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加或导入食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增或匯入食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピの追加・取り込み"
           }
         }
       }
@@ -507,6 +573,28 @@
         }
       }
     },
+    "App": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "應用程式"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリ"
+          }
+        }
+      }
+    },
     "App preferences": {
       "localizations": {
         "zh-Hans": {
@@ -569,6 +657,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "自動"
+          }
+        }
+      }
+    },
+    "Back to Recipe": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピに戻る"
           }
         }
       }
@@ -837,6 +947,28 @@
         }
       }
     },
+    "Choose…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請選擇…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択…"
+          }
+        }
+      }
+    },
     "Clear bought items": {
       "localizations": {
         "zh-Hans": {
@@ -877,6 +1009,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "検索をクリア"
+          }
+        }
+      }
+    },
+    "Close": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "關閉"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閉じる"
           }
         }
       }
@@ -947,6 +1101,28 @@
         }
       }
     },
+    "Collection name": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食谱册名称"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食譜集名稱"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクション名"
+          }
+        }
+      }
+    },
     "Collections": {
       "localizations": {
         "zh-Hans": {
@@ -987,6 +1163,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "パスワードを確認"
+          }
+        }
+      }
+    },
+    "Conflicts": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "冲突"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "衝突"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "競合"
+          }
+        }
+      }
+    },
+    "Consolidate compatible ingredients": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合并相同且兼容的食材"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合併相同且相容的食材"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同じ材料をまとめる"
           }
         }
       }
@@ -1035,6 +1255,50 @@
         }
       }
     },
+    "Cook Again": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再次烹饪"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再次烹飪"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "もう一度作る"
+          }
+        }
+      }
+    },
+    "Cook with timers": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用计时器烹饪"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用計時器烹飪"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タイマーを使って調理"
+          }
+        }
+      }
+    },
     "Cooking": {
       "localizations": {
         "zh-Hans": {
@@ -1053,6 +1317,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "調理"
+          }
+        }
+      }
+    },
+    "Cooking progress": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹饪进度"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹飪進度"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理の進行状況"
           }
         }
       }
@@ -1233,6 +1519,28 @@
         }
       }
     },
+    "Delete Account & Cloud Data": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除账号及云端数据"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除帳號及雲端資料"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アカウントとクラウドデータを削除"
+          }
+        }
+      }
+    },
     "Delete All Local Data": {
       "localizations": {
         "zh-Hans": {
@@ -1255,6 +1563,50 @@
         }
       }
     },
+    "Delete Collection": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除食谱册"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除食譜集"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクションを削除"
+          }
+        }
+      }
+    },
+    "Delete Local Data": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除本地数据"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除本機資料"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この端末のデータを削除"
+          }
+        }
+      }
+    },
     "Delete Recipe": {
       "localizations": {
         "zh-Hans": {
@@ -1273,6 +1625,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "レシピを削除"
+          }
+        }
+      }
+    },
+    "Delete RecipePouch Account & Cloud Data": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除 RecipePouch 账号及云端数据"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除 RecipePouch 帳號與雲端資料"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouchアカウントとクラウドデータを削除"
           }
         }
       }
@@ -1383,6 +1757,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "飲み物"
+          }
+        }
+      }
+    },
+    "During cooking": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹饪过程中"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹飪過程中"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理中"
           }
         }
       }
@@ -1585,6 +1981,50 @@
         }
       }
     },
+    "Finish Cooking": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结束烹饪"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "結束烹飪"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理を終了"
+          }
+        }
+      }
+    },
+    "First sync": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首次同步"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首次同步"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "初回同期"
+          }
+        }
+      }
+    },
     "For this step": {
       "localizations": {
         "zh-Hans": {
@@ -1761,6 +2201,28 @@
         }
       }
     },
+    "Groceries and recipe references": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "购物清单及关联食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購物清單及關聯食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "買い物リストと関連レシピ"
+          }
+        }
+      }
+    },
     "Grocery filter": {
       "localizations": {
         "zh-Hans": {
@@ -1893,6 +2355,28 @@
         }
       }
     },
+    "Import needs review": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入内容需要完善"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯入內容需要完善"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取り込み内容の確認が必要"
+          }
+        }
+      }
+    },
     "Import recipe": {
       "localizations": {
         "zh-Hans": {
@@ -2003,6 +2487,28 @@
         }
       }
     },
+    "Keep Cooking": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续烹饪"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "繼續烹飪"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理を続ける"
+          }
+        }
+      }
+    },
     "Keep editing": {
       "localizations": {
         "zh-Hans": {
@@ -2021,6 +2527,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "編集を続ける"
+          }
+        }
+      }
+    },
+    "Keep every recipe in one place": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有食谱，一处收藏"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有食譜，集中收藏"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピをひとつにまとめて保存"
           }
         }
       }
@@ -2091,6 +2619,28 @@
         }
       }
     },
+    "Kitchen timers": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "厨房计时器"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "廚房計時器"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キッチンタイマー"
+          }
+        }
+      }
+    },
     "Last synced": {
       "localizations": {
         "zh-Hans": {
@@ -2113,6 +2663,28 @@
         }
       }
     },
+    "Legal": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "法律信息"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "法律資訊"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "法的情報"
+          }
+        }
+      }
+    },
     "Light": {
       "localizations": {
         "zh-Hans": {
@@ -2131,6 +2703,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "ライト"
+          }
+        }
+      }
+    },
+    "Local preferences and cooking sessions": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地偏好和烹饪会话"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本機偏好與烹飪工作階段"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "端末の設定と調理セッション"
+          }
+        }
+      }
+    },
+    "Lora": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lora"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lora"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lora"
           }
         }
       }
@@ -2179,6 +2795,50 @@
         }
       }
     },
+    "Manage": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理"
+          }
+        }
+      }
+    },
+    "Manage Recipes": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピを管理"
+          }
+        }
+      }
+    },
     "Manage Subscription": {
       "localizations": {
         "zh-Hans": {
@@ -2197,6 +2857,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "サブスクリプションを管理"
+          }
+        }
+      }
+    },
+    "Manual": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手动"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手動"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手動"
           }
         }
       }
@@ -2245,6 +2927,28 @@
         }
       }
     },
+    "Meal plan": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "周计划"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "週計劃"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "献立プラン"
+          }
+        }
+      }
+    },
     "Meal Plan": {
       "localizations": {
         "zh-Hans": {
@@ -2263,6 +2967,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "献立プラン"
+          }
+        }
+      }
+    },
+    "Meal types": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "餐次类型"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "餐點類型"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食事の種類"
           }
         }
       }
@@ -2329,6 +3055,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "材料や手順が不足していても下書き保存できます。"
+          }
+        }
+      }
+    },
+    "Monday": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "星期一"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "星期一"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "月曜日"
           }
         }
       }
@@ -2795,6 +3543,50 @@
         }
       }
     },
+    "Open Source Licenses": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开源许可证"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開源授權條款"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オープンソースライセンス"
+          }
+        }
+      }
+    },
+    "Organization": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整理方式"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整理方式"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整理"
+          }
+        }
+      }
+    },
     "Original amounts · servings not specified": {
       "localizations": {
         "zh-Hans": {
@@ -2857,6 +3649,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "その他"
+          }
+        }
+      }
+    },
+    "Other Timers": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他计时器"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他計時器"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "その他のタイマー"
           }
         }
       }
@@ -2945,6 +3759,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "献立"
+          }
+        }
+      }
+    },
+    "Plan meals and shop": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安排餐食与购物"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安排餐點與購物"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "献立と買い物"
           }
         }
       }
@@ -3059,6 +3895,28 @@
         }
       }
     },
+    "Previous": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上一步"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上一步"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前へ"
+          }
+        }
+      }
+    },
     "Previous week": {
       "localizations": {
         "zh-Hans": {
@@ -3099,6 +3957,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "プライバシー"
+          }
+        }
+      }
+    },
+    "Privacy Summary": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐私摘要"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隱私摘要"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プライバシーの概要"
           }
         }
       }
@@ -3191,6 +4071,28 @@
         }
       }
     },
+    "Ready to enjoy": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可以开动了"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可以開動了"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "できあがり"
+          }
+        }
+      }
+    },
     "Recently Added": {
       "localizations": {
         "zh-Hans": {
@@ -3231,6 +4133,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "レシピ"
+          }
+        }
+      }
+    },
+    "Recipe display": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食谱显示"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食譜顯示"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピの表示"
           }
         }
       }
@@ -3477,6 +4401,50 @@
         }
       }
     },
+    "Recipes stay in your library. Only this collection and its memberships are removed.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食谱仍会保留，仅删除此食谱册及其归属关系。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食譜仍會保留，僅刪除此食譜集及其歸屬關係。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピは残り、このコレクションと登録関係のみ削除されます。"
+          }
+        }
+      }
+    },
+    "Recipes, notes and original sources": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食谱、备注与原始来源"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食譜、備註與原始來源"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピ、メモ、元の出典"
+          }
+        }
+      }
+    },
     "Remove": {
       "localizations": {
         "zh-Hans": {
@@ -3605,6 +4573,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "タイマーを削除"
+          }
+        }
+      }
+    },
+    "Rename": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重命名"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新命名"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名前を変更"
+          }
+        }
+      }
+    },
+    "Reset": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重置"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重設"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リセット"
           }
         }
       }
@@ -3939,6 +4951,28 @@
         }
       }
     },
+    "Show recipe names": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示来源食谱名称"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "顯示來源食譜名稱"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピ名を表示"
+          }
+        }
+      }
+    },
     "Sides": {
       "localizations": {
         "zh-Hans": {
@@ -3979,6 +5013,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "ログイン"
+          }
+        }
+      }
+    },
+    "Sign in required": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要登录"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要登入"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログインが必要です"
           }
         }
       }
@@ -4137,6 +5193,50 @@
         }
       }
     },
+    "Start": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開始"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開始"
+          }
+        }
+      }
+    },
+    "Start a New Session": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始新的烹饪"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開始新的烹飪"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しい調理セッションを開始"
+          }
+        }
+      }
+    },
     "Start Cooking": {
       "localizations": {
         "zh-Hans": {
@@ -4155,6 +5255,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "調理を開始"
+          }
+        }
+      }
+    },
+    "Starting a fresh session…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在开始新的烹饪…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在開始新的烹飪…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しいセッションを開始しています…"
           }
         }
       }
@@ -4269,6 +5391,94 @@
         }
       }
     },
+    "Subscription not showing": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "订阅状态未显示"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "訂閱狀態未顯示"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サブスクリプションが表示されない"
+          }
+        }
+      }
+    },
+    "Sunday": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "星期日"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "星期日"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日曜日"
+          }
+        }
+      }
+    },
+    "Sync behavior": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同步方式"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同步方式"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同期方法"
+          }
+        }
+      }
+    },
+    "Sync Error": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同步错误"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同步錯誤"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同期エラー"
+          }
+        }
+      }
+    },
     "Sync Now": {
       "localizations": {
         "zh-Hans": {
@@ -4287,6 +5497,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "今すぐ同期"
+          }
+        }
+      }
+    },
+    "Sync problems": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同步问题"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同步問題"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同期の問題"
           }
         }
       }
@@ -4357,6 +5589,72 @@
         }
       }
     },
+    "System Default": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟随系统"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟隨系統"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システム設定"
+          }
+        }
+      }
+    },
+    "System frameworks": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统框架"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系統框架"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システムフレームワーク"
+          }
+        }
+      }
+    },
+    "Tap the heart on a recipe to keep your go-to dishes here.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击食谱上的爱心，收藏常做的菜。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點選食譜上的愛心，收藏常做的料理。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピのハートを押すとお気に入りに保存されます。"
+          }
+        }
+      }
+    },
     "Temperature or heat, e.g. 200°C or medium heat": {
       "localizations": {
         "zh-Hans": {
@@ -4423,6 +5721,50 @@
         }
       }
     },
+    "Theme": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主题"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主題"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テーマ"
+          }
+        }
+      }
+    },
+    "This collection may have been deleted.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这个食谱册可能已被删除。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這個食譜集可能已被刪除。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このコレクションは削除された可能性があります。"
+          }
+        }
+      }
+    },
     "This iPhone": {
       "localizations": {
         "zh-Hans": {
@@ -4441,6 +5783,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "このiPhone"
+          }
+        }
+      }
+    },
+    "This recipe has no ingredients yet.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这份食谱尚未添加食材。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這份食譜尚未新增食材。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このレシピにはまだ材料がありません。"
           }
         }
       }
@@ -4489,6 +5853,72 @@
         }
       }
     },
+    "This replaces the unreadable cooking progress for this recipe. The recipe itself is kept.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这会替换无法读取的烹饪进度，食谱本身会保留。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這會取代無法讀取的烹飪進度，食譜本身會保留。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み込めない調理進捗を置き換えます。レシピ自体は残ります。"
+          }
+        }
+      }
+    },
+    "Time remaining": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剩余时间"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剩餘時間"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "残り時間"
+          }
+        }
+      }
+    },
+    "Timer": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "计时器"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "計時器"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タイマー"
+          }
+        }
+      }
+    },
     "Timer label": {
       "localizations": {
         "zh-Hans": {
@@ -4507,6 +5937,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "タイマー名"
+          }
+        }
+      }
+    },
+    "Timer Notifications": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "计时器通知"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "計時器通知"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タイマーの通知"
           }
         }
       }
@@ -4551,6 +6003,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "今日"
+          }
+        }
+      }
+    },
+    "Troubleshooting": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "故障排查"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "疑難排解"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "トラブルシューティング"
           }
         }
       }
@@ -4643,6 +6117,28 @@
         }
       }
     },
+    "Update": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        }
+      }
+    },
     "Update Password": {
       "localizations": {
         "zh-Hans": {
@@ -4683,6 +6179,72 @@
           "stringUnit": {
             "state": "translated",
             "value": "8文字以上で入力してください。"
+          }
+        }
+      }
+    },
+    "View All Ingredients": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看全部食材"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看全部食材"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべての材料を見る"
+          }
+        }
+      }
+    },
+    "Week Starts On": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一周开始于"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一週開始於"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "週の開始曜日"
+          }
+        }
+      }
+    },
+    "What RecipePouch Stores": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch 保存哪些数据"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch 儲存哪些資料"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouchが保存するデータ"
           }
         }
       }
@@ -4731,6 +6293,28 @@
         }
       }
     },
+    "Working with the App Store": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在连接 App Store"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在連線至 App Store"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Storeと通信中"
+          }
+        }
+      }
+    },
     "You can keep using RecipePouch for free and check again later.": {
       "localizations": {
         "zh-Hans": {
@@ -4749,6 +6333,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "引き続き無料で利用できます。しばらくしてからお試しください。"
+          }
+        }
+      }
+    },
+    "Your data": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "您的数据"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "您的資料"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "データ"
           }
         }
       }
@@ -4793,6 +6399,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "メモと変更内容"
+          }
+        }
+      }
+    },
+    "Your running timers will stop when you finish this recipe.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结束烹饪后，正在运行的计时器将停止。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "結束烹飪後，執行中的計時器將停止。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理を終了すると実行中のタイマーは停止します。"
           }
         }
       }
