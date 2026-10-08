@@ -1064,8 +1064,12 @@ struct CookingView: View {
     }
 
     static func discardSession(recipeID: UUID) {
-        UserDefaults.standard.removeObject(
+        let defaults = UserDefaults.standard
+        defaults.removeObject(
             forKey: "recipe.cookingSession.\(recipeID.uuidString)"
+        )
+        defaults.removeObject(
+            forKey: "cook.cookingSession.\(recipeID.uuidString)"
         )
         Task { @MainActor in
             await removeSessionNotifications(recipeID: recipeID)
@@ -1253,7 +1257,7 @@ private struct CookingStepTimerPanel: View {
     private var notificationMessage: String {
         notificationsEnabled
             ? "Your timer keeps time when you leave this screen."
-            : "Your timer progress is saved. Keep Recipe open to see when time is up."
+            : "Your timer progress is saved. Keep RecipePouch open to see when time is up."
     }
 
     private func timerControls(remaining: Int) -> some View {
