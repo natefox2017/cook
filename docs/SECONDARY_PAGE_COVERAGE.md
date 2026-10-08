@@ -1,6 +1,6 @@
 # Secondary Page Coverage
 
-Updated: 2026-10-07
+Updated: 2026-10-08
 
 This document is the UI completeness checklist for the current codebase. Production services are intentionally allowed to remain unconfigured until the later production test pass.
 
@@ -16,7 +16,7 @@ This document is the UI completeness checklist for the current codebase. Product
 - Profile overview — implemented.
 - Edit local profile — implemented.
 - Settings hub — implemented.
-- Recipe Account — implemented UI + Supabase Auth actions: sign in/sign up/forgot password/password recovery/Sign in with Apple/sign out; provider delivery still requires production verification.
+- RecipePouch Account — implemented UI + Supabase Auth actions: sign in/sign up/forgot password/password recovery/Sign in with Apple/sign out; provider delivery still requires production verification.
 - Subscription — implemented UI + StoreKit 2 service: products/purchase/status/restore/manage; real App Store products deferred.
 - Cloud Sync — implemented settings/status/mode page; production Supabase connection deferred.
 - Notifications — implemented.
@@ -27,11 +27,11 @@ This document is the UI completeness checklist for the current codebase. Product
 - Data & Privacy — implemented: export, local delete, cloud delete entry, stored-data explanation, privacy summary.
 - Help & Support — implemented: import, cooking, meal/shop, subscription, sync and import-review troubleshooting.
 - About — implemented: version, licenses, acknowledgements, EULA.
-- Collections — implemented secondary page shell + Favorites; cloud collection membership deferred.
+- Collections — implemented locally: create/rename/delete, multi-membership, Favorites kept separate, real counts, collection detail/search, recipe membership management and recipe-library filtering; remote sync remains #29.
 
 ## Recipes
 
-- Library/search/filter/sort/empty/no-result — implemented.
+- Library/search/filter/sort/empty/no-result — implemented, including custom Collection filters.
 - Add recipe menu — implemented.
 - URL/text/PDF/photo/camera/manual intake — implemented locally.
 - Import error/partial-review state — implemented.
@@ -69,7 +69,7 @@ The following are not UI omissions. They require production configuration and ar
 - App Store Connect product IDs, offers, StoreKit sandbox/production purchase and restore.
 - Share Extension target signing/App Group host-app test.
 - Backend social-video AI processing and provider credentials.
-- Cloud collection membership/sync.
+- Production-verified cloud Collection membership/sync (#29/#34).
 
 No screen should claim those production services succeeded while they are unconfigured.
 
