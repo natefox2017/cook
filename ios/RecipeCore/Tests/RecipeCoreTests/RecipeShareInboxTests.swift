@@ -76,6 +76,25 @@ private func temporaryShareContainer() throws -> URL {
     #expect(try inbox.pendingReceipts().isEmpty)
 }
 
+@Test
+func emptyAttachmentsNeverProduceSavedReceipts() throws {
+    let container = try temporaryShareContainer()
+    defer { try? FileManager.default.removeItem(at: container) }
+
+    let inbox = try RecipeShareInbox(containerURL: container)
+
+    #expect(throws: RecipeShareInboxError.self) {
+        try inbox.receiveFile(Data(), as: .image, mimeType: "image/jpeg")
+    }
+    #expect(throws: RecipeShareInboxError.self) {
+        try inbox.receiveFile(Data(), as: .file, mimeType: "application/pdf")
+    }
+    #expect(throws: RecipeShareInboxError.self) {
+        try inbox.receiveFile(Data(), as: .file, mimeType: "text/plain")
+    }
+    #expect(try inbox.pendingReceipts().isEmpty)
+}
+
 @Test func concurrentIdenticalSharesDoNotOverwriteOneAnother() async throws {
     let container = try temporaryShareContainer()
     defer { try? FileManager.default.removeItem(at: container) }
