@@ -23,6 +23,8 @@
 
 | UI-018 | Cloud Sync 状态、首次同步选择与冲突处理 | 现有 Settings UI + `DESIGN/proposals/2026-10-08/cloud-sync/README.md` | APPROVED | 2026-10-08 用户明确要求不再单独画设计稿，继续按现有 UI/功能开发；直接延伸 Settings 实现实时状态、Sync Now、首次合并和逐项冲突选择 |
 
+| UI-019 | 登录 UI 与底部弹窗 | 现有 Profile / RecipeTheme / AccountView | APPROVED | 2026-10-08 用户要求直接修改登录页及弹出方式；Profile 账户入口改为底部 sheet，Apple 登录优先，邮箱按需展开，成功后关闭，回调可展开恢复密码；不改 Supabase Auth 契约 |
+
 ## 状态定义
 - PENDING：尚无明确 UI 决策记录
 - APPROVED：用户已明确同意或直接要求执行对应方向

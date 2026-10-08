@@ -349,16 +349,26 @@ final class RecipeUITests: XCTestCase {
         waitUntilReady(account)
         account.tap()
 
-        XCTAssertTrue(app.buttons["account.submit"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.textFields["Email"].exists)
-        XCTAssertTrue(app.secureTextFields["Password"].exists)
+        let emailEntry = app.buttons["account.email"]
+        XCTAssertTrue(emailEntry.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Welcome to RecipePouch"].exists)
         XCTAssertTrue(
             app.buttons.matching(
                 NSPredicate(format: "label CONTAINS[c] %@", "Apple")
             ).firstMatch.exists
         )
+
+        // The initial bottom sheet is Apple-first; email entry expands it.
+        XCTAssertFalse(app.textFields["Email"].exists)
+        emailEntry.tap()
+        XCTAssertTrue(app.buttons["account.submit"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.textFields["Email"].exists)
+        XCTAssertTrue(app.secureTextFields["Password"].exists)
         XCTAssertTrue(app.buttons["Forgot Password?"].exists)
-        attachScreenshot("Account sign in options", app: app)
+        attachScreenshot("Expanded account sign in sheet", app: app)
+
+        app.buttons["account.close"].tap()
+        XCTAssertTrue(app.buttons["profile.account"].waitForExistence(timeout: 8))
     }
 
     @MainActor
