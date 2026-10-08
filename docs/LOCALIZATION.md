@@ -25,22 +25,27 @@ Initial targets: English (en), Simplified Chinese (zh-Hans), Traditional Chinese
 
 ## Translation status (2026-10-08, Issue #26)
 
-**Four-language implementation is still partial:**
+**The four-language catalog is implemented, with full-page acceptance still in progress.**
 
-- `ios/Recipe/Resources/Localizable.xcstrings` contains **317 English-source keys** with actual `zh-Hans`, `zh-Hant` and `ja` values. This includes 16 import, cloud-sync, local-reset and timer-notification error/status strings added in this pass. Coverage across recipe detail/editing, groceries, meal planning, cooking, Collections, Settings, privacy, Account, StoreKit and Cloud Sync remains incomplete.
-- `ios/Recipe/Resources/InfoPlist.xcstrings` translates `NSCameraUsageDescription` for the same three non-English languages. Both catalogs are registered with the **Recipe app target** in `ios/Recipe.xcodeproj/project.pbxproj`; Xcode `knownRegions` lists en/zh-Hans/zh-Hant/ja.
-- `ios/Recipe/Info.plist` advertises only those four shipping locales. es/fr/de/ko/pt-BR are **planned only** and intentionally not advertised until real catalog coverage exists.
-- The four Tab title values are `LocalizedStringKey`; dynamic Account/Settings labels, enum-backed recipe/grocery categories, meal slots, Appearance and Sync modes now explicitly look up localization keys. Persisted identifiers, API values, original recipe names, collections and StoreKit prices are not translated.
-- UI tests pass `-AppleLanguages (en)` and `-AppleLocale en_US` for deterministic **English** regression, while the four-locale smoke test selects each supported locale and checks the Recipes tab and recipe count. Live production still follows `.autoupdatingCurrent`; a normal launch on a zh-Hans simulator displayed the Chinese first-launch title and action.
+- `ios/Recipe/Resources/Localizable.xcstrings` contains **493 source keys**; each key has zh-Hans, zh-Hant and ja values, including plural variants. The keys cover Recipes, recipe details/editing, import, Collections, groceries, meal planning, cooking, profile, Settings, account, subscription, cloud sync, privacy and help. English uses source values as the fallback. `InfoPlist.xcstrings` contains the camera permission string and app display/name values for all four locales.
+- Both catalogs are registered in the **Recipe** app target. Xcode 27 built the target successfully for the iOS 27 simulator, compiling its String Catalogs. The Xcode localization export extracted additional literals and surfaced 111 non-literal extraction warnings; a source scan localized concrete dynamic/composed copy and user-visible service/core errors. Keep reviewing new UI copy as adjacent features change.
+- `ios/Recipe/Info.plist` advertises only en, zh-Hans, zh-Hant and ja. es/fr/de/ko/pt-BR remain planned and are intentionally not advertised.
+- UI tests keep English by default. The locale smoke explicitly passes `--uitesting-locale` for four deterministic locales. `RecipeApp.appLocale` follows `Locale.autoupdatingCurrent` in normal launches; no language-switch-during-running-app device test was performed.
+- `String(localized:)` and `LocalizedStringKey` are used for composed/dynamic display copy and enum-backed labels. Accessibility identifiers, persistence values, user recipe/source text, custom collection names and StoreKit prices remain unchanged.
 
-**Remaining for completion of #26:**
+**Runtime evidence collected**
 
-- The current Xcode `Recipe` target and both String Catalogs compiled successfully with Xcode 27 on an iOS 27 simulator. `testFourLocaleTabLabelsUseStringCatalog` passed on iPhone 18 Pro Max (1 test, 0 failures), checking all four locale launches. This is a focused smoke test, not full-page acceptance.
-- A source extraction audit found additional UI strings outside the catalog, including secondary-screen help, confirmation copy, VoiceOver labels/hints/values and remaining error messages. `RecipeCore` errors and several computed/concatenated messages still surface English. Review each affected flow and add translations without translating stable IDs, raw recipe/evidence fields, user-generated names or provider receipts.
-- Recipe count and the existing numeric labels use String Catalog plural variations. Verify 0 / 1 / many for recipes and ingredients across all four locales in visible flows.
-- Screenshots showed readable Chinese and Japanese glyphs on the current Lora/system fallback at the default size. A maximum accessibility text-size screenshot of first launch wrapped Chinese title and controls without visible clipping, but its explanatory feature copy fell back to English. Verify secondary pages, narrow widths, dark mode and the full Dynamic Type range.
-- VoiceOver behavior and labels, permission dialogs, and changing the device language while the production app is running remain unverified. The four-language screenshot evidence is limited to the Recipes root page.
-- Keep #26 open and PR #74 draft until remaining copy and accessibility coverage are translated and the full runtime checks pass.
+- `xcodebuild ... build` succeeded for `Recipe` on the `Recipe PR74 QA` iOS 27 simulator, including both catalogs.
+- `testFourLocaleTabLabelsUseStringCatalog` passed for en, zh-Hans, zh-Hant and ja, checking the Recipes tab, localized recipe-count noun, Settings title and RecipePouch Account row. Four Settings screenshots show Lora Latin with system CJK glyph fallback and no visible clipping at the default size. Screenshot evidence is in `.tmp/pr74/screenshots/final-4-locale/` (temporary, untracked).
+- `swift test --package-path ios/RecipeCore` ran 70 tests: 69 passed; `structuredStepsExtractExplicitCookingSignalsWithoutGuessing` failed because the roast fixture produced `[1200]` instead of `[1200, 600]`. This parser test is outside this localization change and should be tracked separately.
+
+**Remaining for #26 / #33**
+
+- The full UI suite is not accepted: an earlier run on the existing QA simulator had 10 failures, including one cooking-flow assertion and subsequent simulator install-coordination failures. A focused locale smoke passes on the isolated simulator.
+- `testSettingsRemainReachableAtAccessibilityDynamicType` passed its navigation/button assertions at accessibility-extra-extra-extra-large. The screenshot shows long row labels wrapping inside words, including a one-character line break; this is a visual failure. UI-009 approves copy reduction only and forbids layout changes, so the row layout needs a confirmed accessibility-size design before implementation.
+- VoiceOver was not operated directly. The XCTest accessibility tree found localized row labels as buttons, but this does not prove VoiceOver navigation quality. Permission prompts, dark mode, the complete Dynamic Type range, and production locale changes remain unverified.
+- Not every secondary-page state has four-locale screenshot coverage. Continue checking empty/loading/error/disabled states and plural values in their visible flows. Do not interpret catalog key coverage as proof of every runtime path.
+- Keep #26 and #33 open and PR #74 draft until the remaining native accessibility and end-to-end checks are complete.
 
 Implementation guidance:
 - [Apple: String Catalogs](https://developer.apple.com/documentation/xcode/localizing-and-varying-text-with-a-string-catalog)

@@ -111,6 +111,7 @@ private struct SettingsRow: View {
 
 struct CloudSyncSettingsView: View {
     @Environment(CloudSyncCoordinator.self) private var cloudSync
+    @Environment(\.locale) private var locale
     @State private var auth = RecipeAuthService.shared
     @State private var conflictChoices: [String: LibraryMergeSource] = [:]
 
@@ -159,9 +160,10 @@ struct CloudSyncSettingsView: View {
         case .initialChoice(let local, let cloud):
             Section("First sync") {
                 Text(
-                    "Choose how to connect this iPhone’s local library to "
-                        + "your RecipePouch account."
-                )
+                    String(
+                        localized:
+                            "Choose how to connect this iPhone’s local library to your RecipePouch account."
+                    ))
 
                 LabeledContent(
                     "This iPhone",
@@ -189,8 +191,10 @@ struct CloudSyncSettingsView: View {
         case .conflicts(let conflicts):
             Section("Conflicts") {
                 Text(
-                    "Both this iPhone and the cloud changed the same data. "
-                        + "Choose which version to keep for each conflict."
+                    String(
+                        localized:
+                            "Both this iPhone and the cloud changed the same data. Choose which version to keep for each conflict."
+                    )
                 )
                 .foregroundStyle(.secondary)
 
@@ -266,33 +270,38 @@ struct CloudSyncSettingsView: View {
     private var accountLabel: String {
         switch auth.state {
         case .signedIn(_, let email):
-            return email ?? "Signed in"
+            return email ?? String(localized: "Signed in")
         case .loading, .authenticating:
-            return "Checking…"
+            return String(localized: "Checking…")
         default:
-            return "Not connected"
+            return String(localized: "Not connected")
         }
     }
 
     private var lastSyncedLabel: String {
-        guard let date = cloudSync.lastSyncedAt else { return "Never" }
-        return date.formatted(date: .abbreviated, time: .shortened)
+        guard let date = cloudSync.lastSyncedAt else {
+            return String(localized: "Never")
+        }
+        return date.formatted(
+            Date.FormatStyle(date: .abbreviated, time: .shortened)
+                .locale(locale)
+        )
     }
 
     private var statusLabel: String {
         switch cloudSync.state {
         case .localOnly:
-            return "Local only"
+            return String(localized: "Local only")
         case .syncing:
-            return "Syncing…"
+            return String(localized: "Syncing…")
         case .synced:
-            return "Synced"
+            return String(localized: "Synced")
         case .initialChoice:
-            return "Waiting for your choice"
+            return String(localized: "Waiting for your choice")
         case .conflicts(let conflicts):
             return String(localized: "\(conflicts.count) conflicts")
         case .error:
-            return "Needs attention"
+            return String(localized: "Needs attention")
         }
     }
 
@@ -316,32 +325,42 @@ struct CloudSyncSettingsView: View {
         _ conflict: LibraryMergeConflict
     ) -> String {
         if conflict.id.hasPrefix("collection-name:") {
-            return "Collection name"
+            return String(localized: "Collection name")
         }
         if conflict.id.hasPrefix("meal-slot:") {
-            return "Meal plan slot"
+            return String(localized: "Meal plan slot")
         }
 
         switch conflict.entity {
         case .recipe:
-            return "Recipe"
+            return String(localized: "Recipe")
         case .grocery:
-            return "Grocery item"
+            return String(localized: "Grocery item")
         case .meal:
-            return "Meal plan entry"
+            return String(localized: "Meal plan entry")
         case .collection:
-            return "Collection"
+            return String(localized: "Collection")
         case .membership:
-            return "Collection membership"
+            return String(localized: "Collection membership")
         case .settings:
-            return "Settings"
+            return String(localized: "Settings")
         }
     }
 
     private func countSummary(_ counts: CloudLibraryCounts) -> String {
-        "\(counts.recipes) recipes · "
-            + "\(counts.groceries) groceries · "
-            + "\(counts.plannedMeals) planned"
+        let recipeCount = String.localizedStringWithFormat(
+            String(localized: "%lld recipes"),
+            counts.recipes
+        )
+        let groceryCount = String.localizedStringWithFormat(
+            String(localized: "%lld grocery items"),
+            counts.groceries
+        )
+        let mealCount = String.localizedStringWithFormat(
+            String(localized: "%lld planned meals"),
+            counts.plannedMeals
+        )
+        return [recipeCount, groceryCount, mealCount].joined(separator: " · ")
     }
 }
 
