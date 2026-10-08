@@ -456,9 +456,18 @@ enum RecipeLocalDataDeletion {
             "recipe.meal.weekStart",
             "cook.meal.weekStart",
             "recipe.collections",
-            "cook.collections"
+            "cook.collections",
+            "recipe.shareInbox",
+            "cook.shareInbox"
         ] {
             defaults.removeObject(forKey: key)
+        }
+
+        // Share receipts can contain private URLs. They live in the deployed
+        // App Group, independently of the main app's defaults database.
+        if let shareDefaults = UserDefaults(suiteName: "group.com.modelhub.cook") {
+            shareDefaults.removeObject(forKey: "recipe.shareInbox")
+            shareDefaults.removeObject(forKey: "cook.shareInbox")
         }
 
         await RecipeNotificationCleanup.removeTimerReminders()
