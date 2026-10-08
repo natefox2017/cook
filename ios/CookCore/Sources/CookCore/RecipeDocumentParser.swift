@@ -172,12 +172,52 @@ public enum RecipeDocumentParser {
     }
 
     private static func timerCandidates(in text: String, stepTitle: String) -> [RecipeStepTimer] {
-        let pattern = #"\b(\d{1,3})\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)\b"#
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { return [] }
-        let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
-        var timers: [RecipeStepTimer] = []
+        let combinedPattern = #"\b(\d{1,2})\s*(hours?|hrs?)\s*(?:and\s*)?(\d{1,2})\s*(minutes?|mins?)\b"#
+        let singlePattern = #"\b(\d{1,3})\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)\b"#
 
-        for match in matches {
+        guard let singleRegex = try? NSRegularExpression(pattern: singlePattern, options: .caseInsensitive) else {
+            return []
+        }
+
+        let fullTextRange = NSRange(text.startIndex..., in: text)
+        var timers: [RecipeStepTimer] = []
+        var consumedRanges: [NSRange] = []
+
+        if let combinedRegex = try? NSRegularExpression(pattern: combinedPattern, options: .caseInsensitive) {
+            for match in combinedRegex.matches(in: text, range: fullTextRange) {
+                guard let fullRange = Range(match.range(at: 0), in: text),
+                      let hoursRange = Range(match.range(at: 1), in: text),
+                      let minutesRange = Range(match.range(at: 3), in: text),
+                      let hours = Int(text[hoursRange]),
+                      let minutes = Int(text[minutesRange]),
+                      minutes < 60 else { continue }
+
+                if isAmbiguousTimeMatch(in: text, range: fullRange) { continue }
+
+                let seconds = hours * 3_600 + minutes * 60
+                guard seconds > 0, seconds <= 43_200 else { continue }
+
+                let sourceLabel = String(text[fullRange])
+                let base = stepTitle.isEmpty ? "Step timer" : stepTitle
+                timers.append(
+                    RecipeStepTimer(
+                        label: base,
+                        durationSeconds: seconds
+                    )
+                )
+                consumedRanges.append(match.range(at: 0))
+
+                if timers.count > 12 { break }
+                _ = sourceLabel
+            }
+        }
+
+        let singleMatches = singleRegex.matches(in: text, range: fullTextRange)
+        for match in singleMatches {
+            if consumedRanges.contains(where: { NSIntersectionRange($0, match.range(at: 0)).length > 0 }) {
+                continue
+            }
+
             guard let fullRange = Range(match.range(at: 0), in: text),
                   let valueRange = Range(match.range(at: 1), in: text),
                   let unitRange = Range(match.range(at: 2), in: text),
@@ -198,9 +238,14 @@ public enum RecipeDocumentParser {
 
             let sourceLabel = String(text[fullRange])
             let base = stepTitle.isEmpty ? "Step timer" : stepTitle
-            let label = matches.count > 1 ? "\(base) · \(sourceLabel)" : base
+            let label = singleMatches.count - consumedRanges.count > 1
+                ? "\(base) · \(sourceLabel)"
+                : base
+
             timers.append(RecipeStepTimer(label: label, durationSeconds: seconds))
+            if timers.count > 12 { break }
         }
+
         return timers
     }
 
