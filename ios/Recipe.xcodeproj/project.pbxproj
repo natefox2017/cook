@@ -5,6 +5,117 @@
 	};
 	objectVersion = 56;
 	objects = {
+        B30000000000000000000020 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Recipe/Services/RecipeShareInboxCoordinator.swift"; sourceTree = "<group>"; };
+        B30000000000000000000021 = { isa = PBXBuildFile; fileRef = "B30000000000000000000020"; };
+        B30000000000000000000022 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Recipe/Services/RecipeImportJobService.swift"; sourceTree = "<group>"; };
+        B30000000000000000000023 = { isa = PBXBuildFile; fileRef = "B30000000000000000000022"; };
+
+        B30000000000000000000001 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ShareExtension/ShareViewController.swift"; sourceTree = "<group>"; };
+        B30000000000000000000002 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ShareExtension/ShareRootView.swift"; sourceTree = "<group>"; };
+        B30000000000000000000003 = { isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "ShareExtension/Info.plist"; sourceTree = "<group>"; };
+        B30000000000000000000004 = { isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "ShareExtension/ShareExtension.entitlements"; sourceTree = "<group>"; };
+        B30000000000000000000005 = { isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "RecipeShare.appex"; sourceTree = "BUILT_PRODUCTS_DIR"; };
+        B30000000000000000000006 = { isa = PBXBuildFile; fileRef = "B30000000000000000000001"; };
+        B30000000000000000000007 = { isa = PBXBuildFile; fileRef = "B30000000000000000000002"; };
+        B30000000000000000000008 = { isa = PBXBuildFile; productRef = "81B19488E5437AEDF9981AA7"; };
+        B30000000000000000000009 = { isa = PBXBuildFile; fileRef = "B30000000000000000000005"; settings = { ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy,); }; };
+        B3000000000000000000000A = {
+            isa = PBXSourcesBuildPhase;
+            buildActionMask = 2147483647;
+            files = ("B30000000000000000000006", "B30000000000000000000007",);
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+        B3000000000000000000000B = {
+            isa = PBXFrameworksBuildPhase;
+            buildActionMask = 2147483647;
+            files = ("B30000000000000000000008",);
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+        B3000000000000000000000C = {
+            isa = PBXResourcesBuildPhase;
+            buildActionMask = 2147483647;
+            files = ();
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+        B3000000000000000000000D = {
+            isa = PBXCopyFilesBuildPhase;
+            buildActionMask = 2147483647;
+            dstPath = "";
+            dstSubfolderSpec = 13;
+            files = ("B30000000000000000000009",);
+            name = "Embed App Extensions";
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+        B3000000000000000000000F = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                APPLICATION_EXTENSION_API_ONLY = "YES";
+                CODE_SIGN_STYLE = "Automatic";
+                CODE_SIGN_ENTITLEMENTS = "ShareExtension/ShareExtension.entitlements";
+                CURRENT_PROJECT_VERSION = "1";
+                DEVELOPMENT_TEAM = "";
+                GENERATE_INFOPLIST_FILE = "NO";
+                INFOPLIST_FILE = "ShareExtension/Info.plist";
+                IPHONEOS_DEPLOYMENT_TARGET = "18.0";
+                LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks",);
+                MARKETING_VERSION = "0.1.0";
+                PRODUCT_BUNDLE_IDENTIFIER = "com.modelhub.cook.ShareExtension";
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SKIP_INSTALL = "YES";
+                SWIFT_VERSION = "6.0";
+            };
+            name = "Debug";
+        };
+        B30000000000000000000010 = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                APPLICATION_EXTENSION_API_ONLY = "YES";
+                CODE_SIGN_STYLE = "Automatic";
+                CODE_SIGN_ENTITLEMENTS = "ShareExtension/ShareExtension.entitlements";
+                CURRENT_PROJECT_VERSION = "1";
+                DEVELOPMENT_TEAM = "";
+                GENERATE_INFOPLIST_FILE = "NO";
+                INFOPLIST_FILE = "ShareExtension/Info.plist";
+                IPHONEOS_DEPLOYMENT_TARGET = "18.0";
+                LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks",);
+                MARKETING_VERSION = "0.1.0";
+                PRODUCT_BUNDLE_IDENTIFIER = "com.modelhub.cook.ShareExtension";
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SKIP_INSTALL = "YES";
+                SWIFT_VERSION = "6.0";
+            };
+            name = "Release";
+        };
+        B30000000000000000000011 = {
+            isa = XCConfigurationList;
+            buildConfigurations = ("B3000000000000000000000F", "B30000000000000000000010",);
+            defaultConfigurationIsVisible = 0;
+            defaultConfigurationName = "Release";
+        };
+        B3000000000000000000000E = {
+            isa = PBXNativeTarget;
+            buildConfigurationList = "B30000000000000000000011";
+            buildPhases = ("B3000000000000000000000A", "B3000000000000000000000B", "B3000000000000000000000C",);
+            buildRules = ();
+            dependencies = ();
+            name = "RecipeShare";
+            packageProductDependencies = ("81B19488E5437AEDF9981AA7",);
+            productName = "RecipeShare";
+            productReference = "B30000000000000000000005";
+            productType = "com.apple.product-type.app-extension";
+        };
+        B30000000000000000000012 = {
+            isa = PBXContainerItemProxy;
+            containerPortal = "636D07FE5D129B92AEF8A1B0";
+            proxyType = 1;
+            remoteGlobalIDString = "B3000000000000000000000E";
+            remoteInfo = "RecipeShare";
+        };
+        B30000000000000000000013 = {
+            isa = PBXTargetDependency;
+            target = "B3000000000000000000000E";
+            targetProxy = "B30000000000000000000012";
+        };
         C62600000000000000000001 = { isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = "Recipe/Resources/Localizable.xcstrings"; sourceTree = "<group>"; };
         C62600000000000000000002 = { isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = "Recipe/Resources/InfoPlist.xcstrings"; sourceTree = "<group>"; };
         C62600000000000000000003 = { isa = PBXBuildFile; fileRef = "C62600000000000000000001"; };
@@ -201,7 +312,7 @@
 		74BF910B8994BB34E0FF806D = {
 			isa = "PBXSourcesBuildPhase";
 			buildActionMask = 2147483647;
-			files = ("AAA200000000000000000001", "AAA200000000000000000002", "AAA200000000000000000003", "AAA200000000000000000004", "AAA200000000000000000005", "AAA200000000000000000006", "AAA200000000000000000007", "F1A200000000000000000001", "CA2500000000000000000003", "CA2500000000000000000004", "AC588DFE6AAAFD0A6E5A845B", "DA6D9B27B72F9AE3D1D35749", "FF3C315421B30B21C7C3339D", "20ED147A82CFE498B93EB65E", "61513BA408E7656EEC09CFAD", "234268BC0AEB51CA025A79A0", "AE66869D05074B73E99A57E7", "823FF96B6BB0C155A665B9D2", "57BF063A132FD23333E7B829", "A23FED9D1148057EF181E0D9", "A518CAD31E32DCED5F730BD9", "792F2C8F761542243D455254",);
+			files = ("AAA200000000000000000001", "AAA200000000000000000002", "AAA200000000000000000003", "AAA200000000000000000004", "AAA200000000000000000005", "AAA200000000000000000006", "AAA200000000000000000007", "F1A200000000000000000001", "CA2500000000000000000003", "CA2500000000000000000004", "AC588DFE6AAAFD0A6E5A845B", "DA6D9B27B72F9AE3D1D35749", "FF3C315421B30B21C7C3339D", "20ED147A82CFE498B93EB65E", "61513BA408E7656EEC09CFAD", "234268BC0AEB51CA025A79A0", "AE66869D05074B73E99A57E7", "823FF96B6BB0C155A665B9D2", "57BF063A132FD23333E7B829", "A23FED9D1148057EF181E0D9", "A518CAD31E32DCED5F730BD9", "792F2C8F761542243D455254", "B30000000000000000000021", "B30000000000000000000023",);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		80F7A89205DA9433FDFE452E = {
@@ -306,13 +417,13 @@
 		};
 		29493F7A0A1DC0A29D62667D = {
 			isa = "PBXGroup";
-			children = ("33EB7E4766593ED0F8C0DADC", "36E3FB1B84BF6F1C18ECDF2B",);
+			children = ("33EB7E4766593ED0F8C0DADC", "36E3FB1B84BF6F1C18ECDF2B", "B30000000000000000000005",);
 			name = "Products";
 			sourceTree = "<group>";
 		};
 		C9914A82A94653DFA8FC0769 = {
 			isa = "PBXGroup";
-			children = ("AAA100000000000000000001", "AAA100000000000000000002", "AAA100000000000000000003", "AAA100000000000000000004", "AAA100000000000000000005", "AAA100000000000000000006", "AAA100000000000000000007", "F1A100000000000000000001", "F1A300000000000000000001", "CA2500000000000000000001", "CA2500000000000000000002", "7C1B02F888659FCC7085FB42", "25F62E34DA12429ADED41B5F", "FE3B512044F19473C69E8EE8", "81D341FEC4D583D159A81472", "786F148031409E6B91BA7ADA", "7A102E6D3C8D84A4A367FDD5", "F65667ACEBFD515914EC0D62", "A6448F594722D50C0B4D3C39", "9696C707DA8B370D6D692CD7", "3EF2BCDD909998F5F61D4CDB", "BF8828F17030551D9B2CAB26", "9CBEA84D8BBB3B9544C8F4D1", "2CC9A60EF26491F8B85CECA8", "CA2500000000000000000010", "E9F6D189A93398EC97CBA986", "C62600000000000000000001", "C62600000000000000000002", "37A36EE21470843AA7099FE2", "AE883F1AB828ECB1CD171547", "51CF165429D76650010C25E5", "A1EB8E3F636FCBAC5D3A924A", "A1EB8E3F636FCBAC5D3A924B", "29493F7A0A1DC0A29D62667D",);
+			children = ("AAA100000000000000000001", "AAA100000000000000000002", "AAA100000000000000000003", "AAA100000000000000000004", "AAA100000000000000000005", "AAA100000000000000000006", "AAA100000000000000000007", "F1A100000000000000000001", "F1A300000000000000000001", "CA2500000000000000000001", "CA2500000000000000000002", "B30000000000000000000020", "B30000000000000000000022", "7C1B02F888659FCC7085FB42", "25F62E34DA12429ADED41B5F", "FE3B512044F19473C69E8EE8", "81D341FEC4D583D159A81472", "786F148031409E6B91BA7ADA", "7A102E6D3C8D84A4A367FDD5", "F65667ACEBFD515914EC0D62", "A6448F594722D50C0B4D3C39", "9696C707DA8B370D6D692CD7", "3EF2BCDD909998F5F61D4CDB", "BF8828F17030551D9B2CAB26", "9CBEA84D8BBB3B9544C8F4D1", "2CC9A60EF26491F8B85CECA8", "CA2500000000000000000010", "E9F6D189A93398EC97CBA986", "C62600000000000000000001", "C62600000000000000000002", "37A36EE21470843AA7099FE2", "AE883F1AB828ECB1CD171547", "51CF165429D76650010C25E5", "A1EB8E3F636FCBAC5D3A924A", "A1EB8E3F636FCBAC5D3A924B", "B30000000000000000000001", "B30000000000000000000002", "B30000000000000000000003", "B30000000000000000000004", "29493F7A0A1DC0A29D62667D",);
 			sourceTree = "<group>";
 		};
 		E13442276B1CDD054A10479A = {
@@ -376,9 +487,9 @@
 		5DF6F94716FBD940099F2324 = {
 			isa = "PBXNativeTarget";
 			buildConfigurationList = "D92899864829D3A746901577";
-			buildPhases = ("74BF910B8994BB34E0FF806D", "6247F0FCE5350E26B8E17325", "7299DDF9E5A6F115AC358FCF",);
+			buildPhases = ("74BF910B8994BB34E0FF806D", "6247F0FCE5350E26B8E17325", "7299DDF9E5A6F115AC358FCF", "B3000000000000000000000D",);
 			buildRules = ();
-			dependencies = ();
+			dependencies = ("B30000000000000000000013",);
 			name = "Recipe";
 			packageProductDependencies = ("81B19488E5437AEDF9981AA7", "CA2500000000000000000006",);
 			productName = "Recipe";
@@ -482,7 +593,14 @@
 							com.apple.SignInWithApple = {
 								enabled = 1;
 							};
+						com.apple.ApplicationGroups = {
+								enabled = 1;
+							};
 						};
+					};
+					B3000000000000000000000E = {
+						CreatedOnToolsVersion = "26.0";
+						SystemCapabilities = { com.apple.ApplicationGroups = { enabled = 1; }; };
 					};
 					4B556C01A3B5485ECB1BD618 = {
 						CreatedOnToolsVersion = "26.0";
@@ -500,7 +618,7 @@
 			productRefGroup = "29493F7A0A1DC0A29D62667D";
 			projectDirPath = "";
 			projectRoot = "";
-			targets = ("5DF6F94716FBD940099F2324", "4B556C01A3B5485ECB1BD618",);
+			targets = ("5DF6F94716FBD940099F2324", "4B556C01A3B5485ECB1BD618", "B3000000000000000000000E",);
 		};
 	};
 	rootObject = "636D07FE5D129B92AEF8A1B0";
