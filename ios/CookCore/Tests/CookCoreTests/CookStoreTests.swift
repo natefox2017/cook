@@ -333,3 +333,88 @@ func collectionExportContainsStableIDsAndRelationships() throws {
     #expect(memberships.first?["recipeID"] as? String == recipe.id.uuidString)
     #expect(memberships.first?["collectionID"] as? String == collection.id.uuidString)
 }
+
+
+@Test @MainActor
+func groceryConsolidationPreferenceChangesOnlyFutureAdds() throws {
+    let flourA = RecipeIngredient.from(
+        name: "Flour",
+        amountText: "100 g",
+        category: .pantry
+    )
+    let flourB = RecipeIngredient.from(
+        name: " flour ",
+        amountText: "50 g",
+        category: .pantry
+    )
+    let recipe = exampleRecipe(ingredients: [flourA, flourB])
+    let store = CookStore()
+    try store.upsert(recipe)
+
+    var settings = store.settings
+    settings.consolidateCompatibleGroceries = false
+    try store.updateSettings(settings)
+    try store.addToGroceries(
+        recipeID: recipe.id,
+        servings: nil,
+        ingredientIDs: [flourA.id, flourB.id]
+    )
+
+    #expect(store.groceries.count == 2)
+    #expect(Set(store.groceries.compactMap(\.quantity)) == [100, 50])
+
+    settings = store.settings
+    settings.consolidateCompatibleGroceries = true
+    try store.updateSettings(settings)
+    try store.addToGroceries(
+        recipeID: recipe.id,
+        servings: nil,
+        ingredientIDs: [flourA.id]
+    )
+
+    // Changing the setting never rewrites existing rows; only this new add may
+    // merge into one compatible unchecked item.
+    #expect(store.groceries.count == 2)
+    #expect(Set(store.groceries.compactMap(\.quantity)) == [200, 50])
+}
+
+@Test
+func legacyCookSettingsDecodeWithNewPreferenceDefaults() throws {
+    let json = #"{
+      "displayName":"Sam",
+      "email":"sam@example.com",
+      "appearance":"Dark",
+      "keepScreenAwake":false,
+      "timerNotifications":true
+    }"#
+    let settings = try JSONDecoder().decode(
+        CookSettings.self,
+        from: Data(json.utf8)
+    )
+
+    #expect(settings.displayName == "Sam")
+    #expect(settings.appearance == .dark)
+    #expect(settings.keepScreenAwake == false)
+    #expect(settings.timerNotifications == true)
+    #expect(settings.consolidateCompatibleGroceries == true)
+    #expect(settings.showGroceryRecipeNames == true)
+    #expect(settings.mealPlanWeekStart == .system)
+}
+
+@Test
+func mealPlanWeekStartAppliesWithoutChangingOtherCalendarRules() {
+    var base = Calendar(identifier: .gregorian)
+    base.firstWeekday = 5
+    base.minimumDaysInFirstWeek = 4
+
+    let system = MealPlanWeekStart.system.applying(to: base)
+    let sunday = MealPlanWeekStart.sunday.applying(to: base)
+    let monday = MealPlanWeekStart.monday.applying(to: base)
+
+    #expect(system.firstWeekday == 5)
+    #expect(sunday.firstWeekday == 1)
+    #expect(monday.firstWeekday == 2)
+    #expect(system.minimumDaysInFirstWeek == 4)
+    #expect(sunday.minimumDaysInFirstWeek == 4)
+    #expect(monday.minimumDaysInFirstWeek == 4)
+}
