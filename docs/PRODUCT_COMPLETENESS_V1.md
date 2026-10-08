@@ -1,6 +1,6 @@
 # RecipePouch V1 Product Completeness Specification
 
-Updated: 2026-10-08
+Updated: 2026-10-09
 
 ## Product benchmark
 
@@ -61,7 +61,7 @@ Required:
 - Share Extension: third-party app → Share → RecipePouch → durable receipt → return immediately.
 - Social source backend fallback (caption/article/ASR/OCR/visual evidence) without fabricating quantities.
 
-Implementation status: local URL/text/photo/PDF/manual paths are **IMPLEMENTED**. Embedded Share Extension with durable local URL/text receipts is proposed in **draft [PR #72](https://github.com/natefox2017/cook/pull/72)**; transactional Supabase job API plus text-only queue worker in **draft [PR #73](https://github.com/natefox2017/cook/pull/73)**. They are not in main or production; server URL/video extraction, client handoff and signed device tests remain **NOT IMPLEMENTED/UNVERIFIED**.
+Implementation status: local URL/text/photo/PDF/manual flows, an embedded Share Extension with durable local receipts, an authenticated import-job API, the queue worker and private artifact upload/download are **IMPLEMENTED IN MAIN** (including merged PRs #72, #73, #96 and #97). This establishes code boundaries, **not production acceptance**: signed host-app device tests, deployed queue/storage lifecycle, protected social-video extraction and full end-to-end processing remain unverified or incomplete.
 
 ### 5. Recipe detail/edit
 Required:
@@ -119,7 +119,7 @@ Required:
 - Delete account/server data.
 - Help/privacy/about/version.
 
-Implementation status: local settings, JSON/HTML export, two local-data deletion entry points, account Auth UI, Cloud Sync UI and StoreKit purchase/restore/manage surfaces are **IMPLEMENTED IN CLIENT CODE**. The Supabase `delete-account` Edge Function is deployed. None of these are equivalent to an accepted production flow: real Apple/email provider, subscription purchase, cloud deletion and device tests remain #27–#29/#34; interrupted local erase is being hardened in draft #66.
+Implementation status: local settings, JSON/HTML export, two local-data deletion entry points, account Auth UI, Cloud Sync UI and StoreKit purchase/restore/manage surfaces are **IMPLEMENTED IN CLIENT CODE**. The Supabase `delete-account` Edge Function is deployed. None of these are equivalent to an accepted production flow: real Apple/email provider, subscription purchase, cloud deletion and device tests remain #27–#29/#34; interrupted local erase safeguards were merged in PR #66, but interrupted-device and two-account validation remains outstanding.
 
 ### 10. Cloud sync
 Required:
@@ -158,7 +158,7 @@ Visual requirements:
 - production-verified Auth/provider delivery across supported sign-in paths;
 - production-verified App Store purchase/restore/entitlement behavior;
 - authenticated multi-device sync;
-- Share Extension durable receipt;
+- signed-device verification of the Share Extension durable receipt and backend handoff;
 - TikTok/Instagram/YouTube backend AI extraction;
 - delete cloud account/data;
 - production-verified remote Collection sync across devices.
@@ -182,7 +182,7 @@ External configuration still blocks production-complete status:
 - Supabase project `cookapp` is ACTIVE_HEALTHY. Owner-scoped snapshot/RLS/revision migrations are applied; client two-account/two-device acceptance is still pending.
 - Apple Developer Sign in with Apple capability/provider settings are not available in this environment.
 - App Store Connect subscription product IDs/offers are not available; the app reads them from `RECIPE_SUBSCRIPTION_PRODUCT_IDS` (retained build setting) and never invents price/trial terms. The client now distinguishes verified trial, active, grace, billing retry, expired, revoked, and unavailable states, but production purchase/restore remains unverified until real IDs and a Sandbox account are supplied.
-- The Share Extension source exists, but its Xcode extension target/App Group entitlement/provisioning must be created with the Apple team before host-app testing.
+- The Share Extension target and App Group entitlement are present in the Xcode project; matching Apple team provisioning, host-app tests, and a full signed device handoff still require external validation.
 - Social-video AI backend worker/provider credentials remain undeployed.
 
 Therefore these areas are code-complete at the UI/contract boundary, but not production-integrated. Do not label them live until the external configuration and integration tests pass.
