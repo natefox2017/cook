@@ -1,14 +1,14 @@
 # Account, Sync & Subscription Contract
 
-Updated: 2026-10-07
+Updated: 2026-10-08
 
 ## Account model
 
-Recipe needs one application account identity for cloud data. Supported V1 sign-in:
+RecipePouch needs one application account identity for cloud data. Supported V1 sign-in:
 - Sign in with Apple.
 - Email + password: sign up, sign in, forgot/reset password.
 
-Do not infer that an App Store purchase identity is the same thing as a Recipe account. ReciMe explicitly documents that subscription method and sign-in method can differ. A restore can recover an App Store entitlement but cannot recover recipes from the wrong Recipe account.
+Do not infer that an App Store purchase identity is the same thing as a RecipePouch account. ReciMe explicitly documents that subscription method and sign-in method can differ. A restore can recover an App Store entitlement but cannot recover recipes from the wrong RecipePouch account.
 
 ### Session states
 - signedOut
@@ -37,6 +37,18 @@ Required account actions:
 - refresh session;
 - delete account + owned server data;
 - sync status and retry.
+
+## Snapshot sync implementation status
+
+- The Supabase `cookapp` project is active. Production was verified to contain the owner-scoped `user_snapshots` table plus revision/CAS migrations through `20261008030120`.
+- This branch adds `20261008050000_restrict_user_snapshot_writes_to_rpc.sql`, which removes direct authenticated INSERT/UPDATE/DELETE/TRUNCATE access and makes the owner-checked revision RPC the only end-user mutation path. **This final hardening migration is committed but not yet applied to production because the current Supabase write-authorization UI could not be completed.**
+- The client persists the last successfully synchronized snapshot per account under Application Support and records which RecipePouch account the local library is linked to. Switching accounts never silently uploads another account's local library.
+- Reconnect/foreground refresh uses a three-way merge: last synchronized base + local + newest cloud snapshot. Remote-only and local-only changes merge automatically; true concurrent edits remain explicit conflicts.
+- Collection membership conflicts use both Collection and Recipe identifiers. Same normalized Collection names and same meal-plan slots are surfaced as resolvable domain conflicts rather than generic validation errors.
+- Automatic, Wi-Fi Only, and Manual modes update the live coordinator. Foregrounding or refreshing the same signed-in account checks for newer revisions.
+- The existing Settings UI now exposes real account/status/last-sync state, Sync Now, first-sync merge/keep-local choice, and per-conflict local/cloud resolution.
+- Account/cloud deletion calls the authenticated `delete-account` Edge Function; deleting local data remains a separate explicit action.
+- Two-account/two-device production acceptance is still required before #29 can be considered production-verified.
 
 ## Subscription model
 
@@ -121,7 +133,7 @@ Subscription:
 - restore with no matching purchase;
 - expired/revoked entitlement;
 - Manage Subscription;
-- Recipe account mismatch does not imply recipes were restored.
+- RecipePouch account mismatch does not imply recipes were restored.
 
 Sync:
 - first upload;
