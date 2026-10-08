@@ -16,6 +16,7 @@ struct RecipeDetailView: View {
     @State private var feedbackMessage: String?
     @State private var addedIngredientCount: Int?
     @State private var isPlanningMeal = false
+    @State private var isManagingCollections = false
 
     var body: some View {
         Group {
@@ -32,6 +33,9 @@ struct RecipeDetailView: View {
             if let recipe = store.recipe(id: recipeID) { RecipeEditorView(recipe: recipe) }
         }
         .sheet(isPresented: $isPlanningMeal) { RecipeMealPlanSheet(recipeID: recipeID) }
+        .sheet(isPresented: $isManagingCollections) {
+            RecipeCollectionMembershipSheet(recipeID: recipeID)
+        }
         .sheet(isPresented: $isChoosingIngredients, onDismiss: showAddedFeedback) {
             RecipeIngredientsSelectionView(recipeID: recipeID, initialServings: servings) { addedIngredientCount = $0 }
         }
@@ -114,7 +118,12 @@ struct RecipeDetailView: View {
             }
             .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline))
             .foregroundStyle(.secondary)
-            if !recipe.summary.isEmpty { Text(recipe.summary).foregroundStyle(.secondary).textSelection(.enabled) }
+            if !recipe.summary.isEmpty {
+                Text(recipe.summary)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            recipeCollections(recipe)
             if recipe.needsReview {
                 Button { isEditing = true } label: {
                     Label("Needs Review · Add missing recipe details", systemImage: "pencil.line")
@@ -122,6 +131,28 @@ struct RecipeDetailView: View {
                         .frame(minHeight: 44, alignment: .leading)
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func recipeCollections(_ recipe: Recipe) -> some View {
+        let collectionIDs = store.collectionIDs(forRecipe: recipe.id)
+        let assigned = store.collections.filter { collectionIDs.contains($0.id) }
+
+        if !assigned.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(assigned) { collection in
+                        Label(collection.name, systemImage: "folder")
+                            .font(CookTheme.text(12, weight: .semibold, relativeTo: .caption))
+                            .padding(.horizontal, 12)
+                            .frame(minHeight: 34)
+                            .background(CookTheme.accent.opacity(0.08), in: Capsule())
+                            .foregroundStyle(CookTheme.accentForeground)
+                    }
+                }
+            }
+            .accessibilityLabel("Collections")
         }
     }
 
@@ -291,7 +322,12 @@ struct RecipeDetailView: View {
                 } label: { Image(systemName: recipe.isFavorite ? "heart.fill" : "heart") }
                 .accessibilityLabel(recipe.isFavorite ? "Remove from Favorites" : "Add to Favorites")
                 Menu {
-                    Button("Add to Meal Plan", systemImage: "calendar.badge.plus") { isPlanningMeal = true }
+                    Button("Add to Meal Plan", systemImage: "calendar.badge.plus") {
+                        isPlanningMeal = true
+                    }
+                    Button("Collections", systemImage: "folder.badge.plus") {
+                        isManagingCollections = true
+                    }
                     Button("Edit Recipe", systemImage: "pencil") { isEditing = true }
                     Button("Delete Recipe", systemImage: "trash", role: .destructive) { isDeleting = true }
                 } label: { Label("Recipe Options", systemImage: "ellipsis") }
@@ -449,6 +485,131 @@ private struct RecipeIngredientsSelectionView: View {
             onAdded(selection.count)
             dismiss()
         } catch { errorMessage = error.localizedDescription }
+    }
+}
+
+private struct RecipeCollectionMembershipSheet: View {
+    let recipeID: UUID
+
+    @Environment(CookStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var newName = ""
+    @State private var errorMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    HStack(spacing: 12) {
+                        TextField("New collection", text: $newName)
+                            .textInputAutocapitalization(.words)
+                            .submitLabel(.done)
+                            .onSubmit(createCollection)
+
+                        Button("Add", action: createCollection)
+                            .disabled(
+                                newName.trimmingCharacters(
+                                    in: .whitespacesAndNewlines
+                                ).isEmpty
+                            )
+                    }
+                }
+
+                Section("Collections") {
+                    if store.collections.isEmpty {
+                        Text("Create a collection to organize this recipe.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(store.collections) { collection in
+                            let isMember = store
+                                .collectionIDs(forRecipe: recipeID)
+                                .contains(collection.id)
+
+                            Button {
+                                toggle(collection.id, isMember: isMember)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(
+                                        systemName: isMember
+                                            ? "checkmark.circle.fill"
+                                            : "circle"
+                                    )
+                                    .foregroundStyle(
+                                        isMember
+                                            ? CookTheme.accentForeground
+                                            : Color.secondary
+                                    )
+
+                                    Text(collection.name)
+                                        .foregroundStyle(.primary)
+
+                                    Spacer()
+
+                                    Text(
+                                        "\(store.recipes(inCollection: collection.id).count)"
+                                    )
+                                    .foregroundStyle(.secondary)
+                                    .monospacedDigit()
+                                }
+                                .frame(minHeight: 44)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityValue(
+                                isMember ? "In collection" : "Not in collection"
+                            )
+                        }
+                    }
+                } footer: {
+                    Text("A recipe can belong to more than one collection.")
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(CookTheme.canvas)
+            .navigationTitle("Collections")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .alert(
+                "Collections",
+                isPresented: Binding(
+                    get: { errorMessage != nil },
+                    set: { if !$0 { errorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "")
+            }
+        }
+    }
+
+    private func createCollection() {
+        do {
+            let collection = try store.createCollection(name: newName)
+            try store.setRecipe(
+                recipeID,
+                inCollection: collection.id,
+                isMember: true
+            )
+            newName = ""
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func toggle(_ collectionID: UUID, isMember: Bool) {
+        do {
+            try store.setRecipe(
+                recipeID,
+                inCollection: collectionID,
+                isMember: !isMember
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
 
