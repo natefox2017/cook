@@ -147,6 +147,58 @@ final class CookUITests: XCTestCase {
 
 
     @MainActor
+    func testComplexCookingStepShowsIngredientsAndMultipleTimers() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let recipe = app.buttons["recipe.C0010000-0000-4000-8000-000000000005"]
+        waitUntilReady(recipe)
+        recipe.tap()
+
+        let cookFromStep = app.buttons["cookFromStep.4"]
+        reveal(
+            cookFromStep,
+            in: app,
+            scrollView: app.scrollViews["recipeDetailScroll"],
+            maximumSwipes: 8
+        )
+        cookFromStep.tap()
+
+        assertCookingStep("Step 4 of 8", in: app)
+        XCTAssertTrue(app.staticTexts["220°C"].waitForExistence(timeout: 8))
+
+        let chicken = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "Chicken thighs")
+        ).firstMatch
+        reveal(chicken, in: app, scrollView: app.scrollViews["cookingScroll"], maximumSwipes: 3)
+        XCTAssertTrue(chicken.label.contains("not used"))
+        chicken.tap()
+        XCTAssertTrue(chicken.label.contains("used"))
+
+        for _ in 0..<2 {
+            let start = app.buttons["timerStart"].firstMatch
+            reveal(start, in: app, scrollView: app.scrollViews["cookingScroll"], maximumSwipes: 5)
+            start.tap()
+        }
+
+        let timers = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "Timers")
+        ).firstMatch
+        waitUntilReady(timers)
+        timers.tap()
+
+        XCTAssertTrue(app.staticTexts["First roast"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Check tray halfway"].exists)
+        app.navigationBars.buttons["Done"].tap()
+
+        let next = app.buttons["nextStep"]
+        waitUntilReady(next)
+        next.tap()
+        assertCookingStep("Step 5 of 8", in: app)
+        XCTAssertTrue(app.staticTexts["1 done"].waitForExistence(timeout: 8))
+    }
+
+    @MainActor
     func testRecipeCanBeAddedDirectlyToMealPlan() {
         let app = launchSeededApp()
         defer { app.terminate() }
