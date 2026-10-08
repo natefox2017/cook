@@ -95,8 +95,16 @@ func invalidDurationComponentDoesNotBecomeAPartialTime(_ duration: String) throw
     #expect(recipe.steps[1].temperature == nil)
 }
 
-@Test func timeRangesDoNotBecomeFakePreciseTimers() throws {
-    let html = #"<script type='application/ld+json'>{"@type":"Recipe","name":"Soup","recipeIngredient":["1 l water"],"recipeInstructions":[{"@type":"HowToStep","text":"Simmer for 10-15 minutes over medium heat."}]}</script>"#
+@Test(arguments: [
+    "Simmer for 10-15 minutes over medium heat.",
+    "Simmer for 10 to 15 minutes over medium heat.",
+    "Simmer for about 10 minutes over medium heat.",
+    "Simmer for roughly 10 minutes over medium heat.",
+    "Simmer for up to 10 minutes over medium heat."
+])
+func ambiguousTimesDoNotBecomeFakePreciseTimers(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Soup\",\"recipeIngredient\":[\"1 l water\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
     let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/soup")!))
     #expect(recipe.steps[0].timers.isEmpty)
     #expect(recipe.steps[0].temperature?.text.lowercased() == "medium heat")
