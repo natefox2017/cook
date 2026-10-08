@@ -35,8 +35,8 @@ struct ProfileView: View {
                         .frame(width: 72, height: 72)
                         .background(RecipeTheme.accent.opacity(0.10), in: Circle())
                         .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(displayName).font(RecipeTheme.title(28))
+                    VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
+                        Text(displayName).font(RecipeTheme.heading(.title))
                         if !store.settings.email.isEmpty {
                             Text(store.settings.email).font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
                                 .textSelection(.enabled)
@@ -52,8 +52,6 @@ struct ProfileView: View {
                         .accessibilityIdentifier("profile.edit")
                     }
                 }
-                .padding(.top, RecipeSpacing.xSmall)
-                .padding(.bottom, 0)
             }
             .listRowBackground(Color.clear)
             .listRowInsets(
@@ -80,7 +78,7 @@ struct ProfileView: View {
 
             Section {
                 NavigationLink {
-                    RecipesView()
+                    RecipesView(titleDisplayMode: RecipeNavigation.detailTitleMode)
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(
@@ -97,7 +95,7 @@ struct ProfileView: View {
                 .accessibilityIdentifier("profile.collections")
 
                 NavigationLink {
-                    MealPlanView()
+                    MealPlanView(titleDisplayMode: RecipeNavigation.detailTitleMode)
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(title: "Meal Plan", systemImage: "calendar")
@@ -164,10 +162,12 @@ struct ProfileView: View {
             .listRowBackground(RecipeTheme.card)
         }
         .listStyle(.insetGrouped)
-        .listSectionSpacing(RecipeSpacing.xSmall)
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
+        .listSectionSpacing(RecipeSpacing.medium)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("Profile").navigationBarTitleDisplayMode(.large)
+        .navigationTitle("Profile")
+        .navigationBarTitleDisplayMode(RecipeNavigation.rootTitleMode)
         .tint(RecipeTheme.accent)
         .sheet(isPresented: $editsProfile) { LocalProfileEditorView() }
         .fileExporter(
@@ -260,9 +260,9 @@ private struct ProfileRowLabel: View {
                 .foregroundStyle(RecipeTheme.accentForeground)
                 .frame(width: 24)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(LocalizedStringKey(title)).font(RecipeTheme.text(17, weight: .regular, relativeTo: .body)).foregroundStyle(.primary)
-            }
+            Text(LocalizedStringKey(title))
+                .font(RecipeTheme.text(17, weight: .regular, relativeTo: .body))
+                .foregroundStyle(.primary)
         }
         .frame(minHeight: 44)
     }
@@ -295,7 +295,8 @@ private struct LocalProfileEditorView: View {
             }
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
-            .navigationTitle("Edit Profile").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Edit Profile")
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -379,7 +380,8 @@ struct NotificationPreferencesView: View {
         }
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("Notifications").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Notifications")
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .tint(RecipeTheme.accent)
         .task { await refreshPermission() }
         .onChange(of: scenePhase) { _, phase in
@@ -545,7 +547,7 @@ private struct RecipeHelpView: View {
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("Using RecipePouch")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }
 
@@ -568,7 +570,7 @@ private struct RecipeAboutView: View {
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("About & Your Data")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }
 
