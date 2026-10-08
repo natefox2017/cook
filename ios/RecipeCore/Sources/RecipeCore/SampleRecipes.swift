@@ -64,8 +64,21 @@ public enum SampleRecipes {
                 ],
                 steps: [
                     RecipeStep(title: "Prepare", instruction: "Pat the peeled shrimp dry. Mince the garlic, chop the parsley and cut the lemon into wedges."),
-                    RecipeStep(title: "Cook pasta", instruction: "Boil the pasta in water for the time on its package. Start with 10 minutes, check for tenderness, and reserve a small cup of cooking water.", durationSeconds: 600),
-                    RecipeStep(title: "Cook shrimp & toss", instruction: "Melt the butter in a wide pan over medium heat. Cook the shrimp on both sides until opaque and cooked through, then stir in the garlic until fragrant. Toss with the pasta, parsley and a squeeze of lemon. Add reserved cooking water a spoonful at a time to loosen.")
+                    RecipeStep(
+                        title: "Cook pasta",
+                        instruction: "Boil the pasta in water for the time on its package. "
+                            + "Start with 10 minutes, check for tenderness, and reserve "
+                            + "a small cup of cooking water.",
+                        durationSeconds: 600
+                    ),
+                    RecipeStep(
+                        title: "Cook shrimp & toss",
+                        instruction: "Melt the butter in a wide pan over medium heat. "
+                            + "Cook the shrimp on both sides until opaque and cooked through, "
+                            + "then stir in the garlic until fragrant. Toss with the pasta, "
+                            + "parsley and a squeeze of lemon. Add reserved cooking water "
+                            + "a spoonful at a time to loosen."
+                    )
                 ],
                 sourceName: "Sample recipe", coverAsset: "pasta", createdAt: created, updatedAt: created
             ),
@@ -104,7 +117,12 @@ public enum SampleRecipes {
                 steps: [
                     RecipeStep(title: "Mix", instruction: "Whisk the egg and milk, then stir in the oat flour and baking powder until combined."),
                     RecipeStep(title: "Rest batter", instruction: "Let the batter stand for 5 minutes while a nonstick pan warms over medium-low heat.", durationSeconds: 300),
-                    RecipeStep(title: "Cook", instruction: "Melt a little butter in the pan. Add small spoonfuls of batter. Turn when bubbles appear and the edges set, then cook until both sides are golden and the centers are set.")
+                    RecipeStep(
+                        title: "Cook",
+                        instruction: "Melt a little butter in the pan. Add small spoonfuls "
+                            + "of batter. Turn when bubbles appear and the edges set, "
+                            + "then cook until both sides are golden and the centers are set."
+                    )
                 ],
                 sourceName: "Sample recipe", coverAsset: "pancakes", createdAt: created, updatedAt: created
             ),
@@ -121,7 +139,13 @@ public enum SampleRecipes {
                 ],
                 steps: [
                     RecipeStep(title: "Prepare", instruction: "Pat the salmon dry. Wash and dry the salad leaves. Cut the lemon into wedges."),
-                    RecipeStep(title: "Cook salmon", instruction: "Warm the oil in a pan over medium heat. Start with 5 minutes on the first side, then turn and continue cooking until opaque and cooked through; timing depends on the thickness.", durationSeconds: 300),
+                    RecipeStep(
+                        title: "Cook salmon",
+                        instruction: "Warm the oil in a pan over medium heat. Start with "
+                            + "5 minutes on the first side, then turn and continue cooking "
+                            + "until opaque and cooked through; timing depends on the thickness.",
+                        durationSeconds: 300
+                    ),
                     RecipeStep(title: "Serve", instruction: "Divide the leaves between plates, add the salmon, and finish with fresh lemon juice.")
                 ],
                 sourceName: "Sample recipe", coverAsset: "salmon", createdAt: created, updatedAt: created
