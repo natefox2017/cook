@@ -95,24 +95,25 @@ private struct RecipeRootView: View {
     var body: some View {
         Group {
             if let message = store.loadError {
-            NavigationStack {
-                EmptyStateView(
-                    title: "Your saved library needs attention",
-                    message: "RecipePouch couldn't read your saved library. The file has been left unchanged.\n\n\(message)",
-                    systemImage: "externaldrive.badge.exclamationmark",
-                    actionTitle: "Try again",
-                    action: { store.reload() }
-                )
-                .padding()
-                .navigationTitle("RecipePouch")
-                .background(RecipeTheme.canvas)
-            }
-        } else if !hasCompletedOnboarding && !bypassOnboarding {
-            FirstLaunchGateView {
-                hasCompletedOnboarding = true
-            }
-        } else {
-            TabView(selection: $selectedTab) {
+                NavigationStack {
+                    EmptyStateView(
+                        title: "Your saved library needs attention",
+                        message: "RecipePouch couldn't read your saved library. "
+                            + "The file has been left unchanged.\n\n\(message)",
+                        systemImage: "externaldrive.badge.exclamationmark",
+                        actionTitle: "Try again",
+                        action: { store.reload() }
+                    )
+                    .padding()
+                    .navigationTitle("RecipePouch")
+                    .background(RecipeTheme.canvas)
+                }
+            } else if !hasCompletedOnboarding && !bypassOnboarding {
+                FirstLaunchGateView {
+                    hasCompletedOnboarding = true
+                }
+            } else {
+                TabView(selection: $selectedTab) {
                 NavigationStack {
                     RecipesView()
                 }
@@ -147,9 +148,9 @@ private struct RecipeRootView: View {
                     Label(RecipeTab.profile.title, systemImage: RecipeTab.profile.symbol)
                         .accessibilityIdentifier("tab.\(RecipeTab.profile.rawValue)")
                 }
-                .tag(RecipeTab.profile)
+                    .tag(RecipeTab.profile)
+                }
             }
-        }
         }
         .task {
             await cloudSync.bind(
