@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Implements Models for the Recipe iOS app.
+
 import Foundation
 
 public enum RecipeCategory: String, Codable, CaseIterable, Identifiable, Sendable {
@@ -86,6 +89,35 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
         guard prep >= 0, cook >= 0 else { return nil }
         let (total, overflow) = prep.addingReportingOverflow(cook)
         return overflow ? nil : total
+    }
+}
+
+public struct RecipeCollection: Identifiable, Codable, Hashable, Sendable {
+    public var id: UUID
+    public var name: String
+    public var createdAt: Date
+    public var updatedAt: Date
+
+    public init(
+        id: UUID = UUID(),
+        name: String,
+        createdAt: Date = .now,
+        updatedAt: Date = .now
+    ) {
+        self.id = id
+        self.name = name
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct RecipeCollectionMembership: Codable, Hashable, Sendable {
+    public var recipeID: UUID
+    public var collectionID: UUID
+
+    public init(recipeID: UUID, collectionID: UUID) {
+        self.recipeID = recipeID
+        self.collectionID = collectionID
     }
 }
 
