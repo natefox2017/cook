@@ -21,6 +21,10 @@ import {
 } from "./artifactOCR.ts";
 import { configuredOCRProvider } from "./approvedOCRProvider.ts";
 import {
+  PDFArtifactError,
+  extractSelectablePDFArtifact,
+} from "./artifactPDF.ts";
+import {
   ArtifactTextError,
   decodePlainTextArtifact,
   isOwnerScopedAvailableArtifact,
@@ -296,10 +300,79 @@ Deno.serve(async (request: Request): Promise<Response> => {
             };
           }
         } else if (
-          claimed.input_type === "image" ||
-          (claimed.input_type === "file" &&
-            artifact!.mime_type === "application/pdf")
+          claimed.input_type === "file" &&
+          artifact!.mime_type === "application/pdf"
         ) {
+          // Prefer selectable PDF text without sending documents to an
+          // external vendor. OCR is a separately approved fallback only
+          // when the PDF has no text layer.
+          const { data: file, error: downloadError } = await admin.storage
+            .from(artifact!.storage_bucket)
+            .download(artifact!.storage_path);
+          if (downloadError || !file) {
+            throw downloadError ?? new Error("Private PDF download failed");
+          }
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          try {
+            result = await extractSelectablePDFArtifact({
+              recipeID: claimed.id,
+              artifactID: artifact!.id,
+              bytes,
+              expectedBytes: artifact!.size_bytes,
+              platformHint: claimed.platform_hint,
+              originalSourceURL: claimed.original_source_url,
+            });
+          } catch (error) {
+            if (!(error instanceof PDFArtifactError)) throw error;
+            if (error.code === "PDF_NO_SELECTABLE_TEXT") {
+              const provider = configuredOCRProvider();
+              if (provider) {
+                try {
+                  result = await parsePrivateOCRArtifact({
+                    recipeID: claimed.id,
+                    artifactID: artifact!.id,
+                    inputType: "file",
+                    mimeType: "application/pdf",
+                    bytes,
+                    platformHint: claimed.platform_hint,
+                    originalSourceURL: claimed.original_source_url,
+                    provider,
+                  });
+                } catch (ocrError) {
+                  if (!(ocrError instanceof OCRArtifactError)) throw ocrError;
+                  completionError = {
+                    code: ocrError.code,
+                    message: ocrError.message,
+                    recoverable: ocrError.code === "OCR_UNAVAILABLE",
+                    suggested_action:
+                      "Keep the source and add the missing recipe details manually.",
+                    request_id: crypto.randomUUID(),
+                  };
+                }
+              } else {
+                // Scanned PDFs without an approved OCR provider stay private
+                // and require review; they are not reported as parsed.
+                completionError = {
+                  code: error.code,
+                  message: error.message,
+                  recoverable: false,
+                  suggested_action:
+                    "Add a selectable-text document or enter the recipe details manually.",
+                  request_id: crypto.randomUUID(),
+                };
+              }
+            } else {
+              completionError = {
+                code: error.code,
+                message: error.message,
+                recoverable: false,
+                suggested_action:
+                  "Keep the original document and enter the missing recipe details manually.",
+                request_id: crypto.randomUUID(),
+              };
+            }
+          }
+        } else if (claimed.input_type === "image") {
           // Private bytes never leave Supabase unless the owner explicitly
           // enables an approved, server-configured OCR destination.
           const provider = configuredOCRProvider();
