@@ -155,6 +155,16 @@ final class CookUITests: XCTestCase {
         reveal(recipe, in: app, maximumSwipes: 4)
         recipe.tap()
 
+        // Create saved progress first, then verify an explicit "Cook from Step"
+        // action overrides the restored session position.
+        let startCooking = app.buttons["startCooking"]
+        waitUntilReady(startCooking)
+        startCooking.tap()
+        assertCookingStep("Step 1 of 8", in: app)
+        waitUntilReady(app.buttons["closeCookingButton"])
+        app.buttons["closeCookingButton"].tap()
+        waitUntilReady(app.buttons["startCooking"])
+
         let cookFromStep = app.buttons["cookFromStep.4"]
         reveal(
             cookFromStep,
