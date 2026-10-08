@@ -586,6 +586,31 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testChineseDeviceLanguageStillDisplaysEnglishByDefault() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--uitesting",
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+        defer { app.terminate() }
+
+        // Only --uitesting-locale may opt in to non-English smoke testing.
+        XCTAssertTrue(app.tabBars.buttons["Recipes"].waitForExistence(timeout: 10))
+        let profile = app.tabBars.buttons["Profile"]
+        XCTAssertTrue(profile.waitForExistence(timeout: 8))
+        profile.tap()
+        XCTAssertTrue(app.staticTexts["Your kitchen"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Account"].exists)
+        XCTAssertTrue(app.buttons["Premium"].exists)
+        app.buttons["Settings"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Account"].exists)
+        attachScreenshot("English UI on Chinese-language iPhone", app: app)
+    }
+
+    @MainActor
     func testFourLocaleTabLabelsUseStringCatalog() {
         // Each launch uses --uitesting fixtures, but only explicit locale
         // smoke cases override the usual deterministic English UI policy.

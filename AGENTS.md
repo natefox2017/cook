@@ -86,6 +86,13 @@ Read the relevant documents before substantial product or architecture changes:
 - Keep UI changes consistent with `docs/DESIGN_SYSTEM.md` and the existing app.
 - User-facing copy follows product language/localization rules. Source identifiers and technical documentation use consistent Recipe naming.
 
+## Language During Development
+
+- Until the user explicitly approves multilingual release, default to English for all user-facing RecipePouch UI regardless of the iPhone's preferred language.
+- Keep four-language String Catalogs intact. Only explicit UI-locale smoke-test launch arguments may select a non-English locale.
+- When computing displayed strings, use a `LocalizedStringResource` with the app's explicit locale. A bare `String(localized:)` can fall back to the device language even when SwiftUI's locale is overridden.
+- Do not globally override system `AppleLanguages` or remove translation resources as a test shortcut.
+
 ## CI Policy
 
 - Keep CI intentionally minimal.

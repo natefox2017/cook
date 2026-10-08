@@ -4,9 +4,11 @@ Updated: 2026-10-08
 
 ## Runtime policy
 
-- UI automation/development acceptance runs with English locale (en) for deterministic labels and screenshots.
-- Production does not force a language. SwiftUI receives Locale.autoupdatingCurrent, so the app follows the iPhone user's preferred language.
-- English is the development region and fallback language.
+- **Temporary test-stage setting (2026-10-08):** RecipePouch app UI is forced to English (en), regardless of the iPhone's preferred language. This applies to the SwiftUI environment and computed strings resolved with `LocalizedStringResource(locale:)`.
+- Explicit `--uitesting-locale en|zh-Hans|zh-Hant|ja` is retained solely for localization smoke tests; ordinary UI tests and normal app launches default to English.
+- The Share Extension uses its own English locale. Core display errors remain in English during the test stage.
+- **Before international launch:** deliberately remove this test-stage restriction and restore system-language selection for the app, Core, and Share Extension after multi-language visual QA.
+- English remains the development/source language; translation catalogs are retained.
 
 ## Launch locales
 
