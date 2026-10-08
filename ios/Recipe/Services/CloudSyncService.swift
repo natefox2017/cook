@@ -264,11 +264,14 @@ final class CloudSyncCoordinator {
     func forgetLocalSyncHistoryAfterReset() throws {
         try verifyLocalOnlyResetAllowed()
 
-        let syncDirectory = URL.applicationSupportDirectory
-            .appendingPathComponent("Recipe", isDirectory: true)
-            .appendingPathComponent("Sync", isDirectory: true)
-        if FileManager.default.fileExists(atPath: syncDirectory.path) {
-            try FileManager.default.removeItem(at: syncDirectory)
+        // The old project name may also have retained local sync caches.
+        for directoryName in ["Recipe", "Cook"] {
+            let syncDirectory = URL.applicationSupportDirectory
+                .appendingPathComponent(directoryName, isDirectory: true)
+                .appendingPathComponent("Sync", isDirectory: true)
+            if FileManager.default.fileExists(atPath: syncDirectory.path) {
+                try FileManager.default.removeItem(at: syncDirectory)
+            }
         }
 
         let defaults = UserDefaults.standard
