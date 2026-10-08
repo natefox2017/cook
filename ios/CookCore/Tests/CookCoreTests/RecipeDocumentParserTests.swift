@@ -185,3 +185,31 @@ func ambiguousCompoundDurationDoesNotLeakInnerTimers(_ instruction: String) thro
     let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/bake")!))
     #expect(recipe.steps[0].timers.isEmpty)
 }
+
+
+@Test(arguments: [
+    "Bake for 1.5 hours.",
+    "Bake for 1/2 hour.",
+    "Bake for 2.25 hours.",
+    "Bake for 3/4 hour."
+])
+func fractionalDurationsDoNotProducePartialIntegerTimers(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Fractional duration\",\"recipeIngredient\":[\"1 cup flour\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/fractional")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+}
+
+@Test(arguments: [
+    "Bake for 10 minutes approximately.",
+    "Bake for 10 minutes, approximately.",
+    "Bake for 10 minutes about.",
+    "Bake for 10 minutes, around.",
+    "Bake for 10 minutes roughly."
+])
+func trailingApproximationDoesNotBecomePreciseTimer(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Approximate duration\",\"recipeIngredient\":[\"1 cup flour\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/approximate")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+}
