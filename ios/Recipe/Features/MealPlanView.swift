@@ -58,7 +58,7 @@ struct MealPlanView: View {
                         }
                     }
                     HStack {
-                        Text("\(weeklyMealCount) \(weeklyMealCount == 1 ? "meal" : "meals") planned this week")
+                        Text("\(weeklyMealCount) meals planned this week")
                             .font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote))
                             .foregroundStyle(.secondary)
                         Spacer()
