@@ -177,8 +177,8 @@ public enum RecipeDocumentParser {
             let timer: RecipeStepTimer
         }
 
-        let combinedPattern = #"\b(\d{1,2})\s*(hours?|hrs?)\s*(?:and\s*)?(\d{1,3})\s*(minutes?|mins?)\b"#
-        let singlePattern = #"\b(\d{1,3})\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)\b"#
+        let combinedPattern = #"(?<![\d./])(\d{1,2})(?![\d./])\s*(hours?|hrs?)\s*(?:and\s*)?(\d{1,3})(?![\d./])\s*(minutes?|mins?)\b"#
+        let singlePattern = #"(?<![\d./])(\d{1,3})(?![\d./])\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)\b"#
 
         guard let singleRegex = try? NSRegularExpression(pattern: singlePattern, options: .caseInsensitive) else {
             return []
@@ -279,7 +279,7 @@ public enum RecipeDocumentParser {
         let suffix = String(text[range.upperBound..<suffixEnd]).lowercased()
 
         let ambiguousPrefix = #"(?:about|approximately|approx\.?|around|roughly|up to|at least|at most|more than|less than|no more than|no less than|minimum of|maximum of|(?:between\s+)?\d+\s*(?:(?:seconds?|secs?|minutes?|mins?|hours?|hrs?)\s*)?(?:-|–|—|to|and|or))\s*$"#
-        let ambiguousSuffix = #"^(?:[\s\p{P}]*(?:(?:or\s+)?until\b|(?:or\s+)?(?:longer|more|less)\b|(?:minimum|maximum)\b|(?:at\s+(?:least|most)|no\s+(?:more|less)\s+than|more\s+than|less\s+than)\b)|\s*(?:-|–|—|to|and|or)\s*\d+)"#
+        let ambiguousSuffix = #"^(?:[\s\p{P}]*(?:(?:or\s+)?until\b|(?:or\s+)?(?:longer|more|less)\b|(?:minimum|maximum)\b|(?:approximately|approx\.?|about|around|roughly)\b|(?:at\s+(?:least|most)|no\s+(?:more|less)\s+than|more\s+than|less\s+than)\b)|\s*(?:-|–|—|to|and|or)\s*\d+)"#
 
         if prefix.range(of: ambiguousPrefix, options: .regularExpression) != nil { return true }
         if suffix.range(of: ambiguousSuffix, options: .regularExpression) != nil { return true }
