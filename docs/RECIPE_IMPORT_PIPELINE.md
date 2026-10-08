@@ -141,3 +141,9 @@ Worker 所有写入都必须允许安全重试。
 
 分享附件的上传 intent 两小时失效，已确认 artifact 保留七天。附件 API 提供 owner-scoped 删除操作，但当前 App 没有单个附件的删除入口；到期清理函数需要由受信任的项目 scheduler 每日调用。
 - 本路径不做 ASR、OCR、模型补全、视频二进制抓取或平台登录。源码支持不证明线上 DNS/TLS/redirect 行为、VTT 来源可访问性或端到端 Share 交接。
+
+## 12. 原始附件删除与保留边界
+
+- Recipe Detail 的来源区允许二次确认删除个人私有图片/文件原件；该操作与删除 Recipe 分离。API 只按 JWT 所属 owner 和 artifact UUID 定位私有对象，不接受客户端自选 Storage path。账户切换时不在新账户的本地库记录删除成功。
+- 删除成功将服务端 artifact 标记为 `expired`，新的签名下载请求不能再成功；原始 Job 与字段 evidence 仍保留，旧版本快照继续可读。客户端在 `RecipeImportRecord.sourceArtifactDeletedAt` 存储本地 tombstone，避免误展示已删除原件入口；未含此字段的旧快照默认为未删除。
+- 上传意向过期为 2 小时，可用附件有效期为 7 天；到期服务端清理 endpoint 每日由受信任的调度器调用一次，密钥使用 `RECIPE_IMPORT_ARTIFACT_CLEANUP_SECRET` 环境配置，不能提交至仓库。部署/真实 Storage 验证见 #141 / #135，代码合并不代表已在生产生效。
