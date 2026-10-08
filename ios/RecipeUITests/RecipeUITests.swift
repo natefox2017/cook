@@ -459,14 +459,14 @@ final class RecipeUITests: XCTestCase {
     func testFourLocaleTabLabelsUseStringCatalog() {
         // Each launch uses --uitesting fixtures, but only explicit locale
         // smoke cases override the usual deterministic English UI policy.
-        let examples: [(String, String, String)] = [
-            ("en", "en_US", "Recipes"),
-            ("zh-Hans", "zh_CN", "食谱"),
-            ("zh-Hant", "zh_TW", "食譜"),
-            ("ja", "ja_JP", "レシピ")
+        let examples: [(String, String, String, String)] = [
+            ("en", "en_US", "Recipes", "Recipe"),
+            ("zh-Hans", "zh_CN", "食谱", "份食谱"),
+            ("zh-Hant", "zh_TW", "食譜", "份食譜"),
+            ("ja", "ja_JP", "レシピ", "件のレシピ")
         ]
 
-        for (language, region, recipesLabel) in examples {
+        for (language, region, recipesLabel, countNoun) in examples {
             let app = XCUIApplication()
             app.launchArguments = [
                 "--uitesting",
@@ -480,6 +480,15 @@ final class RecipeUITests: XCTestCase {
                 "Missing localized Recipes tab for \(language)"
             )
             XCTAssertTrue(app.buttons["addRecipeButton"].exists)
+            let recipeCount = app.staticTexts["recipeCount"]
+            XCTAssertTrue(
+                recipeCount.waitForExistence(timeout: 10),
+                "Missing recipe-count label for \(language)"
+            )
+            XCTAssertTrue(
+                recipeCount.label.contains(countNoun),
+                "Recipe count not localized for \(language): \(recipeCount.label)"
+            )
             attachScreenshot("Localized tabs \(language)", app: app)
             app.terminate()
         }
