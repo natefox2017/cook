@@ -189,9 +189,12 @@ public enum RecipeDocumentParser {
                       let hoursRange = Range(match.range(at: 1), in: text),
                       let minutesRange = Range(match.range(at: 3), in: text),
                       let hours = Int(text[hoursRange]),
-                      let minutes = Int(text[minutesRange]),
-                      minutes < 60 else { continue }
+                      let minutes = Int(text[minutesRange]) else { continue }
 
+                // Treat the compound expression as one semantic unit even when it
+                // is ambiguous, so its inner "1 hour" / "30 minutes" matches
+                // cannot leak through as fake precise timers.
+                consumedRanges.append(match.range(at: 0))
                 if isAmbiguousTimeMatch(in: text, range: fullRange) { continue }
 
                 let seconds = hours * 3_600 + minutes * 60
@@ -204,8 +207,6 @@ public enum RecipeDocumentParser {
                         durationSeconds: seconds
                     )
                 )
-                consumedRanges.append(match.range(at: 0))
-
                 if timers.count > 12 { break }
             }
         }
