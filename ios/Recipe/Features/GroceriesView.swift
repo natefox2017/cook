@@ -46,7 +46,7 @@ struct GroceriesView: View {
                     }
                     Picker("Grocery filter", selection: $filter) {
                         ForEach(GroceryFilter.allCases) { filter in
-                            Text(filter.rawValue).tag(filter)
+                            Text(LocalizedStringKey(filter.rawValue)).tag(filter)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -92,7 +92,7 @@ struct GroceriesView: View {
                                 }
                             } label: {
                                 HStack {
-                                    Text(category.rawValue)
+                                    Text(LocalizedStringKey(category.rawValue))
                                     Text("\(items.count)").foregroundStyle(.secondary)
                                     Spacer()
                                     Image(systemName: collapsedCategories.contains(category.rawValue)
@@ -291,7 +291,7 @@ private struct GroceryItemEditorView: View {
                         .accessibilityIdentifier("grocery.editor.amount")
                     Picker("Category", selection: $draft.category) {
                         ForEach(GroceryCategory.allCases) { category in
-                            Text(category.rawValue).tag(category)
+                            Text(LocalizedStringKey(category.rawValue)).tag(category)
                         }
                     }
                     Toggle("Bought", isOn: $draft.isChecked)
