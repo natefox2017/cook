@@ -76,7 +76,7 @@
             },
             {
               "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
-              "source_type": "webpage_structured_data",
+              "source_type": "article_body",
               "origin": "extracted",
               "excerpt": "盐适量",
               "confidence": 0.42,
@@ -146,6 +146,56 @@
         "input_type": "url",
         "url": "http://127.0.0.1/internal",
         "platform_hint": "web"
+      }
+    },
+    {
+      "name": "reject malformed https source",
+      "schema": "ImportRequest",
+      "valid": false,
+      "data": {
+        "client_request_id": "12121212-1212-4121-8121-121212121212",
+        "input_type": "url",
+        "url": "https:///missing-host"
+      }
+    },
+    {
+      "name": "reject localhost suffix source",
+      "schema": "ImportRequest",
+      "valid": false,
+      "data": {
+        "client_request_id": "15151515-1515-4151-8151-151515151515",
+        "input_type": "url",
+        "url": "https://preview.localhost/recipe"
+      }
+    },
+    {
+      "name": "reject trailing-dot host source",
+      "schema": "ImportRequest",
+      "valid": false,
+      "data": {
+        "client_request_id": "16161616-1616-4161-8161-161616161616",
+        "input_type": "url",
+        "url": "https://example.org./recipe"
+      }
+    },
+    {
+      "name": "reject empty source text",
+      "schema": "ImportRequest",
+      "valid": false,
+      "data": {
+        "client_request_id": "13131313-1313-4131-8131-131313131313",
+        "input_type": "text",
+        "text": ""
+      }
+    },
+    {
+      "name": "reject whitespace-only source text",
+      "schema": "ImportRequest",
+      "valid": false,
+      "data": {
+        "client_request_id": "14141414-1414-4141-8141-141414141414",
+        "input_type": "text",
+        "text": "   "
       }
     },
     {

@@ -4,6 +4,12 @@
   "description": "Shared, versioned API and local receipt contract for Share Extension, iOS client and Supabase backend. Contract only: endpoints not deployed merely by adding this document.",
   "$ref": "#/$defs/ImportRequest",
   "$defs": {
+    "HTTPSUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://(?![^/?#@\\s]+\\.(?:[lL][oO][cC][aA][lL]|[iI][nN][tT][eE][rR][nN][aA][lL]|[lL][oO][cC][aA][lL][hH][oO][sS][tT])(?::443)?(?:[/?#]|$))(?![^/?#@\\s]+\\.(?::443)?(?:[/?#]|$))(?!\\d+\\.\\d+\\.\\d+\\.\\d+(?::443)?(?:[/?#]|$))[^:/?#@\\s]+\\.[^:/?#@\\s]+(?::443)?(?:[/?#].*)?$",
+      "maxLength": 8192
+    },
     "ImportRequest": {
       "type": "object",
       "additionalProperties": false,
@@ -26,14 +32,12 @@
           ]
         },
         "url": {
-          "type": "string",
-          "format": "uri",
-          "pattern": "^https://",
-          "maxLength": 8192
+          "$ref": "#/$defs/HTTPSUrl"
         },
         "text": {
           "type": "string",
           "minLength": 1,
+          "pattern": "\\S",
           "maxLength": 100000
         },
         "artifact_id": {
@@ -45,10 +49,7 @@
           "maxLength": 80
         },
         "original_source_url": {
-          "type": "string",
-          "format": "uri",
-          "pattern": "^https://",
-          "maxLength": 8192
+          "$ref": "#/$defs/HTTPSUrl"
         }
       },
       "oneOf": [
@@ -491,10 +492,7 @@
             "original_url": {
               "anyOf": [
                 {
-                  "type": "string",
-                  "format": "uri",
-                  "pattern": "^https://",
-                  "maxLength": 8192
+                  "$ref": "#/$defs/HTTPSUrl"
                 },
                 {
                   "type": "null"
@@ -504,10 +502,7 @@
             "canonical_url": {
               "anyOf": [
                 {
-                  "type": "string",
-                  "format": "uri",
-                  "pattern": "^https://",
-                  "maxLength": 8192
+                  "$ref": "#/$defs/HTTPSUrl"
                 },
                 {
                   "type": "null"

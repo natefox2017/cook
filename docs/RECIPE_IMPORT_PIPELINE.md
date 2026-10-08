@@ -116,5 +116,6 @@ Worker 所有写入都必须允许安全重试。
 - Share Extension 写入本地可恢复 receipt 并返回宿主 App；不能把 `Saved to RecipePouch` 误认为 Supabase 已接受。App 后续转送，服务端确认后才更新 receipt 的 `acknowledged_job_id`。
 - `received` 表示服务器持久化任务；`queued` 表示消息入队确认。worker 才进入 extracting/parsing/validating，成功后 job=completed，结果 recipe=ready 或 needs_review；两条状态轴不可混用。
 - 发生认证丢失、网络失败、队列未确认、重试或账户切换时，保留原始 receipt/source/evidence，不静默丢弃、不跨 owner 转移。
+- URL 输入保留用户提交的 `original_url`；只有实际解析到来源页面后才记录 `canonical_url`。网页正文或结构化数据分别标记 `article_body` / `webpage_structured_data`，字段引用其 evidence ID；裸文本输入保留原文，不能伪造网页 URL。
+- 缺失字段保持缺失，并把需要补充的字段路径放入 `review_fields`。含糊用量、范围或“适量”保留原文；不能可靠规范化时 `normalized_value` 为空。Schema 与请求处理应拒绝无主机 HTTPS URL、凭据、非标准端口、空白文本和互斥输入；本地 fixture validator 也显式检查这些输入，但不证明在线 API 已执行这些规则。抓取失败不得伪称已有网页证据。
 - 具体公开来源研究记录见 [import-fixtures/observations.json](import-fixtures/observations.json)：帮助文档不等于真实 URL 解析，也不等于 iOS 第三方 Share → 队列 → 食谱的端到端验收。
-

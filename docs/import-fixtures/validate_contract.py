@@ -6,6 +6,7 @@
 
 import json
 import sys
+import urllib.parse
 from pathlib import Path
 
 try:
@@ -46,6 +47,41 @@ def validate_openapi_references(api: dict, definitions: set[str]) -> None:
     inspect(api["paths"])
 
 
+def has_well_formed_import_source(case: dict) -> bool:
+    if case["schema"] != "ImportRequest":
+        return True
+    request = case["data"]
+    input_type = request.get("input_type")
+    if input_type == "text":
+        text = request.get("text")
+        if not isinstance(text, str) or not text.strip():
+            return False
+    raw_urls = []
+    if input_type == "url":
+        raw_urls.append(request.get("url"))
+    if "original_source_url" in request:
+        raw_urls.append(request.get("original_source_url"))
+
+    for raw_url in raw_urls:
+        if raw_url is None:
+            continue
+        try:
+            parsed = urllib.parse.urlsplit(raw_url)
+            port = parsed.port
+        except (TypeError, ValueError):
+            return False
+
+        if not (
+            parsed.scheme == "https"
+            and bool(parsed.hostname)
+            and parsed.username is None
+            and parsed.password is None
+            and port in (None, 443)
+        ):
+            return False
+    return True
+
+
 def main() -> int:
     schema = read_json(SCHEMA_PATH)
     api = read_json(OPENAPI_PATH)
@@ -79,7 +115,7 @@ def main() -> int:
         }
         validator = Draft202012Validator(selected, format_checker=checker)
         errors = list(validator.iter_errors(case["data"]))
-        observed_valid = not errors
+        observed_valid = not errors and has_well_formed_import_source(case)
 
         if observed_valid != case["valid"]:
             details = "; ".join(error.message for error in errors[:2])
