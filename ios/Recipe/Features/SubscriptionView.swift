@@ -69,8 +69,12 @@ struct PremiumPaywallContent: View {
             legalFooter
 
             if context == .onboarding {
-                Button(subscriptions.state.hasEntitlement ? "Continue" : "Continue with Free") {
+                Button {
                     onContinue?()
+                } label: {
+                    Text(LocalizedStringKey(
+                        subscriptions.state.hasEntitlement ? "Continue" : "Continue with Free"
+                    ))
                 }
                 .frame(minHeight: 50)
                 .accessibilityIdentifier("onboarding.continueFree")
@@ -115,6 +119,7 @@ struct PremiumPaywallContent: View {
         VStack(spacing: 12) {
             if let statusMessage {
                 Text(statusMessage)
+                    .lineLimit(1)
                     .font(RecipeTheme.text(15, relativeTo: .subheadline))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -165,6 +170,7 @@ struct PremiumPaywallContent: View {
                             if subscriptions.isTrialEligible(for: product),
                                let offer = product.subscription?.introductoryOffer {
                                 Text("Start \(periodLabel(offer.period, count: offer.periodCount)) free, then \(priceLine(for: product)).")
+                                    .lineLimit(1)
                                     .font(RecipeTheme.text(14, weight: .semibold, relativeTo: .subheadline))
                                     .foregroundStyle(RecipeTheme.accentForeground)
                             }
@@ -238,11 +244,11 @@ struct PremiumPaywallContent: View {
     private var statusMessage: String? {
         switch subscriptions.state {
         case .billingRetry:
-            String(localized: "There is a billing issue with your previous subscription. Premium access is not currently active.")
+            String(localized: "Payment issue. Premium is inactive.")
         case .expired:
-            String(localized: "Your previous subscription has expired. Your saved recipes remain available.")
+            String(localized: "Subscription expired.")
         case .revoked:
-            String(localized: "The App Store revoked your previous subscription. Your saved recipes remain available.")
+            String(localized: "Subscription revoked by App Store.")
         case .unavailable(let reason):
             reason
         default:
