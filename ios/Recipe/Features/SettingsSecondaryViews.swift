@@ -7,6 +7,8 @@ import UniformTypeIdentifiers
 
 struct DataPrivacySettingsView: View {
     @Environment(RecipeStore.self) private var store
+    @Environment(CloudSyncCoordinator.self) private var cloudSync
+    @State private var auth = RecipeAuthService.shared
 
     @State private var exportsData = false
     @State private var exportDocument = SettingsExportDocument(data: Data())
@@ -35,19 +37,28 @@ struct DataPrivacySettingsView: View {
                     confirmsLocalDelete = true
                 }
 
-                HStack {
-                    Text("Delete RecipePouch Account & Cloud Data")
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text("Sign in required")
-                        .font(
-                            RecipeTheme.text(
-                                12,
-                                weight: .regular,
-                                relativeTo: .caption
+                if isSignedIn {
+                    Button(
+                        "Delete RecipePouch Account & Cloud Data",
+                        role: .destructive
+                    ) {
+                        confirmsAccountDelete = true
+                    }
+                } else {
+                    HStack {
+                        Text("Delete RecipePouch Account & Cloud Data")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("Sign in required")
+                            .font(
+                                RecipeTheme.text(
+                                    12,
+                                    weight: .regular,
+                                    relativeTo: .caption
+                                )
                             )
-                        )
-                        .foregroundStyle(.secondary)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
@@ -84,10 +95,22 @@ struct DataPrivacySettingsView: View {
             titleVisibility: .visible
         ) {
             Button("Delete Account & Cloud Data", role: .destructive) {
-                message = "Connect a RecipePouch account before deleting cloud data."
+                Task {
+                    do {
+                        try await cloudSync.deleteAccountAndCloudData()
+                        message = "RecipePouch account and cloud data deleted. "
+                            + "Local data on this iPhone was kept."
+                    } catch {
+                        message = error.localizedDescription
+                    }
+                }
             }
         } message: {
-            Text("This is separate from cancelling your App Store subscription.")
+            Text(
+                "This deletes the signed-in RecipePouch account and cloud data. "
+                    + "Local data on this iPhone stays until you delete it separately. "
+                    + "This does not cancel an App Store subscription."
+            )
         }
         .alert(
             "Data & Privacy",
@@ -100,6 +123,11 @@ struct DataPrivacySettingsView: View {
         } message: {
             Text(message ?? "")
         }
+    }
+
+    private var isSignedIn: Bool {
+        if case .signedIn = auth.state { return true }
+        return false
     }
 
     private func prepareExport() {

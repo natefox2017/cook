@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Tests RecipeStoreTests behavior.
+// Purpose: Verify local library persistence and cloud snapshot safety contracts.
 
 import Foundation
 import Testing
@@ -29,12 +29,35 @@ func libraryStartsEmptyAndSamplesAreExplicitAndIdempotent() throws {
     #expect(store.recipes.isEmpty)
     try store.loadSampleRecipes()
     let ids = store.recipes.map(\.id)
-    #expect(ids.count == 5)
+    #expect(ids.count == SampleRecipes.recipes.count)
     #expect(store.recipes.allSatisfy { $0.sourceName == "Sample recipe" && !$0.needsReview })
     try store.toggleFavorite(id: ids[0])
     try store.loadSampleRecipes()
     #expect(store.recipes.map(\.id) == ids)
     #expect(store.recipe(id: ids[0])?.isFavorite == true)
+}
+
+@Test @MainActor
+func deletionsAndResetRemainInCloudSnapshotAfterReload() throws {
+    let url = try libraryURL()
+    defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+    let store = RecipeStore(fileURL: url)
+    let recipe = exampleRecipe()
+    try store.upsert(recipe)
+    try store.deleteRecipe(id: recipe.id)
+
+    let restored = RecipeStore(fileURL: url)
+    #expect(try restored.exportCloudSnapshot().deletedEntities?.contains("recipe:\(recipe.id.uuidString)") == true)
+
+    let remaining = Recipe(title: "Keep", steps: [.init(instruction: "Cook.")])
+    try restored.upsert(remaining)
+    try restored.resetLibrary()
+
+    let reset = RecipeStore(fileURL: url)
+    let deletedEntities = try reset.exportCloudSnapshot().deletedEntities ?? []
+    #expect(deletedEntities.contains("recipe:\(recipe.id.uuidString)"))
+    #expect(deletedEntities.contains("recipe:\(remaining.id.uuidString)"))
 }
 
 @Test @MainActor
@@ -106,6 +129,112 @@ func aWriteFailureDoesNotPublishAnUnsavedMutation() throws {
     #expect(throws: (any Error).self) { try store.upsert(exampleRecipe()) }
     #expect(store.recipes.isEmpty)
     #expect(try Data(contentsOf: blockedParent) == sentinel)
+}
+
+@Test @MainActor
+func replacingLibraryWithCloudSnapshotIsValidatedAndAtomic() throws {
+    let url = try libraryURL()
+    defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+    let local = RecipeStore(fileURL: url)
+    let localRecipe = exampleRecipe()
+    try local.upsert(localRecipe)
+    let originalBytes = try Data(contentsOf: url)
+
+    let remote = RecipeStore()
+    let remoteRecipe = Recipe(title: "Remote soup", steps: [.init(instruction: "Simmer.")])
+    try remote.upsert(remoteRecipe)
+    let remoteBytes = try remote.exportData()
+    try local.replaceLibrary(with: remoteBytes)
+
+    #expect(local.recipes.map(\.id) == [remoteRecipe.id])
+    #expect(local.recipe(id: localRecipe.id) == nil)
+    #expect(try Data(contentsOf: url) == remoteBytes)
+
+    #expect(throws: (any Error).self) {
+        try local.replaceLibrary(with: Data("{ invalid".utf8))
+    }
+    #expect(local.recipes.map(\.id) == [remoteRecipe.id])
+    #expect(try Data(contentsOf: url) == remoteBytes)
+    #expect(originalBytes != remoteBytes)
+}
+
+@Test @MainActor
+func mergingIndependentLibrariesKeepsBothRecipes() throws {
+    let local = RecipeStore()
+    let localRecipe = exampleRecipe()
+    try local.upsert(localRecipe)
+
+    let cloud = RecipeStore()
+    let cloudRecipe = Recipe(title: "Cloud soup", steps: [.init(instruction: "Simmer.")])
+    try cloud.upsert(cloudRecipe)
+
+    #expect(try local.mergeCloudLibrary(with: cloud.exportData()).isEmpty)
+    #expect(Set(local.recipes.map(\.id)) == Set([localRecipe.id, cloudRecipe.id]))
+}
+
+@Test @MainActor
+func mergeRequiresAnExplicitChoiceForSameRecipeAndForDeletionPropagation() throws {
+    let local = RecipeStore()
+    let shared = exampleRecipe()
+    try local.upsert(shared)
+    let cloud = RecipeStore()
+    try cloud.upsert(Recipe(id: shared.id, title: "Cloud edit", steps: [.init(instruction: "Bake.")]))
+
+    let editConflicts = try local.mergeCloudLibrary(with: cloud.exportData())
+    #expect(editConflicts.map(\.entity) == [.recipe])
+    #expect(local.recipe(id: shared.id)?.title == shared.title)
+    let useCloud = LibraryMergeChoice(conflict: editConflicts[0], source: .cloud)
+    #expect(try local.mergeCloudLibrary(with: cloud.exportData(), choices: [useCloud]).isEmpty)
+    #expect(local.recipe(id: shared.id)?.title == "Cloud edit")
+
+    let cloudCopy = try local.exportData()
+    try local.deleteRecipe(id: shared.id)
+    let deleteConflict = try local.mergeCloudLibrary(with: cloudCopy)
+    #expect(deleteConflict.map(\.entity) == [.recipe])
+    let keepDeletion = LibraryMergeChoice(conflict: deleteConflict[0], source: .local)
+    #expect(try local.mergeCloudLibrary(with: cloudCopy, choices: [keepDeletion]).isEmpty)
+    #expect(local.recipe(id: shared.id) == nil)
+
+    let restoreCloud = LibraryMergeChoice(conflict: deleteConflict[0], source: .cloud)
+    #expect(try local.mergeCloudLibrary(with: cloudCopy, choices: [restoreCloud]).isEmpty)
+    #expect(local.recipe(id: shared.id)?.title == "Cloud edit")
+}
+
+@Test @MainActor
+func typedCloudSnapshotKeepsExactDecimalAmounts() throws {
+    let exact = try #require(Decimal(string: "0.1234567890123456789012345678", locale: Locale(identifier: "en_US_POSIX")))
+    let store = RecipeStore()
+    let recipe = Recipe(
+        title: "Precise sauce",
+        ingredients: [.init(name: "Oil", amountText: NSDecimalNumber(decimal: exact).stringValue, quantity: exact)],
+        steps: [.init(instruction: "Mix.")]
+    )
+    try store.upsert(recipe)
+
+    let encoded = try JSONEncoder().encode(store.exportCloudSnapshot())
+    let decoded = try JSONDecoder().decode(RecipeLibrarySnapshot.self, from: encoded)
+    #expect(decoded.recipes.first?.ingredients.first?.quantity == exact)
+}
+
+@Test @MainActor
+func cloudMergePreservesCollectionsAndMembershipsAcrossDevices() throws {
+    let local = RecipeStore()
+    let firstRecipe = exampleRecipe()
+    try local.upsert(firstRecipe)
+    let collection = try local.createCollection(name: "Weeknight")
+    try local.setRecipe(firstRecipe.id, inCollection: collection.id, isMember: true)
+
+    let cloud = RecipeStore()
+    try cloud.replaceLibrary(with: local.exportCloudSnapshot())
+    let secondRecipe = Recipe(title: "Cloud soup", steps: [.init(instruction: "Simmer.")])
+    try cloud.upsert(secondRecipe)
+    try cloud.setRecipe(secondRecipe.id, inCollection: collection.id, isMember: true)
+
+    #expect(try local.mergeCloudLibrary(with: cloud.exportCloudSnapshot()).isEmpty)
+    #expect(local.collection(id: collection.id)?.name == "Weeknight")
+    #expect(local.collectionIDs(forRecipe: firstRecipe.id) == [collection.id])
+    #expect(local.collectionIDs(forRecipe: secondRecipe.id) == [collection.id])
 }
 
 @Test @MainActor
@@ -335,4 +464,219 @@ func collectionExportContainsStableIDsAndRelationships() throws {
     #expect(collections.first?["name"] as? String == "Dinner")
     #expect(memberships.first?["recipeID"] as? String == recipe.id.uuidString)
     #expect(memberships.first?["collectionID"] as? String == collection.id.uuidString)
+}
+
+
+@Test @MainActor
+func sampleRecipesCanBeLoadedAfterReset() throws {
+    let store = RecipeStore()
+    try store.loadSampleRecipes()
+    try store.resetLibrary()
+    #expect(store.recipes.isEmpty)
+
+    try store.loadSampleRecipes()
+
+    #expect(store.recipes.count == SampleRecipes.recipes.count)
+    let tombstones = try store.exportCloudSnapshot().deletedEntities ?? []
+    #expect(
+        SampleRecipes.recipes.allSatisfy {
+            !tombstones.contains("recipe:\($0.id.uuidString)")
+        }
+    )
+}
+
+@Test @MainActor
+func threeWayMergeAcceptsIndependentLocalAndRemoteChanges() throws {
+    let baseStore = RecipeStore()
+    let shared = exampleRecipe()
+    try baseStore.upsert(shared)
+    let base = try baseStore.exportCloudSnapshot()
+
+    let local = RecipeStore()
+    try local.replaceLibrary(with: base)
+    let localGrocery = GroceryItem(
+        name: "Milk",
+        amountText: "1 carton",
+        category: .dairy
+    )
+    try local.upsertGrocery(localGrocery)
+
+    let cloud = RecipeStore()
+    try cloud.replaceLibrary(with: base)
+    var remoteRecipe = try #require(cloud.recipe(id: shared.id))
+    remoteRecipe.title = "Remote edit"
+    try cloud.upsert(remoteRecipe)
+
+    let conflicts = try local.mergeCloudLibrary(
+        with: cloud.exportCloudSnapshot(),
+        base: base
+    )
+
+    #expect(conflicts.isEmpty)
+    #expect(local.recipe(id: shared.id)?.title == "Remote edit")
+    #expect(local.groceries.contains(where: { $0.id == localGrocery.id }))
+}
+
+@Test @MainActor
+func threeWayMergeStillConflictsWhenBothSidesEditSameRecipe() throws {
+    let baseStore = RecipeStore()
+    let shared = exampleRecipe()
+    try baseStore.upsert(shared)
+    let base = try baseStore.exportCloudSnapshot()
+
+    let local = RecipeStore()
+    try local.replaceLibrary(with: base)
+    var localRecipe = try #require(local.recipe(id: shared.id))
+    localRecipe.title = "Local edit"
+    try local.upsert(localRecipe)
+
+    let cloud = RecipeStore()
+    try cloud.replaceLibrary(with: base)
+    var remoteRecipe = try #require(cloud.recipe(id: shared.id))
+    remoteRecipe.title = "Remote edit"
+    try cloud.upsert(remoteRecipe)
+
+    let conflicts = try local.mergeCloudLibrary(
+        with: cloud.exportCloudSnapshot(),
+        base: base
+    )
+
+    #expect(conflicts.count == 1)
+    #expect(conflicts.first?.entity == .recipe)
+    #expect(conflicts.first?.entityID == shared.id)
+}
+
+@Test @MainActor
+func independentMembershipRemovalsMergeWithoutConflict() throws {
+    let baseStore = RecipeStore()
+    let first = exampleRecipe()
+    let second = Recipe(
+        title: "Second",
+        steps: [.init(instruction: "Cook.")]
+    )
+    try baseStore.upsert(first)
+    try baseStore.upsert(second)
+    let collection = try baseStore.createCollection(name: "Dinner")
+    try baseStore.setRecipe(first.id, inCollection: collection.id, isMember: true)
+    try baseStore.setRecipe(second.id, inCollection: collection.id, isMember: true)
+    let base = try baseStore.exportCloudSnapshot()
+
+    let local = RecipeStore()
+    try local.replaceLibrary(with: base)
+    try local.setRecipe(first.id, inCollection: collection.id, isMember: false)
+
+    let cloud = RecipeStore()
+    try cloud.replaceLibrary(with: base)
+    try cloud.setRecipe(second.id, inCollection: collection.id, isMember: false)
+
+    let conflicts = try local.mergeCloudLibrary(
+        with: cloud.exportCloudSnapshot(),
+        base: base
+    )
+
+    #expect(conflicts.isEmpty)
+    #expect(local.collectionIDs(forRecipe: first.id).isEmpty)
+    #expect(local.collectionIDs(forRecipe: second.id).isEmpty)
+}
+
+@Test @MainActor
+func initialMembershipConflictsHaveUniqueIDs() throws {
+    let local = RecipeStore()
+    let first = exampleRecipe()
+    let second = Recipe(
+        title: "Second",
+        steps: [.init(instruction: "Cook.")]
+    )
+    try local.upsert(first)
+    try local.upsert(second)
+    let collection = try local.createCollection(name: "Dinner")
+    try local.setRecipe(first.id, inCollection: collection.id, isMember: true)
+    try local.setRecipe(second.id, inCollection: collection.id, isMember: true)
+
+    let cloud = RecipeStore()
+    try cloud.replaceLibrary(with: local.exportCloudSnapshot())
+    try cloud.setRecipe(first.id, inCollection: collection.id, isMember: false)
+    try cloud.setRecipe(second.id, inCollection: collection.id, isMember: false)
+
+    let conflicts = try local.mergeCloudLibrary(
+        with: cloud.exportCloudSnapshot()
+    ).filter { $0.entity == .membership }
+
+    #expect(conflicts.count == 2)
+    #expect(Set(conflicts.map(\.id)).count == 2)
+}
+
+@Test @MainActor
+func sameNamedOfflineCollectionsReturnResolvableConflict() throws {
+    let local = RecipeStore()
+    let localCollection = try local.createCollection(name: "Dinner")
+
+    let cloud = RecipeStore()
+    _ = try cloud.createCollection(name: " dinner ")
+
+    let conflicts = try local.mergeCloudLibrary(
+        with: cloud.exportCloudSnapshot()
+    )
+    let conflict = try #require(
+        conflicts.first(where: { $0.id.hasPrefix("collection-name:") })
+    )
+
+    let choice = LibraryMergeChoice(
+        conflict: conflict,
+        source: .local
+    )
+    #expect(
+        try local.mergeCloudLibrary(
+            with: cloud.exportCloudSnapshot(),
+            choices: [choice]
+        ).isEmpty
+    )
+    #expect(local.collections.map(\.id) == [localCollection.id])
+}
+
+@Test @MainActor
+func sameOfflineMealSlotReturnsResolvableConflict() throws {
+    let day = Calendar.current.startOfDay(for: .now)
+
+    let local = RecipeStore()
+    let localRecipe = exampleRecipe()
+    try local.upsert(localRecipe)
+    let localMeal = MealPlanEntry(
+        recipeID: localRecipe.id,
+        date: day,
+        slot: .dinner
+    )
+    try local.upsertMeal(localMeal)
+
+    let cloud = RecipeStore()
+    let cloudRecipe = Recipe(
+        title: "Cloud dinner",
+        steps: [.init(instruction: "Cook.")]
+    )
+    try cloud.upsert(cloudRecipe)
+    let cloudMeal = MealPlanEntry(
+        recipeID: cloudRecipe.id,
+        date: day,
+        slot: .dinner
+    )
+    try cloud.upsertMeal(cloudMeal)
+
+    let conflicts = try local.mergeCloudLibrary(
+        with: cloud.exportCloudSnapshot()
+    )
+    let conflict = try #require(
+        conflicts.first(where: { $0.id.hasPrefix("meal-slot:") })
+    )
+
+    let choice = LibraryMergeChoice(
+        conflict: conflict,
+        source: .cloud
+    )
+    #expect(
+        try local.mergeCloudLibrary(
+            with: cloud.exportCloudSnapshot(),
+            choices: [choice]
+        ).isEmpty
+    )
+    #expect(local.mealPlan.map(\.id) == [cloudMeal.id])
 }
