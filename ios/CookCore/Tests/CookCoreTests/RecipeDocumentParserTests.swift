@@ -105,7 +105,11 @@ func invalidDurationComponentDoesNotBecomeAPartialTime(_ duration: String) throw
     "Simmer for up to 10 minutes over medium heat.",
     "Bake for 10 minutes, or until golden.",
     "Bake for 10 minutes or until golden.",
-    "Bake for 10 minutes until golden."
+    "Bake for 10 minutes until golden.",
+    "Bake for at least 10 minutes.",
+    "Bake for no more than 10 minutes.",
+    "Bake for 10 minutes or longer.",
+    "Bake for 10 minutes minimum."
 ])
 func ambiguousTimesDoNotBecomeFakePreciseTimers(_ instruction: String) throws {
     let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
