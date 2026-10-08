@@ -101,7 +101,9 @@ private struct SettingsRow: View {
                 .frame(width: 32)
                 .foregroundStyle(RecipeTheme.accentForeground)
 
-            Text(title)
+            // These labels are static product copy routed through a shared
+            // String helper, not user-authored settings values.
+            Text(LocalizedStringKey(title))
         }
         .frame(minHeight: 50)
     }
