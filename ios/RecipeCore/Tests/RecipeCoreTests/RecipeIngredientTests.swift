@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Tests ingredient amount display, exact scaling, and preservation of ambiguous source values.
+
 import Foundation
 import Testing
 @testable import RecipeCore
