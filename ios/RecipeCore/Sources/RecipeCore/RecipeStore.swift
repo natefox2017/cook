@@ -115,7 +115,7 @@ public struct LibraryMergeConflict: Hashable, Sendable, Identifiable {
     }
 }
 
-public enum LibraryMergeSource: Sendable, Equatable {
+public enum LibraryMergeSource: Sendable, Equatable, Hashable {
     case local
     case cloud
 }
