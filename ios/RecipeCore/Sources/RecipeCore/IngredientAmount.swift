@@ -42,14 +42,11 @@ extension IngredientAmount.ValidationError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .invalidValue:
-            String(localized: "Ingredient amounts must be finite numbers of zero or more.")
+            "Ingredient amounts must be finite numbers of zero or more."
         case .invalidScale:
-            String(localized: "Choose a positive, finite serving multiplier.")
+            "Choose a positive, finite serving multiplier."
         case .arithmeticFailure:
-            String(
-                localized:
             "This amount cannot be calculated without losing precision. Keep the original amount or edit it."
-            )
         }
     }
 }

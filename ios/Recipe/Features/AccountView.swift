@@ -335,7 +335,7 @@ struct AccountView: View {
                     Button("Update Password") {
                         guard !isUpdatingPassword else { return }
                         guard newPassword == confirmPassword else {
-                            localMessage = String(localized: "The passwords do not match.")
+                            localMessage = String(localized: LocalizedStringResource("The passwords do not match.", locale: RecipeLanguage.active))
                             return
                         }
                         isUpdatingPassword = true
@@ -435,11 +435,11 @@ struct AccountView: View {
         switch auth.state {
         case .needsEmailVerification(let address):
             return (
-                String(localized: "Check \(address) to verify your account, then return to RecipePouch."),
+                String(localized: LocalizedStringResource("Check \(address) to verify your account, then return to RecipePouch.", locale: RecipeLanguage.active)),
                 false
             )
         case .passwordResetSent:
-            return (String(localized: "Check your inbox for the reset link."), false)
+            return (String(localized: LocalizedStringResource("Check your inbox for the reset link.", locale: RecipeLanguage.active)), false)
         case .error(let message):
             return (message, true)
         default:
@@ -531,7 +531,7 @@ struct AccountView: View {
                   let tokenData = credential.identityToken,
                   let identityToken = String(data: tokenData, encoding: .utf8),
                   let rawNonce = pendingNonce else {
-                localMessage = String(localized: "Apple sign-in did not return a usable identity token.")
+                localMessage = String(localized: LocalizedStringResource("Apple sign-in did not return a usable identity token.", locale: RecipeLanguage.active))
                 return
             }
 

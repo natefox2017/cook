@@ -292,10 +292,7 @@ struct AddRecipeView: View {
             var recipe = Recipe(title: "Recipe from a photo", servings: nil, sourceName: "Photo import")
             recipe.coverData = normalized
             try saveImported(recipe)
-            status = String(
-                localized:
-                    "Photo saved. Add the ingredients and steps when you're ready."
-            )
+            status = String(localized: LocalizedStringResource("Photo saved. Add the ingredients and steps when you're ready.", locale: RecipeLanguage.active))
             return
         }
         var recipe = RecipeDocumentParser.recipe(fromText: text)
@@ -307,7 +304,7 @@ struct AddRecipeView: View {
     private func perform(_ message: String, action: @escaping @MainActor () async throws -> Void) {
         guard !isWorking else { return }
         isWorking = true
-        status = String(localized: String.LocalizationValue(message))
+        status = message
         errorMessage = nil
         savedID = nil
         failedURL = nil
@@ -324,10 +321,7 @@ struct AddRecipeView: View {
 
     private func requestCamera() {
         guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
-            errorMessage = String(
-                localized:
-                    "A camera isn't available here. Choose Import from Photos instead."
-            )
+            errorMessage = String(localized: LocalizedStringResource("A camera isn't available here. Choose Import from Photos instead.", locale: RecipeLanguage.active))
             return
         }
         Task {
@@ -335,10 +329,7 @@ struct AddRecipeView: View {
             if allowed {
                 showCamera = true
             } else {
-                errorMessage = String(
-                    localized:
-                        "Camera access is off. Enable it for Recipe in iPhone Settings, or use Import from Photos."
-                )
+                errorMessage = String(localized: LocalizedStringResource("Camera access is off. Enable it for Recipe in iPhone Settings, or use Import from Photos.", locale: RecipeLanguage.active))
             }
         }
     }

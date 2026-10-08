@@ -22,7 +22,7 @@ struct ProfileView: View {
 
     private var displayName: String {
         let name = store.settings.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return name.isEmpty ? String(localized: "Your kitchen") : name
+        return name.isEmpty ? String(localized: LocalizedStringResource("Your kitchen", locale: RecipeLanguage.active)) : name
     }
 
     var body: some View {
@@ -244,7 +244,7 @@ struct ProfileView: View {
             exportDocument = try format.makeDocument(from: store)
             exportsData = true
         } catch {
-            errorMessage = String(localized: "Export failed: \(error.localizedDescription)")
+            errorMessage = String(localized: LocalizedStringResource("Export failed: \(error.localizedDescription)", locale: RecipeLanguage.active))
         }
     }
 }
@@ -342,14 +342,14 @@ struct NotificationPreferencesView: View {
     }
 
     private var permissionDescription: String {
-        guard hasLoaded else { return String(localized: "Checking…") }
+        guard hasLoaded else { return String(localized: LocalizedStringResource("Checking…", locale: RecipeLanguage.active)) }
         switch authorization {
-        case .notDetermined: return String(localized: "Not requested")
-        case .denied: return String(localized: "Off in iOS Settings")
-        case .authorized: return String(localized: "Allowed")
-        case .provisional: return String(localized: "Quiet delivery")
-        case .ephemeral: return String(localized: "Temporarily allowed")
-        @unknown default: return String(localized: "Check iOS Settings")
+        case .notDetermined: return String(localized: LocalizedStringResource("Not requested", locale: RecipeLanguage.active))
+        case .denied: return String(localized: LocalizedStringResource("Off in iOS Settings", locale: RecipeLanguage.active))
+        case .authorized: return String(localized: LocalizedStringResource("Allowed", locale: RecipeLanguage.active))
+        case .provisional: return String(localized: LocalizedStringResource("Quiet delivery", locale: RecipeLanguage.active))
+        case .ephemeral: return String(localized: LocalizedStringResource("Temporarily allowed", locale: RecipeLanguage.active))
+        @unknown default: return String(localized: LocalizedStringResource("Check iOS Settings", locale: RecipeLanguage.active))
         }
     }
 

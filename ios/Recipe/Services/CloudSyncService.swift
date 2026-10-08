@@ -74,7 +74,7 @@ protocol RecipeCloudSyncing: Sendable {
 struct UnconfiguredCloudSync: RecipeCloudSyncing {
     struct NotConfigured: LocalizedError {
         var errorDescription: String? {
-            String(localized: "RecipePouch cloud sync is not configured in this build.")
+            String(localized: LocalizedStringResource("RecipePouch cloud sync is not configured in this build.", locale: RecipeLanguage.active))
         }
     }
     func upload(
@@ -99,11 +99,11 @@ enum RecipeCloudSyncError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedPayload:
-            String(localized: "This library snapshot cannot be sent to cloud sync.")
+            String(localized: LocalizedStringResource("This library snapshot cannot be sent to cloud sync.", locale: RecipeLanguage.active))
         case .revisionConflict:
-            String(localized: "This library changed on another device. Download the latest version before retrying.")
+            String(localized: LocalizedStringResource("This library changed on another device. Download the latest version before retrying.", locale: RecipeLanguage.active))
         case .missingSaveResult:
-            String(localized: "Cloud sync did not confirm that the snapshot was saved.")
+            String(localized: LocalizedStringResource("Cloud sync did not confirm that the snapshot was saved.", locale: RecipeLanguage.active))
         }
     }
 }
@@ -203,11 +203,11 @@ enum RecipeLocalResetError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .requiresSignOut:
-            String(localized: "Sign out of your RecipePouch account before deleting only this iPhone's data. Your cloud library will stay intact.")
+            String(localized: LocalizedStringResource("Sign out of your RecipePouch account before deleting only this iPhone's data. Your cloud library will stay intact.", locale: RecipeLanguage.active))
         case .syncInProgress:
-            String(localized: "A cloud sync operation is still finishing. Try deleting local data again after it stops.")
+            String(localized: LocalizedStringResource("A cloud sync operation is still finishing. Try deleting local data again after it stops.", locale: RecipeLanguage.active))
         case .markerPersistenceFailed:
-            String(localized: "Could not securely persist the local erase barrier. Your library was not deleted. Check device storage and try again.")
+            String(localized: LocalizedStringResource("Could not securely persist the local erase barrier. Your library was not deleted. Check device storage and try again.", locale: RecipeLanguage.active))
         }
     }
 }
