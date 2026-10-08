@@ -25,7 +25,9 @@ def read_json(path: Path) -> dict:
         return json.load(handle)
 
 
-def validate_openapi_references(api: dict, definitions: set[str]) -> None:
+def validate_openapi_references(
+    api: dict, definitions: set[str]
+) -> None:
     assert api["openapi"].startswith("3.1."), "OpenAPI 3.1 is required"
     assert "/recipe-imports" in api["paths"]
     assert "/recipe-imports/{job_id}" in api["paths"]
@@ -35,9 +37,22 @@ def validate_openapi_references(api: dict, definitions: set[str]) -> None:
         if isinstance(value, dict):
             if "$ref" in value:
                 reference = value["$ref"]
-                prefix = "./import-v1.schema.json#/$defs/"
-                assert reference.startswith(prefix), f"Unexpected reference: {reference}"
-                assert reference[len(prefix):] in definitions, f"Missing definition: {reference}"
+                external_prefix = "./import-v1.schema.json#/$defs/"
+                if reference.startswith(external_prefix):
+                    assert reference[len(external_prefix):] in definitions, (
+                        f"Missing external schema definition: {reference}"
+                    )
+                elif reference.startswith("#/components/"):
+                    target: object = api
+                    for token in reference[2:].split("/"):
+                        token = token.replace("~1", "/").replace("~0", "~")
+                        if not isinstance(target, dict) or token not in target:
+                            raise AssertionError(
+                                f"Missing OpenAPI component reference: {reference}"
+                            )
+                        target = target[token]
+                else:
+                    raise AssertionError(f"Unexpected reference: {reference}")
             for child in value.values():
                 inspect(child)
         elif isinstance(value, list):

@@ -424,7 +424,7 @@ func localDeletionDuringSubmitPreventsAcknowledgementAndRecipeSave() async throw
 }
 
 @Test @MainActor
-func completedURLResultIsReportedAndNeverSavedAsARecipe() async throws {
+func completedPartialURLResultIsSavedForReviewWithItsSource() async throws {
     let fixture = try ShareWorkflowFixture()
     defer { fixture.removeFiles() }
     let ownerID = UUID()
@@ -464,9 +464,11 @@ func completedURLResultIsReportedAndNeverSavedAsARecipe() async throws {
         pollInterval: .zero
     )
 
-    #expect(report.failureMessage?.contains("not supported") == true)
+    #expect(report.failureMessage == nil)
     #expect(report.jobStatuses[receipt.id]?.status == .completed)
     #expect(client.fetchCount == 1)
-    #expect(fixture.store.recipes.isEmpty)
+    let imported = try #require(fixture.store.recipe(id: recipeID))
+    #expect(imported.sourceURL == "https://example.org/recipe")
+    #expect(imported.importRecord?.result.status == "needs_review")
     #expect(try fixture.inbox.acknowledgedJobID(for: receipt, ownerID: ownerID) == jobID)
 }

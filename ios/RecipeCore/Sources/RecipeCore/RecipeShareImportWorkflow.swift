@@ -343,8 +343,12 @@ public enum RecipeShareImportWorkflow {
         if !steps.isEmpty {
             structuredText += "\n\nInstructions\n" + steps.joined(separator: "\n")
         }
+        let hasServerStructuredContent = !ingredients.isEmpty || !steps.isEmpty
+        let parserInput = receipt.inputType == .text && !hasServerStructuredContent
+            ? source
+            : structuredText
         var recipe = RecipeDocumentParser.recipe(
-            fromText: structuredText,
+            fromText: parserInput,
             title: title
         )
         recipe.id = result.recipeID
