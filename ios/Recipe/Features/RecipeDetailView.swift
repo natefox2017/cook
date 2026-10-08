@@ -166,7 +166,7 @@ struct RecipeDetailView: View {
         if let originalServings = recipe.servings, originalServings > 0 {
             Label("\(originalServings) \(originalServings == 1 ? "serving" : "servings")", systemImage: "person.2")
         }
-        Text(recipe.category.rawValue)
+        Text(LocalizedStringKey(recipe.category.rawValue))
     }
 
     private func ingredients(_ recipe: Recipe) -> some View {
