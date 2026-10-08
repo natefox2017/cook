@@ -29,10 +29,24 @@ export interface SafeHTMLPage {
   contentType: string;
 }
 
+export interface SafeVTTTrack {
+  text: string;
+  canonicalURL: string;
+  contentType: string;
+}
+
 interface HTTPResponse {
   status: number;
   headers: Record<string, string | undefined>;
   body: Uint8Array;
+}
+
+interface FetchPolicy {
+  accept: string;
+  contentTypes: readonly string[];
+  maxBytes: number;
+  timeoutMS: number;
+  label: string;
 }
 
 interface FetchDependencies {
@@ -41,6 +55,7 @@ interface FetchDependencies {
     url: URL,
     addresses: string[],
     signal: AbortSignal,
+    policy: FetchPolicy,
   ) => Promise<HTTPResponse>;
 }
 
@@ -48,6 +63,8 @@ const MAX_URL_LENGTH = 8_192;
 const MAX_RESPONSE_BYTES = 1_500_000;
 const MAX_REDIRECTS = 3;
 const TOTAL_TIMEOUT_MS = 10_000;
+const TRACK_TIMEOUT_MS = 4_000;
+const MAX_TRACK_BYTES = 300_000;
 const DNS_TIMEOUT_MS = 2_500;
 
 export function validatePublicHTTPSURL(rawURL: string): URL {
@@ -128,6 +145,7 @@ function readHTTPSResponse(
   url: URL,
   addresses: string[],
   signal: AbortSignal,
+  policy: FetchPolicy,
 ): Promise<HTTPResponse> {
   const lookups: LookupFunction = (_host, options, callback) => {
     const results = addresses.map((address) => ({ address, family: 4 }));
@@ -153,7 +171,7 @@ function readHTTPSResponse(
       path: `${url.pathname}${url.search}`,
       method: "GET",
       headers: {
-        Accept: "text/html, application/xhtml+xml",
+        Accept: policy.accept,
         "Accept-Encoding": "identity",
         "User-Agent": "RecipePouchImport/1.0 (+https://recipepouch.app)",
         Connection: "close",
@@ -182,7 +200,7 @@ function readHTTPSResponse(
         finishError(
           new SafeFetchError(
             "PRIVATE_OR_LOGIN_REQUIRED",
-            "The source webpage requires access that the import worker does not have.",
+            `The ${policy.label} requires access that the import worker does not have.`,
           ),
         );
         return;
@@ -193,7 +211,7 @@ function readHTTPSResponse(
         finishError(
           new SafeFetchError(
             "UNSUPPORTED_SOURCE",
-            "The source webpage did not return a readable recipe page.",
+            `The ${policy.label} did not return a readable response.`,
           ),
         );
         return;
@@ -201,13 +219,13 @@ function readHTTPSResponse(
 
       const declaredBytes = Number(headers["content-length"]);
       if (
-        Number.isFinite(declaredBytes) && declaredBytes > MAX_RESPONSE_BYTES
+        Number.isFinite(declaredBytes) && declaredBytes > policy.maxBytes
       ) {
         response.destroy();
         finishError(
           new SafeFetchError(
             "MEDIA_TOO_LARGE",
-            "The source webpage exceeds the import size limit.",
+            `The ${policy.label} exceeds the import size limit.`,
           ),
         );
         return;
@@ -215,15 +233,12 @@ function readHTTPSResponse(
 
       const contentType = (headers["content-type"] ?? "").split(";", 1)[0]
         .trim().toLowerCase();
-      if (
-        contentType !== "text/html" &&
-        contentType !== "application/xhtml+xml"
-      ) {
+      if (!policy.contentTypes.includes(contentType)) {
         response.destroy();
         finishError(
           new SafeFetchError(
             "UNSUPPORTED_SOURCE",
-            "The source URL did not return an HTML webpage.",
+            `The source did not return a supported ${policy.label}.`,
           ),
         );
         return;
@@ -234,7 +249,7 @@ function readHTTPSResponse(
         finishError(
           new SafeFetchError(
             "UNSUPPORTED_SOURCE",
-            "The source webpage used an unsupported content encoding.",
+            `The ${policy.label} used an unsupported content encoding.`,
           ),
         );
         return;
@@ -244,11 +259,11 @@ function readHTTPSResponse(
       let totalBytes = 0;
       response.on("data", (chunk: Uint8Array) => {
         totalBytes += chunk.byteLength;
-        if (totalBytes > MAX_RESPONSE_BYTES) {
+        if (totalBytes > policy.maxBytes) {
           response.destroy(
             new SafeFetchError(
               "MEDIA_TOO_LARGE",
-              "The source webpage exceeds the import size limit.",
+              `The ${policy.label} exceeds the import size limit.`,
             ),
           );
           return;
@@ -278,7 +293,68 @@ export async function fetchPublicHTML(
   rawURL: string,
   dependencies: FetchDependencies = {},
 ): Promise<SafeHTMLPage> {
-  const deadline = Date.now() + TOTAL_TIMEOUT_MS;
+  const response = await fetchPublicResource(
+    rawURL,
+    {
+      accept: "text/html, application/xhtml+xml",
+      contentTypes: ["text/html", "application/xhtml+xml"],
+      maxBytes: MAX_RESPONSE_BYTES,
+      timeoutMS: TOTAL_TIMEOUT_MS,
+      label: "source webpage",
+    },
+    dependencies,
+  );
+  return {
+    html: new TextDecoder("utf-8", { fatal: true }).decode(response.body),
+    canonicalURL: response.url.toString(),
+    contentType: response.contentType,
+  };
+}
+
+export async function fetchPublicVTT(
+  rawURL: string,
+  timeoutMS = TRACK_TIMEOUT_MS,
+  dependencies: FetchDependencies = {},
+): Promise<SafeVTTTrack> {
+  const validatedURL = validatePublicHTTPSURL(rawURL);
+  if (!/\.(?:vtt|webvtt)$/i.test(validatedURL.pathname)) {
+    throw new SafeFetchError(
+      "UNSUPPORTED_SOURCE",
+      "Only publicly linked WebVTT caption tracks are supported.",
+    );
+  }
+
+  const response = await fetchPublicResource(
+    validatedURL.toString(),
+    {
+      accept: "text/vtt, text/plain",
+      contentTypes: ["text/vtt", "text/plain"],
+      maxBytes: MAX_TRACK_BYTES,
+      timeoutMS: Math.min(TRACK_TIMEOUT_MS, timeoutMS),
+      label: "caption track",
+    },
+    dependencies,
+  );
+  const text = new TextDecoder("utf-8", { fatal: true }).decode(response.body);
+  if (!/^\uFEFF?WEBVTT(?:[ \t].*)?(?:\r?\n|$)/.test(text)) {
+    throw new SafeFetchError(
+      "UNSUPPORTED_SOURCE",
+      "The public caption track is not valid WebVTT.",
+    );
+  }
+  return {
+    text,
+    canonicalURL: response.url.toString(),
+    contentType: response.contentType,
+  };
+}
+
+async function fetchPublicResource(
+  rawURL: string,
+  policy: FetchPolicy,
+  dependencies: FetchDependencies,
+): Promise<{ body: Uint8Array; url: URL; contentType: string }> {
+  const deadline = Date.now() + policy.timeoutMS;
   let url = validatePublicHTTPSURL(rawURL);
 
   for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
@@ -286,7 +362,7 @@ export async function fetchPublicHTML(
     if (remaining <= 0) {
       throw new SafeFetchError(
         "FETCH_TIMEOUT",
-        "The source webpage request timed out.",
+        `The ${policy.label} request timed out.`,
         true,
       );
     }
@@ -302,7 +378,7 @@ export async function fetchPublicHTML(
     ) {
       throw new SafeFetchError(
         "FETCH_BLOCKED",
-        "The source webpage resolved to a non-public address.",
+        `The ${policy.label} resolved to a non-public address.`,
       );
     }
 
@@ -313,19 +389,20 @@ export async function fetchPublicHTML(
         url,
         addresses,
         requestSignal,
+        policy,
       );
     } catch (error) {
       if (error instanceof SafeFetchError) throw error;
       if (requestSignal.aborted) {
         throw new SafeFetchError(
           "FETCH_TIMEOUT",
-          "The source webpage request timed out.",
+          `The ${policy.label} request timed out.`,
           true,
         );
       }
       throw new SafeFetchError(
         "FETCH_BLOCKED",
-        "The source webpage connection failed.",
+        `The ${policy.label} connection failed.`,
         true,
       );
     }
@@ -335,7 +412,7 @@ export async function fetchPublicHTML(
       if (!location || redirectCount === MAX_REDIRECTS) {
         throw new SafeFetchError(
           "FETCH_BLOCKED",
-          "The source webpage exceeded the safe redirect limit.",
+          `The ${policy.label} exceeded the safe redirect limit.`,
         );
       }
       let redirectedURL: URL;
@@ -344,7 +421,7 @@ export async function fetchPublicHTML(
       } catch {
         throw new SafeFetchError(
           "FETCH_BLOCKED",
-          "The source webpage returned an invalid redirect.",
+          `The ${policy.label} returned an invalid redirect.`,
         );
       }
       url = validatePublicHTTPSURL(redirectedURL.toString());
@@ -354,13 +431,13 @@ export async function fetchPublicHTML(
     if (response.status !== 200) {
       throw new SafeFetchError(
         "UNSUPPORTED_SOURCE",
-        "The source webpage did not return a readable recipe page.",
+        `The ${policy.label} did not return a readable response.`,
       );
     }
-    if (response.body.byteLength > MAX_RESPONSE_BYTES) {
+    if (response.body.byteLength > policy.maxBytes) {
       throw new SafeFetchError(
         "MEDIA_TOO_LARGE",
-        "The source webpage exceeds the import size limit.",
+        `The ${policy.label} exceeds the import size limit.`,
       );
     }
     const contentType = (response.headers["content-type"] ?? "").split(
@@ -368,25 +445,23 @@ export async function fetchPublicHTML(
       1,
     )[0]
       .trim().toLowerCase();
-    if (
-      contentType !== "text/html" && contentType !== "application/xhtml+xml"
-    ) {
+    if (!policy.contentTypes.includes(contentType)) {
       throw new SafeFetchError(
         "UNSUPPORTED_SOURCE",
-        "The source URL did not return an HTML webpage.",
+        `The source did not return a supported ${policy.label}.`,
       );
     }
     const contentEncoding = response.headers["content-encoding"]?.toLowerCase();
     if (contentEncoding && contentEncoding !== "identity") {
       throw new SafeFetchError(
         "UNSUPPORTED_SOURCE",
-        "The source webpage used an unsupported content encoding.",
+        `The ${policy.label} used an unsupported content encoding.`,
       );
     }
     return {
-      html: new TextDecoder("utf-8", { fatal: true }).decode(response.body),
-      canonicalURL: url.toString(),
-      contentType: response.headers["content-type"] ?? "text/html",
+      body: response.body,
+      url,
+      contentType: response.headers["content-type"] ?? "text/plain",
     };
   }
 
