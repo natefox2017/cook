@@ -939,11 +939,21 @@ struct CookingView: View {
     private func applyRequestedStartStep(_ requestedStepID: UUID, in recipe: Recipe) {
         guard let startIndex = recipe.steps.firstIndex(where: { $0.id == requestedStepID }) else { return }
 
+        let wasComplete = session.isComplete
         session.stepID = requestedStepID
         session.isComplete = false
 
         let earlierStepIDs = Set(recipe.steps.prefix(startIndex).map(\.id))
         session.completedStepIDs.formIntersection(earlierStepIDs)
+
+        if wasComplete {
+            for timerID in session.timers.keys {
+                cancelNotification(for: timerID)
+            }
+            session.timers.removeAll()
+            session.usedIngredientIDs.removeAll()
+            return
+        }
 
         let resetStepIDs = Set(recipe.steps.dropFirst(startIndex).map(\.id))
         for (timerID, active) in Array(session.timers) {
