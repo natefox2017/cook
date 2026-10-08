@@ -90,6 +90,7 @@ private struct RecipeRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(FirstLaunchFlowView.completionKey) private var hasCompletedOnboarding = false
     @State private var selectedTab: RecipeTab = .recipes
+    @State private var shareInbox = RecipeShareInboxCoordinator()
 
     let bypassOnboarding: Bool
 
@@ -152,6 +153,14 @@ private struct RecipeRootView: View {
             }
         }
         }
+        .environment(shareInbox)
+        .task {
+            // In UI-test mode App Group provisioning may not be installed.
+            // Normal installs read durable receipts from the shared container.
+            if !bypassOnboarding {
+                shareInbox.refresh()
+            }
+        }
         .task {
             await cloudSync.bind(
                 store: store,
@@ -175,6 +184,9 @@ private struct RecipeRootView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
+            if !bypassOnboarding {
+                shareInbox.refresh()
+            }
             Task {
                 await cloudSync.appBecameActive()
             }
