@@ -43,6 +43,21 @@ struct AccountView: View {
         .navigationTitle("RecipePouch Account")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
+        .onChange(of: auth.state) { _, state in
+            // Credentials are transient input; discard them after successful
+            // authentication or password recovery.
+            if case .signedIn = state {
+                password = ""
+                newPassword = ""
+                confirmPassword = ""
+            }
+        }
+        .onChange(of: auth.nonblockingNotice) { _, notice in
+            if let notice {
+                localMessage = notice
+                auth.dismissNotice()
+            }
+        }
         .alert(
             "RecipePouch Account",
             isPresented: Binding(
@@ -267,12 +282,17 @@ struct AccountView: View {
     }
 
     private func handleAppleResult(_ result: Result<ASAuthorization, Error>) {
+        // The nonce belongs only to this system authorization result.
+        // Copy it before the async exchange and clear it even on cancellation.
+        let pendingNonce = appleNonce
+        appleNonce = nil
+
         switch result {
         case .success(let authorization):
             guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
                   let tokenData = credential.identityToken,
                   let identityToken = String(data: tokenData, encoding: .utf8),
-                  let rawNonce = appleNonce else {
+                  let rawNonce = pendingNonce else {
                 localMessage = "Apple sign-in did not return a usable identity token."
                 return
             }
