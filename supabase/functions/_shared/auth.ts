@@ -1,7 +1,10 @@
 /** Authenticated Supabase clients for Edge Functions. */
 
-import { createClient, type SupabaseClient, type User } from
-  "jsr:@supabase/supabase-js@2";
+import {
+  createClient,
+  type SupabaseClient,
+  type User,
+} from "jsr:@supabase/supabase-js@2";
 import { AppError } from "./errors.ts";
 
 export function requireEnv(name: string): string {
@@ -40,7 +43,11 @@ export async function requireUser(req: Request): Promise<{
 }> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
-    throw new AppError("unauthorized", "Missing or invalid Authorization header", 401);
+    throw new AppError(
+      "unauthorized",
+      "Missing or invalid Authorization header",
+      401,
+    );
   }
   const userClient = createUserClient(authHeader);
   const {
