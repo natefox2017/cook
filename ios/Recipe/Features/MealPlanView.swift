@@ -86,7 +86,7 @@ struct MealPlanView: View {
                     }
                     .accessibilityIdentifier("mealplan.add.\(slot.rawValue.lowercased())")
                 } header: {
-                    Text(slot.rawValue).textCase(nil).font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
+                    Text(LocalizedStringKey(slot.rawValue)).textCase(nil).font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
                 }
                 .listRowBackground(RecipeTheme.card)
             }
