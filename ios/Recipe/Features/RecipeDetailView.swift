@@ -164,7 +164,7 @@ struct RecipeDetailView: View {
     private func recipeMetadata(_ recipe: Recipe) -> some View {
         if let minutes = recipe.totalMinutes { Label("\(minutes) min", systemImage: "clock") }
         if let originalServings = recipe.servings, originalServings > 0 {
-            Label("\(originalServings) \(originalServings == 1 ? "serving" : "servings")", systemImage: "person.2")
+            Label("\(originalServings) servings", systemImage: "person.2")
         }
         Text(LocalizedStringKey(recipe.category.rawValue))
     }
@@ -173,7 +173,7 @@ struct RecipeDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("Ingredients")
             if let originalServings = recipe.servings, originalServings > 0 {
-                Stepper("\(servings) \(servings == 1 ? "serving" : "servings")", value: servingsSelection, in: 1...max(100, max(originalServings, servings)))
+                Stepper("\(servings) servings", value: servingsSelection, in: 1...max(100, max(originalServings, servings)))
                     .accessibilityIdentifier("recipeServingsStepper")
                 if servings != originalServings {
                     Text("Numeric amounts adjust with servings. Amounts such as “to taste” stay as written.")
@@ -353,7 +353,7 @@ struct RecipeDetailView: View {
 
     private func showAddedFeedback() {
         if let count = addedIngredientCount {
-            feedbackMessage = "\(count) \(count == 1 ? "ingredient" : "ingredients") added to Groceries."
+            feedbackMessage = String(localized: "\(count) ingredients added to Groceries.")
             addedIngredientCount = nil
         }
     }
