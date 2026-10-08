@@ -69,7 +69,7 @@ credentials, signed URLs, JWTs or user source text in logs or GitHub Issues.
 ### Expired artifact cleanup contract
 
 The cron endpoint scans stable, ordered database pages **before** modifying any
-rows, processes at most 1,000 expired artifacts per request, and verifies the
+rows, processes at most 1,000 expired artifacts per request with eight bounded workers, and verifies the
 bucket and exact `owner_id/artifact_id` Storage path before deleting. Its
 JSON response is `{ attempted, expired, failed, has_more }`.
 
@@ -82,7 +82,7 @@ JSON response is `{ attempted, expired, failed, has_more }`.
   cleanup updates only unchanged, still-expired owner-scoped rows.
 - Monitor the `failed` count and repeated `has_more` signals; a single daily
   invocation is not enough if the backlog exceeds 1,000 files.
-- The six isolated cases in `purge_test.ts` were additionally run with a
+- The seven isolated cases in `purge_test.ts` were additionally run with a
   Node 22 TypeScript strip-types adapter against identical Git blobs. This
   does **not** replace the Deno runtime and staging Storage/SQL tests.
 
