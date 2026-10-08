@@ -21,6 +21,8 @@
 | UI-016 | 周日期条与底部 Liquid Glass 导航 | [2026-10-08 设计提案](DESIGN/proposals/2026-10-08/navigation-and-week-strip/README.md) + 用户提供的 Recipe / Meal Plan / Tab 截图 | APPROVED | 2026-10-08 用户明确要求直接修改；压低周日期卡并改用系统原生四 Tab 与安全区 |
 | UI-017 | 二级页面隐藏底部 Tab | [二级页面导航示意](DESIGN/proposals/2026-10-08/secondary-page-navigation/README.md) | APPROVED | 2026-10-08 用户确认；根页面保留 UI-016 已批准的系统 Liquid Glass Tab，进入二级页面后隐藏，返回根页面后恢复 |
 
+| UI-018 | Cloud Sync 状态、首次同步选择与冲突处理 | 现有 Settings UI + `DESIGN/proposals/2026-10-08/cloud-sync/README.md` | APPROVED | 2026-10-08 用户明确要求不再单独画设计稿，继续按现有 UI/功能开发；直接延伸 Settings 实现实时状态、Sync Now、首次合并和逐项冲突选择 |
+
 ## 状态定义
 - PENDING：尚无明确 UI 决策记录
 - APPROVED：用户已明确同意或直接要求执行对应方向
