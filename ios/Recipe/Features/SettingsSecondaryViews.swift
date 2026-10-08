@@ -87,7 +87,9 @@ struct DataPrivacySettingsView: View {
             Button("All Local Library Data (JSON)") { prepareExport(.allLibraryJSON) }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Recipe JSON/HTML includes source text and Collections but not photos. Full library JSON includes groceries, meal plan and local preferences. No in-app restore is available.")
+            Text(
+                "Recipe JSON/HTML includes source text and Collections but not photos. Full library JSON includes groceries, meal plan and local preferences. No in-app restore is available."
+            )
         }
         .confirmationDialog(
             "Delete all local RecipePouch data?",
@@ -113,7 +115,9 @@ struct DataPrivacySettingsView: View {
             }
             .disabled(isDeletingLocalData)
         } message: {
-            Text("Sign out first to erase only this iPhone's data. Cloud data and your subscription are not deleted; signing in again may restore synced recipes.")
+            Text(
+                "Sign out first to erase only this iPhone's data. Cloud data and your subscription are not deleted; signing in again may restore synced recipes."
+            )
         }
         .confirmationDialog(
             "Delete RecipePouch account?",
@@ -124,8 +128,10 @@ struct DataPrivacySettingsView: View {
                 Task {
                     do {
                         try await cloudSync.deleteAccountAndCloudData()
-                        message = "RecipePouch account and cloud data deleted. "
-                            + "Local data on this iPhone was kept."
+                        message = String(
+                            localized:
+                                "RecipePouch account and cloud data deleted. Local data on this iPhone was kept."
+                        )
                     } catch {
                         message = error.localizedDescription
                     }
@@ -133,10 +139,10 @@ struct DataPrivacySettingsView: View {
             }
         } message: {
             Text(
-                "This deletes the signed-in RecipePouch account and cloud data. "
-                    + "Local data on this iPhone stays until you delete it separately. "
-                    + "This does not cancel an App Store subscription."
-            )
+                String(
+                    localized:
+                        "This deletes the signed-in RecipePouch account and cloud data. Local data on this iPhone stays until you delete it separately. This does not cancel an App Store subscription."
+                ))
         }
         .alert(
             "Data & Privacy",
@@ -161,7 +167,10 @@ struct DataPrivacySettingsView: View {
             exportDocument = try format.makeDocument(from: store)
             exportsData = true
         } catch {
-            message = "Export failed: \(error.localizedDescription)"
+            message = String(
+                localized:
+                    "Export failed: \(error.localizedDescription)"
+            )
         }
     }
 }
@@ -191,26 +200,28 @@ struct PrivacySummaryView: View {
                     .font(RecipeTheme.title(30))
 
                 Text(
-                    "RecipePouch is designed as a private recipe utility. "
-                        + "It does not publish your recipes to a public feed."
-                )
+                    String(
+                        localized:
+                            "RecipePouch is designed as a private recipe utility. It does not publish your recipes to a public feed."
+                    ))
 
                 Text(
-                    "Automated imports may send source material to RecipePouch’s "
-                        + "backend only when processing is required. "
-                        + "Provider secrets remain server-side."
-                )
+                    String(
+                        localized:
+                            "Automated imports may send source material to RecipePouch’s backend only when processing is required. Provider secrets remain server-side."
+                    ))
 
                 Text(
-                    "App Store purchases are managed by Apple. "
-                        + "Your App Store purchase identity and RecipePouch account "
-                        + "are treated as separate identities."
-                )
+                    String(
+                        localized:
+                            "App Store purchases are managed by Apple. Your App Store purchase identity and RecipePouch account are treated as separate identities."
+                    ))
 
                 Text(
-                    "You can export local data and request deletion of your "
-                        + "RecipePouch account data from Settings."
-                )
+                    String(
+                        localized:
+                            "You can export local data and request deletion of your RecipePouch account data from Settings."
+                    ))
             }
             .padding()
         }
@@ -359,16 +370,18 @@ private struct LicensesView: View {
         List {
             Section("Lora") {
                 Text(
-                    "Copyright The Lora Project Authors. "
-                        + "Licensed under the SIL Open Font License 1.1."
-                )
+                    String(
+                        localized:
+                            "Copyright The Lora Project Authors. Licensed under the SIL Open Font License 1.1."
+                    ))
             }
 
             Section("System frameworks") {
                 Text(
-                    "SwiftUI, StoreKit, AuthenticationServices, Vision, "
-                        + "and related Apple frameworks are used under Apple platform terms."
-                )
+                    String(
+                        localized:
+                            "SwiftUI, StoreKit, AuthenticationServices, Vision, and related Apple frameworks are used under Apple platform terms."
+                    ))
             }
         }
         .navigationTitle("Licenses")
@@ -381,10 +394,10 @@ private struct AcknowledgementsView: View {
     var body: some View {
         ScrollView {
             Text(
-                "RecipePouch’s interaction model is informed by established "
-                    + "private recipe managers: collect recipes, organize them, "
-                    + "cook step-by-step, plan meals, and shop from ingredients. "
-                    + "RecipePouch’s implementation and visual system remain its own."
+                String(
+                    localized:
+                        "RecipePouch’s interaction model is informed by established private recipe managers: collect recipes, organize them, cook step-by-step, plan meals, and shop from ingredients. RecipePouch’s implementation and visual system remain its own."
+                )
             )
             .padding()
         }

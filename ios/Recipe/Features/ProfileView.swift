@@ -115,7 +115,7 @@ struct ProfileView: View {
                 }
                 Picker(selection: appearanceBinding) {
                     ForEach(AppAppearance.allCases) { appearance in
-                        Text(LocalizedStringKey(appearance.rawValue)).tag(appearance)
+                        Text(appearance.rawValue).tag(appearance)
                     }
                 } label: {
                     ProfileRowLabel(title: "Appearance", systemImage: "circle.lefthalf.filled")
@@ -261,7 +261,7 @@ private struct ProfileRowLabel: View {
                 .frame(width: 24)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text(LocalizedStringKey(title)).font(RecipeTheme.text(17, weight: .regular, relativeTo: .body)).foregroundStyle(.primary)
+                Text(title).font(RecipeTheme.text(17, weight: .regular, relativeTo: .body)).foregroundStyle(.primary)
             }
         }
         .frame(minHeight: 44)
