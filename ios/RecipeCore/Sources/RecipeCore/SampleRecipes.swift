@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Defines deterministic sample recipes used by demos and UI tests.
+
 import Foundation
 
 /// Authored examples are opt-in and remain visibly distinguishable from user imports.
