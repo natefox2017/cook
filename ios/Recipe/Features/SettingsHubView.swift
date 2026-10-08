@@ -129,10 +129,7 @@ struct CloudSyncSettingsView: View {
                         Task { await cloudSync.syncNow() }
                     }
                     .disabled(isSyncing)
-                } else {
-                    LabeledContent("Manual Sync") {
-                        Text("Available after sign in")
-                    }
+                }
                 }
             }
 
