@@ -79,10 +79,10 @@ struct EmptyStateView: View {
                 .font(.system(size: 44, weight: .light))
                 .foregroundStyle(RecipeTheme.accentForeground)
                 .accessibilityHidden(true)
-            Text(title).font(RecipeTheme.title(27)).multilineTextAlignment(.center)
-            Text(message).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            Text(LocalizedStringKey(title)).font(RecipeTheme.title(27)).multilineTextAlignment(.center)
+            Text(LocalizedStringKey(message)).foregroundStyle(.secondary).multilineTextAlignment(.center).lineLimit(1)
             if let actionTitle, let action {
-                Button(actionTitle, action: action).buttonStyle(PrimaryButtonStyle())
+                Button(action: action) { Text(LocalizedStringKey(actionTitle)) }.buttonStyle(PrimaryButtonStyle())
             }
         }
         .padding(.horizontal, RecipeSpacing.large)
