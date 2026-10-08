@@ -51,7 +51,7 @@ struct AccountView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(RecipeTheme.canvas)
         .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -91,10 +91,10 @@ struct AccountView: View {
 
     private var signedOutView: some View {
         ScrollView {
-            VStack(spacing: 14) {
+            VStack(spacing: RecipeSpacing.small) {
                 header("Welcome to RecipePouch", symbol: "leaf.fill")
 
-                VStack(spacing: 10) {
+                VStack(spacing: RecipeSpacing.xSmall) {
                     SignInWithAppleButton(mode == .signUp ? .signUp : .signIn) { request in
                         let nonce = RecipeAuthService.makeAppleNonce()
                         appleNonce = nonce.raw
@@ -158,7 +158,7 @@ struct AccountView: View {
             .frame(maxWidth: 520)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, RecipeSpacing.pageInset)
-            .padding(.top, 8)
+            .padding(.top, RecipeSpacing.xSmall)
             .padding(.bottom, 20)
         }
         .scrollDismissesKeyboard(.interactively)
@@ -221,7 +221,7 @@ struct AccountView: View {
     }
 
     private var emailForm: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: RecipeSpacing.small) {
             Picker("Account action", selection: $mode) {
                 ForEach(Mode.allCases) { item in
                     Text(LocalizedStringKey(item.rawValue)).tag(item)
@@ -275,7 +275,7 @@ struct AccountView: View {
 
     private func signedInView(email: String?) -> some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: RecipeSpacing.large) {
                 header("Signed in", symbol: "checkmark.seal.fill")
 
                 if let email, !email.isEmpty {
@@ -320,10 +320,10 @@ struct AccountView: View {
 
     private var passwordRecoveryView: some View {
         ScrollView {
-            VStack(spacing: 18) {
+            VStack(spacing: RecipeSpacing.medium) {
                 header("Choose a new password", symbol: "key.fill")
 
-                VStack(spacing: 12) {
+                VStack(spacing: RecipeSpacing.small) {
                     SecureField("New Password", text: $newPassword)
                         .textContentType(.newPassword)
                         .accountInputStyle()
@@ -385,7 +385,7 @@ struct AccountView: View {
         symbol: String,
         subtitle: LocalizedStringKey? = nil
     ) -> some View {
-        VStack(spacing: 10) {
+        VStack(spacing: RecipeSpacing.xSmall) {
             Image(systemName: symbol)
                 .font(.system(size: 26, weight: .light))
                 .foregroundStyle(RecipeTheme.accentForeground)
@@ -394,7 +394,7 @@ struct AccountView: View {
                 .accessibilityHidden(true)
 
             Text(title)
-                .font(RecipeTheme.title(28))
+                .font(RecipeTheme.heading(.title))
                 .multilineTextAlignment(.center)
                 .minimumScaleFactor(0.8)
 
