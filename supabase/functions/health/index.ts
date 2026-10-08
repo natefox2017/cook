@@ -1,7 +1,7 @@
 // Developer: RecipePouch
 // Purpose: Authenticated backend capability status without mutable remote imports.
 
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import "jsr:@supabase/functions-js@2.117.3/edge-runtime.d.ts";
 import { authCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { requireUser } from "../_shared/auth.ts";
 import { AppError, errorResponse, json } from "../_shared/errors.ts";
