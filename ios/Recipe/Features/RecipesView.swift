@@ -6,6 +6,7 @@ import RecipeCore
 
 struct RecipesView: View {
     @Environment(RecipeStore.self) private var store
+    @Environment(RecipeShareInboxCoordinator.self) private var shareInbox
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.locale) private var locale
     @State private var searchText = ""
@@ -13,6 +14,7 @@ struct RecipesView: View {
     @State private var selectedCollectionID: UUID?
     @State private var sort: RecipeLibrarySort = .recent
     @State private var isAdding = false
+    @State private var showsPendingShares = false
     @State private var errorMessage: String?
     @FocusState private var isSearchFocused: Bool
 
@@ -53,6 +55,7 @@ struct RecipesView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: RecipeSpacing.large) {
                 searchField
+                pendingSharesBanner
                 Text("Your saved recipes, all in one place.")
                     .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
                     .foregroundStyle(.secondary)
@@ -77,6 +80,9 @@ struct RecipesView: View {
         }
         .navigationDestination(for: UUID.self) { RecipeDetailView(recipeID: $0) }
         .sheet(isPresented: $isAdding) { AddRecipeView() }
+        .sheet(isPresented: $showsPendingShares) {
+            PendingSharesView()
+        }
         .alert("Unable to Update Recipe", isPresented: errorPresented) {
             Button("OK", role: .cancel) { errorMessage = nil }
         } message: { Text(errorMessage ?? "") }
@@ -85,6 +91,42 @@ struct RecipesView: View {
                 self.selectedCollectionID = nil
                 filter = .all
             }
+        }
+    }
+
+    @ViewBuilder
+    private var pendingSharesBanner: some View {
+        if !shareInbox.pendingReceipts.isEmpty {
+            Button {
+                showsPendingShares = true
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "tray.full")
+                        .foregroundStyle(RecipeTheme.accentForeground)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(shareInbox.pendingReceipts.count) sources saved")
+                            .font(RecipeTheme.text(16, weight: .semibold))
+                            .foregroundStyle(.primary)
+                        Text("On this iPhone · waiting for recipe processing")
+                            .font(RecipeTheme.text(13))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.secondary)
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("share.pending")
+        }
+
+        if let failure = shareInbox.failureMessage {
+            Text(failure)
+                .font(RecipeTheme.text(13, relativeTo: .footnote))
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -380,4 +422,58 @@ private enum RecipeLibrarySort: String, CaseIterable, Identifiable {
     case alphabetical = "Name, A–Z"
     case quickest = "Cooking Time"
     var id: String { rawValue }
+}
+
+private struct PendingSharesView: View {
+    @Environment(RecipeShareInboxCoordinator.self) private var inbox
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Text("These sources are safely stored on this iPhone. They have not been accepted by the cloud or converted into recipes yet.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(inbox.pendingReceipts) { receipt in
+                    PendingShareRow(receipt: receipt)
+                }
+            }
+            .navigationTitle("Pending Sources")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .onAppear { inbox.refresh() }
+        }
+    }
+}
+
+private struct PendingShareRow: View {
+    @Environment(RecipeShareInboxCoordinator.self) private var inbox
+    let receipt: RecipeShareReceipt
+    @State private var originalSource = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Label(
+                receipt.inputType == .url ? "Shared Link" : "Shared Text",
+                systemImage: receipt.inputType == .url ? "link" : "text.alignleft"
+            )
+            .font(RecipeTheme.text(15, weight: .semibold))
+            Text(originalSource)
+                .font(RecipeTheme.text(14))
+                .lineLimit(4)
+                .textSelection(.enabled)
+            Text("Received \(receipt.receivedAt.formatted(date: .abbreviated, time: .shortened)) · Not queued")
+                .font(RecipeTheme.text(12))
+                .foregroundStyle(.secondary)
+        }
+        .task {
+            originalSource = inbox.source(for: receipt) ?? "Source unavailable"
+        }
+    }
 }
