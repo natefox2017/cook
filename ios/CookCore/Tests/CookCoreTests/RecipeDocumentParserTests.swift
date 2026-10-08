@@ -138,3 +138,16 @@ func ambiguousTimesDoNotBecomeFakePreciseTimers(_ instruction: String) throws {
     #expect(recipe.steps[0].timers.count == 1)
     #expect(recipe.steps[0].timers[0].durationSeconds == 5_400)
 }
+
+
+@Test(arguments: [
+    "Braise for about 1 hour 30 minutes.",
+    "Braise for 1 hour 30 minutes to 2 hours.",
+    "Braise for at least 1 hour 30 minutes."
+])
+func ambiguousCompoundDurationDoesNotLeakInnerTimers(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Braise\",\"recipeIngredient\":[\"500 g beef\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/braise")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+}
