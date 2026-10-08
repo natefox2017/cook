@@ -62,6 +62,7 @@ struct ProfileView: View {
             Section("Your kitchen") {
                 NavigationLink {
                     RecipesView()
+                        .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(
                         title: "Saved Recipes",
@@ -70,6 +71,7 @@ struct ProfileView: View {
                 }
                 NavigationLink {
                     MealPlanView()
+                        .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(title: "Meal Plan", systemImage: "calendar")
                 }
@@ -323,6 +325,7 @@ struct NotificationPreferencesView: View {
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("Notifications").navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
         .tint(RecipeTheme.accent)
         .task { await refreshPermission() }
         .onChange(of: scenePhase) { _, phase in
@@ -415,6 +418,7 @@ private struct RecipeHelpView: View {
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("Using Recipe").navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
     }
 }
 
@@ -442,6 +446,7 @@ private struct RecipeAboutView: View {
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("About & Your Data").navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
     }
 }
 

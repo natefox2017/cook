@@ -39,6 +39,7 @@ struct AccountView: View {
         .background(RecipeTheme.canvas)
         .navigationTitle("Recipe Account")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
         .alert(
             "Recipe Account",
             isPresented: Binding(

@@ -27,6 +27,7 @@ struct RecipeDetailView: View {
         }
         .background(RecipeTheme.canvas)
         .navigationTitle("Recipe").navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
         .toolbar { detailToolbar }
         .sheet(isPresented: $isEditing) {
             if let recipe = store.recipe(id: recipeID) { RecipeEditorView(recipe: recipe) }

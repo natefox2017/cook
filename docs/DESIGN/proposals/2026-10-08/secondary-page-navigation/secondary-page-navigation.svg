@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="440" viewBox="0 0 960 440" role="img" aria-labelledby="title desc">
+  <title id="title">UI-017 root and secondary navigation states</title>
+  <desc id="desc">The root screen retains its native Liquid Glass tab bar. A pushed secondary screen hides the tab bar and uses the full available height.</desc>
+  <defs>
+    <linearGradient id="glass" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#e8eee9" stop-opacity="0.10"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="440" rx="24" fill="#f3f5f4"/>
+  <g font-family="-apple-system, BlinkMacSystemFont, sans-serif" fill="#26312b">
+    <text x="100" y="48" font-size="18" font-weight="700">Root tab</text>
+    <text x="575" y="48" font-size="18" font-weight="700">Secondary page</text>
+    <g transform="translate(90 68)">
+      <rect width="300" height="340" rx="34" fill="#fff" stroke="#b9c2bd" stroke-width="2"/>
+      <rect x="14" y="18" width="272" height="260" rx="22" fill="#f8faf8"/>
+      <text x="32" y="58" font-size="22" font-weight="700">Recipes</text>
+      <rect x="32" y="82" width="236" height="72" rx="16" fill="#e7ece8"/>
+      <rect x="32" y="166" width="236" height="72" rx="16" fill="#e7ece8"/>
+      <rect x="24" y="275" width="252" height="50" rx="25" fill="url(#glass)" stroke="#ffffff" stroke-opacity="0.76"/>
+      <text x="48" y="306" font-size="13" fill="#4d6956">Recipes</text>
+      <text x="111" y="306" font-size="13">Plan</text>
+      <text x="163" y="306" font-size="13">Groceries</text>
+      <text x="238" y="306" font-size="13">Profile</text>
+    </g>
+    <g transform="translate(570 68)">
+      <rect width="300" height="340" rx="34" fill="#fff" stroke="#b9c2bd" stroke-width="2"/>
+      <rect x="14" y="18" width="272" height="304" rx="22" fill="#f8faf8"/>
+      <text x="32" y="54" font-size="14" fill="#55715e">‹ Recipes</text>
+      <text x="32" y="91" font-size="22" font-weight="700">Recipe detail</text>
+      <rect x="32" y="111" width="236" height="82" rx="16" fill="#e7ece8"/>
+      <rect x="32" y="205" width="236" height="18" rx="9" fill="#dfe5e1"/>
+      <rect x="32" y="233" width="190" height="18" rx="9" fill="#dfe5e1"/>
+      <rect x="32" y="275" width="236" height="34" rx="17" fill="#55715e"/>
+      <text x="117" y="297" font-size="13" fill="#fff">Start Cooking</text>
+    </g>
+    <text x="140" y="430" font-size="13" fill="#5b655f">Liquid Glass tab stays on root navigation</text>
+    <text x="603" y="430" font-size="13" fill="#5b655f">No tab on pushed secondary pages</text>
+  </g>
+</svg>

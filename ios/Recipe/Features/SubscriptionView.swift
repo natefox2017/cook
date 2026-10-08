@@ -24,6 +24,7 @@ struct SubscriptionView: View {
         .background(RecipeTheme.canvas)
         .navigationTitle("Subscription")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
         .manageSubscriptionsSheet(isPresented: $isManagingSubscriptions)
     }
 }

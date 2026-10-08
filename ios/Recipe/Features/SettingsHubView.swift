@@ -24,6 +24,7 @@ struct SettingsHubView: View {
         }
         .listSectionSpacing(RecipeSpacing.medium)
         .navigationTitle("Settings").navigationBarTitleDisplayMode(.large)
+        .toolbar(.hidden, for: .tabBar)
     }
 }
 private struct SettingsRow:View{
