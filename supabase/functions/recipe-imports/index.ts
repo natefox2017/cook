@@ -26,6 +26,44 @@ interface ImportJob {
 }
 
 const MAX_BODY_BYTES = 500_000;
+
+/// Consume at most maxBytes from the request stream. Content-Length is not
+/// trusted: chunked requests and dishonest clients are enforced incrementally.
+/// An invalid UTF-8 payload is rejected instead of silently substituted.
+async function readBoundedJSONBody(request: Request, maxBytes: number): Promise<string | null> {
+  const declaredLength = request.headers.get("content-length");
+  if (declaredLength && Number(declaredLength) > maxBytes) return null;
+  if (!request.body) return "";
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const next = await reader.read();
+      if (next.done) break;
+      total += next.value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel("Import request body exceeds size limit");
+        return null;
+      }
+      chunks.push(next.value);
+    }
+
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return null;
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function json(data: unknown, status = 200, headers: HeadersInit = {}): Response {
@@ -164,9 +202,9 @@ Deno.serve(async (request: Request): Promise<Response> => {
   const jobID = tail[0];
 
   if (request.method === "POST" && tail.length === 0) {
-    const payload = await request.text();
-    if (new TextEncoder().encode(payload).length > MAX_BODY_BYTES) {
-      return failure("INVALID_INPUT", "Import input exceeds size limits.", 413, false, requestID, null, headers);
+    const payload = await readBoundedJSONBody(request, MAX_BODY_BYTES);
+    if (payload === null) {
+      return failure("INVALID_INPUT", "Import input is invalid or exceeds size limits.", 413, false, requestID, null, headers);
     }
 
     let params: Record<string, unknown>;
