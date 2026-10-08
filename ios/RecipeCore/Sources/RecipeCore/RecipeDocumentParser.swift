@@ -289,7 +289,7 @@ public enum RecipeDocumentParser {
             + #"(?:-|–|—|to|and|or))\s*$"#
         let ambiguousSuffix =
             #"^(?:[\s,;:(){}\[\]\-–—]*(?:(?:or\s+)?until\b|"#
-            + #"(?:or\s+)?(?:longer|more|less)\b|(?:minimum|maximum)\b|"#
+            + #"(?:(?:or\s+)?(?:longer|less)|or\s+more)\b|(?:minimum|maximum)\b|"#
             + #"(?:approximately|approx\.?|about|around|roughly)\b|"#
             + #"or\s+so\b|give\s+or\s+take\b|more\s+or\s+less\b|"#
             + #"(?:at\s+(?:least|most)|no\s+(?:more|less)\s+than|"#
