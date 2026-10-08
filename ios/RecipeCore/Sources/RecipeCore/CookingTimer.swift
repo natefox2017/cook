@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Defines deadline-based cooking timer state and transitions.
+
 import Foundation
 
 /// Uses an absolute deadline, so backgrounding and delayed UI ticks do not add drift.
