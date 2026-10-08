@@ -381,6 +381,36 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testSubscriptionOpensFromProfileAndSettings() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let premium = app.buttons["RecipePouch Premium"]
+        reveal(premium, in: app, maximumSwipes: 4)
+        premium.tap()
+        XCTAssertTrue(app.staticTexts["RecipePouch Premium"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Restore Purchases"].exists)
+        attachScreenshot("Subscription from Profile", app: app)
+
+        app.navigationBars.buttons.firstMatch.tap()
+        let settings = app.buttons["Settings"]
+        reveal(settings, in: app, maximumSwipes: 4)
+        settings.tap()
+
+        let subscription = app.buttons["Subscription"]
+        reveal(subscription, in: app, maximumSwipes: 4)
+        subscription.tap()
+
+        XCTAssertTrue(app.staticTexts["RecipePouch Premium"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Restore Purchases"].exists)
+        attachScreenshot("Subscription from Settings", app: app)
+    }
+
+    @MainActor
     private func launchSeededApp() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting"]
