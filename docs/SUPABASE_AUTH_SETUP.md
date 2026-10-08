@@ -6,16 +6,23 @@ in Supabase or another server-side secret store.
 
 ## Redirect URL
 
-The app continues to handle the registered `cook://auth/callback` URL for email
-confirmation and password recovery. Keep this URI in the Supabase Auth redirect
-allowlist and in `ios/Recipe/Info.plist` until the provider configuration is migrated.
+The app handles the `cook://auth/callback` URL for email confirmation and password
+recovery. Keep this URI in the Supabase Auth redirect allowlist and in
+`ios/Recipe/Info.plist`; the live project's allowlist has not been verified.
 
 ## Email and password
 
 Configure the project's email provider and confirmation policy in Supabase Auth.
 When email confirmation is enabled, registration returns a verification-needed
 state until the user follows the email link. Password reset returns to the same
-app callback and the recovered password is submitted through Supabase Auth.
+app callback and the recovered password is submitted through Supabase Auth. The
+Swift client uses PKCE, whose recovery callback is a generic code exchange rather
+than a recovery-specific auth event. After a reset request succeeds, the app keeps
+a local pending-recovery marker across app restarts and consumes it after a valid
+callback, so the recovery form appears without changing the callback URL. The
+PKCE verifier remains in Supabase's local auth storage; recovery links must be
+opened on the device that requested them. See the
+[Supabase PKCE flow docs](https://supabase.com/docs/guides/auth/sessions/pkce-flow).
 
 ## Sign in with Apple
 
@@ -37,6 +44,8 @@ blocks Apple sign-in.
   session before emitting the initial auth state.
 - The service supports email sign-up/sign-in, password reset/update, Apple token
   exchange, session refresh, callback handling, and sign-out.
+- Local HTTP-stub regression coverage is present for email/session and password
+  recovery behavior; simulator XCTest is pending the shared-device queue.
 - Production sign-up, email delivery, Apple sign-in, and password-recovery flows
   still require end-to-end verification against the configured providers.
 

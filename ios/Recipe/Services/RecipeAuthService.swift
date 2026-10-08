@@ -88,6 +88,7 @@ final class RecipeAuthService {
                 email,
                 redirectTo: RecipeSupabase.redirectURL
             )
+            // PKCE callbacks are generic sign-ins, so retain the reset intent across app restarts.
             defaults.set(true, forKey: Self.pendingPasswordRecoveryKey)
             state = .passwordResetSent(email)
         } catch {
@@ -173,6 +174,7 @@ final class RecipeAuthService {
         Task {
             do {
                 let session = try await client.auth.session(from: url)
+                // Consume the marker only after the PKCE code has been exchanged successfully.
                 defaults.removeObject(forKey: Self.pendingPasswordRecoveryKey)
                 if isPasswordRecovery {
                     state = .passwordRecovery(userID: session.user.id)
