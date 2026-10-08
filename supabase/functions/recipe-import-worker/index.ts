@@ -125,6 +125,11 @@ Deno.serve(async (request: Request): Promise<Response> => {
         continue;
       }
 
+      // A second worker may reclaim an expired lease before this invocation
+      // finishes. All writes must fence on the claimed attempt number so an
+      // older worker cannot overwrite the newer attempt's result.
+      const claimedAttempt = claimed.attempt_count;
+
       if (claimed.input_type === "url") {
         // URL fetching remains explicitly disabled until the server has
         // DNS-pinned/per-redirect SSRF controls and source rights reviewed.
@@ -140,7 +145,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
           },
           completed_at: now(),
           updated_at: now(),
-        }).eq("id", jobID).eq("queue_message_id", queueID).eq("status", "extracting")
+        }).eq("id", jobID).eq("queue_message_id", queueID)
+          .eq("status", "extracting").eq("attempt_count", claimedAttempt)
           .select("id")
           .maybeSingle();
         if (error || !stored) throw error ?? new Error("Import state changed before save");
@@ -163,7 +169,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
         error: null,
         completed_at: now(),
         updated_at: now(),
-      }).eq("id", jobID).eq("queue_message_id", queueID).eq("status", "extracting")
+      }).eq("id", jobID).eq("queue_message_id", queueID)
+          .eq("status", "extracting").eq("attempt_count", claimedAttempt)
         .select("id")
         .maybeSingle();
       if (saveError || !saved) {
