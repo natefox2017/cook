@@ -84,3 +84,62 @@ Deno.test("duplicated and out-of-range page numbers are rejected", () => {
     expect(invalid, "Unbounded PDF pages accepted");
   }
 });
+
+
+function syntheticTextPDF(): Uint8Array {
+  // A valid single-page PDF 1.4 built with byte-accurate xref offsets.
+  // Keeps regression fixtures self-contained without binary test artifacts.
+  const encoder = new TextEncoder();
+  const stream = [
+    "BT",
+    "/F1 12 Tf",
+    "50 760 Td",
+    "(Tomato soup) Tj",
+    "0 -20 Td",
+    "(Ingredients) Tj",
+    "0 -20 Td",
+    "(- Salt to taste) Tj",
+    "0 -20 Td",
+    "(Steps) Tj",
+    "0 -20 Td",
+    "(1. Simmer gently) Tj",
+    "ET",
+  ].join("\n");
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    `<< /Length ${encoder.encode(stream).length} >>\nstream\n${stream}\nendstream`,
+  ];
+  let content = "%PDF-1.4\n";
+  const offsets = [0];
+  for (const [index, object] of objects.entries()) {
+    offsets.push(encoder.encode(content).length);
+    content += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  }
+  const xref = encoder.encode(content).length;
+  content += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (const offset of offsets.slice(1)) {
+    content += `${String(offset).padStart(10, "0")} 00000 n \n`;
+  }
+  content += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return encoder.encode(content);
+}
+
+Deno.test("bundled serverless PDF.js reads a real selectable-text fixture", async () => {
+  const bytes = syntheticTextPDF();
+  const result = await extractSelectablePDFArtifact({
+    recipeID: ID,
+    artifactID: ARTIFACT,
+    bytes,
+    expectedBytes: bytes.length,
+    platformHint: null,
+    originalSourceURL: null,
+  });
+  expect(result.recipe_id === ID, "Unstable recipe identifier");
+  expect(result.source.source_artifact_id === ARTIFACT, "Private document lost");
+  expect(result.evidence.some((item) =>
+    String(item.excerpt).includes("Tomato soup")
+  ), "Selectable PDF text was not extracted");
+});
