@@ -310,6 +310,61 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testProfileOffersThreeTruthfulExportFormats() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let export = app.buttons["profile.export"]
+        reveal(export, in: app, maximumSwipes: 6)
+        export.tap()
+
+        for choice in [
+            "All Local Data (JSON)",
+            "Recipes Only (JSON)",
+            "Recipes Only (HTML)"
+        ] {
+            XCTAssertTrue(app.buttons[choice].waitForExistence(timeout: 8))
+        }
+        app.buttons["Cancel"].tap()
+
+        // Cancelling the format menu must not open Files or claim export success.
+        XCTAssertFalse(app.staticTexts["Export saved to Files."].exists)
+    }
+
+    @MainActor
+    func testDataPrivacyOffersSameExportFormats() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+        let settings = app.buttons["Settings"]
+        waitUntilReady(settings)
+        settings.tap()
+
+        let privacy = app.buttons["Data & Privacy"]
+        reveal(privacy, in: app, maximumSwipes: 5)
+        privacy.tap()
+
+        let export = app.buttons["Export Recipes & Data"]
+        waitUntilReady(export)
+        export.tap()
+
+        for choice in [
+            "All Local Data (JSON)",
+            "Recipes Only (JSON)",
+            "Recipes Only (HTML)"
+        ] {
+            XCTAssertTrue(app.buttons[choice].waitForExistence(timeout: 8))
+        }
+    }
+
+    @MainActor
     func testProfileLayoutAndPrimaryActionsAreVisible() {
         let app = launchSeededApp()
         defer { app.terminate() }
