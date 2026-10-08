@@ -15,6 +15,13 @@ import {
 } from "./safeURLFetch.ts";
 import { extractPublicPageText } from "./pageContent.ts";
 import { parseLocalText } from "./textEvidence.ts";
+import {
+  ArtifactTextError,
+  decodePlainTextArtifact,
+  isOwnerScopedAvailableArtifact,
+  parsePlainTextArtifact,
+  type PrivateArtifactRow,
+} from "./artifactText.ts";
 
 interface QueueMessage {
   msg_id: number;
@@ -221,28 +228,68 @@ Deno.serve(async (request: Request): Promise<Response> => {
       } else {
         const { data: artifact, error: artifactError } = await admin.from(
           "recipe_import_artifacts",
-        ).select("id,mime_type,state,expires_at")
+        ).select("id,owner_id,input_type,mime_type,state,expires_at,storage_bucket,storage_path,size_bytes")
           .eq("id", claimed.artifact_id ?? "")
           .eq("owner_id", claimed.owner_id)
           .maybeSingle();
         if (artifactError) throw artifactError;
-        const available = artifact?.state === "available" &&
-          Date.parse(artifact.expires_at) > Date.now();
+        const available = isOwnerScopedAvailableArtifact(
+          artifact as PrivateArtifactRow | null,
+          {
+            ownerID: claimed.owner_id,
+            artifactID: claimed.artifact_id,
+            inputType: claimed.input_type,
+          },
+        );
         result = incompleteArtifactRecipe({
           id: claimed.id,
           inputType: claimed.input_type,
           artifactID: claimed.artifact_id ?? "",
           platformHint: claimed.platform_hint,
-          mimeType: available ? artifact.mime_type : null,
+          mimeType: available ? artifact!.mime_type : null,
         });
+
         if (!available) {
           completionError = {
             code: "ARTIFACT_NOT_READY",
-            message: "The private source file expired before it could be reviewed.",
+            message: "The private source attachment is no longer available.",
             recoverable: false,
             suggested_action: "Share the source again or add the recipe details manually.",
             request_id: crypto.randomUUID(),
           };
+        } else if (claimed.input_type === "file" &&
+          artifact!.mime_type === "text/plain") {
+          // Download only after verifying the persisted owner, UUID path,
+          // expiry, MIME and maximum size. Transient Storage errors throw so
+          // the queue lease can be retried without losing the original job.
+          const { data: file, error: downloadError } = await admin.storage
+            .from(artifact!.storage_bucket)
+            .download(artifact!.storage_path);
+          if (downloadError || !file) {
+            throw downloadError ?? new Error("Private artifact download failed");
+          }
+          try {
+            const text = await decodePlainTextArtifact(
+              file,
+              artifact!.size_bytes,
+            );
+            result = parsePlainTextArtifact({
+              id: claimed.id,
+              text,
+              artifactID: artifact!.id,
+              platformHint: claimed.platform_hint,
+              originalSourceURL: claimed.original_source_url,
+            });
+          } catch (error) {
+            if (!(error instanceof ArtifactTextError)) throw error;
+            completionError = {
+              code: error.code,
+              message: error.message,
+              recoverable: false,
+              suggested_action: "Edit the saved source as text or share a valid UTF-8 text file.",
+              request_id: crypto.randomUUID(),
+            };
+          }
         }
       }
 
