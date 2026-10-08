@@ -534,44 +534,18 @@ enum RecipeLocalDataDeletion {
 private struct RecipeHelpView: View {
     var body: some View {
         List {
-            Section("Getting started") {
-                NavigationLink("Save your first recipe") {
-                    GettingStartedGuideView()
-                }
+            NavigationLink("Getting Started") {
+                GettingStartedGuideView()
             }
-            Section("Save a recipe") {
-                Text(
-                    "From a recipe or social app, use Share and choose RecipePouch. "
-                        + "The share extension receives it quickly so you can return "
-                        + "to the source app. If sharing is unavailable, use Add Recipe "
-                        + "to paste a link, add text or an image, or create a recipe manually."
-                )
-            }
-            Section("Make it yours") {
-                Text("Open any recipe to edit its ingredients, instructions and notes. The original source stays with the recipe so you can return to it.")
-            }
-            Section("Shop for a meal") {
-                Text(
-                    "Use Add to Groceries in a recipe, choose the servings and ingredients, "
-                        + "then add them to your list. In Groceries, tap a circle to mark "
-                        + "an item bought, tap its name to edit, or swipe for more actions."
-                )
-            }
-            Section("Cook step by step") {
-                Text("Start Cooking opens one step at a time. You can move between steps and use timers where a duration is available. Keep Screen Awake in Profile controls whether your screen stays on during cooking.")
-            }
-            Section("Plan your week") {
-                Text("Open Meal Plan from Profile, choose a day and meal, then select a saved recipe. Swipe a planned meal to remove it. Your saved recipe stays in your library.")
-            }
-            Section("Keep a copy") {
-                Text("Export All Data in Profile saves a JSON copy of your library and local preferences. Keep the exported file somewhere you trust. This version does not offer an in-app backup restore flow.")
+            NavigationLink("Help & Support") {
+                HelpCenterView()
             }
         }
         .listStyle(.insetGrouped)
-        .listSectionSpacing(RecipeSpacing.medium)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("Using RecipePouch").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Using RecipePouch")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -580,25 +554,21 @@ private struct RecipeAboutView: View {
         List {
             Section("RecipePouch") {
                 LabeledContent("Version", value: RecipeVersion.display)
-                LabeledContent("Storage", value: "On this iPhone")
             }
-            Section("Your local data") {
-                Text("This version stores your recipes, recipe images, source information, grocery list, meal plan and preferences on this iPhone. Your local profile is optional and does not create an online account.")
-                Text("RecipePouch does not upload this library unless cloud sync is enabled for a signed-in account. Opening a source link takes you to the source website, where that site’s own practices apply.")
-            }
-            Section("Exporting and deleting") {
-                Text("An exported JSON file contains a copy of your local RecipePouch data, including any name, email, source text, or notes you saved. You choose where the file is saved.")
-                Text("Delete All Local Data removes the RecipePouch library and preferences from this iPhone after confirmation. Copies you exported separately are not deleted.")
-            }
-            Section("Recipe sources") {
-                Text("Keep the original source with recipes you save. Check the source for its terms and any cooking or ingredient information you need.")
+            Section("Data & Privacy") {
+                NavigationLink("What RecipePouch Stores") {
+                    StoredDataView()
+                }
+                NavigationLink("Privacy Summary") {
+                    PrivacySummaryView()
+                }
             }
         }
         .listStyle(.insetGrouped)
-        .listSectionSpacing(RecipeSpacing.medium)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("About & Your Data").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("About & Your Data")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
