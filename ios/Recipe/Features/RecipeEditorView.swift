@@ -71,10 +71,6 @@ struct RecipeEditorView: View {
                     }
                 } header: {
                     Text("Ingredients")
-                } footer: {
-                    Text(
-                        "Keep wording such as “to taste” or “a little”. Only explicit numeric amounts are scaled."
-                    )
                 }
                 Section("Steps") {
                     ForEach($draft.steps) { $step in
@@ -121,7 +117,7 @@ struct RecipeEditorView: View {
                 if previewNeedsReview {
                     Section {
                         Label(
-                            "Missing ingredients or steps? Save a draft and finish it later.",
+                            "Needs review",
                             systemImage: "pencil.circle"
                         )
                         .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
@@ -130,13 +126,12 @@ struct RecipeEditorView: View {
                     }
                 }
             }
+            .listSectionSpacing(RecipeSpacing.medium)
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(isExisting ? "Edit recipe" : "New recipe")
-            .navigationBarTitleDisplayMode(
-                .inline
-            )
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { if isDirty { showDiscard = true } else { dismiss() } }
@@ -297,7 +292,7 @@ private struct IngredientEditorRow: View {
     @Binding var ingredient: RecipeIngredient
     let remove: () -> Void
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
             HStack {
                 TextField("Ingredient name", text: $ingredient.name).accessibilityIdentifier(
                     "ingredientName")
@@ -322,7 +317,7 @@ private struct StepEditorRow: View {
     let remove: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
             HStack {
                 TextField("Step title (optional)", text: $step.title)
                 Button(role: .destructive, action: remove) {
@@ -368,9 +363,9 @@ private struct StepEditorRow: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                 ForEach($step.timers) { $timer in
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                         HStack {
                             TextField("Timer label", text: $timer.label)
                             Button(role: .destructive) {

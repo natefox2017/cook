@@ -80,8 +80,11 @@ struct SettingsHubView: View {
             }
         }
         .listSectionSpacing(RecipeSpacing.medium)
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
+        .scrollContentBackground(.hidden)
+        .background(RecipeTheme.canvas)
         .navigationTitle("Settings")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
     }
 }
@@ -143,7 +146,7 @@ struct CloudSyncSettingsView: View {
             stateActions
         }
         .navigationTitle("Cloud Sync")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .onChange(of: conflictIDs) { _, ids in
             conflictChoices = conflictChoices.filter {
                 ids.contains($0.key)
@@ -377,7 +380,7 @@ struct AppearanceSettingsView: View {
 
         }
         .navigationTitle("Appearance")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .alert(
             "Couldn’t save",
             isPresented: Binding(
@@ -428,7 +431,7 @@ struct CookingSettingsView: View {
 
         }
         .navigationTitle("Cooking")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .alert(
             "Couldn’t save",
             isPresented: Binding(
@@ -477,7 +480,7 @@ struct GrocerySettingsView: View {
 
         }
         .navigationTitle("Groceries")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }
 
@@ -496,6 +499,6 @@ struct MealPlanSettingsView: View {
 
         }
         .navigationTitle("Meal Plan")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }

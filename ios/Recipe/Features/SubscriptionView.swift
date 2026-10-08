@@ -21,12 +21,12 @@ struct SubscriptionView: View {
                 onContinue: nil,
                 onManageSubscription: { isManagingSubscriptions = true }
             )
-            .padding(.horizontal, 22)
-            .padding(.vertical, 18)
+            .padding(.horizontal, RecipeSpacing.pageInset)
+            .padding(.vertical, RecipeSpacing.medium)
         }
         .background(RecipeTheme.canvas)
         .navigationTitle("Subscription")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
         .manageSubscriptionsSheet(isPresented: $isManagingSubscriptions)
     }
@@ -41,15 +41,15 @@ struct PremiumPaywallContent: View {
     let onManageSubscription: (() -> Void)?
 
     var body: some View {
-        VStack(spacing: 22) {
-            VStack(spacing: 10) {
+        VStack(spacing: RecipeSpacing.large) {
+            VStack(spacing: RecipeSpacing.xSmall) {
                 Image(systemName: "leaf.circle.fill")
                     .font(.system(size: 62))
                     .foregroundStyle(RecipeTheme.accentForeground)
                     .accessibilityHidden(true)
 
                 Text("RecipePouch Premium")
-                    .font(RecipeTheme.title(34))
+                    .font(RecipeTheme.heading(.hero))
                     .multilineTextAlignment(.center)
             }
 
@@ -98,7 +98,7 @@ struct PremiumPaywallContent: View {
 
     @ViewBuilder
     private var activeSubscription: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: RecipeSpacing.small) {
             Label(activeStatusTitle, systemImage: "checkmark.seal.fill")
                 .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
                 .foregroundStyle(RecipeTheme.accentForeground)
@@ -110,13 +110,13 @@ struct PremiumPaywallContent: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(20)
+        .padding(RecipeSpacing.pageInset)
         .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 22))
     }
 
     @ViewBuilder
     private var availablePlans: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: RecipeSpacing.small) {
             if let statusMessage {
                 Text(statusMessage)
                     .lineLimit(1)
@@ -127,7 +127,7 @@ struct PremiumPaywallContent: View {
             }
 
             if subscriptions.products.isEmpty {
-                VStack(spacing: 8) {
+                VStack(spacing: RecipeSpacing.xSmall) {
                     Image(systemName: "storefront")
                         .font(.system(size: 28))
                         .foregroundStyle(.secondary)
@@ -136,7 +136,7 @@ struct PremiumPaywallContent: View {
                         .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
                     }
                 .frame(maxWidth: .infinity)
-                .padding(20)
+                .padding(RecipeSpacing.pageInset)
                 .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 22))
 
                 Button("Try Again") {
@@ -150,7 +150,7 @@ struct PremiumPaywallContent: View {
                     Button {
                         Task { await subscriptions.purchase(product) }
                     } label: {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                             HStack(alignment: .firstTextBaseline) {
                                 Text(product.displayName)
                                     .font(RecipeTheme.text(18, weight: .semibold, relativeTo: .headline))
@@ -204,7 +204,7 @@ struct PremiumPaywallContent: View {
     }
 
     private var legalFooter: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: RecipeSpacing.xSmall) {
             Text("Auto-renews until canceled in the App Store.")
                 .font(RecipeTheme.text(12, relativeTo: .caption))
                 .foregroundStyle(.secondary)

@@ -20,8 +20,8 @@ struct FirstLaunchFlowView: View {
                     case 1:
                         ScrollView {
                             GettingStartedGuideContent()
-                                .padding(.horizontal, 22)
-                                .padding(.top, 8)
+                                .padding(.horizontal, RecipeSpacing.pageInset)
+                                .padding(.top, RecipeSpacing.xSmall)
                                 .padding(.bottom, 28)
                         }
                     default:
@@ -31,7 +31,7 @@ struct FirstLaunchFlowView: View {
                                 onContinue: onComplete,
                                 onManageSubscription: nil
                             )
-                            .padding(.horizontal, 22)
+                            .padding(.horizontal, RecipeSpacing.pageInset)
                             .padding(.vertical, 16)
                         }
                     }
@@ -40,7 +40,7 @@ struct FirstLaunchFlowView: View {
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if step < 2 {
-                    VStack(spacing: 10) {
+                    VStack(spacing: RecipeSpacing.xSmall) {
                         Button {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 step += 1
@@ -52,7 +52,7 @@ struct FirstLaunchFlowView: View {
                         .accessibilityIdentifier("onboarding.primary")
 
                     }
-                    .padding(.horizontal, 22)
+                    .padding(.horizontal, RecipeSpacing.pageInset)
                     .padding(.top, 12)
                     .padding(.bottom, 8)
                     .background(.ultraThinMaterial)
@@ -66,7 +66,7 @@ struct FirstLaunchFlowView: View {
                     }
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         }
         .tint(RecipeTheme.accent)
     }
@@ -75,7 +75,7 @@ struct FirstLaunchFlowView: View {
 private struct FirstLaunchWelcomePage: View {
     var body: some View {
         ScrollView {
-            VStack(spacing: 28) {
+            VStack(spacing: RecipeSpacing.large) {
                 Spacer(minLength: 18)
 
                 ZStack {
@@ -88,19 +88,17 @@ private struct FirstLaunchWelcomePage: View {
                 }
                 .accessibilityHidden(true)
 
-                VStack(spacing: 10) {
-                    Text("Keep every recipe in one place")
-                        .font(RecipeTheme.title(34))
-                        .multilineTextAlignment(.center)
-                }
+                Text("Keep every recipe in one place")
+                    .font(RecipeTheme.heading(.hero))
+                    .multilineTextAlignment(.center)
 
-                VStack(spacing: 14) {
+                VStack(spacing: RecipeSpacing.small) {
                     FirstLaunchValueRow(icon: "link", title: "Save from anywhere")
                     FirstLaunchValueRow(icon: "checklist", title: "Cook without clutter")
                     FirstLaunchValueRow(icon: "calendar.badge.plus", title: "Plan and shop")
                 }
             }
-            .padding(.horizontal, 22)
+            .padding(.horizontal, RecipeSpacing.pageInset)
             .padding(.bottom, 30)
         }
     }
@@ -119,7 +117,7 @@ private struct FirstLaunchValueRow: View {
                 .background(RecipeTheme.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 13))
                 .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                 Text(LocalizedStringKey(title))
                     .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
                     .lineLimit(1)
@@ -135,20 +133,20 @@ struct GettingStartedGuideView: View {
     var body: some View {
         ScrollView {
             GettingStartedGuideContent()
-                .padding(.horizontal, 22)
-                .padding(.vertical, 18)
+                .padding(.horizontal, RecipeSpacing.pageInset)
+                .padding(.vertical, RecipeSpacing.medium)
         }
         .background(RecipeTheme.canvas)
         .navigationTitle("Getting Started")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }
 
 struct GettingStartedGuideContent: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
             Text("Save your first recipe")
-                .font(RecipeTheme.title(32))
+                .font(RecipeTheme.heading(.hero))
 
             VStack(spacing: 0) {
                 guideStep(
@@ -188,7 +186,7 @@ struct GettingStartedGuideContent: View {
                 .background(RecipeTheme.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                 HStack(spacing: 4) {
                     Text("\(number).")
                     Text(LocalizedStringKey(title))

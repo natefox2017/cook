@@ -27,6 +27,8 @@
 
 | UI-020 | Google 与 Apple 登录一致性 | Google 官方品牌规范 + Apple HIG + 现有 Account Sheet | APPROVED | 2026-10-08 用户明确要求补齐 Google 登录、统一 Apple/Google 按钮外观并符合各自官方规范；共用 50pt 高度及 14pt 圆角，保留 Google G 品牌四色与 Apple 系统按钮；生产 OAuth 配置与真实设备测试仍需验收 |
 
+| UI-021 | 全页面字体与间距统一 | `DESIGN_SYSTEM.md` + `ios/Recipe/Design/RecipeTheme.swift` | APPROVED | 2026-10-09 用户要求直接执行：原生标题位置与字号统一、页面间距/颜色规范化，清理冗余说明文案，保留必要提示、数据和功能。 |
+
 ## 状态定义
 - PENDING：尚无明确 UI 决策记录
 - APPROVED：用户已明确同意或直接要求执行对应方向
