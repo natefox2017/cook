@@ -269,6 +269,9 @@ struct RecipeEditorView: View {
                 }
                 recipe.sourceURL = value.isEmpty ? nil : value
             }
+            if recipe.importRecord?.result.resultStatus == .needsReview {
+                recipe.importRecord?.reviewedAt = .now
+            }
             try store.upsert(recipe)
             dismiss()
         } catch { errorMessage = error.localizedDescription }
