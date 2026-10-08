@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Receives shared recipe input and stores it for the main app.
+
 import SwiftUI
 import UniformTypeIdentifiers
 

@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Defines CookCore recipe, ingredient, plan, and settings models.
+
 import Foundation
 
 public enum RecipeCategory: String, Codable, CaseIterable, Identifiable, Sendable {

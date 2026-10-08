@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Displays and edits the weekly meal plan.
+
 import CookCore
 import SwiftUI
 

@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Prototype searchable recipe library.
+
 import SwiftUI
 struct RecipeLibraryView:View{
  @Environment(AppStore.self)private var store;@Binding var showingAdd:Bool;@State private var query="";@State private var favoritesOnly=false

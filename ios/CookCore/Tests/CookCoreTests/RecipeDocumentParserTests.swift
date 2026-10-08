@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Checks recipe document parsing and evidence preservation.
+
 import Foundation
 import Testing
 @testable import CookCore

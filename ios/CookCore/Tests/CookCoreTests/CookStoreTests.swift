@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Checks CookStore persistence, migration, and failure behavior.
+
 import Foundation
 import Testing
 @testable import CookCore

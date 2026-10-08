@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Exercises primary app flows through the iOS UI test target.
+
 import XCTest
 
 final class CookUITests: XCTestCase {
@@ -246,6 +249,25 @@ final class CookUITests: XCTestCase {
         mealPlan.tap()
         XCTAssertTrue(app.staticTexts["Garlic Butter Shrimp Pasta"].waitForExistence(timeout: 8))
         attachScreenshot("Recipe added directly to meal plan", app: app)
+    }
+
+    @MainActor
+    func testProfileLayoutAndPrimaryActionsAreVisible() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let editProfile = app.buttons["profile.edit"]
+        waitUntilReady(editProfile)
+        XCTAssertTrue(app.buttons["Settings"].exists)
+        XCTAssertTrue(app.staticTexts["Account & subscription"].exists)
+        XCTAssertTrue(app.staticTexts["Your kitchen"].exists)
+        attachScreenshot("Profile spacing", app: app)
     }
 
 

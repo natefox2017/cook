@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Prototype local store for recipes, groceries, and meal plans.
+
 import Foundation
 import Observation
 @Observable final class AppStore {

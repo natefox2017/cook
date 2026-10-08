@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Schedules and clears cooking timer notifications.
+
 import Foundation
 import UserNotifications
 

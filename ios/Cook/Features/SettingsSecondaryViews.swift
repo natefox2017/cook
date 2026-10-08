@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Presents secondary settings, privacy, help, and about screens.
+
 import SwiftUI
 import CookCore
 import UniformTypeIdentifiers

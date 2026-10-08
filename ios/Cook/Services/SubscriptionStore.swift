@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Loads StoreKit products and tracks verified subscription entitlements.
+
 import Foundation
 import Observation
 import StoreKit

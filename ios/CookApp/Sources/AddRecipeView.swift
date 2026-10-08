@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Prototype screen for adding and importing recipes.
+
 import SwiftUI
 import PhotosUI
 struct AddRecipeView:View{

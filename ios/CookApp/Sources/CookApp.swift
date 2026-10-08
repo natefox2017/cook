@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Prototype app entry point and root navigation.
+
 import SwiftUI
 @main struct CookApp: App {
  @State private var store = AppStore()

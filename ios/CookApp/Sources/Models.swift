@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Prototype recipe, ingredient, and cooking-step models.
+
 import Foundation
 struct Ingredient:Identifiable,Codable,Hashable{var id=UUID();var name:String;var amount:String;var aisle:String="Other"}
 struct RecipeStep:Identifiable,Codable,Hashable{var id=UUID();var text:String;var seconds:Int?}

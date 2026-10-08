@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Creates and edits recipe fields and source details.
+
 import SwiftUI
 import PhotosUI
 import CookCore

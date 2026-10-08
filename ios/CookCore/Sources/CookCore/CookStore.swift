@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Persists recipes and local app data with safe snapshot updates.
+
 import Foundation
 import Observation
 

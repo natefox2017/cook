@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Creates the app, shared services, and primary navigation.
+
 import StoreKit
 import SwiftUI
 import CookCore

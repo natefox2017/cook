@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Extracts recipe content from supported local documents and media.
+
 import Foundation
 import UIKit
 import Vision

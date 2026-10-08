@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Checks persistence and behavior of the prototype local store.
+
 import XCTest
 @testable import Cook
 final class AppStoreTests:XCTestCase{

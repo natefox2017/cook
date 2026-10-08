@@ -1,4 +1,8 @@
 // swift-tools-version: 6.0
+
+// Developer: gengyun
+// Purpose: Defines the CookCore Swift package and its targets.
+
 import PackageDescription
 
 // Product deployment floor; application and extension signing are configured separately.

@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Guides new users through first launch and subscription choices.
+
 import SwiftUI
 
 struct FirstLaunchFlowView: View {

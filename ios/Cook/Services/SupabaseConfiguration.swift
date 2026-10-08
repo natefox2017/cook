@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Loads Supabase configuration without embedding credentials.
+
 import Foundation
 import Supabase
 

@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Prototype step-by-step cooking screen and timer.
+
 import SwiftUI\nimport UIKit
 struct CookingModeView:View{
  @Environment(\.dismiss)private var dismiss;@AppStorage("cook.keepAwake")private var keepAwake=true;let recipe:Recipe;@State private var index=0;@State private var remaining=0;@State private var running=false

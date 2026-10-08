@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Presents subscription products, purchase, restore, and management actions.
+
 import Foundation
 import StoreKit
 import SwiftUI

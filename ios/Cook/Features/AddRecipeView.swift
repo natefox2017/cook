@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Collects recipe links, text, documents, and images for local import.
+
 import SwiftUI
 import PhotosUI
 import AVFoundation

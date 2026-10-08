@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Displays and edits the grocery list.
+
 import CookCore
 import SwiftUI
 

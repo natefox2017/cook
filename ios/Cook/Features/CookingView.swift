@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Presents cooking steps, ingredient checkoffs, and timers.
+
 import CookCore
 import SwiftUI
 import UIKit

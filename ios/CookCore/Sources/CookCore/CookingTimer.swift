@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Models cooking timers using deadlines that survive backgrounding.
+
 import Foundation
 
 /// Uses an absolute deadline, so backgrounding and delayed UI ticks do not add drift.

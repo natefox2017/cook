@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Defines shared colors, typography, spacing, and reusable design components.
+
 import SwiftUI
 import UIKit
 import CookCore

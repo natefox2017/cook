@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Prototype shared colors and visual styling.
+
 import SwiftUI
 enum CookTheme {
  static let green=Color(red:0.16,green:0.42,blue:0.25)

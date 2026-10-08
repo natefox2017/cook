@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Presents account sign-in, recovery, and account-management flows.
+
 import AuthenticationServices
 import Foundation
 import SwiftUI

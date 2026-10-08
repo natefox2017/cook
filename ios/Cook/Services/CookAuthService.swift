@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Implements Cook account authentication and session handling.
+
 import CryptoKit
 import Foundation
 import Observation

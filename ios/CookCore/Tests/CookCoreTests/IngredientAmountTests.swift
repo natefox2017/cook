@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Checks safe ingredient quantity representation and conversion.
+
 import Foundation
 import Testing
 @testable import CookCore

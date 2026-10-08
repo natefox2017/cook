@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Prototype weekly meal planning screen.
+
 import SwiftUI
 struct MealPlanView:View{
  @Environment(AppStore.self)private var store;@State private var weekOffset=0;@State private var pickingDate:Date?;@State private var meal="Dinner"

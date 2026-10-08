@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Displays and manages recipe collections.
+
 import SwiftUI
 import CookCore
 

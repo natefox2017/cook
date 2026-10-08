@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Checks recipe ingredient model behavior.
+
 import Foundation
 import Testing
 @testable import CookCore

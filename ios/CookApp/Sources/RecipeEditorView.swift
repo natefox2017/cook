@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Prototype recipe editor.
+
 import SwiftUI
 struct RecipeEditorView:View{
  @Environment(AppStore.self)private var store;@Environment(\.dismiss)private var dismiss;@State var recipe:Recipe;@State private var ingredient="";@State private var step=""

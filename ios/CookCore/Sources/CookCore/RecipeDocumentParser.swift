@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Parses recipe content from supported document structures.
+
 import Foundation
 
 /// Local document parsing only. This is not the backend's import-job/API model.

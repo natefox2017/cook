@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Displays a recipe and its ingredients, directions, and actions.
+
 import SwiftUI
 import CookCore
 

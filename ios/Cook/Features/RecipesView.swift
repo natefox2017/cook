@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Displays, searches, filters, and sorts saved recipes.
+
 import SwiftUI
 import CookCore
 

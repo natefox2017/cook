@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Presents app settings and preference controls.
+
 import SwiftUI
 import CookCore
 

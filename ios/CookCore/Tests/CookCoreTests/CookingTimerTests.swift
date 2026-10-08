@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Checks cooking timer state and deadline behavior.
+
 import Foundation
 import Testing
 @testable import CookCore

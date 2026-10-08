@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Prototype grocery list screen.
+
 import SwiftUI
 struct GroceriesView:View{
  @Environment(AppStore.self)private var store;@State private var hideChecked=false;@State private var newItem=""

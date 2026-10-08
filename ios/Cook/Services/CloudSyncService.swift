@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Defines cloud snapshot contracts and sync service boundaries.
+
 import Foundation
 
 struct CloudSnapshotEnvelope: Codable, Sendable {

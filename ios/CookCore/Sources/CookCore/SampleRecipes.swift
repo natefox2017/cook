@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Provides clearly identified sample recipes for preview and testing.
+
 import Foundation
 
 /// Authored examples are opt-in and remain visibly distinguishable from user imports.

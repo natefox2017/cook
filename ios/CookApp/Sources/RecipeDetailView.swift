@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Prototype recipe detail screen and cooking entry.
+
 import SwiftUI
 struct RecipeDetailView:View{
  @Environment(AppStore.self)private var store;let recipeID:UUID;@State private var edit=false;@State private var cooking=false;@State private var servings=2

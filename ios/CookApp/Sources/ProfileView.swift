@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Prototype profile and preference screen.
+
 import SwiftUI
 struct ProfileView:View{
  @Environment(AppStore.self)private var store;@AppStorage("cook.notifications")private var notifications=true;@AppStorage("cook.metric")private var metric=true;@AppStorage("cook.keepAwake")private var keepAwake=true
