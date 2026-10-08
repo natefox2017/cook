@@ -5,6 +5,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { handleCors, publicCorsHeaders } from "../_shared/cors.ts";
 import { AppError, errorResponse, json } from "../_shared/errors.ts";
+import { parseAdminRole } from "../_shared/admin-role.ts";
 import { readBoundedJSONObject } from "../_shared/bounded-json.ts";
 import { createServiceClient } from "../_shared/auth.ts";
 import { log } from "../_shared/logger.ts";
@@ -60,7 +61,7 @@ function mapAdmin(row: {
   return {
     id: row.id,
     username: row.username,
-    role: row.role ?? "owner",
+    role: parseAdminRole(row.role),
     mustChangePassword: Boolean(row.must_change_password),
   };
 }
@@ -224,7 +225,7 @@ Deno.serve(async (req) => {
               admin: {
                 id: row.id,
                 username: row.username,
-                role: row.role ?? "owner",
+                role: parseAdminRole(row.role),
                 mustChangePassword: false,
               },
             },
