@@ -6,6 +6,7 @@ import SwiftUI
 
 struct GroceriesView: View {
     @Environment(RecipeStore.self) private var store
+    @AppStorage("recipe.grocery.sources") private var showRecipeNames = true
     @State private var filter: GroceryFilter = .all
     @State private var collapsedCategories: Set<String> = []
     @State private var editor: GroceryEditorPresentation?
@@ -163,6 +164,20 @@ struct GroceriesView: View {
         }
     }
 
+    private func sourceDescription(for item: GroceryItem) -> String? {
+        guard showRecipeNames else { return nil }
+
+        let titles = item.recipeIDs.compactMap { id -> String? in
+            guard let title = store.recipe(id: id)?.title
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+                  !title.isEmpty else {
+                return nil
+            }
+            return title
+        }
+        return titles.isEmpty ? nil : "From " + titles.joined(separator: ", ")
+    }
+
     private func groceryRow(_ item: GroceryItem) -> some View {
         HStack(spacing: 12) {
             Button {
@@ -191,10 +206,11 @@ struct GroceriesView: View {
                         if !item.amountText.isEmpty {
                             Text(item.amountText).font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
                         }
-                        if !item.recipeIDs.isEmpty {
-                            Text("From \(item.recipeIDs.count) \(item.recipeIDs.count == 1 ? "recipe" : "recipes")")
+                        if let sourceNames = sourceDescription(for: item) {
+                            Text(sourceNames)
                                 .font(RecipeTheme.text(12, weight: .regular, relativeTo: .caption))
                                 .foregroundStyle(.secondary)
+                                .lineLimit(2)
                         }
                     }
                     Spacer(minLength: 4)

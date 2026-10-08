@@ -6,12 +6,16 @@ import SwiftUI
 
 struct MealPlanView: View {
     @Environment(RecipeStore.self) private var store
+    @AppStorage("recipe.meal.weekStart") private var weekStart = "System Default"
     @State private var selectedDate = Date()
     @State private var recipePicker: MealPlanPickerPresentation?
     @State private var mealToDelete: MealPlanEntry?
     @State private var errorMessage: String?
 
-    private let calendar = Calendar.current
+    // Use the same configured calendar for date order, counts, and navigation.
+    private var calendar: Calendar {
+        RecipeWeekCalendar.configured(weekStart: weekStart)
+    }
 
     private var weekDates: [Date] {
         let start = calendar.dateInterval(of: .weekOfYear, for: selectedDate)?.start

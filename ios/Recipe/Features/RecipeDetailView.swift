@@ -401,6 +401,7 @@ private struct RecipeIngredientsSelectionView: View {
     let recipeID: UUID
     let initialServings: Int
     let onAdded: (Int) -> Void
+    @AppStorage("recipe.grocery.consolidate") private var consolidate = true
     @Environment(RecipeStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var servings = 1
@@ -462,7 +463,11 @@ private struct RecipeIngredientsSelectionView: View {
                     .accessibilityHint("Double-tap to change selection")
                 }
             } header: { Text("Choose ingredients") } footer: {
-                Text("Matching ingredients are combined when their amounts can be safely added. Unclear amounts stay as written.")
+                Text(
+                    consolidate
+                        ? "Compatible amounts combine safely. Unclear amounts stay as written."
+                        : "Each selected ingredient becomes a separate item. Existing items are unchanged."
+                )
             }
         }
         .scrollContentBackground(.hidden)
@@ -485,7 +490,12 @@ private struct RecipeIngredientsSelectionView: View {
     private func add(_ recipe: Recipe) {
         do {
             let knownServings = recipe.servings.map { $0 > 0 } ?? false
-            try store.addToGroceries(recipeID: recipeID, servings: knownServings ? servings : nil, ingredientIDs: selection)
+            try store.addToGroceries(
+                recipeID: recipeID,
+                servings: knownServings ? servings : nil,
+                ingredientIDs: selection,
+                consolidateCompatibleIngredients: consolidate
+            )
             onAdded(selection.count)
             dismiss()
         } catch { errorMessage = error.localizedDescription }
