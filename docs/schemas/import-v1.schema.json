@@ -1,0 +1,784 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RecipePouch Import V1",
+  "description": "Shared, versioned API and local receipt contract for Share Extension, iOS client and Supabase backend. Contract only: endpoints not deployed merely by adding this document.",
+  "$ref": "#/$defs/ImportRequest",
+  "$defs": {
+    "ImportRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "client_request_id",
+        "input_type"
+      ],
+      "properties": {
+        "client_request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "input_type": {
+          "type": "string",
+          "enum": [
+            "url",
+            "text",
+            "image",
+            "file"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://",
+          "maxLength": 8192
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100000
+        },
+        "artifact_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "platform_hint": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "original_source_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://",
+          "maxLength": 8192
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "input_type": {
+              "const": "url"
+            }
+          },
+          "required": [
+            "url"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "text"
+                ]
+              },
+              {
+                "required": [
+                  "artifact_id"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "properties": {
+            "input_type": {
+              "const": "text"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "url"
+                ]
+              },
+              {
+                "required": [
+                  "artifact_id"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "properties": {
+            "input_type": {
+              "const": "image"
+            }
+          },
+          "required": [
+            "artifact_id"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "url"
+                ]
+              },
+              {
+                "required": [
+                  "text"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "properties": {
+            "input_type": {
+              "const": "file"
+            }
+          },
+          "required": [
+            "artifact_id"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "url"
+                ]
+              },
+              {
+                "required": [
+                  "text"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "LocalReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_id",
+        "input_type",
+        "received_at",
+        "local_state",
+        "client_request_id",
+        "payload"
+      ],
+      "properties": {
+        "receipt_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "client_request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "input_type": {
+          "enum": [
+            "url",
+            "text",
+            "image",
+            "file"
+          ]
+        },
+        "received_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "local_state": {
+          "enum": [
+            "received",
+            "handoff_pending",
+            "handoff_acknowledged",
+            "needs_retry"
+          ]
+        },
+        "payload": {
+          "type": "object",
+          "description": "Immutable raw source bytes/URL or a durable local file reference; protected by atomic storage.",
+          "required": [
+            "reference"
+          ],
+          "properties": {
+            "reference": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "acknowledged_job_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "last_error": {
+          "$ref": "#/$defs/APIError"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "local_state": {
+                "const": "handoff_acknowledged"
+              }
+            },
+            "required": [
+              "local_state"
+            ]
+          },
+          "then": {
+            "required": [
+              "acknowledged_job_id"
+            ]
+          }
+        }
+      ]
+    },
+    "APIError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message",
+        "recoverable",
+        "request_id"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "INVALID_INPUT",
+            "AUTH_REQUIRED",
+            "FORBIDDEN",
+            "NOT_FOUND",
+            "CONFLICT",
+            "UNSUPPORTED_SOURCE",
+            "PRIVATE_OR_LOGIN_REQUIRED",
+            "FETCH_BLOCKED",
+            "FETCH_TIMEOUT",
+            "MEDIA_TOO_LARGE",
+            "ARTIFACT_NOT_READY",
+            "PARSE_INCOMPLETE",
+            "PROVIDER_TIMEOUT",
+            "RATE_LIMITED",
+            "SERVICE_UNAVAILABLE",
+            "INTERNAL_ERROR"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "recoverable": {
+          "type": "boolean"
+        },
+        "suggested_action": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 500
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_type",
+        "origin"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source_type": {
+          "enum": [
+            "webpage_structured_data",
+            "caption",
+            "article_body",
+            "subtitle",
+            "asr",
+            "ocr",
+            "visual",
+            "user"
+          ]
+        },
+        "origin": {
+          "enum": [
+            "extracted",
+            "inferred",
+            "user"
+          ]
+        },
+        "excerpt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 10000
+        },
+        "timestamp_start_seconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "timestamp_end_seconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "frame_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 400
+        },
+        "source_artifact_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "captured_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "RecipeField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_value",
+        "evidence_ids",
+        "user_confirmed",
+        "origin"
+      ],
+      "properties": {
+        "raw_value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Original text, including approximate/to-taste/range/unknown; do not invent exact amounts."
+        },
+        "normalized_value": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uniqueItems": true
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "user_confirmed": {
+          "type": "boolean"
+        },
+        "origin": {
+          "enum": [
+            "extracted",
+            "inferred",
+            "user"
+          ]
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "user_confirmed": {
+                "const": true
+              }
+            },
+            "required": [
+              "user_confirmed"
+            ]
+          },
+          "then": {
+            "properties": {
+              "origin": {
+                "const": "user"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "RecipeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recipe_id",
+        "status",
+        "source",
+        "fields",
+        "evidence"
+      ],
+      "properties": {
+        "recipe_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "needs_review"
+          ]
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "input_type"
+          ],
+          "properties": {
+            "input_type": {
+              "enum": [
+                "url",
+                "text",
+                "image",
+                "file"
+              ]
+            },
+            "original_url": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https://",
+                  "maxLength": 8192
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "canonical_url": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https://",
+                  "maxLength": 8192
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "platform": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "author_name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "source_title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "external_content_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "fields": {
+          "type": "object",
+          "description": "Recipe field paths e.g. title, ingredients[0].amount, steps[0].instruction; user_confirmed wins.",
+          "propertyNames": {
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/RecipeField"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          }
+        },
+        "review_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "Artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "state",
+        "kind"
+      ],
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "kind": {
+          "enum": [
+            "original",
+            "screenshot",
+            "audio",
+            "transcript",
+            "ocr",
+            "keyframe",
+            "cover"
+          ]
+        },
+        "state": {
+          "enum": [
+            "upload_pending",
+            "available",
+            "rejected",
+            "expired"
+          ]
+        },
+        "mime_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "size_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "checksum_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "JobResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "job_id",
+        "client_request_id",
+        "status",
+        "created_at",
+        "attempt_count"
+      ],
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "client_request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "server_received_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "queue_confirmed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "enum": [
+            "received",
+            "queued",
+            "extracting",
+            "parsing",
+            "validating",
+            "completed",
+            "failed"
+          ]
+        },
+        "stage": {
+          "enum": [
+            "receive",
+            "resolve_source",
+            "extract",
+            "parse",
+            "normalize",
+            "validate",
+            "deduplicate",
+            "persist",
+            "done"
+          ]
+        },
+        "progress_hint": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "attempt_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "recipe_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recipe_status": {
+          "enum": [
+            "ready",
+            "needs_review"
+          ]
+        },
+        "existing_recipe_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "review_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error": {
+          "$ref": "#/$defs/APIError"
+        },
+        "result": {
+          "$ref": "#/$defs/RecipeResult"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "queued",
+                  "extracting",
+                  "parsing",
+                  "validating",
+                  "completed",
+                  "failed"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "queue_confirmed_at"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "completed"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "recipe_id",
+              "recipe_status"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "failed"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

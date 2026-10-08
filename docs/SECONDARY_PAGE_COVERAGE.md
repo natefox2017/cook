@@ -74,7 +74,7 @@ The following are not UI omissions. They require production configuration and ar
 No screen should claim those production services succeeded while they are unconfigured.
 
 
-## 2026-10-07 navigation / click audit
+## Historical 2026-10-07 navigation / click audit (superseded claims are not current)
 
 Corrections applied after static path review:
 - Root navigation is now four tabs: Recipes / Plan / Groceries / Profile.
@@ -84,4 +84,4 @@ Corrections applied after static path review:
 - Replaced a fake always-on appearance toggle with truthful read-only state.
 - Unconfigured account/auth controls are visibly disabled instead of accepting taps that only show placeholder messages.
 - Cloud account deletion is visibly unavailable until sign-in instead of acting like a working destructive action.
-- Display titles use the serif system design; Source Sans 3 remains the body/control font, matching the design direction.
+- **Superseded:** Source Sans 3 body/control typography was subsequently replaced. Current `RecipeTheme.swift` uses `Lora-Regular` consistently for titles, body, navigation and Tab; Lora is the current bundled font, pending latest screenshot/CJK validation under #33.
