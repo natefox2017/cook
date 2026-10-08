@@ -39,7 +39,12 @@ private func temporaryShareContainer() throws -> URL {
     #expect(try reopened.pendingReceipts().count == 1)
     let ownerID = UUID()
     let jobID = UUID()
-    try reopened.acknowledge(first, jobID: jobID, ownerID: ownerID)
+    try reopened.acknowledge(
+        first,
+        jobID: jobID,
+        ownerID: ownerID,
+        queueConfirmedAt: "2026-10-08T00:00:00Z"
+    )
     #expect(try reopened.pendingReceipts(for: ownerID).isEmpty)
     #expect(try reopened.acknowledgedJobID(for: first, ownerID: ownerID) == jobID)
     // No authenticated owner must never be treated as cloud-acknowledged.
@@ -132,7 +137,12 @@ private func temporaryShareContainer() throws -> URL {
     let pending = try inbox.receive("https://example.org/private-recipe", as: .url)
     let acknowledged = try inbox.receive("Salt to taste", as: .text)
     let ownerID = UUID()
-    try inbox.acknowledge(acknowledged, jobID: UUID(), ownerID: ownerID)
+    try inbox.acknowledge(
+        acknowledged,
+        jobID: UUID(),
+        ownerID: ownerID,
+        queueConfirmedAt: "2026-10-08T00:00:00Z"
+    )
 
     #expect(try inbox.pendingReceipts(for: ownerID).map(\.id) == [pending.id])
     try inbox.eraseAllLocalReceipts()
@@ -156,7 +166,12 @@ private func temporaryShareContainer() throws -> URL {
     let accountB = UUID()
     let jobID = UUID()
 
-    try inbox.acknowledge(receipt, jobID: jobID, ownerID: accountA)
+    try inbox.acknowledge(
+        receipt,
+        jobID: jobID,
+        ownerID: accountA,
+        queueConfirmedAt: "2026-10-08T00:00:00Z"
+    )
     #expect(try inbox.pendingReceipts(for: accountA).isEmpty)
     #expect(try inbox.acknowledgedJobID(for: receipt, ownerID: accountA) == jobID)
 
@@ -164,4 +179,33 @@ private func temporaryShareContainer() throws -> URL {
     #expect(try inbox.acknowledgedJobID(for: receipt, ownerID: accountB) == nil)
     #expect(try inbox.pendingReceipts(for: accountB).map(\.id) == [receipt.id])
     #expect(try inbox.source(for: receipt) == "https://example.org/shared")
+    #expect(try inbox.acknowledgedReceipts(for: accountA) == [receipt])
+    #expect(try inbox.acknowledgedReceipts(for: accountB).isEmpty)
+}
+
+@Test func durableReceivedJobDoesNotHideReceiptBeforeQueueAdmission() throws {
+    let container = try temporaryShareContainer()
+    defer { try? FileManager.default.removeItem(at: container) }
+
+    let inbox = try RecipeShareInbox(containerURL: container)
+    let receipt = try inbox.receive("https://example.org/queued-later", as: .url)
+    let account = UUID()
+    let jobID = UUID()
+
+    try inbox.recordReceivedJob(jobID, for: receipt, ownerID: account)
+    let reopened = try RecipeShareInbox(containerURL: container)
+    #expect(try reopened.receivedJobID(for: receipt, ownerID: account) == jobID)
+    #expect(try reopened.receivedJobID(for: receipt, ownerID: UUID()) == nil)
+    #expect(try reopened.pendingReceipts(for: account) == [receipt])
+
+    // The caller may ACK only after a later status confirms durable queuing.
+    try reopened.acknowledge(
+        receipt,
+        jobID: jobID,
+        ownerID: account,
+        queueConfirmedAt: "2026-10-08T00:00:00Z"
+    )
+    #expect(try reopened.receivedJobID(for: receipt, ownerID: account) == nil)
+    #expect(try reopened.pendingReceipts(for: account).isEmpty)
+    #expect(try reopened.acknowledgedReceipts(for: account) == [receipt])
 }

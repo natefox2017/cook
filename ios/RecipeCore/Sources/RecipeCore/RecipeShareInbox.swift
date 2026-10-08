@@ -82,7 +82,7 @@ public struct RecipeShareInbox: Sendable {
             "RecipeShareInbox-v1",
             isDirectory: true
         )
-        for name in ["sources", "receipts", "acknowledgements"] {
+        for name in ["sources", "receipts", "acknowledgements", "submissions"] {
             try FileManager.default.createDirectory(
                 at: root.appendingPathComponent(name, isDirectory: true),
                 withIntermediateDirectories: true
@@ -170,11 +170,96 @@ public struct RecipeShareInbox: Sendable {
                 // A source acknowledged for account A must remain pending
                 // for account B. Signed-out devices keep their local source.
                 guard let ownerID else { return true }
-                return !FileManager.default.fileExists(
-                    atPath: acknowledgementFile(for: receipt.id, ownerID: ownerID).path
-                )
+                return !hasQueueAcknowledgement(for: receipt, ownerID: ownerID)
             }
         return results.sorted { $0.receivedAt < $1.receivedAt }
+    }
+
+    /// Returns sources with a server ACK for this account so their job status
+    /// can be recovered after the app or device restarts.
+    public func acknowledgedReceipts(for ownerID: UUID) throws -> [RecipeShareReceipt] {
+        let receiptDirectory = root.appendingPathComponent("receipts")
+        let acknowledgementDirectory = root.appendingPathComponent("acknowledgements")
+        let ownerSuffix = "-" + ownerID.uuidString + ".json"
+        let files = try FileManager.default.contentsOfDirectory(
+            at: acknowledgementDirectory,
+            includingPropertiesForKeys: nil
+        )
+        let receiptsByID = try Dictionary(
+            uniqueKeysWithValues: FileManager.default.contentsOfDirectory(
+                at: receiptDirectory,
+                includingPropertiesForKeys: nil
+            )
+            .filter { $0.pathExtension == "json" }
+            .map { file in
+                let receipt = try decoder().decode(
+                    RecipeShareReceipt.self,
+                    from: Data(contentsOf: file)
+                )
+                return (receipt.id, receipt)
+            }
+        )
+        return try files
+            .filter { $0.lastPathComponent.hasSuffix(ownerSuffix) }
+            .compactMap { file in
+                let record = try decoder().decode(
+                    ServerAcknowledgement.self,
+                    from: Data(contentsOf: file)
+                )
+                guard record.ownerID == ownerID,
+                      record.queueConfirmedAt != nil else {
+                    return nil
+                }
+                let receiptIDText = String(
+                    file.lastPathComponent.dropLast(ownerSuffix.count)
+                )
+                guard let receiptID = UUID(uuidString: receiptIDText) else {
+                    return nil
+                }
+                return receiptsByID[receiptID]
+            }
+            .sorted { $0.receivedAt < $1.receivedAt }
+    }
+
+    /// Keeps the durable server record ID owner-scoped without treating
+    /// `received` as queued. Re-submission always uses the receipt's original
+    /// client_request_id if the app restarts before queue admission.
+    public func recordReceivedJob(
+        _ jobID: UUID,
+        for receipt: RecipeShareReceipt,
+        ownerID: UUID
+    ) throws {
+        let record = ServerAcknowledgement(
+            jobID: jobID,
+            ownerID: ownerID,
+            acknowledgedAt: .now,
+            queueConfirmedAt: nil
+        )
+        let destination = submissionFile(for: receipt.id, ownerID: ownerID)
+        try writeOnce(try encoder().encode(record), to: destination)
+        let stored = try decoder().decode(
+            ServerAcknowledgement.self,
+            from: Data(contentsOf: destination)
+        )
+        guard stored.jobID == jobID, stored.ownerID == ownerID else {
+            throw RecipeShareInboxError.invalidInput
+        }
+    }
+
+    public func receivedJobID(
+        for receipt: RecipeShareReceipt,
+        ownerID: UUID
+    ) throws -> UUID? {
+        let file = submissionFile(for: receipt.id, ownerID: ownerID)
+        guard FileManager.default.fileExists(atPath: file.path) else {
+            return nil
+        }
+        let record = try decoder().decode(
+            ServerAcknowledgement.self,
+            from: Data(contentsOf: file)
+        )
+        guard record.ownerID == ownerID else { return nil }
+        return record.jobID
     }
 
     /// User-confirmed local erasure must also clear pending private source
@@ -182,7 +267,7 @@ public struct RecipeShareInbox: Sendable {
     /// Errors propagate so the app never reports a full deletion while
     /// shared personal source files remain.
     public func eraseAllLocalReceipts() throws {
-        for name in ["receipts", "acknowledgements", "sources"] {
+        for name in ["receipts", "acknowledgements", "submissions", "sources"] {
             let directory = root.appendingPathComponent(
                 name, isDirectory: true
             )
@@ -219,16 +304,33 @@ public struct RecipeShareInbox: Sendable {
     public func acknowledge(
         _ receipt: RecipeShareReceipt,
         jobID: UUID,
-        ownerID: UUID
+        ownerID: UUID,
+        queueConfirmedAt: String
     ) throws {
+        let fractionalFormatter = ISO8601DateFormatter()
+        fractionalFormatter.formatOptions = [
+            .withInternetDateTime,
+            .withFractionalSeconds
+        ]
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        guard fractionalFormatter.date(from: queueConfirmedAt) != nil
+            || formatter.date(from: queueConfirmedAt) != nil
+        else {
+            throw RecipeShareInboxError.invalidInput
+        }
         let payload = ServerAcknowledgement(
             jobID: jobID,
             ownerID: ownerID,
-            acknowledgedAt: .now
+            acknowledgedAt: .now,
+            queueConfirmedAt: queueConfirmedAt
         )
         try writeOnce(
             try encoder().encode(payload),
             to: acknowledgementFile(for: receipt.id, ownerID: ownerID)
+        )
+        try? FileManager.default.removeItem(
+            at: submissionFile(for: receipt.id, ownerID: ownerID)
         )
     }
 
@@ -246,7 +348,7 @@ public struct RecipeShareInbox: Sendable {
             ServerAcknowledgement.self,
             from: Data(contentsOf: file)
         )
-        guard record.ownerID == ownerID else {
+        guard record.ownerID == ownerID, record.queueConfirmedAt != nil else {
             return nil
         }
         return record.jobID
@@ -256,6 +358,7 @@ public struct RecipeShareInbox: Sendable {
         let jobID: UUID
         let ownerID: UUID
         let acknowledgedAt: Date
+        let queueConfirmedAt: String?
     }
 
     private func receiptFile(for id: UUID) -> URL {
@@ -266,6 +369,23 @@ public struct RecipeShareInbox: Sendable {
     private func acknowledgementFile(for id: UUID, ownerID: UUID) -> URL {
         root.appendingPathComponent("acknowledgements")
             .appendingPathComponent(id.uuidString + "-" + ownerID.uuidString + ".json")
+    }
+
+    private func submissionFile(for id: UUID, ownerID: UUID) -> URL {
+        root.appendingPathComponent("submissions")
+            .appendingPathComponent(id.uuidString + "-" + ownerID.uuidString + ".json")
+    }
+
+    private func hasQueueAcknowledgement(
+        for receipt: RecipeShareReceipt,
+        ownerID: UUID
+    ) -> Bool {
+        let file = acknowledgementFile(for: receipt.id, ownerID: ownerID)
+        guard let data = try? Data(contentsOf: file),
+              let record = try? decoder().decode(ServerAcknowledgement.self, from: data) else {
+            return false
+        }
+        return record.ownerID == ownerID && record.queueConfirmedAt != nil
     }
 
     private func encoder() -> JSONEncoder {
