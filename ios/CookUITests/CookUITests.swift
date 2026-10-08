@@ -222,7 +222,7 @@ final class CookUITests: XCTestCase {
         let mealPlan = app.buttons["Meal Plan"]
         waitUntilReady(mealPlan)
         mealPlan.tap()
-        XCTAssertTrue(app.staticTexts["Tomato Basil Pasta"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Garlic Butter Shrimp Pasta"].waitForExistence(timeout: 8))
         attachScreenshot("Recipe added directly to meal plan", app: app)
     }
 
@@ -235,7 +235,7 @@ final class CookUITests: XCTestCase {
         app.buttons["startCooking"].tap()
         waitUntilReady(app.buttons["Ingredients"])
         app.buttons["Ingredients"].tap()
-        let tomato = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Tomatoes")).firstMatch
+        let tomato = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pasta")).firstMatch
         waitUntilReady(tomato)
         tomato.tap()
         XCTAssertTrue(tomato.label.contains("used"))
