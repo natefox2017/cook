@@ -3,6 +3,7 @@
 
 import { load } from "cheerio";
 import { fetchPublicVTT } from "./safeURLFetch.ts";
+import { publicSocialMetadata } from "./publicSocialMetadata.ts";
 
 export type PageTextSourceType = "article_body" | "caption" | "subtitle";
 
@@ -27,6 +28,13 @@ export async function extractPublicPageText(
   const $ = load(html, { scriptingEnabled: false });
   const evidence: PageTextEvidence[] = [];
   const seen = new Set<string>();
+
+  // Public post metadata can preserve a caption without media downloads.
+  // It is only evidence, never a fabricated transcript or recipe step.
+  const social = publicSocialMetadata(html, canonicalURL);
+  if (social.caption) {
+    appendEvidence(evidence, seen, "caption", social.caption, canonicalURL);
+  }
 
   const article = visibleArticleContent($);
   if (article.text) {
