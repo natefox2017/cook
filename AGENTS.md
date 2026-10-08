@@ -1,55 +1,79 @@
-# AGENTS.md
+# Cook — Agent Instructions
 
-## 1. 真相源
+Use this file as the repository-wide guide for coding agents. Keep changes scoped to the user's request, preserve unrelated work in the checkout, and follow the current project documentation listed below.
 
-- 产品范围：`docs/PRODUCT_BASELINE_V1.md`
-- 用户流程：`docs/USER_FLOWS.md`
-- UI 方向：`docs/DESIGN_SYSTEM.md`
-- UI 审批：`docs/UI_DESIGN_APPROVALS.md`
-- 技术架构：`docs/ARCHITECTURE.md`
-- 导入协议：`docs/RECIPE_IMPORT_PIPELINE.md`
-- 数据结构：`docs/DATA_MODEL.md`
-- 开发协作：`docs/DEVELOPMENT_STANDARD.md`
+## Project Overview
 
-出现冲突时以上文件优先，禁止从旧聊天、旧截图或旧分支自行推断新需求。
+Cook is a personal recipe collection and cooking app. V1 focuses on collecting recipes from third-party sources, organizing them privately, and using them for cooking, shopping, and simple meal planning. The current client is a native iOS app built with SwiftUI, with a native Share Extension and a Supabase backend planned for asynchronous imports and sync.
 
-## 2. UI 门禁
+## Source of Truth
 
-所有 UI 相关功能必须：
-1. 先生成/提供设计图或现有参考图。
-2. 在 `docs/UI_DESIGN_APPROVALS.md` 登记。
-3. 用户明确回复“确认”后，状态改为 APPROVED。
-4. 只有 APPROVED 页面才允许写正式 UI。
+Read the relevant documents before making a substantial product or architecture change:
 
-没有设计图时先补设计图，不允许 AI 自由发挥页面。
+- `docs/PRODUCT_BASELINE_V1.md` — product scope and priorities
+- `docs/USER_FLOWS.md` — user journeys
+- `docs/DESIGN_SYSTEM.md` — visual direction and UI conventions
+- `docs/ARCHITECTURE.md` — system boundaries
+- `docs/RECIPE_IMPORT_PIPELINE.md` — import lifecycle
+- `docs/DATA_MODEL.md` — data model
+- `docs/DEVELOPMENT_STANDARD.md` — collaboration and delivery conventions
 
-## 3. 产品硬规则
+`docs/UI_DESIGN_APPROVALS.md` records UI directions and decisions. It is not a separate development gate when the user has directly requested implementation. Follow the user's current, explicit instructions when they clarify or supersede older documentation.
 
-- 正常收藏路径：第三方分享 → 选择 Cook → “已收下” → 返回原 App。
-- 分享扩展只负责接收和入队，不等待完整解析。
-- 正常导入不要求用户逐条确认；只有异常/低置信度信息进入“待完善”。
-- 手动录入保留，但属于兜底入口。
-- 原始来源 URL、来源平台、作者/标题（可取得时）必须保留。
-- 不做社区 Feed、用户发帖、关注、点赞、评论、达人主页。
-- AI 不得把“适量/少许/未知”伪造成精确克数。
+## Product Rules
 
-## 4. 开发规则
+- The normal collection flow is: share from a third-party app, choose Cook, receive an acknowledgment, and return to the source app.
+- The Share Extension receives and queues input, then finishes promptly. It must not wait for full parsing or AI processing.
+- Import complete information automatically. Send only missing, anomalous, or low-confidence fields to a review flow.
+- Keep manual recipe entry as a fallback.
+- Preserve the original source URL, source platform, and available author/title metadata.
+- Do not add a community feed, public posts, follows, likes, comments, creator profiles, or a public recipe marketplace to V1.
+- Never turn vague amounts such as “to taste,” “a little,” or “unknown” into invented exact quantities.
 
-- GitHub Issue 是任务入口；每个 Issue 明确输入、输出、文件范围、验收标准和依赖。
-- 禁止直接在 main 上开发；使用独立分支/Worktree。
-- 共享接口/Schema 先冻结，再并行开发。
-- PR 默认 Squash；UI、设计、CI、权限、安全相关改动必须人工确认。
-- 修复审查问题前先在当前代码中复现/确认，禁止照单全改。
-- 不删除失败测试来“修 CI”。
+## Architecture and Code Boundaries
 
-## 5. 代码边界
+- iOS app and Share Extension: SwiftUI and native iOS APIs.
+- Backend: Supabase Postgres, Edge Functions, Storage, and Queues/pgmq.
+- AI providers are called by the backend through an OpenAI-compatible provider layer. Do not put provider secrets in the client.
+- Do not introduce a second UI framework, database, or queue unless the task explicitly requires it.
+- Keep imports asynchronous and idempotent. Preserve partial results and source evidence when parsing fails.
+- Validate fetched URLs and redirects; protect import services from SSRF, private-network access, oversized downloads, and excessive processing time.
 
-V1 推荐：
-- iOS：SwiftUI
-- Share Extension：原生 iOS Share Extension
-- 后端：Supabase Postgres + Edge Functions
-- 异步任务：Supabase Queues / pgmq
-- 文件：Supabase Storage
-- AI：OpenAI-compatible provider router
+## Repository Map
 
-除非 Issue 明确要求，不自行引入第二套 UI 框架、第二个数据库或第二套队列。
+- `ios/Cook/` — iOS app, screens, design helpers, and services
+- `ios/CookCore/` — shared domain models and local persistence
+- `ios/ShareExtension/` — native share extension
+- `supabase/` — backend configuration, migrations, and functions
+- `docs/` — product, design, architecture, and implementation references
+
+## Change Workflow
+
+- Keep `main` PR-only. Use a focused branch or worktree for implementation.
+- GitHub Issues are the project task entry point. For issue-sized work, state the goal, scope, dependencies, and acceptance criteria in the issue or task.
+- Freeze shared API and schema decisions before parallel work. Do not have multiple agents edit the same core file at once.
+- Inspect the current implementation and reproduce a reported defect before changing it. Do not apply review comments mechanically.
+- Make the smallest change that satisfies the request. Preserve existing behavior and user data; do not revert or clean unrelated work.
+- Do not remove failing tests to make CI pass. Do not commit secrets, access tokens, or production credentials.
+- Keep UI changes consistent with `docs/DESIGN_SYSTEM.md` and relevant existing app patterns. When the user asks for a UI change, implement it directly; do not require a separate design-confirmation step.
+- Use the user's requested language for user-facing product copy. Keep source code identifiers and technical documentation clear and consistent with the surrounding code.
+
+## Build and Verification
+
+Run the checks relevant to the change and report what actually ran. Do not claim simulator, signing, backend, or end-to-end verification based only on a successful compile.
+
+Core tests:
+
+```sh
+swift test --package-path ios/CookCore
+```
+
+iOS simulator tests (use an installed iPhone simulator supported by the local Xcode):
+
+```sh
+xcodebuild -project ios/Cook.xcodeproj -scheme Cook \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max,OS=26.2' \
+  CODE_SIGNING_ALLOWED=NO test
+```
+
+For UI changes, launch the app in a simulator and inspect the affected flow when the environment permits. The project minimum deployment target is iOS 18.0; use native platform behavior and verify version-specific UI on the available simulator.

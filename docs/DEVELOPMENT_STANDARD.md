@@ -28,14 +28,9 @@
 
 ## 3. UI 开发
 
-UI 代码之前必须检查：
-- `docs/UI_DESIGN_APPROVALS.md`
-- `docs/DESIGN_ASSETS.md`
+UI 实现应遵循 `docs/DESIGN_SYSTEM.md`，并复用当前产品中的页面模式和可用参考资源。
 
-没有 APPROVED 设计：
-- 可以建 domain/service/test 骨架
-- 可以写无视觉耦合的逻辑
-- 不允许自由设计正式页面
+`docs/UI_DESIGN_APPROVALS.md` 用于记录 UI 方向和决策，不构成独立的开发门禁。用户明确要求实现 UI 时，可直接着手；遇到会改变产品范围或用户流程的歧义时，再先澄清。
 
 ## 4. 接口先行
 
