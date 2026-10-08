@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Source page title</title>
+    <meta property="og:title" content="Original page title">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebPage",
+            "mainEntity": { "@id": "#recipe" }
+          },
+          {
+            "@id": "#recipe",
+            "@type": "https://schema.org/Recipe",
+            "name": "Weeknight soup",
+            "author": { "@type": "Person", "name": "Mina Cook" },
+            "recipeIngredient": ["2 cups broth", "salt to taste"],
+            "recipeInstructions": [
+              { "@type": "HowToStep", "text": "Warm the broth." },
+              {
+                "@type": "HowToSection",
+                "name": "Finish",
+                "itemListElement": [
+                  { "@type": "HowToStep", "text": "Add salt to taste." }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body></body>
+</html>

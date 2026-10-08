@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "cheerio": "npm:cheerio@1.2.0",
+    "ipaddr.js": "npm:ipaddr.js@2.2.0"
+  }
+}

@@ -1,7 +1,13 @@
 // Developer: gengyun
-// Purpose: Processes owner-scoped import queue messages without unsafe remote URL fetching.
+// Purpose: Processes owner-scoped import jobs and safely extracts public recipe webpages.
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { parseSchemaOrgRecipePage } from "./schemaRecipe.ts";
+import {
+  fetchPublicHTML,
+  SafeFetchError,
+  type SafeHTMLPage,
+} from "./safeURLFetch.ts";
 import { parseLocalText } from "./textEvidence.ts";
 
 interface QueueMessage {
@@ -15,6 +21,7 @@ interface Job {
   owner_id: string;
   input_type: "url" | "text";
   source_value: string;
+  platform_hint: string | null;
   status: string;
   attempt_count: number;
   queue_message_id: number | null;
@@ -144,40 +151,66 @@ Deno.serve(async (request: Request): Promise<Response> => {
       // older worker cannot overwrite the newer attempt's result.
       const claimedAttempt = claimed.attempt_count;
 
+      let result:
+        | ReturnType<typeof parseLocalText>
+        | ReturnType<
+          typeof parseSchemaOrgRecipePage
+        >;
       if (claimed.input_type === "url") {
-        // URL fetching remains explicitly disabled until the server has
-        // DNS-pinned/per-redirect SSRF controls and source rights reviewed.
-        const { data: stored, error } = await admin.from("recipe_import_jobs")
-          .update({
+        let page: SafeHTMLPage;
+        try {
+          page = await fetchPublicHTML(claimed.source_value);
+        } catch (error) {
+          const sourceError = error instanceof SafeFetchError
+            ? error
+            : new SafeFetchError(
+              "FETCH_BLOCKED",
+              "The source webpage could not be fetched safely.",
+              true,
+            );
+          const { data: stored, error: saveError } = await admin.from(
+            "recipe_import_jobs",
+          ).update({
             status: "failed",
             stage: "done",
             error: {
-              code: "UNSUPPORTED_SOURCE",
-              message:
-                "Server-side webpage or video extraction is not yet available.",
-              recoverable: false,
-              suggested_action:
-                "Paste the recipe text or use the app's local webpage import.",
+              code: sourceError.code,
+              message: sourceError.message,
+              recoverable: sourceError.recoverable,
+              suggested_action: sourceError.recoverable
+                ? "Keep the source URL and retry later."
+                : "Paste the recipe text or use another public recipe page.",
               request_id: crypto.randomUUID(),
             },
             completed_at: now(),
             updated_at: now(),
           }).eq("id", jobID).eq("queue_message_id", queueID)
-          .eq("status", "extracting").eq("attempt_count", claimedAttempt)
-          .select("id")
-          .maybeSingle();
-        if (error || !stored) {
-          throw error ?? new Error("Import state changed before save");
+            .eq("status", "extracting").eq("attempt_count", claimedAttempt)
+            .select("id")
+            .maybeSingle();
+          if (saveError || !stored) {
+            throw saveError ?? new Error("Import state changed before save");
+          }
+          await archive(queueID);
+          failed++;
+          continue;
         }
-        await archive(queueID);
-        failed++;
-        continue;
+        result = parseSchemaOrgRecipePage({
+          id: claimed.id,
+          html: page.html,
+          source: {
+            originalURL: claimed.source_value,
+            canonicalURL: page.canonicalURL,
+            platformHint: claimed.platform_hint,
+          },
+        });
+      } else {
+        result = parseLocalText({
+          id: claimed.id,
+          source_value: claimed.source_value,
+        });
       }
 
-      const result = parseLocalText({
-        id: claimed.id,
-        source_value: claimed.source_value,
-      });
       const { data: saved, error: saveError } = await admin.from(
         "recipe_import_jobs",
       ).update({
