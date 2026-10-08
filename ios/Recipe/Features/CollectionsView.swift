@@ -13,7 +13,10 @@ struct CollectionsView: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        List {
+        // Build collection counts in one pass for the entire list.
+        let membershipIndex = RecipeCollectionIndex(memberships: store.collectionMemberships)
+
+        return List {
             Section {
                 HStack(spacing: 12) {
                     TextField("New collection", text: $newName)
@@ -44,7 +47,7 @@ struct CollectionsView: View {
                         CollectionRow(
                             name: collection.name,
                             systemImage: "folder",
-                            count: store.recipes(inCollection: collection.id).count
+                            count: membershipIndex.count(inCollection: collection.id)
                         )
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -176,9 +179,10 @@ private struct FavoriteRecipesView: View {
     @Environment(RecipeStore.self) private var store
 
     var body: some View {
-        List {
-            if store.recipes.contains(where: \.isFavorite) {
-                ForEach(store.recipes.filter(\.isFavorite)) { recipe in
+        let favorites = store.recipes.filter(\.isFavorite)
+        return List {
+            if !favorites.isEmpty {
+                ForEach(favorites) { recipe in
                     NavigationLink {
                         RecipeDetailView(recipeID: recipe.id)
                     } label: {
@@ -230,8 +234,10 @@ private struct CollectionDetailView: View {
     var body: some View {
         Group {
             if let collection {
+                // Reuse one filtered/sorted result for both the empty state and rows.
+                let recipes = visibleRecipes
                 List {
-                    if visibleRecipes.isEmpty {
+                    if recipes.isEmpty {
                         ContentUnavailableView(
                             searchText.isEmpty ? "No recipes yet" : "No recipes found",
                             systemImage: "folder",
@@ -242,7 +248,7 @@ private struct CollectionDetailView: View {
                             )
                         )
                     } else {
-                        ForEach(visibleRecipes) { recipe in
+                        ForEach(recipes) { recipe in
                             NavigationLink {
                                 RecipeDetailView(recipeID: recipe.id)
                             } label: {
@@ -350,10 +356,16 @@ private struct CollectionRecipePickerSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
+        // Precompute this snapshot once; each row then uses a constant-time Set lookup.
+        let membershipIndex = RecipeCollectionIndex(memberships: store.collectionMemberships)
+
+        return NavigationStack {
             List {
                 ForEach(visibleRecipes) { recipe in
-                    let isMember = store.collectionIDs(forRecipe: recipe.id).contains(collectionID)
+                    let isMember = membershipIndex.contains(
+                        recipeID: recipe.id,
+                        inCollection: collectionID
+                    )
                     Button {
                         toggle(recipe.id, isMember: isMember)
                     } label: {

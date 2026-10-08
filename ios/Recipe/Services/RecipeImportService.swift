@@ -48,11 +48,28 @@ enum RecipeImportService {
         }
         guard response.expectedContentLength <= 2_000_000 else { throw RecipeImportError.tooLarge }
         guard ["text/html", "application/xhtml+xml"].contains(response.mimeType ?? "") else { throw RecipeImportError.unsupportedPage }
+        // Buffer network bytes into modest chunks. This preserves the strict
+        // 2 MB streaming limit without repeatedly appending single bytes to Data.
+        let maximumHTMLBytes = 2_000_000
+        let chunkSize = 16_384
         var data = Data()
-        for try await byte in bytes {
-            if data.count >= 2_000_000 { throw RecipeImportError.tooLarge }
-            data.append(byte)
+        if response.expectedContentLength > 0 {
+            data.reserveCapacity(Int(min(response.expectedContentLength, Int64(maximumHTMLBytes))))
         }
+        var chunk: [UInt8] = []
+        chunk.reserveCapacity(chunkSize)
+
+        for try await byte in bytes {
+            guard data.count + chunk.count < maximumHTMLBytes else {
+                throw RecipeImportError.tooLarge
+            }
+            chunk.append(byte)
+            if chunk.count == chunkSize {
+                data.append(contentsOf: chunk)
+                chunk.removeAll(keepingCapacity: true)
+            }
+        }
+        data.append(contentsOf: chunk)
         try Task.checkCancellation()
         let html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) ?? ""
         guard let recipe = RecipeDocumentParser.recipe(inHTML: html, sourceURL: url) else { throw RecipeImportError.unsupportedPage }

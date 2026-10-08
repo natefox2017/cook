@@ -140,6 +140,13 @@ private enum LibraryMergeState<Value: Hashable>: Equatable {
     case deleted
 }
 
+/// Matches the existing grocery consolidation rule: names ignore case and
+/// extra spaces, while units remain case-sensitive (t and T differ).
+private struct GroceryConsolidationKey: Hashable {
+    let name: String
+    let unit: String
+}
+
 @Observable @MainActor
 public final class RecipeStore {
     public private(set) var recipes: [Recipe] = []
@@ -209,7 +216,7 @@ public final class RecipeStore {
 
     public func collectionIDs(forRecipe recipeID: UUID) -> Set<UUID> {
         Set(
-            collectionMemberships
+            collectionMemberships.lazy
                 .filter { $0.recipeID == recipeID }
                 .map(\.collectionID)
         )
@@ -217,7 +224,7 @@ public final class RecipeStore {
 
     public func recipes(inCollection collectionID: UUID) -> [Recipe] {
         let recipeIDs = Set(
-            collectionMemberships
+            collectionMemberships.lazy
                 .filter { $0.collectionID == collectionID }
                 .map(\.recipeID)
         )
@@ -402,22 +409,43 @@ public final class RecipeStore {
         }
 
         var next = snapshot
+        var consolidationIndices: [GroceryConsolidationKey: Int] = [:]
+
+        if consolidateCompatibleIngredients {
+            // Preserve the original first-unchecked-match behavior when two
+            // existing grocery rows have the same name and unit.
+            for (index, grocery) in next.groceries.enumerated()
+            where !grocery.isChecked && grocery.quantity != nil {
+                let key = GroceryConsolidationKey(
+                    name: normalized(grocery.name),
+                    unit: unitKey(grocery.unit)
+                )
+                if consolidationIndices[key] == nil {
+                    consolidationIndices[key] = index
+                }
+            }
+        }
+
         for ingredient in recipe.ingredients where ingredientIDs.contains(ingredient.id) {
             guard !normalized(ingredient.name).isEmpty else {
                 throw RecipeStoreError.invalidValue(
                     "Give each selected ingredient a name before adding it.")
             }
+
             let item = try groceryItem(
                 from: ingredient, recipeID: recipeID,
-                                       originalServings: originalServings,
-                                       requestedServings: requestedServings)
+                originalServings: originalServings,
+                requestedServings: requestedServings
+            )
+            let key = GroceryConsolidationKey(
+                name: normalized(item.name),
+                unit: unitKey(item.unit)
+            )
+
             if consolidateCompatibleIngredients,
-               let index = next.groceries.firstIndex(where: {
-                !$0.isChecked && $0.quantity != nil && item.quantity != nil
-                    && normalized($0.name) == normalized(item.name)
-                    && unitKey($0.unit) == unitKey(item.unit)
-                }), var existing = next.groceries[index].quantity, var added = item.quantity
-            {
+               let index = consolidationIndices[key],
+               var existing = next.groceries[index].quantity,
+               var added = item.quantity {
                 var total = Decimal()
                 guard NSDecimalAdd(&total, &existing, &added, .plain) == .noError else {
                     throw IngredientAmount.ValidationError.arithmeticFailure
@@ -431,6 +459,12 @@ public final class RecipeStore {
                 }
             } else {
                 next.groceries.append(item)
+                // The next selected ingredient may combine with this new row.
+                if consolidateCompatibleIngredients,
+                   item.quantity != nil,
+                   consolidationIndices[key] == nil {
+                    consolidationIndices[key] = next.groceries.count - 1
+                }
             }
         }
         try commit(next)
