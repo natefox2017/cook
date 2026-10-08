@@ -35,7 +35,7 @@ struct GroceriesView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(store.groceries.count) items")
                                 .font(RecipeTheme.title(25))
-                            Text("From \(sourceCount) saved \(sourceCount == 1 ? "recipe" : "recipes")")
+                            Text("From \(sourceCount) saved recipes")
                                 .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
                                 .foregroundStyle(.secondary)
                         }
