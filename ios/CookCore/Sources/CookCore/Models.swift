@@ -255,18 +255,120 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
     }
 }
 
+public struct CookingTemperature: Codable, Hashable, Sendable {
+    public var text: String
+
+    public init(text: String) {
+        self.text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+public struct RecipeStepTimer: Identifiable, Codable, Hashable, Sendable {
+    public var id: UUID
+    public var label: String
+    public var durationSeconds: Int
+
+    public init(id: UUID = UUID(), label: String = "Timer", durationSeconds: Int) {
+        self.id = id
+        self.label = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.durationSeconds = max(1, durationSeconds)
+    }
+}
+
 public struct RecipeStep: Identifiable, Codable, Hashable, Sendable {
     public var id: UUID
     public var title: String
     public var instruction: String
-    public var durationSeconds: Int?
+    public var linkedIngredientIDs: [UUID]
+    public var temperature: CookingTemperature?
+    public var timers: [RecipeStepTimer]
 
-    public init(id: UUID = UUID(), title: String = "", instruction: String,
-                durationSeconds: Int? = nil) {
+    /// Compatibility bridge for recipes written before steps supported multiple timers.
+    /// New code should use `timers`; old callers continue to read/write the first timer.
+    public var durationSeconds: Int? {
+        get { timers.first?.durationSeconds }
+        set {
+            guard let newValue, newValue > 0 else {
+                if !timers.isEmpty { timers.removeFirst() }
+                return
+            }
+            if timers.isEmpty {
+                timers = [RecipeStepTimer(id: id, label: title.isEmpty ? "Step timer" : title, durationSeconds: newValue)]
+            } else {
+                timers[0].durationSeconds = newValue
+            }
+        }
+    }
+
+    public init(
+        id: UUID = UUID(),
+        title: String = "",
+        instruction: String,
+        durationSeconds: Int? = nil,
+        linkedIngredientIDs: [UUID] = [],
+        temperature: CookingTemperature? = nil,
+        timers: [RecipeStepTimer] = []
+    ) {
         self.id = id
         self.title = title
         self.instruction = instruction
-        self.durationSeconds = durationSeconds
+        self.linkedIngredientIDs = linkedIngredientIDs
+        self.temperature = temperature
+        if timers.isEmpty, let durationSeconds, durationSeconds > 0 {
+            self.timers = [
+                RecipeStepTimer(
+                    id: id,
+                    label: title.isEmpty ? "Step timer" : title,
+                    durationSeconds: durationSeconds
+                )
+            ]
+        } else {
+            self.timers = timers.filter { $0.durationSeconds > 0 }
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case instruction
+        case durationSeconds
+        case linkedIngredientIDs
+        case temperature
+        case timers
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
+        instruction = try container.decode(String.self, forKey: .instruction)
+        linkedIngredientIDs = try container.decodeIfPresent([UUID].self, forKey: .linkedIngredientIDs) ?? []
+        temperature = try container.decodeIfPresent(CookingTemperature.self, forKey: .temperature)
+        timers = try container.decodeIfPresent([RecipeStepTimer].self, forKey: .timers) ?? []
+
+        if timers.isEmpty,
+           let legacyDuration = try container.decodeIfPresent(Int.self, forKey: .durationSeconds),
+           legacyDuration > 0 {
+            timers = [
+                RecipeStepTimer(
+                    id: id,
+                    label: title.isEmpty ? "Step timer" : title,
+                    durationSeconds: legacyDuration
+                )
+            ]
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(instruction, forKey: .instruction)
+        try container.encode(linkedIngredientIDs, forKey: .linkedIngredientIDs)
+        try container.encodeIfPresent(temperature, forKey: .temperature)
+        try container.encode(timers, forKey: .timers)
+        // Keep one legacy duration for older builds that only understand one timer.
+        try container.encodeIfPresent(timers.first?.durationSeconds, forKey: .durationSeconds)
     }
 }
 

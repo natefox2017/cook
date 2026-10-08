@@ -147,6 +147,80 @@ final class CookUITests: XCTestCase {
 
 
     @MainActor
+    func testComplexCookingStepShowsIngredientsAndMultipleTimers() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let recipe = app.buttons["recipe.C0010000-0000-4000-8000-000000000005"]
+        reveal(recipe, in: app, maximumSwipes: 4)
+        recipe.tap()
+
+        // Create saved progress first, then verify an explicit "Cook from Step"
+        // action overrides the restored session position.
+        let startCooking = app.buttons["startCooking"]
+        waitUntilReady(startCooking)
+        startCooking.tap()
+        assertCookingStep("Step 1 of 8", in: app)
+        waitUntilReady(app.buttons["closeCookingButton"])
+        app.buttons["closeCookingButton"].tap()
+        waitUntilReady(app.buttons["startCooking"])
+
+        let cookFromStep = app.buttons["cookFromStep.4"]
+        reveal(
+            cookFromStep,
+            in: app,
+            scrollView: app.scrollViews["recipeDetailScroll"],
+            maximumSwipes: 8
+        )
+        cookFromStep.tap()
+
+        assertCookingStep("Step 4 of 8", in: app)
+        XCTAssertTrue(app.staticTexts["220°C"].waitForExistence(timeout: 8))
+
+        let chicken = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "Chicken thighs")
+        ).firstMatch
+        reveal(chicken, in: app, scrollView: app.scrollViews["cookingScroll"], maximumSwipes: 3)
+        XCTAssertTrue(chicken.label.contains("not used"))
+        chicken.tap()
+        XCTAssertTrue(chicken.label.contains("used"))
+
+        for _ in 0..<2 {
+            let start = app.buttons["timerStart"].firstMatch
+            reveal(start, in: app, scrollView: app.scrollViews["cookingScroll"], maximumSwipes: 5)
+            start.tap()
+        }
+
+        let timers = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "Timers")
+        ).firstMatch
+        waitUntilReady(timers)
+        timers.tap()
+
+        XCTAssertTrue(app.staticTexts["First roast"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Check tray halfway"].exists)
+        app.navigationBars.buttons["Done"].tap()
+
+        let next = app.buttons["nextStep"]
+        waitUntilReady(next)
+        next.tap()
+        assertCookingStep("Step 5 of 8", in: app)
+        XCTAssertTrue(app.staticTexts["1 done"].waitForExistence(timeout: 8))
+
+        app.buttons["closeCookingButton"].tap()
+        let restartAtStepTwo = app.buttons["cookFromStep.2"]
+        reveal(
+            restartAtStepTwo,
+            in: app,
+            scrollView: app.scrollViews["recipeDetailScroll"],
+            maximumSwipes: 8
+        )
+        restartAtStepTwo.tap()
+        assertCookingStep("Step 2 of 8", in: app)
+        XCTAssertTrue(app.staticTexts["1 done"].exists == false)
+    }
+
+    @MainActor
     func testRecipeCanBeAddedDirectlyToMealPlan() {
         let app = launchSeededApp()
         defer { app.terminate() }
@@ -170,7 +244,7 @@ final class CookUITests: XCTestCase {
         let mealPlan = app.buttons["Meal Plan"]
         waitUntilReady(mealPlan)
         mealPlan.tap()
-        XCTAssertTrue(app.staticTexts["Tomato Basil Pasta"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Garlic Butter Shrimp Pasta"].waitForExistence(timeout: 8))
         attachScreenshot("Recipe added directly to meal plan", app: app)
     }
 
@@ -183,13 +257,13 @@ final class CookUITests: XCTestCase {
         app.buttons["startCooking"].tap()
         waitUntilReady(app.buttons["Ingredients"])
         app.buttons["Ingredients"].tap()
-        let tomato = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Tomatoes")).firstMatch
+        let tomato = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pasta")).firstMatch
         waitUntilReady(tomato)
         tomato.tap()
         XCTAssertTrue(tomato.label.contains("used"))
         app.navigationBars.buttons["Done"].tap()
         app.buttons["Ingredients"].tap()
-        let restored = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Tomatoes")).firstMatch
+        let restored = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pasta")).firstMatch
         waitUntilReady(restored)
         XCTAssertTrue(restored.label.contains("used"))
     }

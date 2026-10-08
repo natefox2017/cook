@@ -81,3 +81,107 @@ func invalidDurationComponentDoesNotBecomeAPartialTime(_ duration: String) throw
     #expect(RecipeDocumentParser.sourceKey(a) == RecipeDocumentParser.sourceKey(b))
     #expect(RecipeDocumentParser.sourceKey(a) != RecipeDocumentParser.sourceKey(c))
 }
+
+
+@Test func structuredStepsExtractExplicitCookingSignalsWithoutGuessing() throws {
+    let html = #"<script type='application/ld+json'>{"@type":"Recipe","name":"Roast chicken","recipeIngredient":["500 g chicken","2 tbsp olive oil","salt to taste"],"recipeInstructions":[{"@type":"HowToStep","name":"Roast","text":"Rub chicken with olive oil. Roast at 200°C for 20 minutes, turn, then cook 10 minutes more."},{"@type":"HowToStep","name":"Rest","text":"Rest until ready to carve."}]}</script>"#
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/chicken")!))
+    let roast = recipe.steps[0]
+    #expect(roast.temperature?.text == "200°C")
+    #expect(roast.timers.map(\.durationSeconds) == [1_200, 600])
+    #expect(roast.linkedIngredientIDs.contains(recipe.ingredients[0].id))
+    #expect(roast.linkedIngredientIDs.contains(recipe.ingredients[1].id))
+    #expect(recipe.steps[1].timers.isEmpty)
+    #expect(recipe.steps[1].temperature == nil)
+}
+
+@Test(arguments: [
+    "Simmer for 10-15 minutes over medium heat.",
+    "Simmer for 10 to 15 minutes over medium heat.",
+    "Simmer 10 minutes to 15 minutes over medium heat.",
+    "Simmer between 10 minutes and 15 minutes over medium heat.",
+    "Simmer for about 10 minutes over medium heat.",
+    "Simmer for roughly 10 minutes over medium heat.",
+    "Simmer for up to 10 minutes over medium heat.",
+    "Bake for 10 minutes, or until golden.",
+    "Bake for 10 minutes or until golden.",
+    "Bake for 10 minutes until golden.",
+    "Bake for at least 10 minutes.",
+    "Bake for no more than 10 minutes.",
+    "Bake for 10 minutes or longer.",
+    "Bake for 10 minutes minimum.",
+    "Bake for 10 minutes at least.",
+    "Bake for 10 minutes at most.",
+    "Bake for 10 minutes no more than.",
+    "Bake for 10 minutes no less than.",
+    "Bake for 10 minutes (or longer).",
+    "Bake for 10 minutes (minimum).",
+    "Bake for 10 minutes (at least)." 
+])
+func ambiguousTimesDoNotBecomeFakePreciseTimers(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Soup\",\"recipeIngredient\":[\"1 l water\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/soup")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+    if instruction.lowercased().contains("medium heat") {
+        #expect(recipe.steps[0].temperature?.text.lowercased() == "medium heat")
+    } else {
+        #expect(recipe.steps[0].temperature == nil)
+    }
+}
+
+@Test func legacySingleTimerStepDecodesIntoTimerCollection() throws {
+    let id = UUID()
+    let json = #"{"id":"\#(id.uuidString)","title":"Bake","instruction":"Bake until golden.","durationSeconds":600}"#
+    let step = try JSONDecoder().decode(RecipeStep.self, from: Data(json.utf8))
+    #expect(step.timers.count == 1)
+    #expect(step.timers[0].id == id)
+    #expect(step.timers[0].durationSeconds == 600)
+
+    let roundTrip = try JSONDecoder().decode(RecipeStep.self, from: JSONEncoder().encode(step))
+    #expect(roundTrip == step)
+}
+
+
+@Test func compoundHourMinuteDurationBecomesOneTimer() throws {
+    let html = #"<script type='application/ld+json'>{"@type":"Recipe","name":"Braise","recipeIngredient":["500 g beef"],"recipeInstructions":[{"@type":"HowToStep","name":"Braise","text":"Braise for 1 hour 30 minutes at 180°C."}]}</script>"#
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/braise")!))
+    #expect(recipe.steps[0].timers.count == 1)
+    #expect(recipe.steps[0].timers[0].durationSeconds == 5_400)
+}
+
+
+@Test(arguments: [
+    "Braise for about 1 hour 30 minutes.",
+    "Braise for 1 hour 30 minutes to 2 hours.",
+    "Braise for at least 1 hour 30 minutes."
+])
+func ambiguousCompoundDurationDoesNotLeakInnerTimers(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Braise\",\"recipeIngredient\":[\"500 g beef\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/braise")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+}
+
+
+@Test func mixedTimerFormatsPreserveSourceOrder() throws {
+    let html = #"<script type='application/ld+json'>{"@type":"Recipe","name":"Timing","recipeIngredient":["1 cup water"],"recipeInstructions":[{"@type":"HowToStep","name":"Cook","text":"Rest 10 minutes, then bake 1 hour 30 minutes, then cool 5 minutes."}]}</script>"#
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/timing")!))
+    #expect(recipe.steps[0].timers.map(\.durationSeconds) == [600, 5_400, 300])
+}
+
+@Test func extractedTimerCountIsGloballyCappedAtTwelve() throws {
+    let compounds = Array(repeating: "Cook 1 hour 30 minutes.", count: 12).joined(separator: " ")
+    let instruction = compounds + " Then rest 5 minutes."
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Many timers\",\"recipeIngredient\":[\"1 cup water\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/many")!))
+    #expect(recipe.steps[0].timers.count == 12)
+    #expect(recipe.steps[0].timers.allSatisfy { $0.durationSeconds == 5_400 })
+}
+
+@Test func parenthesizedUntilConditionDoesNotBecomeTimer() throws {
+    let html = #"<script type='application/ld+json'>{"@type":"Recipe","name":"Bake","recipeIngredient":["1 cup flour"],"recipeInstructions":[{"@type":"HowToStep","text":"Bake for 10 minutes (or until golden)."}]}</script>"#
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/bake")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+}
