@@ -1,0 +1,259 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Saving source…": {
+      "comment": "Share Extension user-facing status or error.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在保存来源…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在儲存來源…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ソースを保存中…"
+          }
+        }
+      }
+    },
+    "Saved on this iPhone": {
+      "comment": "Share Extension user-facing status or error.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存到此 iPhone"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已儲存到此 iPhone"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この iPhone に保存しました"
+          }
+        }
+      }
+    },
+    "Import pending.": {
+      "comment": "Share Extension user-facing status or error.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待导入。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待匯入。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インポート待ちです。"
+          }
+        }
+      }
+    },
+    "Couldn’t save your source": {
+      "comment": "Share Extension user-facing status or error.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法保存来源"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法儲存來源"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ソースを保存できませんでした"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "comment": "Share Extension user-facing status or error.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンセル"
+          }
+        }
+      }
+    },
+    "Try Again": {
+      "comment": "Share Extension user-facing status or error.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重試"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再試行"
+          }
+        }
+      }
+    },
+    "The source app did not provide a readable link or text.": {
+      "comment": "Share Extension user-facing status or error.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "来源 App 没有提供可读取的链接或文字。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "來源 App 未提供可讀取的連結或文字。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有元アプリから読み取り可能なリンクやテキストを取得できませんでした。"
+          }
+        }
+      }
+    },
+    "Share a public recipe link, readable text, image, or PDF.": {
+      "comment": "Share Extension user-facing status or error.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请分享公开食谱链接、文字、图片或 PDF。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請分享公開食譜連結、文字、圖片或 PDF。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公開レシピのリンク、テキスト、画像、PDF を共有してください。"
+          }
+        }
+      }
+    },
+    "This attachment type is not supported.": {
+      "comment": "Share Extension user-facing status or error.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不支持此附件格式。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不支援此附件格式。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この添付ファイル形式には対応していません。"
+          }
+        }
+      }
+    },
+    "The shared item could not be read. Try copying the link or text.": {
+      "comment": "Share Extension user-facing status or error.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取分享内容，请复制链接或文字。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法讀取分享內容，請複製連結或文字。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有された内容を読み取れません。リンクかテキストをコピーしてください。"
+          }
+        }
+      }
+    },
+    "Share cancelled.": {
+      "comment": "Share Extension user-facing status or error.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已取消分享。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已取消分享。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有をキャンセルしました。"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
