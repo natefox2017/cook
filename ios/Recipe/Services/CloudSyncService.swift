@@ -51,7 +51,7 @@ enum InitialCloudSyncChoice: Sendable {
     case keepLocalUntilLater
 }
 
-enum CloudSyncMode: String, CaseIterable, Sendable {
+enum CloudSyncMode: String, CaseIterable, Sendable, Hashable {
     case automatic = "Automatic"
     case wifiOnly = "Wi-Fi Only"
     case manual = "Manually"
@@ -210,6 +210,8 @@ final class CloudSyncCoordinator {
     @ObservationIgnored private var expectedRevision: Int64 = 0
     @ObservationIgnored private var lastExportedToken: UInt64 = 0
     @ObservationIgnored private var automaticSyncPaused = false
+    @ObservationIgnored private var deferredInitialChoice:
+        (local: CloudLibraryCounts, cloud: CloudLibraryCounts?)?
     @ObservationIgnored private var isOnWiFi = false
     @ObservationIgnored private var isSyncing = false
 
@@ -248,6 +250,7 @@ final class CloudSyncCoordinator {
             mergeBaseSnapshot = nil
             expectedRevision = 0
             automaticSyncPaused = false
+            deferredInitialChoice = nil
             await loadAccountSnapshot(userID: userID)
         case .signedOut:
             accountID = nil
@@ -255,6 +258,7 @@ final class CloudSyncCoordinator {
             mergeBaseSnapshot = nil
             expectedRevision = 0
             automaticSyncPaused = false
+            deferredInitialChoice = nil
             state = .localOnly
         case .loading, .authenticating, .needsEmailVerification, .passwordResetSent, .passwordRecovery:
             break
@@ -280,20 +284,26 @@ final class CloudSyncCoordinator {
     }
 
     func chooseInitialSync(_ choice: InitialCloudSyncChoice) async {
-        guard case .initialChoice = state, let store else { return }
+        guard case .initialChoice(let local, let cloud) = state,
+              let store else {
+            return
+        }
+
         switch choice {
         case .keepLocalUntilLater:
             automaticSyncPaused = true
+            deferredInitialChoice = (local, cloud)
             state = .localOnly
+
         case .mergeLibraries:
             automaticSyncPaused = false
+            deferredInitialChoice = nil
             do {
                 if let remoteSnapshot {
                     mergeBaseSnapshot = nil
                     let conflicts = try store.mergeCloudLibrary(
                         with: remoteSnapshot.payload
                     )
-                    lastExportedToken = store.changeToken
                     guard conflicts.isEmpty else {
                         state = .conflicts(conflicts)
                         return
@@ -314,7 +324,6 @@ final class CloudSyncCoordinator {
                 base: mergeBaseSnapshot,
                 choices: choices
             )
-            lastExportedToken = store.changeToken
             guard conflicts.isEmpty else {
                 state = .conflicts(conflicts)
                 return
@@ -331,6 +340,15 @@ final class CloudSyncCoordinator {
             state = .localOnly
             return
         }
+
+        if let deferredInitialChoice {
+            state = .initialChoice(
+                local: deferredInitialChoice.local,
+                cloud: deferredInitialChoice.cloud
+            )
+            return
+        }
+
         automaticSyncPaused = false
         if case .initialChoice = state { return }
         if case .conflicts = state { return }
@@ -352,6 +370,7 @@ final class CloudSyncCoordinator {
         mergeBaseSnapshot = nil
         expectedRevision = 0
         automaticSyncPaused = false
+        deferredInitialChoice = nil
         state = .localOnly
     }
 
