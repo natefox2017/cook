@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Builds the Supabase client from Recipe project configuration without exposing secret keys.
+
 import Foundation
 import Supabase
 
