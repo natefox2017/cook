@@ -143,8 +143,10 @@ struct CollectionsView: View {
             legacyEncoded = ""
         } catch {
             errorMessage = String(
-                localized:
-                    "Your older collection names are still safe. Migration can be retried. \(error.localizedDescription)"
+                localized: LocalizedStringResource(
+                    "Your older collection names are still safe. Migration can be retried. \(error.localizedDescription)",
+                    locale: RecipeLanguage.active
+                )
             )
         }
     }
