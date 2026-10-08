@@ -213,7 +213,7 @@ struct CookingView: View {
                 }
                 .buttonStyle(.bordered)
             }
-            .padding(RecipeSpacing.pageInset)
+            .recipePageContentInsets()
         }
         .accessibilityIdentifier("cookingScroll")
         .safeAreaInset(edge: .bottom) {

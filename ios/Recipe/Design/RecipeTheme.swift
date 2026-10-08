@@ -45,6 +45,13 @@ extension View {
     func recipeRootScrollClearance() -> some View {
         modifier(RecipeRootScrollClearance())
     }
+
+    // Use the same content start below the native navigation bar on scroll screens.
+    func recipePageContentInsets(bottom: CGFloat = RecipeSpacing.large) -> some View {
+        padding(.horizontal, RecipeSpacing.pageInset)
+            .padding(.top, RecipeSpacing.pageTop)
+            .padding(.bottom, bottom)
+    }
 }
 
 enum RecipeTheme {

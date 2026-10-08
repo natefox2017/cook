@@ -71,6 +71,7 @@ struct CollectionsView: View {
             }
         }
         .listSectionSpacing(RecipeSpacing.medium)
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("Collections")
@@ -194,6 +195,7 @@ private struct FavoriteRecipesView: View {
                 )
             }
         }
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("Favorites")
@@ -255,6 +257,7 @@ private struct CollectionDetailView: View {
                         }
                     }
                 }
+                .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
                 .scrollContentBackground(.hidden)
                 .background(RecipeTheme.canvas)
                 .navigationTitle(collection.name)
@@ -375,6 +378,7 @@ private struct CollectionRecipePickerSheet: View {
                     .accessibilityValue(isMember ? "In collection" : "Not in collection")
                 }
             }
+            .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
             .navigationTitle(collection?.name ?? "Collection")

@@ -21,8 +21,7 @@ struct SubscriptionView: View {
                 onContinue: nil,
                 onManageSubscription: { isManagingSubscriptions = true }
             )
-            .padding(.horizontal, RecipeSpacing.pageInset)
-            .padding(.vertical, RecipeSpacing.medium)
+            .recipePageContentInsets(bottom: RecipeSpacing.medium)
         }
         .background(RecipeTheme.canvas)
         .navigationTitle("Subscription")
