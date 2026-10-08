@@ -18,6 +18,7 @@ struct AccountView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var auth = RecipeAuthService.shared
     @State private var mode: Mode = .signIn
     @State private var isEmailExpanded = false
@@ -396,14 +397,13 @@ struct AccountView: View {
             Text(title)
                 .font(RecipeTheme.heading(.title))
                 .multilineTextAlignment(.center)
-                .minimumScaleFactor(0.8)
+                .fixedSize(horizontal: false, vertical: true)
 
             if let subtitle {
                 Text(subtitle)
                     .font(RecipeTheme.text(15, relativeTo: .subheadline))
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
             }
         }
         .frame(maxWidth: .infinity)

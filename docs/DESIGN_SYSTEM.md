@@ -108,3 +108,14 @@ This contract applies to RecipePouch SwiftUI screens. Keep the implemented
 
 Before release, check the updated pages on iPhone simulator and device at
 standard and accessibility Dynamic Type sizes, in light/dark appearance.
+
+### Compact copy versus essential information
+
+A single-line limit is appropriate for decorative metadata at standard text
+sizes; it is **not** appropriate for recovery errors, account warnings,
+or a StoreKit trial-price/renewal disclosure. At Accessibility Dynamic Type
+sizes, navigation/setting labels may wrap; never shrink normal body labels
+to a fraction of their specified type scale. For subscription choices use a
+horizontal title/price row when it fits and a vertical arrangement when not.
+Maintain the 24-pt profile/settings icon column consistently and preserve
+all VoiceOver text.
