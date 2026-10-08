@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Tests recipe document parsing, evidence preservation, and conservative cooking signal extraction.
+
 import Foundation
 import Testing
 @testable import RecipeCore
