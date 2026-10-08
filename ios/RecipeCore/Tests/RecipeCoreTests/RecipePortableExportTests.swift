@@ -125,3 +125,34 @@ func offlineHTMLAssociatesCollectionsOnlyWithTheirRecipes() throws {
     #expect(appleArticle.contains("<strong>Collections:</strong> Alpha, Zeta"))
     #expect(!bananaArticle.contains("<strong>Collections:</strong>"))
 }
+
+@Test
+func portableJSONOmitsImagesWithoutMutatingOriginalRecipe() throws {
+    let imageBytes = Data([0xFF, 0xD8, 0xFF, 0x01, 0x02, 0x03])
+    let recipe = Recipe(
+        title: "My saved recipe",
+        steps: [RecipeStep(instruction: "Cook gently.")],
+        sourceText: "Original cooking notes.",
+        coverData: imageBytes,
+        coverAsset: "SamplePastaReference",
+        notes: "Keep the source wording."
+    )
+    let snapshot = RecipeLibrarySnapshot(recipes: [recipe])
+
+    let portable = try RecipePortableExport.json(snapshot: snapshot)
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let archive = try decoder.decode(RecipePortableArchive.self, from: portable)
+    let exported = try #require(archive.recipes.first)
+
+    // Portable recipe exports must match the UI promise of no photos.
+    #expect(exported.coverData == nil)
+    #expect(exported.coverAsset == nil)
+    #expect(exported.sourceText == recipe.sourceText)
+    #expect(exported.notes == recipe.notes)
+    #expect(exported.steps == recipe.steps)
+
+    // The saved library and full-data export may still contain media.
+    #expect(snapshot.recipes.first?.coverData == imageBytes)
+    #expect(snapshot.recipes.first?.coverAsset == "SamplePastaReference")
+}

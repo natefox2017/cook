@@ -173,7 +173,10 @@ public struct RecipeShareInbox: Sendable {
         as type: RecipeShareInputType,
         mimeType: String
     ) throws -> RecipeShareReceipt {
-        guard data.count <= 10 * 1024 * 1024,
+        // A zero-byte receipt cannot be uploaded; fileData(for:) rejects it.
+        // Reject here so the Share Extension does not falsely report "Saved".
+        guard !data.isEmpty,
+              data.count <= 10 * 1024 * 1024,
               (type == .image && ["image/jpeg", "image/png", "image/heic", "image/heif"].contains(mimeType)
                 || type == .file && ["application/pdf", "text/plain"].contains(mimeType))
         else {
