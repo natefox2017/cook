@@ -1,0 +1,415 @@
+{
+  "schema_version": 1,
+  "notes": "Synthetic contract examples only. example.org is not asserted to contain a recipe. Neither production API nor native share path is validated by these fixtures.",
+  "cases": [
+    {
+      "name": "valid URL request",
+      "schema": "ImportRequest",
+      "valid": true,
+      "data": {
+        "client_request_id": "11111111-1111-4111-8111-111111111111",
+        "input_type": "url",
+        "url": "https://example.org/recipes/vegetable-soup",
+        "platform_hint": "web"
+      }
+    },
+    {
+      "name": "valid raw text request",
+      "schema": "ImportRequest",
+      "valid": true,
+      "data": {
+        "client_request_id": "22222222-2222-4222-8222-222222222222",
+        "input_type": "text",
+        "text": "Add salt to taste, then simmer until tender."
+      }
+    },
+    {
+      "name": "valid image artifact request",
+      "schema": "ImportRequest",
+      "valid": true,
+      "data": {
+        "client_request_id": "22222222-2222-4222-8222-222222222222",
+        "input_type": "image",
+        "artifact_id": "88888888-8888-4888-8888-888888888888"
+      }
+    },
+    {
+      "name": "reject invalid http source",
+      "schema": "ImportRequest",
+      "valid": false,
+      "data": {
+        "client_request_id": "11111111-1111-4111-8111-111111111111",
+        "input_type": "url",
+        "url": "http://127.0.0.1/internal",
+        "platform_hint": "web"
+      }
+    },
+    {
+      "name": "reject missing client request ID",
+      "schema": "ImportRequest",
+      "valid": false,
+      "data": {
+        "input_type": "text",
+        "text": "Soup"
+      }
+    },
+    {
+      "name": "reject mixed url and text",
+      "schema": "ImportRequest",
+      "valid": false,
+      "data": {
+        "client_request_id": "11111111-1111-4111-8111-111111111111",
+        "input_type": "url",
+        "url": "https://example.org/recipes/vegetable-soup",
+        "platform_hint": "web",
+        "text": "not allowed"
+      }
+    },
+    {
+      "name": "accept durable local receipt before login",
+      "schema": "LocalReceipt",
+      "valid": true,
+      "data": {
+        "receipt_id": "33333333-3333-4333-8333-333333333333",
+        "client_request_id": "11111111-1111-4111-8111-111111111111",
+        "input_type": "url",
+        "received_at": "2026-10-08T00:00:00Z",
+        "local_state": "received",
+        "payload": {
+          "reference": "receipt-store/33333333-3333-4333-8333-333333333333.json"
+        }
+      }
+    },
+    {
+      "name": "reject local acknowledged without job",
+      "schema": "LocalReceipt",
+      "valid": false,
+      "data": {
+        "receipt_id": "33333333-3333-4333-8333-333333333333",
+        "client_request_id": "11111111-1111-4111-8111-111111111111",
+        "input_type": "url",
+        "received_at": "2026-10-08T00:00:00Z",
+        "local_state": "handoff_acknowledged",
+        "payload": {
+          "reference": "receipt-store/33333333-3333-4333-8333-333333333333.json"
+        }
+      }
+    },
+    {
+      "name": "accept server received without queue confirmation",
+      "schema": "JobResponse",
+      "valid": true,
+      "data": {
+        "job_id": "44444444-4444-4444-8444-444444444444",
+        "client_request_id": "11111111-1111-4111-8111-111111111111",
+        "status": "received",
+        "created_at": "2026-10-08T00:00:00Z",
+        "server_received_at": "2026-10-08T00:00:00Z",
+        "attempt_count": 0,
+        "stage": "receive"
+      }
+    },
+    {
+      "name": "accept confirmed queued",
+      "schema": "JobResponse",
+      "valid": true,
+      "data": {
+        "job_id": "44444444-4444-4444-8444-444444444444",
+        "client_request_id": "11111111-1111-4111-8111-111111111111",
+        "status": "queued",
+        "created_at": "2026-10-08T00:00:00Z",
+        "server_received_at": "2026-10-08T00:00:00Z",
+        "queue_confirmed_at": "2026-10-08T00:00:00Z",
+        "attempt_count": 0,
+        "stage": "receive"
+      }
+    },
+    {
+      "name": "reject unconfirmed queue claim",
+      "schema": "JobResponse",
+      "valid": false,
+      "data": {
+        "job_id": "44444444-4444-4444-8444-444444444444",
+        "client_request_id": "11111111-1111-4111-8111-111111111111",
+        "status": "queued",
+        "created_at": "2026-10-08T00:00:00Z",
+        "server_received_at": "2026-10-08T00:00:00Z",
+        "attempt_count": 0,
+        "stage": "receive"
+      }
+    },
+    {
+      "name": "accept completed job with needs-review recipe",
+      "schema": "JobResponse",
+      "valid": true,
+      "data": {
+        "job_id": "44444444-4444-4444-8444-444444444444",
+        "client_request_id": "11111111-1111-4111-8111-111111111111",
+        "status": "completed",
+        "created_at": "2026-10-08T00:00:00Z",
+        "updated_at": "2026-10-08T00:00:00Z",
+        "queue_confirmed_at": "2026-10-08T00:00:00Z",
+        "attempt_count": 1,
+        "stage": "done",
+        "recipe_id": "55555555-5555-4555-8555-555555555555",
+        "recipe_status": "needs_review",
+        "review_count": 1,
+        "result": {
+          "recipe_id": "55555555-5555-4555-8555-555555555555",
+          "status": "needs_review",
+          "source": {
+            "input_type": "url",
+            "original_url": "https://example.org/recipes/vegetable-soup",
+            "platform": "web"
+          },
+          "fields": {
+            "title": {
+              "raw_value": "Vegetable soup",
+              "normalized_value": "Vegetable soup",
+              "evidence_ids": [
+                "66666666-6666-4666-8666-666666666666"
+              ],
+              "confidence": 0.99,
+              "user_confirmed": false,
+              "origin": "extracted"
+            },
+            "ingredients[0].amount": {
+              "raw_value": "盐适量 / to taste",
+              "normalized_value": null,
+              "evidence_ids": [
+                "66666666-6666-4666-8666-666666666666"
+              ],
+              "confidence": 0.88,
+              "user_confirmed": false,
+              "origin": "extracted"
+            },
+            "steps[0].instruction": {
+              "raw_value": "煮至熟 / cook until done",
+              "normalized_value": null,
+              "evidence_ids": [
+                "66666666-6666-4666-8666-666666666666"
+              ],
+              "confidence": 0.8,
+              "user_confirmed": true,
+              "origin": "user"
+            }
+          },
+          "evidence": [
+            {
+              "id": "66666666-6666-4666-8666-666666666666",
+              "source_type": "article_body",
+              "origin": "extracted",
+              "excerpt": "Add salt to taste and simmer until tender.",
+              "confidence": 0.88,
+              "captured_at": "2026-10-08T00:00:00Z"
+            }
+          ],
+          "review_fields": [
+            "steps[1].instruction"
+          ]
+        }
+      }
+    },
+    {
+      "name": "reject completed job missing recipe status",
+      "schema": "JobResponse",
+      "valid": false,
+      "data": {
+        "job_id": "44444444-4444-4444-8444-444444444444",
+        "client_request_id": "11111111-1111-4111-8111-111111111111",
+        "status": "completed",
+        "created_at": "2026-10-08T00:00:00Z",
+        "updated_at": "2026-10-08T00:00:00Z",
+        "queue_confirmed_at": "2026-10-08T00:00:00Z",
+        "attempt_count": 1,
+        "stage": "done",
+        "recipe_id": "55555555-5555-4555-8555-555555555555",
+        "review_count": 1,
+        "result": {
+          "recipe_id": "55555555-5555-4555-8555-555555555555",
+          "status": "needs_review",
+          "source": {
+            "input_type": "url",
+            "original_url": "https://example.org/recipes/vegetable-soup",
+            "platform": "web"
+          },
+          "fields": {
+            "title": {
+              "raw_value": "Vegetable soup",
+              "normalized_value": "Vegetable soup",
+              "evidence_ids": [
+                "66666666-6666-4666-8666-666666666666"
+              ],
+              "confidence": 0.99,
+              "user_confirmed": false,
+              "origin": "extracted"
+            },
+            "ingredients[0].amount": {
+              "raw_value": "盐适量 / to taste",
+              "normalized_value": null,
+              "evidence_ids": [
+                "66666666-6666-4666-8666-666666666666"
+              ],
+              "confidence": 0.88,
+              "user_confirmed": false,
+              "origin": "extracted"
+            },
+            "steps[0].instruction": {
+              "raw_value": "煮至熟 / cook until done",
+              "normalized_value": null,
+              "evidence_ids": [
+                "66666666-6666-4666-8666-666666666666"
+              ],
+              "confidence": 0.8,
+              "user_confirmed": true,
+              "origin": "user"
+            }
+          },
+          "evidence": [
+            {
+              "id": "66666666-6666-4666-8666-666666666666",
+              "source_type": "article_body",
+              "origin": "extracted",
+              "excerpt": "Add salt to taste and simmer until tender.",
+              "confidence": 0.88,
+              "captured_at": "2026-10-08T00:00:00Z"
+            }
+          ],
+          "review_fields": [
+            "steps[1].instruction"
+          ]
+        }
+      }
+    },
+    {
+      "name": "accept failed queued job with recoverable error",
+      "schema": "JobResponse",
+      "valid": true,
+      "data": {
+        "job_id": "44444444-4444-4444-8444-444444444444",
+        "client_request_id": "11111111-1111-4111-8111-111111111111",
+        "status": "failed",
+        "created_at": "2026-10-08T00:00:00Z",
+        "queue_confirmed_at": "2026-10-08T00:00:00Z",
+        "attempt_count": 3,
+        "stage": "extract",
+        "error": {
+          "code": "FETCH_TIMEOUT",
+          "message": "Source did not respond before the configured deadline.",
+          "recoverable": true,
+          "suggested_action": "Try again later or attach the source text.",
+          "request_id": "77777777-7777-4777-8777-777777777777"
+        }
+      }
+    },
+    {
+      "name": "reject failed job without error",
+      "schema": "JobResponse",
+      "valid": false,
+      "data": {
+        "job_id": "44444444-4444-4444-8444-444444444444",
+        "client_request_id": "11111111-1111-4111-8111-111111111111",
+        "status": "failed",
+        "created_at": "2026-10-08T00:00:00Z",
+        "queue_confirmed_at": "2026-10-08T00:00:00Z",
+        "attempt_count": 3,
+        "stage": "extract"
+      }
+    },
+    {
+      "name": "keep unknown amounts as original evidence",
+      "schema": "RecipeResult",
+      "valid": true,
+      "data": {
+        "recipe_id": "55555555-5555-4555-8555-555555555555",
+        "status": "needs_review",
+        "source": {
+          "input_type": "url",
+          "original_url": "https://example.org/recipes/vegetable-soup",
+          "platform": "web"
+        },
+        "fields": {
+          "title": {
+            "raw_value": "Vegetable soup",
+            "normalized_value": "Vegetable soup",
+            "evidence_ids": [
+              "66666666-6666-4666-8666-666666666666"
+            ],
+            "confidence": 0.99,
+            "user_confirmed": false,
+            "origin": "extracted"
+          },
+          "ingredients[0].amount": {
+            "raw_value": "盐适量 / to taste",
+            "normalized_value": null,
+            "evidence_ids": [
+              "66666666-6666-4666-8666-666666666666"
+            ],
+            "confidence": 0.88,
+            "user_confirmed": false,
+            "origin": "extracted"
+          },
+          "steps[0].instruction": {
+            "raw_value": "煮至熟 / cook until done",
+            "normalized_value": null,
+            "evidence_ids": [
+              "66666666-6666-4666-8666-666666666666"
+            ],
+            "confidence": 0.8,
+            "user_confirmed": true,
+            "origin": "user"
+          }
+        },
+        "evidence": [
+          {
+            "id": "66666666-6666-4666-8666-666666666666",
+            "source_type": "article_body",
+            "origin": "extracted",
+            "excerpt": "Add salt to taste and simmer until tender.",
+            "confidence": 0.88,
+            "captured_at": "2026-10-08T00:00:00Z"
+          }
+        ],
+        "review_fields": [
+          "steps[1].instruction"
+        ]
+      }
+    },
+    {
+      "name": "reject user confirmed field falsely marked extracted",
+      "schema": "RecipeField",
+      "valid": false,
+      "data": {
+        "raw_value": "1 spoon",
+        "normalized_value": "1",
+        "evidence_ids": [],
+        "user_confirmed": true,
+        "origin": "extracted"
+      }
+    },
+    {
+      "name": "accept uploaded artifact reference metadata",
+      "schema": "Artifact",
+      "valid": true,
+      "data": {
+        "artifact_id": "88888888-8888-4888-8888-888888888888",
+        "kind": "original",
+        "state": "available",
+        "mime_type": "image/jpeg",
+        "size_bytes": 9876
+      }
+    },
+    {
+      "name": "accept consistent error response",
+      "schema": "APIError",
+      "valid": true,
+      "data": {
+        "code": "FETCH_TIMEOUT",
+        "message": "Source did not respond before the configured deadline.",
+        "recoverable": true,
+        "suggested_action": "Try again later or attach the source text.",
+        "request_id": "77777777-7777-4777-8777-777777777777"
+      }
+    }
+  ]
+}
