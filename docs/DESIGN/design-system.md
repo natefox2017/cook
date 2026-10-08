@@ -14,18 +14,20 @@ Brand direction:
 Claude-inspired humanist sans.
 
 Implementation font:
-Source Sans 3 (SIL Open Font License)
+Lora (SIL Open Font License), registered as `Lora-Regular`.
 
 Fallback:
 SF Pro / system font.
 
 Rules:
-- Titles: Semibold/Bold
-- Body: Regular
-- Navigation: Medium
-- Metadata: Regular
+- Large and inline native navigation titles: 34 / 17 pt
+- Hero / page / section / card headings: 34 / 28 / 22 / 20 pt
+- Body / secondary / footnote: 17 / 15 / 13 pt
+- System navigation bar and safe-area title placement
+- High-contrast primary text and system secondary metadata
 
-No serif fonts in product UI.
+This document reflects the current implementation. See
+`../DESIGN_SYSTEM.md` for shared spacing, palette, and copy rules.
 
 ## UI Rules
 

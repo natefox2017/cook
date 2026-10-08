@@ -17,7 +17,7 @@ struct ShareRootView: View {
     let cancel: () -> Void
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 16) {
             switch state {
             case .receiving:
                 ProgressView()
@@ -27,13 +27,9 @@ struct ShareRootView: View {
             case .saved:
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 42))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color(red: 66 / 255, green: 168 / 255, blue: 90 / 255))
                 Text("Saved on this iPhone")
                     .font(.headline)
-                Text("Import pending.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
 
             case .failed(let message):
                 Image(systemName: "exclamationmark.triangle")
@@ -46,7 +42,7 @@ struct ShareRootView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                HStack(spacing: 14) {
+                HStack(spacing: 12) {
                     Button("Cancel", role: .cancel, action: cancel)
                         .buttonStyle(.bordered)
                     Button("Try Again", action: retry)
@@ -54,7 +50,7 @@ struct ShareRootView: View {
                 }
             }
         }
-        .padding(28)
+        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .contain)
         // The share extension runs in its own process; pin its view locale too.
