@@ -29,7 +29,7 @@ protocol RecipeCloudSyncing: Sendable {
 /// cloud write succeeded.
 struct UnconfiguredCloudSync: RecipeCloudSyncing {
     struct NotConfigured: LocalizedError {
-        var errorDescription: String? { "Recipe cloud sync is not configured in this build." }
+        var errorDescription: String? { "RecipePouch cloud sync is not configured in this build." }
     }
     func upload(_ snapshot: CloudSnapshotEnvelope) async throws { throw NotConfigured() }
     func download() async throws -> CloudSnapshotEnvelope? { throw NotConfigured() }
