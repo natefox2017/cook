@@ -205,7 +205,7 @@ struct PremiumPaywallContent: View {
 
     private var legalFooter: some View {
         VStack(spacing: 10) {
-            Text("App Store subscriptions renew automatically unless cancelled at least 24 hours before the end of the current period. Billing and cancellation are managed by Apple.")
+            Text("Auto-renews until canceled in the App Store.")
                 .font(RecipeTheme.text(12, relativeTo: .caption))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
