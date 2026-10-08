@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Implements Supabase authentication state, email flows, and Sign in with Apple.
+
 import CryptoKit
 import Foundation
 import Observation
