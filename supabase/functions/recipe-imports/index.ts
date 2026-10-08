@@ -130,8 +130,9 @@ function isPublicCandidateURL(raw: string): boolean {
     if (url.protocol !== "https:" || url.username || url.password) return false;
     if (url.port && url.port !== "443") return false;
     if (
-      !host.includes(".") || host.endsWith(".local") ||
-      host.endsWith(".internal") || host === "localhost"
+      !host.includes(".") || host.endsWith(".") || host.endsWith(".local") ||
+      host.endsWith(".internal") || host.endsWith(".localhost") ||
+      host === "localhost"
     ) return false;
     if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) return false;
     if (host.startsWith("[") || host.includes(":")) return false;
