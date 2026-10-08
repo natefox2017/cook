@@ -451,10 +451,13 @@ struct CookingView: View {
             Button {
                 isShowingTimers = true
             } label: {
-                Label(
-                    session.runningTimerCount > 0 ? "Timers \(session.runningTimerCount)" : "Timers",
-                    systemImage: "timer"
-                )
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    let runningCount = session.runningTimerCount(at: context.date)
+                    Label(
+                        runningCount > 0 ? "Timers \(runningCount)" : "Timers",
+                        systemImage: "timer"
+                    )
+                }
             }
             .disabled(recipe == nil)
 
@@ -1130,9 +1133,9 @@ private struct PersistedCookingSession: Codable {
         self.completedStepIDs = completedStepIDs
     }
 
-    var runningTimerCount: Int {
+    func runningTimerCount(at date: Date = .now) -> Int {
         timers.values.filter {
-            $0.timer.isRunning && $0.timer.remaining(at: .now) > 0
+            $0.timer.isRunning && $0.timer.remaining(at: date) > 0
         }.count
     }
 
