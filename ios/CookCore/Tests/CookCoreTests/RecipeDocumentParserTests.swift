@@ -113,7 +113,10 @@ func invalidDurationComponentDoesNotBecomeAPartialTime(_ duration: String) throw
     "Bake for 10 minutes at least.",
     "Bake for 10 minutes at most.",
     "Bake for 10 minutes no more than.",
-    "Bake for 10 minutes no less than."
+    "Bake for 10 minutes no less than.",
+    "Bake for 10 minutes (or longer).",
+    "Bake for 10 minutes (minimum).",
+    "Bake for 10 minutes (at least)." 
 ])
 func ambiguousTimesDoNotBecomeFakePreciseTimers(_ instruction: String) throws {
     let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
