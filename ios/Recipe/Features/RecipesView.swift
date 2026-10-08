@@ -79,6 +79,7 @@ struct RecipesView: View {
             .padding(.top, RecipeSpacing.xSmall)
             .padding(.bottom, RecipeSpacing.large)
         }
+        .recipeRootScrollClearance()
         .accessibilityIdentifier("recipeLibraryScroll")
         .background(RecipeTheme.canvas)
         .navigationTitle("My Recipes").navigationBarTitleDisplayMode(.large)

@@ -163,6 +163,7 @@ struct ProfileView: View {
             }
             .listRowBackground(RecipeTheme.card)
         }
+        .recipeRootScrollClearance()
         .listStyle(.insetGrouped)
         .listSectionSpacing(RecipeSpacing.xSmall)
         .scrollContentBackground(.hidden)

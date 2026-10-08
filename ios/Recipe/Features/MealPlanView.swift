@@ -97,6 +97,7 @@ struct MealPlanView: View {
             }
 
         }
+        .recipeRootScrollClearance()
         .listStyle(.insetGrouped)
         .listSectionSpacing(RecipeSpacing.medium)
         .scrollContentBackground(.hidden)
