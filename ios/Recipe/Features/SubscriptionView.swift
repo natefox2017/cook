@@ -47,7 +47,7 @@ struct PremiumPaywallContent: View {
                     .foregroundStyle(RecipeTheme.accentForeground)
                     .accessibilityHidden(true)
 
-                Text("Recipe Premium")
+                Text("RecipePouch Premium")
                     .font(RecipeTheme.title(34))
                     .multilineTextAlignment(.center)
 
@@ -151,7 +151,7 @@ struct PremiumPaywallContent: View {
                         .accessibilityHidden(true)
                     Text("Premium plans aren’t available right now.")
                         .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
-                    Text("You can keep using Recipe for free and check again later.")
+                    Text("You can keep using RecipePouch for free and check again later.")
                         .font(RecipeTheme.text(15, relativeTo: .subheadline))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
