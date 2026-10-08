@@ -123,7 +123,7 @@ struct RecipesView: View {
         }
 
         if let failure = shareInbox.failureMessage {
-            Text("Shared sources could not be checked: \(failure)")
+            Text(failure)
                 .font(RecipeTheme.text(13, relativeTo: .footnote))
                 .foregroundStyle(.secondary)
         }

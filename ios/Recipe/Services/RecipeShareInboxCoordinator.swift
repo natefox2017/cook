@@ -31,9 +31,8 @@ final class RecipeShareInboxCoordinator {
         }
     }
 
-    /// Submit locally saved sources, poll accepted jobs, and retry only jobs
-    /// the API explicitly marks recoverable. Relaunches resume from owner ACKs.
-    func synchronize() async {
+    /// Submit local sources, recover owner-scoped jobs, and store completed text results.
+    func synchronize(store: RecipeStore) async {
         guard !isSynchronizing else { return }
         guard let ownerID = currentOwnerID else {
             refresh()
@@ -46,124 +45,16 @@ final class RecipeShareInboxCoordinator {
 
         do {
             let inbox = try RecipeShareInbox.shared()
-            var firstFailure: String?
-            var retryRequests = Set<UUID>()
-
-            for _ in 0..<12 {
-                guard currentOwnerID == ownerID else { break }
-                var hasActiveJobs = false
-                var pending = try inbox.pendingReceipts(for: ownerID)
-
-                for receipt in pending {
-                    do {
-                        guard try inbox.receivedJobID(
-                            for: receipt,
-                            ownerID: ownerID
-                        ) == nil else {
-                            continue
-                        }
-                        let source = try inbox.source(for: receipt)
-                        let response = try await RecipeImportJobService.submit(
-                            receipt: receipt,
-                            source: source,
-                            ownerID: ownerID
-                        )
-                        try persistServerState(
-                            response,
-                            for: receipt,
-                            ownerID: ownerID,
-                            inbox: inbox
-                        )
-                        hasActiveJobs = hasActiveJobs || response.isActive
-                    } catch {
-                        firstFailure = firstFailure ?? error.localizedDescription
-                        hasActiveJobs = true
-                    }
-                }
-
-                pending = try inbox.pendingReceipts(for: ownerID)
-                for receipt in pending {
-                    guard let jobID = try inbox.receivedJobID(
-                        for: receipt,
-                        ownerID: ownerID
-                    ) else {
-                        continue
-                    }
-                    do {
-                        let response = try await RecipeImportJobService.fetch(
-                            jobID: jobID,
-                            ownerID: ownerID
-                        )
-                        try validate(
-                            response,
-                            for: receipt,
-                            ownerID: ownerID,
-                            expectedJobID: jobID
-                        )
-                        try persistServerState(
-                            response,
-                            for: receipt,
-                            ownerID: ownerID,
-                            inbox: inbox
-                        )
-                        hasActiveJobs = hasActiveJobs || response.isActive
-                    } catch {
-                        firstFailure = firstFailure ?? error.localizedDescription
-                        hasActiveJobs = true
-                    }
-                }
-
-                for receipt in try inbox.acknowledgedReceipts(for: ownerID) {
-                    guard let jobID = try inbox.acknowledgedJobID(
-                        for: receipt,
-                        ownerID: ownerID
-                    ) else {
-                        continue
-                    }
-                    do {
-                        var response = try await RecipeImportJobService.fetch(
-                            jobID: jobID,
-                            ownerID: ownerID
-                        )
-                        try validate(
-                            response,
-                            for: receipt,
-                            ownerID: ownerID,
-                            expectedJobID: jobID
-                        )
-
-                        if response.status == .failed,
-                           response.error?.recoverable == true,
-                           retryRequests.insert(jobID).inserted {
-                            response = try await RecipeImportJobService.retry(
-                                jobID: jobID,
-                                ownerID: ownerID
-                            )
-                            try validate(
-                                response,
-                                for: receipt,
-                                ownerID: ownerID,
-                                expectedJobID: jobID
-                            )
-                            guard response.isDurablyQueued else {
-                                throw RecipeImportJobService.ServiceError.queueNotConfirmed
-                            }
-                        }
-
-                        jobStatuses[receipt.id] = response
-                        hasActiveJobs = hasActiveJobs || response.isActive
-                    } catch {
-                        firstFailure = firstFailure ?? error.localizedDescription
-                        hasActiveJobs = true
-                    }
-                }
-
-                refresh()
-                if !hasActiveJobs { break }
-                try await Task.sleep(for: .seconds(5))
-            }
-
-            failureMessage = firstFailure
+            let report = await RecipeShareImportWorkflow.synchronize(
+                inbox: inbox,
+                store: store,
+                client: RecipeImportJobService(),
+                ownerID: ownerID,
+                currentOwnerID: { self.currentOwnerID }
+            )
+            jobStatuses = report.jobStatuses
+            refresh()
+            failureMessage = report.failureMessage
         } catch {
             failureMessage = error.localizedDescription
         }
@@ -183,54 +74,6 @@ final class RecipeShareInboxCoordinator {
             return nil
         }
         return ownerID
-    }
-
-    private func persistServerState(
-        _ response: RecipeImportJobResponse,
-        for receipt: RecipeShareReceipt,
-        ownerID: UUID,
-        inbox: RecipeShareInbox
-    ) throws {
-        try validate(response, for: receipt, ownerID: ownerID)
-        if response.isDurablyQueued {
-            guard let queueConfirmedAt = response.queueConfirmedAt else {
-                throw RecipeImportJobService.ServiceError.queueNotConfirmed
-            }
-            try inbox.acknowledge(
-                receipt,
-                jobID: response.jobID,
-                ownerID: ownerID,
-                queueConfirmedAt: queueConfirmedAt
-            )
-        } else if response.status == .received {
-            try inbox.recordReceivedJob(
-                response.jobID,
-                for: receipt,
-                ownerID: ownerID
-            )
-        } else {
-            throw RecipeImportJobService.ServiceError.queueNotConfirmed
-        }
-        jobStatuses[receipt.id] = response
-    }
-
-    private func validate(
-        _ response: RecipeImportJobResponse,
-        for receipt: RecipeShareReceipt,
-        ownerID: UUID,
-        expectedJobID: UUID? = nil
-    ) throws {
-        guard currentOwnerID == ownerID,
-              response.clientRequestID == receipt.clientRequestID,
-              expectedJobID == nil || response.jobID == expectedJobID else {
-            if currentOwnerID != ownerID {
-                throw RecipeImportJobService.ServiceError.accountChanged
-            }
-            throw RecipeImportJobService.ServiceError.responseMismatch
-        }
-        if response.status != .received && !response.isDurablyQueued {
-            throw RecipeImportJobService.ServiceError.queueNotConfirmed
-        }
     }
 
     /// The previous release wrote a read-modify-write UserDefaults array.
@@ -266,17 +109,6 @@ final class RecipeShareInboxCoordinator {
             for key in keys {
                 defaults.removeObject(forKey: key)
             }
-        }
-    }
-}
-
-private extension RecipeImportJobResponse {
-    var isActive: Bool {
-        switch status {
-        case .received, .queued, .extracting, .parsing, .validating:
-            true
-        case .completed, .failed:
-            false
         }
     }
 }

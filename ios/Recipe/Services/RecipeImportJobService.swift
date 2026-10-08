@@ -5,93 +5,7 @@ import Foundation
 import RecipeCore
 import Supabase
 
-struct RecipeImportJobResponse: Decodable, Sendable {
-    enum Status: String, Decodable, Equatable, Sendable {
-        case received
-        case queued
-        case extracting
-        case parsing
-        case validating
-        case completed
-        case failed
-    }
-
-    struct Failure: Decodable, Sendable {
-        let code: String
-        let message: String
-        let recoverable: Bool?
-        let suggestedAction: String?
-
-        private enum CodingKeys: String, CodingKey {
-            case code
-            case message
-            case recoverable
-            case suggestedAction = "suggested_action"
-        }
-    }
-
-    let jobID: UUID
-    let clientRequestID: UUID
-    let status: Status
-    let stage: String?
-    let attemptCount: Int
-    let queueConfirmedAt: String?
-    let recipeID: UUID?
-    let recipeStatus: String?
-    let existingRecipeID: UUID?
-    let reviewCount: Int?
-    let error: Failure?
-
-    var isDurablyQueued: Bool {
-        guard status != .received, let queueConfirmedAt else {
-            return false
-        }
-        let fractionalFormatter = ISO8601DateFormatter()
-        fractionalFormatter.formatOptions = [
-            .withInternetDateTime,
-            .withFractionalSeconds
-        ]
-        if fractionalFormatter.date(from: queueConfirmedAt) != nil {
-            return true
-        }
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: queueConfirmedAt) != nil
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case jobID = "job_id"
-        case clientRequestID = "client_request_id"
-        case status
-        case stage
-        case attemptCount = "attempt_count"
-        case queueConfirmedAt = "queue_confirmed_at"
-        case recipeID = "recipe_id"
-        case recipeStatus = "recipe_status"
-        case existingRecipeID = "existing_recipe_id"
-        case reviewCount = "review_count"
-        case error
-    }
-}
-
-enum RecipeImportJobService {
-    enum ServiceError: LocalizedError {
-        case accountChanged
-        case queueNotConfirmed
-        case responseMismatch
-
-        var errorDescription: String? {
-            switch self {
-            case .accountChanged:
-                "Your signed-in account changed. The saved source was kept for the correct account."
-            case .queueNotConfirmed:
-                "The server has not confirmed durable queue admission. The saved source remains available."
-            case .responseMismatch:
-                "The server response did not match this saved source. The local receipt was kept."
-            }
-        }
-    }
-
+struct RecipeImportJobService: RecipeImportJobClient {
     private struct Submission: Encodable {
         let clientRequestID: UUID
         let inputType: RecipeShareInputType
@@ -113,7 +27,7 @@ enum RecipeImportJobService {
         }
     }
 
-    static func submit(
+    func submit(
         receipt: RecipeShareReceipt,
         source: String,
         ownerID: UUID
@@ -128,7 +42,7 @@ enum RecipeImportJobService {
         )
     }
 
-    static func fetch(
+    func fetch(
         jobID: UUID,
         ownerID: UUID
     ) async throws -> RecipeImportJobResponse {
@@ -139,7 +53,7 @@ enum RecipeImportJobService {
         )
     }
 
-    static func retry(
+    func retry(
         jobID: UUID,
         ownerID: UUID
     ) async throws -> RecipeImportJobResponse {
@@ -150,10 +64,10 @@ enum RecipeImportJobService {
         )
     }
 
-    private static func verifySession(ownerID: UUID) async throws {
+    private func verifySession(ownerID: UUID) async throws {
         let session = try await RecipeSupabase.client.auth.session
         guard session.user.id == ownerID else {
-            throw ServiceError.accountChanged
+            throw RecipeShareImportWorkflowError.accountChanged
         }
     }
 }

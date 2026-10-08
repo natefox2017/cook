@@ -158,7 +158,7 @@ private struct RecipeRootView: View {
             // In UI-test mode App Group provisioning may not be installed.
             // Normal installs read durable receipts from the shared container.
             if !bypassOnboarding {
-                await shareInbox.synchronize()
+                await shareInbox.synchronize(store: store)
             }
         }
         .task {
@@ -183,7 +183,7 @@ private struct RecipeRootView: View {
             }
             Task {
                 if !bypassOnboarding {
-                    await shareInbox.synchronize()
+                    await shareInbox.synchronize(store: store)
                 }
             }
         }
@@ -202,7 +202,7 @@ private struct RecipeRootView: View {
             }
             Task {
                 if !bypassOnboarding {
-                    await shareInbox.synchronize()
+                    await shareInbox.synchronize(store: store)
                 }
             }
             Task {
