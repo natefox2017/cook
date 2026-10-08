@@ -118,6 +118,7 @@ struct GroceriesView: View {
                 }
             }
         }
+        .recipeRootScrollClearance()
         .listStyle(.insetGrouped)
         .listSectionSpacing(RecipeSpacing.medium)
         .scrollContentBackground(.hidden)
