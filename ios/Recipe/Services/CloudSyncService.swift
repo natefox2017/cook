@@ -246,12 +246,16 @@ final class CloudSyncCoordinator {
                 return
             }
             accountID = userID
-            remoteSnapshot = nil
+            remoteSnapshot = loadPersistedBase(for: userID)
             mergeBaseSnapshot = nil
-            expectedRevision = 0
+            expectedRevision = remoteSnapshot?.revision ?? 0
             automaticSyncPaused = false
             deferredInitialChoice = nil
+            lastSyncedAt = UserDefaults.standard.object(
+                forKey: lastSyncedKey(for: userID)
+            ) as? Date
             await loadAccountSnapshot(userID: userID)
+            await syncLocalChangesIfAllowed()
         case .signedOut:
             accountID = nil
             remoteSnapshot = nil
@@ -259,6 +263,7 @@ final class CloudSyncCoordinator {
             expectedRevision = 0
             automaticSyncPaused = false
             deferredInitialChoice = nil
+            lastSyncedAt = nil
             state = .localOnly
         case .loading, .authenticating, .needsEmailVerification, .passwordResetSent, .passwordRecovery:
             break
@@ -364,40 +369,143 @@ final class CloudSyncCoordinator {
     }
 
     func deleteAccountAndCloudData() async throws {
+        let deletingAccountID = accountID
         try await service.deleteAccountAndCloudData()
+
+        if let deletingAccountID {
+            try? removePersistedBase(for: deletingAccountID)
+            if localLibraryAccountID == deletingAccountID {
+                linkLocalLibrary(to: nil)
+            }
+        }
+
         accountID = nil
         remoteSnapshot = nil
         mergeBaseSnapshot = nil
         expectedRevision = 0
         automaticSyncPaused = false
         deferredInitialChoice = nil
+        lastSyncedAt = nil
         state = .localOnly
     }
 
     private func loadAccountSnapshot(userID: UUID) async {
         guard let store else { return }
         state = .syncing
+
         do {
+            let persistedBase = remoteSnapshot
+            let local = try store.exportCloudSnapshot()
+            let linkedAccountID = localLibraryAccountID
             let remote = try await service.download(for: userID)
             guard accountID == userID else { return }
+
+            // A local library associated with another account must never be
+            // silently uploaded into the newly signed-in account.
+            if store.hasUserData,
+               let linkedAccountID,
+               linkedAccountID != userID {
+                remoteSnapshot = remote
+                expectedRevision = remote?.revision ?? 0
+                state = .initialChoice(
+                    local: CloudLibraryCounts(local),
+                    cloud: remote.map { CloudLibraryCounts($0.payload) }
+                )
+                return
+            }
+
+            if store.hasUserData,
+               linkedAccountID == nil,
+               persistedBase == nil {
+                remoteSnapshot = remote
+                expectedRevision = remote?.revision ?? 0
+                state = .initialChoice(
+                    local: CloudLibraryCounts(local),
+                    cloud: remote.map { CloudLibraryCounts($0.payload) }
+                )
+                return
+            }
+
+            if let persistedBase {
+                guard let remote else {
+                    state = .error(
+                        "The previously synced cloud library is no longer available."
+                    )
+                    return
+                }
+
+                expectedRevision = remote.revision
+
+                if remote.revision == persistedBase.revision {
+                    remoteSnapshot = remote
+                    if local == persistedBase.payload {
+                        try persistBase(remote, for: userID)
+                        linkLocalLibrary(to: userID)
+                        lastExportedToken = store.changeToken
+                        markSynced(remote.serverUpdatedAt)
+                    } else {
+                        // Local offline edits exist. Keep the persisted server
+                        // base and let the normal upload path compare-and-swap.
+                        state = .localOnly
+                    }
+                    return
+                }
+
+                let localWasDirty = local != persistedBase.payload
+                let conflicts = try store.mergeCloudLibrary(
+                    with: remote.payload,
+                    base: persistedBase.payload
+                )
+                guard accountID == userID else { return }
+
+                mergeBaseSnapshot = persistedBase.payload
+                remoteSnapshot = remote
+                expectedRevision = remote.revision
+
+                if conflicts.isEmpty {
+                    mergeBaseSnapshot = nil
+                    if localWasDirty {
+                        state = .localOnly
+                    } else {
+                        try persistBase(remote, for: userID)
+                        linkLocalLibrary(to: userID)
+                        lastExportedToken = store.changeToken
+                        markSynced(remote.serverUpdatedAt)
+                    }
+                } else {
+                    state = .conflicts(conflicts)
+                }
+                return
+            }
+
             remoteSnapshot = remote
             expectedRevision = remote?.revision ?? 0
-            let local = try store.exportCloudSnapshot()
+
             if let remote {
                 if store.hasUserData {
-                    state = .initialChoice(local: CloudLibraryCounts(local), cloud: CloudLibraryCounts(remote.payload))
+                    state = .initialChoice(
+                        local: CloudLibraryCounts(local),
+                        cloud: CloudLibraryCounts(remote.payload)
+                    )
                 } else {
                     try store.replaceLibrary(with: remote.payload)
+                    try persistBase(remote, for: userID)
+                    linkLocalLibrary(to: userID)
                     lastExportedToken = store.changeToken
                     markSynced(remote.serverUpdatedAt)
                 }
-            } else if store.hasUserData || !(local.deletedEntities ?? []).isEmpty {
-                state = .initialChoice(local: CloudLibraryCounts(local), cloud: nil)
+            } else if store.hasUserData
+                        || !(local.deletedEntities ?? []).isEmpty {
+                state = .initialChoice(
+                    local: CloudLibraryCounts(local),
+                    cloud: nil
+                )
             } else {
                 lastExportedToken = store.changeToken
                 state = .localOnly
             }
         } catch {
+            guard accountID == userID else { return }
             state = .error(error.localizedDescription)
         }
     }
@@ -432,7 +540,13 @@ final class CloudSyncCoordinator {
 
             guard latest.revision != expectedRevision else {
                 remoteSnapshot = latest
-                markSynced(latest.serverUpdatedAt)
+                if store.changeToken == lastExportedToken {
+                    try persistBase(latest, for: accountID)
+                    linkLocalLibrary(to: accountID)
+                    markSynced(latest.serverUpdatedAt)
+                } else {
+                    state = .localOnly
+                }
                 return
             }
 
@@ -453,6 +567,8 @@ final class CloudSyncCoordinator {
                 if localWasDirty {
                     state = .localOnly
                 } else {
+                    try persistBase(latest, for: accountID)
+                    linkLocalLibrary(to: accountID)
                     lastExportedToken = store.changeToken
                     markSynced(latest.serverUpdatedAt)
                 }
@@ -514,6 +630,8 @@ final class CloudSyncCoordinator {
                 remoteSnapshot = saved
                 mergeBaseSnapshot = nil
                 expectedRevision = saved.revision
+                try persistBase(saved, for: accountID)
+                linkLocalLibrary(to: accountID)
                 lastExportedToken = submittedToken
                 markSynced(saved.serverUpdatedAt)
                 followUpSyncNeeded = store.changeToken != submittedToken
@@ -553,11 +671,88 @@ final class CloudSyncCoordinator {
         }
     }
 
+    private var localLibraryAccountID: UUID? {
+        guard let raw = UserDefaults.standard.string(
+            forKey: "recipe.sync.localAccountID"
+        ) else {
+            return nil
+        }
+        return UUID(uuidString: raw)
+    }
+
+    private func linkLocalLibrary(to userID: UUID?) {
+        let defaults = UserDefaults.standard
+        if let userID {
+            defaults.set(
+                userID.uuidString,
+                forKey: "recipe.sync.localAccountID"
+            )
+        } else {
+            defaults.removeObject(
+                forKey: "recipe.sync.localAccountID"
+            )
+        }
+    }
+
+    private func lastSyncedKey(for userID: UUID) -> String {
+        "recipe.sync.lastAt.\(userID.uuidString)"
+    }
+
+    private func syncBaseURL(for userID: UUID) -> URL {
+        URL.applicationSupportDirectory
+            .appendingPathComponent("Recipe", isDirectory: true)
+            .appendingPathComponent("Sync", isDirectory: true)
+            .appendingPathComponent(
+                "\(userID.uuidString).json"
+            )
+    }
+
+    private func loadPersistedBase(
+        for userID: UUID
+    ) -> CloudSnapshotEnvelope? {
+        let url = syncBaseURL(for: userID)
+        guard let data = try? Data(contentsOf: url) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(
+            CloudSnapshotEnvelope.self,
+            from: data
+        )
+    }
+
+    private func persistBase(
+        _ snapshot: CloudSnapshotEnvelope,
+        for userID: UUID
+    ) throws {
+        let url = syncBaseURL(for: userID)
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        let data = try JSONEncoder().encode(snapshot)
+        try data.write(to: url, options: .atomic)
+    }
+
+    private func removePersistedBase(
+        for userID: UUID
+    ) throws {
+        let url = syncBaseURL(for: userID)
+        guard FileManager.default.fileExists(
+            atPath: url.path
+        ) else {
+            return
+        }
+        try FileManager.default.removeItem(at: url)
+    }
+
     private func markSynced(_ date: Date?) {
         let timestamp = date ?? .now
         lastSyncedAt = timestamp
         if let accountID {
-            UserDefaults.standard.set(timestamp, forKey: "recipe.sync.lastAt.\(accountID.uuidString)")
+            UserDefaults.standard.set(
+                timestamp,
+                forKey: lastSyncedKey(for: accountID)
+            )
         }
         state = .synced(timestamp)
     }
