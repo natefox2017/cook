@@ -403,7 +403,19 @@ struct CookingSettingsView: View {
         Form {
             Section {
                 Toggle("Keep Screen Awake", isOn: binding(\.keepScreenAwake))
-                Toggle("Timer Notifications", isOn: binding(\.timerNotifications))
+
+                // Reuse the permission-aware flow instead of writing an
+                // enabled preference when the device has denied notifications.
+                NavigationLink {
+                    NotificationPreferencesView()
+                } label: {
+                    HStack {
+                        Text("Timer Notifications")
+                        Spacer()
+                        Text(store.settings.timerNotifications ? "On" : "Off")
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
 
             Section("During cooking") {
