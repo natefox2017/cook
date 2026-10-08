@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Defines RecipePouch cloud synchronization boundaries and explicit unconfigured behavior.
+
 import Foundation
 
 struct CloudSnapshotEnvelope: Codable, Sendable {
