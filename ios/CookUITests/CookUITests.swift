@@ -241,7 +241,7 @@ final class CookUITests: XCTestCase {
         XCTAssertTrue(tomato.label.contains("used"))
         app.navigationBars.buttons["Done"].tap()
         app.buttons["Ingredients"].tap()
-        let restored = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Tomatoes")).firstMatch
+        let restored = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pasta")).firstMatch
         waitUntilReady(restored)
         XCTAssertTrue(restored.label.contains("used"))
     }
