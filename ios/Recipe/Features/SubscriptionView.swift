@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Implements RecipePouch subscription status, purchase, restore, and management UI.
+
 import Foundation
 import StoreKit
 import SwiftUI
