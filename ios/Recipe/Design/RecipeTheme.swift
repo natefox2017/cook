@@ -13,6 +13,25 @@ enum RecipeSpacing {
     static let pageInset: CGFloat = 20
 }
 
+// A scroll-aware final inset, not a hard-coded Tab Bar height. SwiftUI
+// updates its safe area for each device, rotation and keyboard presentation.
+private struct RecipeRootScrollClearance: ViewModifier {
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear
+                .frame(height: RecipeSpacing.medium)
+                .accessibilityHidden(true)
+                .allowsHitTesting(false)
+        }
+    }
+}
+
+extension View {
+    func recipeRootScrollClearance() -> some View {
+        modifier(RecipeRootScrollClearance())
+    }
+}
+
 enum RecipeTheme {
     static let accent = Color(red: 66.0 / 255, green: 168.0 / 255, blue: 90.0 / 255)
     static let accentForeground = Color(uiColor: UIColor { traits in
