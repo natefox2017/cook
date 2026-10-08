@@ -19,6 +19,16 @@ final class RecipeAuthServiceTests: XCTestCase {
         super.tearDown()
     }
 
+    func testCloudUploadRequiresAccountDownloadAndConflictResolution() {
+        // A download in progress or failed download must not silently
+        // upload a locally linked library to another RecipePouch account.
+        XCTAssertFalse(CloudSyncCoordinatorState.syncing.permitsUpload)
+        XCTAssertFalse(CloudSyncCoordinatorState.error("offline").permitsUpload)
+        XCTAssertFalse(CloudSyncCoordinatorState.conflicts([]).permitsUpload)
+        XCTAssertTrue(CloudSyncCoordinatorState.localOnly.permitsUpload)
+        XCTAssertTrue(CloudSyncCoordinatorState.synced(.now).permitsUpload)
+    }
+
     func testGoogleOAuthCancellationIsNotAnAuthenticationError() {
         let cancellation = NSError(
             domain: ASWebAuthenticationSessionErrorDomain,
