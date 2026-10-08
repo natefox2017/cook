@@ -1,6 +1,7 @@
 /** Shared CORS helpers for CookApp Edge Functions. */
 
-const ALLOW_HEADERS = "authorization, x-client-info, apikey, content-type";
+const ALLOW_HEADERS =
+  "authorization, x-client-info, apikey, content-type, x-cookapp-bootstrap-token";
 const ALLOW_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 
 /** Public endpoints (e.g. openapi) may use a wildcard origin. */
