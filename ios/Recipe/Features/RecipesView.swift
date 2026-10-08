@@ -35,7 +35,7 @@ struct RecipesView: View {
                 matchesScope = filter.includes(recipe)
             }
             return matchesScope && (
-                query.isEmpty || searchableText(recipe).localizedStandardContains(query)
+                query.isEmpty || RecipeSearch.matches(recipe, query: query)
             )
         }.sorted { lhs, rhs in
             switch sort {
@@ -303,11 +303,6 @@ struct RecipesView: View {
         Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
     }
 
-    private func searchableText(_ recipe: Recipe) -> String {
-        ([recipe.title, recipe.summary, recipe.notes]
-         + recipe.ingredients.map(\.name)
-         + recipe.steps.map { "\($0.title) \($0.instruction)" }).joined(separator: "\n")
-    }
 }
 
 private struct RecipeLibraryCard: View {
