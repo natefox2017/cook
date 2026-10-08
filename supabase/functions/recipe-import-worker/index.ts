@@ -42,17 +42,21 @@ Deno.serve(async (request: Request): Promise<Response> => {
   // This endpoint intentionally has verify_jwt=false for scheduled service
   // invocations; the extra secret is mandatory and never committed to Git.
   const requiredSecret = Deno.env.get("RECIPE_IMPORT_WORKER_SECRET");
-  if (!requiredSecret || !secureEqual(
-    requiredSecret,
-    request.headers.get("x-recipe-worker-secret") ?? "",
-  )) {
+  if (
+    !requiredSecret || !secureEqual(
+      requiredSecret,
+      request.headers.get("x-recipe-worker-secret") ?? "",
+    )
+  ) {
     return Response.json({ error: "Not authorized" }, { status: 401 });
   }
 
   const url = Deno.env.get("SUPABASE_URL");
   const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !serviceRole) {
-    return Response.json({ error: "Worker configuration missing" }, { status: 503 });
+    return Response.json({ error: "Worker configuration missing" }, {
+      status: 503,
+    });
   }
 
   const admin = createClient(url, serviceRole, {
@@ -119,7 +123,9 @@ Deno.serve(async (request: Request): Promise<Response> => {
         { p_job_id: jobID, p_message_id: queueID },
       );
       if (claimError) throw claimError;
-      const claimed = (Array.isArray(claims) ? claims[0] : claims) as Job | undefined;
+      const claimed = (Array.isArray(claims) ? claims[0] : claims) as
+        | Job
+        | undefined;
       if (!claimed) {
         // In-flight jobs have a visibility timeout and are reclaimed if their
         // lease becomes stale; never ACK a message while work may be ongoing.
@@ -141,23 +147,28 @@ Deno.serve(async (request: Request): Promise<Response> => {
       if (claimed.input_type === "url") {
         // URL fetching remains explicitly disabled until the server has
         // DNS-pinned/per-redirect SSRF controls and source rights reviewed.
-        const { data: stored, error } = await admin.from("recipe_import_jobs").update({
-          status: "failed",
-          stage: "done",
-          error: {
-            code: "UNSUPPORTED_SOURCE",
-            message: "Server-side webpage or video extraction is not yet available.",
-            recoverable: false,
-            suggested_action: "Paste the recipe text or use the app's local webpage import.",
-            request_id: crypto.randomUUID(),
-          },
-          completed_at: now(),
-          updated_at: now(),
-        }).eq("id", jobID).eq("queue_message_id", queueID)
+        const { data: stored, error } = await admin.from("recipe_import_jobs")
+          .update({
+            status: "failed",
+            stage: "done",
+            error: {
+              code: "UNSUPPORTED_SOURCE",
+              message:
+                "Server-side webpage or video extraction is not yet available.",
+              recoverable: false,
+              suggested_action:
+                "Paste the recipe text or use the app's local webpage import.",
+              request_id: crypto.randomUUID(),
+            },
+            completed_at: now(),
+            updated_at: now(),
+          }).eq("id", jobID).eq("queue_message_id", queueID)
           .eq("status", "extracting").eq("attempt_count", claimedAttempt)
           .select("id")
           .maybeSingle();
-        if (error || !stored) throw error ?? new Error("Import state changed before save");
+        if (error || !stored) {
+          throw error ?? new Error("Import state changed before save");
+        }
         await archive(queueID);
         failed++;
         continue;
@@ -167,7 +178,9 @@ Deno.serve(async (request: Request): Promise<Response> => {
         id: claimed.id,
         source_value: claimed.source_value,
       });
-      const { data: saved, error: saveError } = await admin.from("recipe_import_jobs").update({
+      const { data: saved, error: saveError } = await admin.from(
+        "recipe_import_jobs",
+      ).update({
         status: "completed",
         stage: "done",
         recipe_id: result.recipe_id,
@@ -178,7 +191,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
         completed_at: now(),
         updated_at: now(),
       }).eq("id", jobID).eq("queue_message_id", queueID)
-          .eq("status", "extracting").eq("attempt_count", claimedAttempt)
+        .eq("status", "extracting").eq("attempt_count", claimedAttempt)
         .select("id")
         .maybeSingle();
       if (saveError || !saved) {

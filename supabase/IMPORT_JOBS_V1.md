@@ -44,4 +44,13 @@ Do not infer success from source code, lightweight PR auto-merge or an existing 
 
 **Environment observed 2026-10-08:** Supabase `cookapp` reported ACTIVE_HEALTHY, queue `pgmq.q_recipe_import` exists and is logged, and `public.recipe_import_jobs` did not exist. There is no deployed recipe import worker/function yet. This PR does **not** apply a production migration or deploy any Edge Function.
 
+## Verification follow-up — 2026-10-08
+
+- Passed: `deno test supabase/functions/recipe-import-worker/textEvidence_test.ts` (4/4), `deno check` for both Edge Functions, and `deno fmt --check` for the four worker/API TypeScript files.
+- Passed: `python3 docs/import-fixtures/validate_contract.py` (19 fixtures: 11 valid, 8 invalid; OpenAPI schema references valid), using an ephemeral `uv` environment for `jsonschema`.
+- Passed: unsigned iOS simulator build with `xcodebuild -project ios/Recipe.xcodeproj -scheme Recipe -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build`. Two equivalent collection section headers were expressed explicitly after the merged `main` source failed to compile under Xcode 27.
+- Failed: `swift test --package-path ios/RecipeCore` reports 69 passing tests and one existing failure in `RecipeDocumentParserTests.structuredStepsExtractExplicitCookingSignalsWithoutGuessing` (`RecipeDocumentParserTests.swift:94`, expected two timers). The failing parser/test files are unchanged from `origin/main` and are outside this import PR.
+- Blocked: `supabase db lint --local` could not connect to PostgreSQL at `127.0.0.1:54322`; Docker is unavailable in this environment. No SQL migration, grants/RLS, PGMQ concurrency, lease expiry, crash recovery, or ACK ordering test ran. Production was not used as a test database.
+- Still unverified: signed HTTP behavior, anonymous and two-account isolation, worker secret rejection, retry races, legacy queue consumer compatibility, DNS/redirect/private-address/size/time SSRF cases, real source extraction, and signed iOS receipt-to-result flow. Keep the PR draft and Issue #31 open.
+
 Reference: [Supabase Queues](https://supabase.com/docs/guides/queues), [Consuming messages with Edge Functions](https://supabase.com/docs/guides/queues/consuming-messages-with-edge-functions), [Securing Edge Functions](https://supabase.com/docs/guides/functions/auth).

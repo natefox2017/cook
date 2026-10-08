@@ -46,8 +46,10 @@ export function parseLocalText(job: { id: string; source_value: string }): {
     updated_at: sourceDate,
   });
 
-  const ingredientHeading = /^(ingredients?|食材|材料|原料|材料一覧)\s*[:：]?$/i;
-  const stepHeading = /^(steps?|instructions?|directions?|method|做法|步骤|步骤说明|作り方|手順)\s*[:：]?$/i;
+  const ingredientHeading =
+    /^(ingredients?|食材|材料|原料|材料一覧)\s*[:：]?$/i;
+  const stepHeading =
+    /^(steps?|instructions?|directions?|method|做法|步骤|步骤说明|作り方|手順)\s*[:：]?$/i;
   let section: "none" | "ingredients" | "steps" = "none";
   let ingredientCount = 0;
   let stepCount = 0;
@@ -72,14 +74,14 @@ export function parseLocalText(job: { id: string; source_value: string }): {
     if (section === "ingredients" && ingredientCount < 100) {
       // Preserve the entire amount phrase. A low-confidence exact quantity
       // may not be inferred from "to taste", "少许" or "适量".
-      fields[`ingredients[${ingredientCount}].raw_text`] =
-        makeField(line, 0.95);
-      fields[`ingredients[${ingredientCount}].amount`] =
-        makeField(line, 0.95);
+      fields[`ingredients[${ingredientCount}].raw_text`] = makeField(
+        line,
+        0.95,
+      );
+      fields[`ingredients[${ingredientCount}].amount`] = makeField(line, 0.95);
       ingredientCount++;
     } else if (section === "steps" && stepCount < 80) {
-      fields[`steps[${stepCount}].instruction`] =
-        makeField(raw, 0.95);
+      fields[`steps[${stepCount}].instruction`] = makeField(raw, 0.95);
       stepCount++;
     }
   }
@@ -100,4 +102,3 @@ export function parseLocalText(job: { id: string; source_value: string }): {
     review_fields: review,
   };
 }
-
