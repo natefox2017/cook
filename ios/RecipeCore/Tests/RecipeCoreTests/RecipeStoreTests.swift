@@ -680,3 +680,45 @@ func sameOfflineMealSlotReturnsResolvableConflict() throws {
     )
     #expect(local.mealPlan.map(\.id) == [cloudMeal.id])
 }
+
+
+@Test @MainActor
+func groceryConsolidationPreferenceIsNonRetroactive() throws {
+    let first = RecipeIngredient.from(
+        name: "Tomatoes",
+        amountText: "100 g",
+        category: .produce
+    )
+    let second = RecipeIngredient.from(
+        name: "Tomatoes",
+        amountText: "50 g",
+        category: .produce
+    )
+    let recipe = exampleRecipe(ingredients: [first, second])
+    let store = RecipeStore()
+    try store.upsert(recipe)
+
+    // With consolidation disabled, even compatible ingredients stay separate.
+    try store.addToGroceries(
+        recipeID: recipe.id,
+        servings: nil,
+        ingredientIDs: [first.id, second.id],
+        consolidateCompatibleIngredients: false
+    )
+    #expect(store.groceries.count == 2)
+    #expect(store.groceries[0].quantity == 100)
+    #expect(store.groceries[1].quantity == 50)
+
+    // Turning the preference back on combines only a newly added ingredient.
+    // Existing rows must not be retroactively rewritten or merged.
+    try store.addToGroceries(
+        recipeID: recipe.id,
+        servings: nil,
+        ingredientIDs: [first.id],
+        consolidateCompatibleIngredients: true
+    )
+    #expect(store.groceries.count == 2)
+    #expect(store.groceries[0].quantity == 200)
+    #expect(store.groceries[1].quantity == 50)
+    #expect(store.groceries.allSatisfy { $0.recipeIDs == [recipe.id] })
+}
