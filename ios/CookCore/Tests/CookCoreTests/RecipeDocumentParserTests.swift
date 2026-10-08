@@ -130,3 +130,11 @@ func ambiguousTimesDoNotBecomeFakePreciseTimers(_ instruction: String) throws {
     let roundTrip = try JSONDecoder().decode(RecipeStep.self, from: JSONEncoder().encode(step))
     #expect(roundTrip == step)
 }
+
+
+@Test func compoundHourMinuteDurationBecomesOneTimer() throws {
+    let html = #"<script type='application/ld+json'>{"@type":"Recipe","name":"Braise","recipeIngredient":["500 g beef"],"recipeInstructions":[{"@type":"HowToStep","name":"Braise","text":"Braise for 1 hour 30 minutes at 180°C."}]}</script>"#
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/braise")!))
+    #expect(recipe.steps[0].timers.count == 1)
+    #expect(recipe.steps[0].timers[0].durationSeconds == 5_400)
+}
