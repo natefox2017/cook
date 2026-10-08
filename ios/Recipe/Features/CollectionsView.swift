@@ -354,10 +354,16 @@ private struct CollectionRecipePickerSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
+        // Precompute this snapshot once; each row then uses a constant-time Set lookup.
+        let membershipIndex = RecipeCollectionIndex(memberships: store.collectionMemberships)
+
+        return NavigationStack {
             List {
                 ForEach(visibleRecipes) { recipe in
-                    let isMember = store.collectionIDs(forRecipe: recipe.id).contains(collectionID)
+                    let isMember = membershipIndex.contains(
+                        recipeID: recipe.id,
+                        inCollection: collectionID
+                    )
                     Button {
                         toggle(recipe.id, isMember: isMember)
                     } label: {
