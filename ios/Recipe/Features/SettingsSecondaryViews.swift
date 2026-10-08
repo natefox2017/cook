@@ -205,7 +205,7 @@ struct PrivacySummaryView: View {
                 Text(
                     String(localized: LocalizedStringResource("You can export local data and request deletion of your RecipePouch account data from Settings.", locale: RecipeLanguage.active)))
             }
-            .padding()
+            .padding(RecipeSpacing.pageInset)
         }
         .background(RecipeTheme.canvas)
         .navigationTitle("Privacy Summary")
@@ -364,7 +364,7 @@ private struct AcknowledgementsView: View {
             Text(
                 String(localized: LocalizedStringResource("RecipePouch’s interaction model is informed by established private recipe managers: collect recipes, organize them, cook step-by-step, plan meals, and shop from ingredients. RecipePouch’s implementation and visual system remain its own.", locale: RecipeLanguage.active))
             )
-            .padding()
+            .padding(RecipeSpacing.pageInset)
         }
         .background(RecipeTheme.canvas)
         .navigationTitle("Acknowledgements")

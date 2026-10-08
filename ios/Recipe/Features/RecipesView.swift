@@ -461,7 +461,7 @@ private struct PendingShareRow: View {
     @State private var originalSource = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
             Label(
                 title,
                 systemImage: symbol

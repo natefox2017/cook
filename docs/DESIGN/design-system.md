@@ -11,7 +11,7 @@ Apple Liquid Glass inspired navigation + premium European recipe app.
 ## Typography
 
 Brand direction:
-Claude-inspired humanist sans.
+A restrained Lora editorial type system matched to the shipped RecipePouch UI.
 
 Implementation font:
 Lora (SIL Open Font License), registered as `Lora-Regular`.
