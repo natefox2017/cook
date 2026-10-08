@@ -119,7 +119,7 @@ public struct RecipeShareInbox: Sendable {
                 throw RecipeShareInboxError.invalidInput
             }
         case .text:
-            guard !original.isEmpty, original.count <= 100_000 else {
+            guard !original.isEmpty, rawSource.count <= 100_000 else {
                 throw RecipeShareInboxError.invalidInput
             }
         case .image, .file:
@@ -135,8 +135,12 @@ public struct RecipeShareInbox: Sendable {
         let identifier = try Self.stableReceiptID(from: fingerprint)
 
         let sourceRef = "sources/" + hex + ".txt"
+        // The historical ID/fingerprint is based on the trimmed source.
+        // Store new text receipts verbatim for evidence preservation; the
+        // immutable first-written file wins for duplicate canonical input.
+        let storedSource = type == .text ? rawSource : original
         try writeOnce(
-            Data(original.utf8),
+            Data(storedSource.utf8),
             to: root.appendingPathComponent(sourceRef)
         )
 
