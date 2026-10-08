@@ -34,7 +34,14 @@ public enum RecipePortableExport {
     ) throws -> Data {
         let archive = RecipePortableArchive(
             exportedAt: exportedAt,
-            recipes: sortedRecipes(snapshot.recipes),
+            recipes: sortedRecipes(snapshot.recipes).map { recipe in
+                // Portable JSON intentionally excludes image bytes and bundled
+                // asset references; the full-library export remains unchanged.
+                var portable = recipe
+                portable.coverData = nil
+                portable.coverAsset = nil
+                return portable
+            },
             collections: snapshot.collections.sorted {
                 $0.name.localizedStandardCompare($1.name) == .orderedAscending
             },
