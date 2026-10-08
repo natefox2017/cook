@@ -1,0 +1,11 @@
+Validated 25 import fixtures (12 positive / 13 negative), plus OpenAPI external schema references.
+test_actual_contract_resolves_all_local_and_external_references (test_validate_contract.OpenAPIReferenceTests.test_actual_contract_resolves_all_local_and_external_references) ... ok
+test_missing_component_reference_fails_even_outside_paths (test_validate_contract.OpenAPIReferenceTests.test_missing_component_reference_fails_even_outside_paths) ... ok
+test_missing_external_reference_fails_even_outside_paths (test_validate_contract.OpenAPIReferenceTests.test_missing_external_reference_fails_even_outside_paths) ... ok
+test_non_string_reference_is_rejected (test_validate_contract.OpenAPIReferenceTests.test_non_string_reference_is_rejected) ... ok
+test_unrecognized_remote_reference_is_rejected (test_validate_contract.OpenAPIReferenceTests.test_unrecognized_remote_reference_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.008s
+
+OK
