@@ -53,6 +53,10 @@ struct RecipeRemoteImportJob: Decodable, Sendable {
         }
     }
 
+    // This is an ephemeral client-side binding, never a server-supplied
+    // ownership claim. The JSON decoder intentionally excludes it.
+    var authenticatedOwnerID: UUID? = nil
+
     let jobID: UUID
     let clientRequestID: UUID
     let status: Status
@@ -183,7 +187,11 @@ struct RecipeRemoteImportService {
         }
 
         if (200...299).contains(response.statusCode) {
-            return try JSONDecoder().decode(RecipeRemoteImportJob.self, from: data)
+            var job = try JSONDecoder().decode(
+                RecipeRemoteImportJob.self, from: data
+            )
+            job.authenticatedOwnerID = session.user.id
+            return job
         }
 
         if let error = try? JSONDecoder().decode(
@@ -204,9 +212,20 @@ struct RecipeRemoteImportService {
     /// evidence model is defined; original text is always preserved locally.
     static func saveCompletedTextJob(
         _ job: RecipeRemoteImportJob,
+        expectedClientRequestID: UUID,
         originalSource: String,
         into store: RecipeStore
     ) throws -> Recipe? {
+        // A delayed result from user A must not silently enter the library
+        // while a different account B is signed in. The owner binding came
+        // from the authenticated Supabase session, not the job JSON.
+        guard case .signedIn(let currentUserID, _) =
+            RecipeAuthService.shared.state,
+              job.authenticatedOwnerID == currentUserID,
+              job.clientRequestID == expectedClientRequestID else {
+            throw RecipeRemoteImportError.notSignedIn
+        }
+
         guard job.status == .completed,
               let result = job.result,
               let recipeID = job.recipeID,
