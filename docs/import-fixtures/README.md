@@ -24,7 +24,7 @@ both the extracted value and the user-origin evidence. It supplements the
 JSON Schema fixture checks; it does not add fields or endpoints to the V1
 contract.
 
-The validator uses JSON Schema Draft 2020-12, checks external OpenAPI references, and checks all positive/negative fixtures. For URL requests it also requires an HTTPS hostname and rejects credentials or nonstandard ports, since the generic JSON Schema `uri` format alone accepts hostless HTTPS URIs. This local fixture check is not a production URL fetcher or SSRF defense. A schema check is not an iOS build, deployed API check or real source import.
+The validator uses JSON Schema Draft 2020-12, checks external OpenAPI references, and checks all positive/negative fixtures. The contract and validator require an HTTPS hostname, reject credentials or nonstandard ports, and reject empty or whitespace-only text. The extra URL pattern is needed because generic JSON Schema `uri` format alone accepts hostless HTTPS URIs. These local checks are not a production URL fetcher or SSRF defense. A schema check is not an iOS build, deployed API check or real source import.
 
 ## Evidence acquisition
 

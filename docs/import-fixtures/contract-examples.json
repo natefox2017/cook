@@ -169,6 +169,16 @@
       }
     },
     {
+      "name": "reject whitespace-only source text",
+      "schema": "ImportRequest",
+      "valid": false,
+      "data": {
+        "client_request_id": "14141414-1414-4141-8141-141414141414",
+        "input_type": "text",
+        "text": "   "
+      }
+    },
+    {
       "name": "reject missing client request ID",
       "schema": "ImportRequest",
       "valid": false,

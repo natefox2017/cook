@@ -47,26 +47,35 @@ def validate_openapi_references(api: dict, definitions: set[str]) -> None:
     inspect(api["paths"])
 
 
-def has_well_formed_import_url(case: dict) -> bool:
+def has_well_formed_import_source(case: dict) -> bool:
     if case["schema"] != "ImportRequest":
         return True
     request = case["data"]
-    if request.get("input_type") != "url":
+    input_type = request.get("input_type")
+    if input_type == "text":
+        text = request.get("text")
+        return isinstance(text, str) and bool(text.strip())
+    if input_type != "url":
         return True
 
-    try:
-        parsed = urllib.parse.urlsplit(request.get("url", ""))
-        port = parsed.port
-    except (TypeError, ValueError):
-        return False
+    for raw_url in (request.get("url"), request.get("original_source_url")):
+        if raw_url is None:
+            continue
+        try:
+            parsed = urllib.parse.urlsplit(raw_url)
+            port = parsed.port
+        except (TypeError, ValueError):
+            return False
 
-    return (
-        parsed.scheme == "https"
-        and bool(parsed.hostname)
-        and parsed.username is None
-        and parsed.password is None
-        and port in (None, 443)
-    )
+        if not (
+            parsed.scheme == "https"
+            and bool(parsed.hostname)
+            and parsed.username is None
+            and parsed.password is None
+            and port in (None, 443)
+        ):
+            return False
+    return True
 
 
 def main() -> int:
@@ -102,7 +111,7 @@ def main() -> int:
         }
         validator = Draft202012Validator(selected, format_checker=checker)
         errors = list(validator.iter_errors(case["data"]))
-        observed_valid = not errors and has_well_formed_import_url(case)
+        observed_valid = not errors and has_well_formed_import_source(case)
 
         if observed_valid != case["valid"]:
             details = "; ".join(error.message for error in errors[:2])
