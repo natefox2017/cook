@@ -2,6 +2,7 @@
 
 import { createServiceClient } from "./auth.ts";
 import { AppError } from "./errors.ts";
+import { parseAdminRole, requireAdminRole } from "./admin-role.ts";
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -103,7 +104,8 @@ export async function requireAdminSession(req: Request): Promise<{
   return {
     adminId: data.admin_id as string,
     username,
-    role: row?.role ?? "owner",
+    // Never promote a missing/corrupt role into an owner-level session.
+    role: parseAdminRole(row?.role),
     sessionId: data.id as string,
     token,
   };
@@ -111,7 +113,5 @@ export async function requireAdminSession(req: Request): Promise<{
 
 /** Owner-only gate for secrets / financial / admin-account APIs. */
 export function requireOwnerRole(role: string): void {
-  if (role !== "owner") {
-    throw new AppError("forbidden", "Owner role required", 403);
-  }
+  requireAdminRole(role, ["owner"]);
 }
