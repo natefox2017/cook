@@ -21,10 +21,10 @@ This document is the UI completeness checklist for the current codebase. Product
 - Cloud Sync — implemented settings/status/mode page; production Supabase connection deferred.
 - Notifications — implemented.
 - Appearance — implemented.
-- Cooking preferences — implemented.
-- Grocery preferences — implemented.
-- Meal Plan preferences — implemented.
-- Data & Privacy — implemented: export, local delete, cloud delete entry, stored-data explanation, privacy summary.
+- Cooking preferences — keep-screen-awake is saved; timer notifications open the shared permission-aware screen instead of bypassing denied iOS permission.
+- Grocery preferences — consolidation now controls newly added recipe ingredients; source-name visibility controls the grocery rows without deleting source IDs.
+- Meal Plan preferences — System Default / Sunday / Monday now change week order, range and planned-meal count consistently.
+- Data & Privacy — export and cloud delete entry implemented. Local-only deletion consistency and signed-in sync isolation still tracked in #18.
 - Help & Support — implemented: import, cooking, meal/shop, subscription, sync and import-review troubleshooting.
 - About — implemented: version, licenses, acknowledgements, EULA.
 - Collections — implemented locally: create/rename/delete, multi-membership, Favorites kept separate, real counts, collection detail/search, recipe membership management and recipe-library filtering; remote sync remains #29.
