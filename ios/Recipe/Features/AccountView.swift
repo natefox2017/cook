@@ -77,7 +77,7 @@ struct AccountView: View {
             Section {
                 Picker("Account action", selection: $mode) {
                     ForEach(Mode.allCases) { item in
-                        Text(item.rawValue).tag(item)
+                        Text(LocalizedStringKey(item.rawValue)).tag(item)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -91,8 +91,10 @@ struct AccountView: View {
                 SecureField("Password", text: $password)
                     .textContentType(mode == .signIn ? .password : .newPassword)
 
-                Button(mode.rawValue) {
+                Button {
                     performEmailAction()
+                } label: {
+                    Text(LocalizedStringKey(mode.rawValue))
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(!canSubmitEmail || isAuthenticating)
