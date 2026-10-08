@@ -318,8 +318,8 @@ private struct StepEditorRow: View {
 
                         Stepper(
                             value: $timer.durationSeconds,
-                            in: 60...43_200,
-                            step: 60
+                            in: 1...43_200,
+                            step: 30
                         ) {
                             Text("Timer: \(durationLabel(timer.durationSeconds))")
                                 .font(CookTheme.text(15, relativeTo: .subheadline))
