@@ -381,7 +381,7 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
-    func testSubscriptionOpensFromProfileAndSettings() {
+    func testUnavailableSubscriptionStorefrontFromProfileAndSettings() {
         let app = launchSeededApp()
         defer { app.terminate() }
 
