@@ -99,4 +99,3 @@ running 1 test from ./docs/import-fixtures/contract-evidence_test.ts
 completed import preserves original source, linked evidence, review gaps and user edit ... ok (1ms)
 
 ok | 59 passed | 0 failed | 1 ignored (3s)
-
