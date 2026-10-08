@@ -153,7 +153,7 @@ public struct RecipeShareInbox: Sendable {
     }
 
     /// Unacknowledged sources remain available after an app or extension exit.
-    public func pendingReceipts() throws -> [RecipeShareReceipt] {
+    public func pendingReceipts(for ownerID: UUID? = nil) throws -> [RecipeShareReceipt] {
         let files = try FileManager.default.contentsOfDirectory(
             at: root.appendingPathComponent("receipts"),
             includingPropertiesForKeys: nil
@@ -166,7 +166,14 @@ public struct RecipeShareInbox: Sendable {
                     from: Data(contentsOf: $0)
                 )
             }
-            .filter { !FileManager.default.fileExists(atPath: acknowledgementFile(for: $0.id).path) }
+            .filter { receipt in
+                // A source acknowledged for account A must remain pending
+                // for account B. Signed-out devices keep their local source.
+                guard let ownerID else { return true }
+                return !FileManager.default.fileExists(
+                    atPath: acknowledgementFile(for: receipt.id, ownerID: ownerID).path
+                )
+            }
         return results.sorted { $0.receivedAt < $1.receivedAt }
     }
 
@@ -209,19 +216,45 @@ public struct RecipeShareInbox: Sendable {
 
     /// Call only after the owner-authenticated server confirms a durable job.
     /// Do not ACK merely because the Share UI or host App has opened.
-    public func acknowledge(_ receipt: RecipeShareReceipt, jobID: UUID) throws {
+    public func acknowledge(
+        _ receipt: RecipeShareReceipt,
+        jobID: UUID,
+        ownerID: UUID
+    ) throws {
         let payload = ServerAcknowledgement(
             jobID: jobID,
+            ownerID: ownerID,
             acknowledgedAt: .now
         )
         try writeOnce(
             try encoder().encode(payload),
-            to: acknowledgementFile(for: receipt.id)
+            to: acknowledgementFile(for: receipt.id, ownerID: ownerID)
         )
+    }
+
+    /// After a crash, the host can query the server job for the same owner
+    /// instead of resubmitting or treating a queued job as a finished recipe.
+    public func acknowledgedJobID(
+        for receipt: RecipeShareReceipt,
+        ownerID: UUID
+    ) throws -> UUID? {
+        let file = acknowledgementFile(for: receipt.id, ownerID: ownerID)
+        guard FileManager.default.fileExists(atPath: file.path) else {
+            return nil
+        }
+        let record = try decoder().decode(
+            ServerAcknowledgement.self,
+            from: Data(contentsOf: file)
+        )
+        guard record.ownerID == ownerID else {
+            return nil
+        }
+        return record.jobID
     }
 
     private struct ServerAcknowledgement: Codable {
         let jobID: UUID
+        let ownerID: UUID
         let acknowledgedAt: Date
     }
 
@@ -230,9 +263,9 @@ public struct RecipeShareInbox: Sendable {
             .appendingPathComponent(id.uuidString + ".json")
     }
 
-    private func acknowledgementFile(for id: UUID) -> URL {
+    private func acknowledgementFile(for id: UUID, ownerID: UUID) -> URL {
         root.appendingPathComponent("acknowledgements")
-            .appendingPathComponent(id.uuidString + ".json")
+            .appendingPathComponent(id.uuidString + "-" + ownerID.uuidString + ".json")
     }
 
     private func encoder() -> JSONEncoder {
