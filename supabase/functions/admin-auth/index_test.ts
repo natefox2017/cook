@@ -1,5 +1,6 @@
 import { AppError } from "../_shared/errors.ts";
 import { withAdminBootstrapAuthorization } from "../_shared/admin-bootstrap.ts";
+import { handleCors } from "../_shared/cors.ts";
 
 function request(headers?: HeadersInit): Request {
   return new Request(
@@ -84,6 +85,29 @@ Deno.test("production bootstrap accepts the configured header or bearer token", 
     if (await response.text() !== "bootstrap reached") {
       throw new Error("The authorized bootstrap handler did not run.");
     }
+  }
+});
+
+Deno.test("bootstrap token header is allowed by public CORS preflight", () => {
+  const response = handleCors(
+    new Request("https://example.test/functions/v1/admin-auth/bootstrap", {
+      method: "OPTIONS",
+      headers: {
+        "Access-Control-Request-Headers": "x-cookapp-bootstrap-token",
+      },
+    }),
+  );
+  const allowedHeaders = response?.headers.get("Access-Control-Allow-Headers")
+    ?.toLowerCase() ?? "";
+
+  if (
+    !allowedHeaders.split(",").map((header) => header.trim()).includes(
+      "x-cookapp-bootstrap-token",
+    )
+  ) {
+    throw new Error(
+      "CORS preflight does not allow the bootstrap token header.",
+    );
   }
 });
 
