@@ -220,11 +220,7 @@ private struct CollectionDetailView: View {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return store.recipes(inCollection: collectionID)
             .filter { recipe in
-                query.isEmpty
-                    || ([recipe.title, recipe.summary, recipe.notes]
-                        + recipe.ingredients.map(\.name))
-                .joined(separator: "\n")
-                .localizedStandardContains(query)
+                RecipeSearch.matches(recipe, query: query, includeSteps: false)
             }
             .sorted {
                 $0.title.localizedStandardCompare($1.title) == .orderedAscending
