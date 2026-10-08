@@ -11,7 +11,7 @@ This directory adds the **first server job/queue slice** for [Issue #31](https:/
 - `recipe-import-worker` is service-only and triggered by an authenticated secret. It uses existing restricted `recipe_import_queue_read` and `recipe_import_queue_archive` RPCs plus the new server-only atomic claim. Unacknowledged messages become visible again; stale claims can be retried up to three attempts. **Queue archive occurs only after the job result is persisted.**
 - For **pasted text**, the small evidence-first extractor reads explicit Ingredients/Steps headings in English/Chinese/Japanese, preserves vague amounts as null normalization and marks incomplete results `needs_review`.
 - For **remote URLs/videos**, this slice intentionally returns a truthful `UNSUPPORTED_SOURCE` with the original source retained. Do **not** fetch arbitrary client URLs from an Edge Function without DNS-pinned, redirect-by-redirect SSRF validation and limits. This remains further work in #31.
-- Results live in the private job payload; the main iOS app does **not yet** poll and upsert them into RecipeCore. Client handoff, media storage, production URL/video evidence, provider routing, owner separation and device acceptance are outstanding, so #31 must stay open.
+- Results live in the private job payload. `ios/Recipe/Services/RecipeRemoteImportService.swift` now provides **an authenticated iOS create/query/retry adapter** and a conservative `saveCompletedTextJob` mapper into the existing RecipeStore. The adapter is **not yet invoked by the draft Share inbox/UI** (#72), so foreground polling, automatic receipt→job submission, result handoff, per-owner lifecycle and real signed-device acceptance are still outstanding. The mapper deliberately refuses to overwrite a recipe that already exists locally, preserving user edits; original pasted text stays attached.
 
 ## Files
 
@@ -20,6 +20,7 @@ This directory adds the **first server job/queue slice** for [Issue #31](https:/
 - `supabase/functions/recipe-import-worker/index.ts`: secret-authenticated durable queue worker.
 - `supabase/functions/recipe-import-worker/textEvidence.ts` and `textEvidence_test.ts`: narrow deterministic text parser and tests.
 - `supabase/config.toml`: verifies end-user JWT for API; cron worker must validate its separately configured secret.
+- `ios/Recipe/Services/RecipeRemoteImportService.swift`: native authenticated transport, progress lookup and guarded text-to-RecipeStore mapping. This is code prepared for #30's future inbox handoff, **not** an already-working app flow.
 
 ## Required verification before production migration/deploy
 
