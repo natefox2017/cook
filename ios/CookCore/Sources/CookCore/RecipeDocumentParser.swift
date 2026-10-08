@@ -197,7 +197,6 @@ public enum RecipeDocumentParser {
                 let seconds = hours * 3_600 + minutes * 60
                 guard seconds > 0, seconds <= 43_200 else { continue }
 
-                let sourceLabel = String(text[fullRange])
                 let base = stepTitle.isEmpty ? "Step timer" : stepTitle
                 timers.append(
                     RecipeStepTimer(
@@ -208,7 +207,6 @@ public enum RecipeDocumentParser {
                 consumedRanges.append(match.range(at: 0))
 
                 if timers.count > 12 { break }
-                _ = sourceLabel
             }
         }
 
