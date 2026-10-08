@@ -159,6 +159,26 @@
       }
     },
     {
+      "name": "reject localhost suffix source",
+      "schema": "ImportRequest",
+      "valid": false,
+      "data": {
+        "client_request_id": "15151515-1515-4151-8151-151515151515",
+        "input_type": "url",
+        "url": "https://preview.localhost/recipe"
+      }
+    },
+    {
+      "name": "reject trailing-dot host source",
+      "schema": "ImportRequest",
+      "valid": false,
+      "data": {
+        "client_request_id": "16161616-1616-4161-8161-161616161616",
+        "input_type": "url",
+        "url": "https://example.org./recipe"
+      }
+    },
+    {
       "name": "reject empty source text",
       "schema": "ImportRequest",
       "valid": false,

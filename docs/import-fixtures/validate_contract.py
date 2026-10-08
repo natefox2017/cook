@@ -54,11 +54,15 @@ def has_well_formed_import_source(case: dict) -> bool:
     input_type = request.get("input_type")
     if input_type == "text":
         text = request.get("text")
-        return isinstance(text, str) and bool(text.strip())
-    if input_type != "url":
-        return True
+        if not isinstance(text, str) or not text.strip():
+            return False
+    raw_urls = []
+    if input_type == "url":
+        raw_urls.append(request.get("url"))
+    if "original_source_url" in request:
+        raw_urls.append(request.get("original_source_url"))
 
-    for raw_url in (request.get("url"), request.get("original_source_url")):
+    for raw_url in raw_urls:
         if raw_url is None:
             continue
         try:
