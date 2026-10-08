@@ -5578,6 +5578,121 @@
         }
       }
     },
+    "View Shared Image": {
+      "extractionState": "new",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有画像を表示"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看分享的图片"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看分享的圖片"
+          }
+        }
+      }
+    },
+    "View Shared Document": {
+      "extractionState": "new",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有書類を表示"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看分享的文档"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看分享的文件"
+          }
+        }
+      }
+    },
+    "Loading Attachment": {
+      "extractionState": "new",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添付ファイルを読み込み中"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在加载附件"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在載入附件"
+          }
+        }
+      }
+    },
+    "Your signed-in account changed. The saved source was kept for the correct account.": {
+      "extractionState": "new",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログイン中のアカウントが変更されました。保存済みのソースは元のアカウント用に保持されています。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录账号已更改。已为原账号保留保存的来源。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登入帳號已變更。已為原帳號保留儲存的來源。"
+          }
+        }
+      }
+    },
+    "The shared source is unavailable. It may have expired.": {
+      "extractionState": "new",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有したソースを利用できません。期限切れの可能性があります。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法访问分享的来源，可能已过期。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法存取分享的來源，可能已過期。"
+          }
+        }
+      }
+    },
     "Attachment saved on this iPhone": {
       "extractionState": "new",
       "localizations": {

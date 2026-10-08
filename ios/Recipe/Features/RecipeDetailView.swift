@@ -9,6 +9,7 @@ struct RecipeDetailView: View {
     @Environment(RecipeStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @Environment(\.locale) private var locale
+    @Environment(\.openURL) private var openURL
     @State private var servings = 1
     @State private var didLoadServings = false
     @State private var didAdjustServings = false
@@ -21,6 +22,7 @@ struct RecipeDetailView: View {
     @State private var addedIngredientCount: Int?
     @State private var isPlanningMeal = false
     @State private var isManagingCollections = false
+    @State private var isLoadingSourceArtifact = false
 
     var body: some View {
         Group {
@@ -305,22 +307,96 @@ struct RecipeDetailView: View {
 
     @ViewBuilder
     private func source(_ recipe: Recipe) -> some View {
-        if recipe.sourceName != nil || recipe.sourceURL != nil || recipe.sourceText != nil {
+        let artifactID = recipe.importRecord?.result.source.sourceArtifactID
+        let sourceType = recipe.importRecord?.result.source.inputType
+        if recipe.sourceName != nil
+            || recipe.sourceURL != nil
+            || recipe.sourceText != nil
+            || artifactID != nil {
             VStack(alignment: .leading, spacing: 10) {
                 sectionTitle("Source")
-                if let name = recipe.sourceName, !name.isEmpty { Text(name).font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary) }
+                if let name = recipe.sourceName, !name.isEmpty {
+                    Text(name)
+                        .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
+                        .foregroundStyle(.secondary)
+                }
                 if let original = recipe.sourceURL, !original.isEmpty {
-                    if let url = URL(string: original), ["https", "http"].contains(url.scheme?.lowercased() ?? ""), url.host != nil {
-                        Link(destination: url) { Label("Open Original Recipe", systemImage: "arrow.up.right.square") }
+                    if let url = URL(string: original),
+                       ["https", "http"].contains(url.scheme?.lowercased() ?? ""),
+                       url.host != nil {
+                        Link(destination: url) {
+                            Label("Open Original Recipe", systemImage: "arrow.up.right.square")
+                        }
                             .frame(minHeight: 44, alignment: .leading)
                     } else {
-                        Text(original).font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote)).textSelection(.enabled)
+                        Text(original)
+                            .font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote))
+                            .textSelection(.enabled)
                     }
                 }
                 if let text = recipe.sourceText, !text.isEmpty {
-                    DisclosureGroup("Original Text") { Text(text).font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline)).textSelection(.enabled).padding(.top, 8) }
+                    DisclosureGroup("Original Text") {
+                        Text(text)
+                            .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
+                            .textSelection(.enabled)
+                            .padding(.top, 8)
+                    }
+                }
+                if let artifactID,
+                   sourceType == "image" || sourceType == "file" {
+                    Button {
+                        Task {
+                            await openSourceArtifact(artifactID)
+                        }
+                    } label: {
+                        if isLoadingSourceArtifact {
+                            ProgressView("Loading Attachment")
+                                .frame(minHeight: 44, alignment: .leading)
+                        } else {
+                            Label(
+                                sourceType == "image"
+                                    ? "View Shared Image"
+                                    : "View Shared Document",
+                                systemImage: sourceType == "image" ? "photo" : "doc"
+                            )
+                            .frame(minHeight: 44, alignment: .leading)
+                        }
+                    }
+                    .disabled(isLoadingSourceArtifact)
                 }
             }
+        }
+    }
+
+    @MainActor
+    private func openSourceArtifact(_ artifactID: UUID) async {
+        guard case .signedIn(let ownerID, _) = RecipeAuthService.shared.state
+        else {
+            feedbackMessage = String(localized: "Sign in required")
+            return
+        }
+
+        isLoadingSourceArtifact = true
+        defer { isLoadingSourceArtifact = false }
+
+        do {
+            let url = try await RecipeImportArtifactService().downloadURL(
+                artifactID: artifactID,
+                ownerID: ownerID
+            )
+            guard case .signedIn(let currentOwnerID, _) = RecipeAuthService.shared.state,
+                  currentOwnerID == ownerID
+            else {
+                feedbackMessage = String(
+                    localized: "Your signed-in account changed. The saved source was kept for the correct account."
+                )
+                return
+            }
+            openURL(url)
+        } catch {
+            feedbackMessage = String(
+                localized: "The shared source is unavailable. It may have expired."
+            )
         }
     }
 
