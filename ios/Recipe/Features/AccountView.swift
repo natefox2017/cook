@@ -91,14 +91,10 @@ struct AccountView: View {
 
     private var signedOutView: some View {
         ScrollView {
-            VStack(spacing: 18) {
-                header(
-                    "Welcome to RecipePouch",
-                    symbol: "leaf.fill",
-                    subtitle: "Save and sync your recipes."
-                )
+            VStack(spacing: 14) {
+                header("Welcome to RecipePouch", symbol: "leaf.fill")
 
-                VStack(spacing: 12) {
+                VStack(spacing: 10) {
                     SignInWithAppleButton(mode == .signUp ? .signUp : .signIn) { request in
                         let nonce = RecipeAuthService.makeAppleNonce()
                         appleNonce = nonce.raw
@@ -162,8 +158,8 @@ struct AccountView: View {
             .frame(maxWidth: 520)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, RecipeSpacing.pageInset)
-            .padding(.top, 12)
-            .padding(.bottom, 32)
+            .padding(.top, 8)
+            .padding(.bottom, 20)
         }
         .scrollDismissesKeyboard(.interactively)
     }
@@ -393,7 +389,7 @@ struct AccountView: View {
             Image(systemName: symbol)
                 .font(.system(size: 26, weight: .light))
                 .foregroundStyle(RecipeTheme.accentForeground)
-                .frame(width: 60, height: 60)
+                .frame(width: 52, height: 52)
                 .background(RecipeTheme.accent.opacity(0.11), in: Circle())
                 .accessibilityHidden(true)
 
