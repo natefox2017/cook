@@ -428,9 +428,8 @@ struct CookingView: View {
                     .font(RecipeTheme.title(32))
                     .accessibilityAddTraits(.isHeader)
 
-                Text(
-                    "You completed \(session.completedStepIDs.count) of \(recipe.steps.count) steps for \(recipe.title)."
-                )
+                Text("\(session.completedStepIDs.count) of \(recipe.steps.count) steps completed.")
+                    .lineLimit(1)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
 
