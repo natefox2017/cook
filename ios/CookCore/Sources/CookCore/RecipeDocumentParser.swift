@@ -43,6 +43,7 @@ public enum RecipeDocumentParser {
                 if result.title == "Imported recipe", line.count < 120 { result.title = line }
             }
         }
+        result.steps = enrichSteps(result.steps, ingredients: result.ingredients)
         return result
     }
 
@@ -154,7 +155,8 @@ public enum RecipeDocumentParser {
             let haystack = normalizedWords(step.instruction)
             updated.linkedIngredientIDs = ingredients.compactMap { ingredient in
                 let needle = normalizedWords(ingredient.name)
-                guard needle.count >= 3, haystack.contains(needle) else { return nil }
+                let meaningfulLength = needle.trimmingCharacters(in: .whitespacesAndNewlines).count
+                guard meaningfulLength >= 3, haystack.contains(needle) else { return nil }
                 return ingredient.id
             }
             return updated
