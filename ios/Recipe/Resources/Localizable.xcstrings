@@ -6882,6 +6882,374 @@
           }
         }
       }
+    },
+    "Paste a public recipe link beginning with https://. Local addresses and sign-in details aren't supported.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "https:// で始まる公開レシピのリンクを貼り付けてください。ローカルアドレスやログイン情報には対応していません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请粘贴以 https:// 开头的公开食谱链接。不支持本地地址或登录信息。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請貼上以 https:// 開頭的公開食譜連結。不支援本機位址或登入資訊。"
+          }
+        }
+      }
+    },
+    "This page doesn't contain a readable recipe. Your link can still be saved; add its text or a screenshot to complete it.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このページからレシピを読み取れませんでした。リンクは保存できます。テキストやスクリーンショットを追加して補完してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此页面没有可读取的食谱。你仍可保存链接，然后添加文本或截图来补全食谱。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此頁面沒有可讀取的食譜。你仍可儲存連結，然後新增文字或截圖來補完整食譜。"
+          }
+        }
+      }
+    },
+    "This file is too large. Choose a smaller image or a recipe document under 10 MB.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイルが大きすぎます。小さい画像、または10 MB未満のレシピ書類を選んでください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件过大。请选择较小的图片，或小于 10 MB 的食谱文档。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "檔案過大。請選擇較小的照片，或小於 10 MB 的食譜文件。"
+          }
+        }
+      }
+    },
+    "This recipe contains more than 100,000 characters. Choose a shorter document or paste a shorter section. Nothing was imported.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このレシピは100,000文字を超えています。短い書類を選ぶか、短い範囲を貼り付けてください。今回は何も取り込まれていません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此食谱超过 100,000 个字符。请选择较短的文档或粘贴较短的内容。本次未导入任何内容。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此食譜超過 100,000 個字元。請選擇較短的文件或貼上較短的內容。本次未匯入任何內容。"
+          }
+        }
+      }
+    },
+    "Recipe couldn't read this image. Try another photo with the recipe clearly in view.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この画像を読み取れませんでした。レシピがはっきり写った別の写真をお試しください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe 无法读取此图片。请换一张能清楚显示食谱内容的照片。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe 無法讀取此圖片。請改用一張能清楚顯示食譜內容的照片。"
+          }
+        }
+      }
+    },
+    "No readable text was found. Try a clearer photo, paste the recipe text, or enter the details.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み取れるテキストが見つかりませんでした。より鮮明な写真を使うか、レシピのテキストを貼り付けるか、詳細を入力してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到可读取的文字。请尝试更清晰的照片、粘贴食谱文本，或手动填写信息。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到可讀取的文字。請嘗試更清晰的照片、貼上食譜文字，或手動填寫資訊。"
+          }
+        }
+      }
+    },
+    "The website couldn't be read (HTTP %lld). You can keep the link and add the recipe details.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ウェブサイトを読み取れませんでした（HTTP %lld）。リンクを保存してレシピの詳細を追加できます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取此网站（HTTP %lld）。你可以保留链接并补充食谱信息。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法讀取此網站（HTTP %lld）。你可以保留連結並補充食譜資訊。"
+          }
+        }
+      }
+    },
+    "RecipePouch cloud sync is not configured in this build.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このビルドではRecipePouchのクラウド同期が設定されていません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此版本未配置 RecipePouch 云端同步。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此版本未設定 RecipePouch 雲端同步。"
+          }
+        }
+      }
+    },
+    "This library snapshot cannot be sent to cloud sync.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このライブラリのスナップショットはクラウド同期に送信できません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法将此食谱库快照发送到云同步。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法將此食譜庫快照傳送至雲端同步。"
+          }
+        }
+      }
+    },
+    "This library changed on another device. Download the latest version before retrying.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このライブラリは別のデバイスで変更されました。最新バージョンをダウンロードしてから再試行してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此食谱库已在另一台设备上更改。请先下载最新版本再重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此食譜庫已在另一部裝置上變更。請先下載最新版本再重試。"
+          }
+        }
+      }
+    },
+    "Cloud sync did not confirm that the snapshot was saved.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クラウド同期でスナップショットの保存を確認できませんでした。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "云端同步未确认快照已保存。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雲端同步未確認快照已儲存。"
+          }
+        }
+      }
+    },
+    "Sign out of your RecipePouch account before deleting only this iPhone's data. Your cloud library will stay intact.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このiPhoneのデータだけを削除する前に、RecipePouchアカウントからサインアウトしてください。クラウドライブラリはそのまま残ります。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "如需仅删除这部 iPhone 上的数据，请先退出 RecipePouch 账号。云端食谱库会保留。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "如需僅刪除這部 iPhone 上的資料，請先登出 RecipePouch 帳號。雲端食譜庫會保留。"
+          }
+        }
+      }
+    },
+    "A cloud sync operation is still finishing. Try deleting local data again after it stops.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クラウド同期の処理中です。完了してからローカルデータを削除してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "云端同步仍在完成中。同步结束后，请再次删除本机数据。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雲端同步仍在完成中。同步結束後，請再次刪除本機資料。"
+          }
+        }
+      }
+    },
+    "Could not securely persist the local erase barrier. Your library was not deleted. Check device storage and try again.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ローカルデータ消去の保護情報を安全に保存できませんでした。ライブラリは削除されていません。端末の空き容量を確認して再試行してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法安全保存本机数据清除保护标记，因此食谱库未被删除。请检查设备存储空间后重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法安全儲存本機資料清除保護標記，因此食譜庫未被刪除。請檢查裝置儲存空間後重試。"
+          }
+        }
+      }
+    },
+    "Your cooking timer is ready": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理タイマーが終了しました"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹饪计时器已结束"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹飪計時器已結束"
+          }
+        }
+      }
+    },
+    "The timer is running. To also receive an alert when Recipe is closed, enable notifications in Profile.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タイマーは動作中です。RecipePouchを閉じた後も通知を受け取るには、Profileで通知を有効にしてください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "计时器正在运行。若要在关闭 RecipePouch 后也收到提醒，请在“个人中心”启用通知。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "計時器正在執行。若要在關閉 RecipePouch 後也收到提醒，請在「個人中心」啟用通知。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

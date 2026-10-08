@@ -11,13 +11,20 @@ enum RecipeImportError: LocalizedError {
     case invalidLink, unsupportedPage, tooLarge, textTooLong, unreadableImage, noText, network(Int)
     var errorDescription: String? {
         switch self {
-        case .invalidLink: "Paste a public recipe link beginning with https://. Local addresses and sign-in details aren't supported."
-        case .unsupportedPage: "This page doesn't contain a readable recipe. Your link can still be saved; add its text or a screenshot to complete it."
-        case .tooLarge: "This file is too large. Choose a smaller image or a recipe document under 10 MB."
-        case .textTooLong: "This recipe contains more than 100,000 characters. Choose a shorter document or paste a shorter section. Nothing was imported."
-        case .unreadableImage: "Recipe couldn't read this image. Try another photo with the recipe clearly in view."
-        case .noText: "No readable text was found. Try a clearer photo, paste the recipe text, or enter the details."
-        case .network(let code): "The website couldn't be read (HTTP \(code)). You can keep the link and add the recipe details."
+        case .invalidLink:
+            String(localized: "Paste a public recipe link beginning with https://. Local addresses and sign-in details aren't supported.")
+        case .unsupportedPage:
+            String(localized: "This page doesn't contain a readable recipe. Your link can still be saved; add its text or a screenshot to complete it.")
+        case .tooLarge:
+            String(localized: "This file is too large. Choose a smaller image or a recipe document under 10 MB.")
+        case .textTooLong:
+            String(localized: "This recipe contains more than 100,000 characters. Choose a shorter document or paste a shorter section. Nothing was imported.")
+        case .unreadableImage:
+            String(localized: "Recipe couldn't read this image. Try another photo with the recipe clearly in view.")
+        case .noText:
+            String(localized: "No readable text was found. Try a clearer photo, paste the recipe text, or enter the details.")
+        case .network(let code):
+            String(localized: "The website couldn't be read (HTTP \(code)). You can keep the link and add the recipe details.")
         }
     }
 }
