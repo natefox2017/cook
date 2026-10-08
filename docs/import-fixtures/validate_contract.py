@@ -59,7 +59,7 @@ def validate_openapi_references(
             for child in value:
                 inspect(child)
 
-    inspect(api["paths"])
+    inspect(api)
 
 
 def has_well_formed_import_source(case: dict) -> bool:
