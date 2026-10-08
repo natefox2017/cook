@@ -48,7 +48,8 @@ export function errorResponse(
         error: {
           code: err.code,
           message: err.message,
-          details: err.details ?? null,
+          // Never send server/database details to untrusted callers on 5xx.
+          details: err.status >= 500 ? null : (err.details ?? null),
         },
       },
       err.status,
