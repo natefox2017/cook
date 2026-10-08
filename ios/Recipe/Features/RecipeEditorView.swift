@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Implements recipe editing for metadata, ingredients, steps, temperatures, and timers.
+
 import SwiftUI
 import PhotosUI
 import RecipeCore
