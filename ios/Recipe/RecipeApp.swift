@@ -173,6 +173,11 @@ private struct RecipeRootView: View {
             await subscriptions.refreshEntitlements()
         }
         .onChange(of: RecipeAuthService.shared.state) { _, state in
+            // An ACK from the previous account must not hide a receipt from
+            // the newly signed-in account after an authentication transition.
+            if !bypassOnboarding {
+                shareInbox.refresh()
+            }
             Task {
                 await cloudSync.authenticationChanged(state)
             }
