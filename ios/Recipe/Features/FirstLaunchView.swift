@@ -181,7 +181,9 @@ struct GettingStartedGuideContent: View {
                     1,
                     icon: "square.and.arrow.up",
                     title: "Share to RecipePouch",
-                    detail: "From Safari, TikTok, Instagram, YouTube, or another supported app, open Share and choose RecipePouch. The share extension should acknowledge receipt quickly so you can return to the source app."
+                    detail: "From Safari, TikTok, Instagram, YouTube, or another supported "
+                        + "app, open Share and choose RecipePouch. The share extension should "
+                        + "acknowledge receipt quickly so you can return to the source app."
                 )
                 Divider().padding(.leading, 56)
                 guideStep(
