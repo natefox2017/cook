@@ -71,7 +71,19 @@ struct RecipeApp: App {
     }
 
     private var appLocale: Locale {
-        isUITesting ? Locale(identifier: "en") : .autoupdatingCurrent
+        guard isUITesting else { return .autoupdatingCurrent }
+
+        // Regression launches stay in English unless a localization test
+        // explicitly chooses one of the supported target languages.
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "--uitesting-locale"),
+           arguments.indices.contains(index + 1) {
+            let identifier = arguments[index + 1]
+            if ["en", "zh-Hans", "zh-Hant", "ja"].contains(identifier) {
+                return Locale(identifier: identifier)
+            }
+        }
+        return Locale(identifier: "en")
     }
 
     private var colorScheme: ColorScheme? {
@@ -265,7 +277,7 @@ private enum RecipeTab: String, Identifiable {
 
     var id: Self { self }
 
-    var title: String {
+    var title: LocalizedStringKey {
         switch self {
         case .recipes: "Recipes"
         case .plan: "Plan"
