@@ -61,8 +61,8 @@ struct ProfileView: View {
             .listRowBackground(RecipeTheme.card)
 
             Section("Account & subscription") {
-                NavigationLink { AccountView() } label: { ProfileRowLabel(title: "Cook Account", systemImage: "person.badge.key") }
-                NavigationLink { SubscriptionView() } label: { ProfileRowLabel(title: "Cook Premium", systemImage: "sparkles") }
+                NavigationLink { AccountView() } label: { ProfileRowLabel(title: "RecipePouch Account", systemImage: "person.badge.key") }
+                NavigationLink { SubscriptionView() } label: { ProfileRowLabel(title: "RecipePouch Premium", systemImage: "sparkles") }
             }
             .listRowBackground(RecipeTheme.card)
 
@@ -117,7 +117,7 @@ struct ProfileView: View {
                 NavigationLink {
                     RecipeHelpView()
                 } label: {
-                    ProfileRowLabel(title: "Using Cook", systemImage: "questionmark.circle")
+                    ProfileRowLabel(title: "Using RecipePouch", systemImage: "questionmark.circle")
                 }
                 NavigationLink {
                     RecipeAboutView()
@@ -154,12 +154,12 @@ struct ProfileView: View {
             isPresented: $exportsData,
             document: exportDocument,
             contentType: .json,
-            defaultFilename: "Cook-Backup-\(Date().formatted(.iso8601.year().month().day().dateSeparator(.dash)))"
+            defaultFilename: "RecipePouch-Backup-\(Date().formatted(.iso8601.year().month().day().dateSeparator(.dash)))"
         ) { result in
             if case let .failure(error) = result { errorMessage = error.localizedDescription }
         }
         .confirmationDialog("Delete all local data?", isPresented: $confirmsReset, titleVisibility: .visible) {
-            Button("Delete All Cook Data", role: .destructive) {
+            Button("Delete All RecipePouch Data", role: .destructive) {
                 do {
                     try store.resetLibrary()
                     for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("recipe.cookingSession.") || key.hasPrefix("cook.cookingSession.") {
@@ -428,24 +428,24 @@ private struct RecipeHelpView: View {
         .listSectionSpacing(RecipeSpacing.medium)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("Using Cook").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Using RecipePouch").navigationBarTitleDisplayMode(.inline)
     }
 }
 
 private struct RecipeAboutView: View {
     var body: some View {
         List {
-            Section("Cook") {
+            Section("RecipePouch") {
                 LabeledContent("Version", value: RecipeVersion.display)
                 LabeledContent("Storage", value: "On this iPhone")
             }
             Section("Your local data") {
                 Text("This version stores your recipes, recipe images, source information, grocery list, meal plan and preferences on this iPhone. Your local profile is optional and does not create an online account.")
-                Text("Cook does not upload this library to a cloud account. Opening a source link takes you to the source website, where that site’s own practices apply.")
+                Text("RecipePouch does not upload this library unless cloud sync is enabled for a signed-in account. Opening a source link takes you to the source website, where that site’s own practices apply.")
             }
             Section("Exporting and deleting") {
-                Text("An exported JSON file contains a copy of your local Cook data, including any name, email, source text or notes you saved. You choose where the file is saved.")
-                Text("Delete All Local Data removes the Cook library and preferences from this iPhone after confirmation. Copies you exported separately are not deleted.")
+                Text("An exported JSON file contains a copy of your local RecipePouch data, including any name, email, source text, or notes you saved. You choose where the file is saved.")
+                Text("Delete All Local Data removes the RecipePouch library and preferences from this iPhone after confirmation. Copies you exported separately are not deleted.")
             }
             Section("Recipe sources") {
                 Text("Keep the original source with recipes you save. Check the source for its terms and any cooking or ingredient information you need.")
