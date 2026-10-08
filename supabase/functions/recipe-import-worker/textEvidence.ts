@@ -26,7 +26,7 @@ export function parseLocalText(job: { id: string; source_value: string }): {
     .filter(Boolean);
   const evidenceID = crypto.randomUUID();
   const fields: Record<string, EvidenceField> = {};
-  const sourceDate = now();
+  const sourceDate = new Date().toISOString();
   const evidence = [{
     id: evidenceID,
     source_type: "user",
