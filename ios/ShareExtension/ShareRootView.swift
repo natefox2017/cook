@@ -20,31 +20,31 @@ struct ShareRootView: View {
         .task {
             do {
                 try ShareInbox.save(payload)
-                status = "Saved to Recipe"
+                status = "Saved to RecipePouch"
                 try? await Task.sleep(for: .milliseconds(350))
                 complete()
             } catch {
-                status = "Couldn’t save to Recipe"
+                status = "Couldn’t save to RecipePouch"
             }
         }
     }
 }
 
 enum ShareInbox {
-    static let suite = "group.com.modelhub.recipe"
-    private static let legacySuite = "group.com.modelhub.cook"
+    static let suite = "group.com.modelhub.cook"
     private static let inboxKey = "recipe.shareInbox"
     private static let legacyInboxKey = "cook.shareInbox"
 
     static func save(_ payload: String) throws {
         guard let defaults = UserDefaults(suiteName: suite) else { throw CocoaError(.fileNoSuchFile) }
-        let legacyDefaults = UserDefaults(suiteName: legacySuite)
         var inbox = defaults.stringArray(forKey: inboxKey) ?? []
         inbox.append(contentsOf: defaults.stringArray(forKey: legacyInboxKey) ?? [])
-        inbox.append(contentsOf: legacyDefaults?.stringArray(forKey: legacyInboxKey) ?? [])
         var seen = Set<String>()
         inbox = inbox.filter { seen.insert($0).inserted }
         if !inbox.contains(payload) { inbox.append(payload) }
+        // Keep the deployed App Group and legacy key synchronized until the
+        // host app migration in #30 is complete.
         defaults.set(inbox, forKey: inboxKey)
+        defaults.set(inbox, forKey: legacyInboxKey)
     }
 }
