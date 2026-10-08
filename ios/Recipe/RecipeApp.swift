@@ -71,7 +71,19 @@ struct RecipeApp: App {
     }
 
     private var appLocale: Locale {
-        isUITesting ? Locale(identifier: "en") : .autoupdatingCurrent
+        guard isUITesting else { return .autoupdatingCurrent }
+
+        // Regression launches stay in English unless a localization test
+        // explicitly chooses one of the supported target languages.
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "--uitesting-locale"),
+           arguments.indices.contains(index + 1) {
+            let identifier = arguments[index + 1]
+            if ["en", "zh-Hans", "zh-Hant", "ja"].contains(identifier) {
+                return Locale(identifier: identifier)
+            }
+        }
+        return Locale(identifier: "en")
     }
 
     private var colorScheme: ColorScheme? {
@@ -84,6 +96,7 @@ struct RecipeApp: App {
 }
 
 private struct RecipeRootView: View {
+    @State private var auth = RecipeAuthService.shared
     @Environment(RecipeStore.self) private var store
     @Environment(CloudSyncCoordinator.self) private var cloudSync
     @Environment(SubscriptionStore.self) private var subscriptions
@@ -91,6 +104,7 @@ private struct RecipeRootView: View {
     @AppStorage(FirstLaunchFlowView.completionKey) private var hasCompletedOnboarding = false
     @State private var selectedTab: RecipeTab = .recipes
     @State private var shareInbox = RecipeShareInboxCoordinator()
+    @State private var profilePath: [ProfileRoute] = []
 
     let bypassOnboarding: Bool
 
@@ -142,8 +156,14 @@ private struct RecipeRootView: View {
                 }
                 .tag(RecipeTab.groceries)
 
-                NavigationStack {
+                NavigationStack(path: $profilePath) {
                     ProfileView()
+                        .navigationDestination(for: ProfileRoute.self) { route in
+                            switch route {
+                            case .account:
+                                AccountView()
+                            }
+                        }
                 }
                 .tabItem {
                     Label(RecipeTab.profile.title, systemImage: RecipeTab.profile.symbol)
@@ -164,15 +184,18 @@ private struct RecipeRootView: View {
         .task {
             await cloudSync.bind(
                 store: store,
-                authState: RecipeAuthService.shared.state
+                authState: auth.state
             )
+            if auth.authCallbackGeneration > 0 {
+                openAccountForAuthCallback()
+            }
         }
         .task {
             // Recover verified StoreKit entitlements even when the user never
             // opens the subscription screen in this process.
             await subscriptions.refreshEntitlements()
         }
-        .onChange(of: RecipeAuthService.shared.state) { _, state in
+        .onChange(of: auth.state) { _, state in
             // An ACK from the previous account must not hide a receipt from
             // the newly signed-in account after an authentication transition.
             if !bypassOnboarding {
@@ -186,6 +209,9 @@ private struct RecipeRootView: View {
                     await shareInbox.synchronize(store: store)
                 }
             }
+        }
+        .onChange(of: auth.authCallbackGeneration) { _, _ in
+            openAccountForAuthCallback()
         }
         .onChange(of: store.changeToken) { _, token in
             Task {
@@ -209,6 +235,11 @@ private struct RecipeRootView: View {
                 await subscriptions.refreshEntitlements()
             }
         }
+    }
+
+    private func openAccountForAuthCallback() {
+        selectedTab = .profile
+        profilePath = [.account]
     }
 }
 
@@ -273,7 +304,7 @@ private enum RecipeTab: String, Identifiable {
 
     var id: Self { self }
 
-    var title: String {
+    var title: LocalizedStringKey {
         switch self {
         case .recipes: "Recipes"
         case .plan: "Plan"

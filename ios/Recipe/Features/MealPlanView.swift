@@ -6,6 +6,7 @@ import SwiftUI
 
 struct MealPlanView: View {
     @Environment(RecipeStore.self) private var store
+    @Environment(\.locale) private var locale
     @AppStorage("recipe.meal.weekStart") private var weekStart = "System Default"
     @State private var selectedDate = Date()
     @State private var recipePicker: MealPlanPickerPresentation?
@@ -18,14 +19,16 @@ struct MealPlanView: View {
     }
 
     private var weekDates: [Date] {
-        let start = calendar.dateInterval(of: .weekOfYear, for: selectedDate)?.start
+        let start =
+            calendar.dateInterval(of: .weekOfYear, for: selectedDate)?.start
             ?? calendar.startOfDay(for: selectedDate)
         return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
     }
 
     private var weekDescription: String {
         guard let start = weekDates.first, let end = weekDates.last else { return "This week" }
-        return "\(englishDate(start, format: "MMM d")) – \(englishDate(end, format: "MMM d, yyyy"))"
+        return
+            "\(localizedMealDate(start, template: "MMM d", locale: locale)) – \(localizedMealDate(end, template: "MMM d, yyyy", locale: locale))"
     }
 
     private var weeklyMealCount: Int {
@@ -58,7 +61,7 @@ struct MealPlanView: View {
                         }
                     }
                     HStack {
-                        Text("\(weeklyMealCount) \(weeklyMealCount == 1 ? "meal" : "meals") planned this week")
+                        Text("\(weeklyMealCount) meals planned this week")
                             .font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote))
                             .foregroundStyle(.secondary)
                         Spacer()
@@ -79,20 +82,24 @@ struct MealPlanView: View {
                         recipePicker = MealPlanPickerPresentation(date: selectedDate, slot: slot)
                     } label: {
                         Label(
-                            "\(entries(for: slot).isEmpty ? "Add" : "Change") \(slot.rawValue.lowercased())",
-                            systemImage: entries(for: slot).isEmpty ? "plus.circle" : "arrow.triangle.2.circlepath"
+                            actionTitle(for: slot),
+                            systemImage: entries(for: slot).isEmpty
+                                ? "plus.circle" : "arrow.triangle.2.circlepath"
                         )
                             .frame(minHeight: 44)
                     }
                     .accessibilityIdentifier("mealplan.add.\(slot.rawValue.lowercased())")
                 } header: {
-                    Text(slot.rawValue).textCase(nil).font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
+                    Text(LocalizedStringKey(slot.rawValue)).textCase(nil).font(
+                        RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
                 }
                 .listRowBackground(RecipeTheme.card)
             }
 
             Section {
-                Text("Choose from your saved recipes. Open a planned recipe when you’re ready to cook or add its ingredients to Groceries.")
+                Text(
+                    "Choose from your saved recipes. Open a planned recipe when you’re ready to cook or add its ingredients to Groceries."
+                )
                     .font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote))
                     .foregroundStyle(.secondary)
             }
@@ -112,24 +119,33 @@ struct MealPlanView: View {
         .sheet(item: $recipePicker) { presentation in
             MealPlanRecipePicker(date: presentation.date, slot: presentation.slot)
         }
-        .confirmationDialog("Remove planned meal?", isPresented: Binding(
+        .confirmationDialog(
+            "Remove planned meal?",
+            isPresented: Binding(
             get: { mealToDelete != nil }, set: { if !$0 { mealToDelete = nil } }
-        ), titleVisibility: .visible) {
+            ), titleVisibility: .visible
+        ) {
             if let entry = mealToDelete {
                 Button("Remove meal", role: .destructive) {
-                    do { try store.deleteMeal(id: entry.id) }
-                    catch { errorMessage = error.localizedDescription }
+                    do { try store.deleteMeal(id: entry.id) } catch {
+                        errorMessage = error.localizedDescription
+                    }
                     mealToDelete = nil
                 }
             }
         } message: {
             Text("The recipe will stay in your saved recipes.")
         }
-        .alert("Couldn’t update meal plan", isPresented: Binding(
+        .alert(
+            "Couldn’t update meal plan",
+            isPresented: Binding(
             get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
-        )) {
+            )
+        ) {
             Button("OK", role: .cancel) { errorMessage = nil }
-        } message: { Text(errorMessage ?? "Please try again.") }
+        } message: {
+            Text(errorMessage ?? "Please try again.")
+        }
     }
 
     private func dayButton(_ date: Date) -> some View {
@@ -139,9 +155,9 @@ struct MealPlanView: View {
             selectedDate = date
         } label: {
             VStack(spacing: 4) {
-                Text(englishDate(date, format: "EEE"))
+                Text(localizedMealDate(date, template: "EEE", locale: locale))
                     .font(RecipeTheme.text(12, weight: .regular, relativeTo: .caption))
-                Text(englishDate(date, format: "d"))
+                Text(localizedMealDate(date, template: "d", locale: locale))
                     .font(RecipeTheme.text(20, weight: .semibold, relativeTo: .title3))
                 Circle()
                     .fill(hasMeals ? (selected ? Color.white : RecipeTheme.accent) : Color.clear)
@@ -151,11 +167,17 @@ struct MealPlanView: View {
             .frame(minWidth: 44, minHeight: 44)
             .padding(.horizontal, 5)
             .padding(.vertical, 5)
-            .background(selected ? RecipeTheme.accent : RecipeTheme.card, in: RoundedRectangle(cornerRadius: 16))
+            .background(
+                selected ? RecipeTheme.accent : RecipeTheme.card,
+                in: RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(englishDate(date, format: "EEEE, MMMM d, yyyy"))
-        .accessibilityValue("\(selected ? "Selected. " : "")\(hasMeals ? "Meals planned" : "No meals planned")")
+        .accessibilityLabel(localizedMealDate(date, template: "EEEE, MMMM d, yyyy", locale: locale))
+        .accessibilityValue(
+            selected
+                ? LocalizedStringKey(hasMeals ? "Selected. Meals planned" : "Selected. No meals planned")
+                : LocalizedStringKey(hasMeals ? "Meals planned" : "No meals planned")
+        )
         .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 
@@ -173,12 +195,19 @@ struct MealPlanView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(recipe.title).font(RecipeTheme.text(17, weight: .semibold, relativeTo: .body))
                             if let minutes = recipe.totalMinutes {
-                                Label("\(minutes) min", systemImage: "clock")
+                                Label(
+                                    Duration.seconds(minutes * 60).formatted(
+                                        .units(width: .abbreviated, maximumUnitCount: 1).locale(locale)
+                                    ),
+                                    systemImage: "clock"
+                                )
                                     .font(RecipeTheme.text(12, weight: .regular, relativeTo: .caption))
                                     .foregroundStyle(.secondary)
                             }
                             if recipe.needsReview {
-                                Text("Needs review").font(RecipeTheme.text(12, weight: .regular, relativeTo: .caption)).foregroundStyle(.secondary)
+                                Text("Needs review").font(
+                                    RecipeTheme.text(12, weight: .regular, relativeTo: .caption)
+                                ).foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -201,6 +230,24 @@ struct MealPlanView: View {
         store.mealPlan.filter { $0.slot == slot && calendar.isDate($0.date, inSameDayAs: selectedDate) }
     }
 
+    private func actionTitle(for slot: MealSlot) -> String {
+        let isAdding = entries(for: slot).isEmpty
+        switch (slot, isAdding) {
+        case (.breakfast, true):
+            return String(localized: "Add breakfast")
+        case (.lunch, true):
+            return String(localized: "Add lunch")
+        case (.dinner, true):
+            return String(localized: "Add dinner")
+        case (.breakfast, false):
+            return String(localized: "Change breakfast")
+        case (.lunch, false):
+            return String(localized: "Change lunch")
+        case (.dinner, false):
+            return String(localized: "Change dinner")
+        }
+    }
+
     private func moveWeek(by count: Int) {
         if let date = calendar.date(byAdding: .weekOfYear, value: count, to: selectedDate) {
             selectedDate = date
@@ -208,10 +255,12 @@ struct MealPlanView: View {
     }
 }
 
-private func englishDate(_ date: Date, format: String) -> String {
+// Date templates are resolved for the active SwiftUI locale, including the
+// English UI-test override and the iPhone's preferred language in production.
+private func localizedMealDate(_ date: Date, template: String, locale: Locale) -> String {
     let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "en")
-    formatter.dateFormat = format
+    formatter.locale = locale
+    formatter.setLocalizedDateFormatFromTemplate(template)
     return formatter.string(from: date)
 }
 
@@ -223,6 +272,7 @@ private struct MealPlanPickerPresentation: Identifiable {
 
 private struct MealPlanRecipePicker: View {
     @Environment(RecipeStore.self) private var store
+    @Environment(\.locale) private var locale
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
     @State private var replacementRecipe: Recipe?
@@ -256,8 +306,11 @@ private struct MealPlanRecipePicker: View {
                                         && Calendar.current.isDate($0.date, inSameDayAs: date)
                                 }
                                 Button {
-                                    if hasPlannedMeal { replacementRecipe = recipe }
-                                    else { save(recipe) }
+                                    if hasPlannedMeal {
+                                        replacementRecipe = recipe
+                                    } else {
+                                        save(recipe)
+                                    }
                                 } label: {
                                     HStack(spacing: 12) {
                                         RecipeImage(recipe: recipe, height: 60)
@@ -267,7 +320,10 @@ private struct MealPlanRecipePicker: View {
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text(recipe.title).foregroundStyle(.primary)
                                             if alreadyAdded {
-                                                Text("Already planned").font(RecipeTheme.text(12, weight: .regular, relativeTo: .caption)).foregroundStyle(.secondary)
+                                                Text("Already planned").font(
+                                                    RecipeTheme.text(
+                                                        12, weight: .regular, relativeTo: .caption)
+                                                ).foregroundStyle(.secondary)
                                             }
                                         }
                                         Spacer()
@@ -281,8 +337,20 @@ private struct MealPlanRecipePicker: View {
                                 .disabled(alreadyAdded)
                             }
                         } header: {
-                            Text("\(slot.rawValue) · \(englishDate(date, format: "MMM d, yyyy"))")
-                                .textCase(nil)
+                            let dateLabel = localizedMealDate(
+                                date,
+                                template: "MMM d, yyyy",
+                                locale: locale
+                            )
+                            Text(
+                                String(
+                                    localized: LocalizedStringResource(
+                                        "\(localizedMealSlot(slot)) · \(dateLabel)",
+                                        locale: locale
+                                    )
+                                )
+                            )
+                            .textCase(nil)
                         }
                         .listRowBackground(RecipeTheme.card)
                     }
@@ -304,9 +372,12 @@ private struct MealPlanRecipePicker: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             }
-            .confirmationDialog("Replace planned meal?", isPresented: Binding(
+            .confirmationDialog(
+                "Replace planned meal?",
+                isPresented: Binding(
                 get: { replacementRecipe != nil }, set: { if !$0 { replacementRecipe = nil } }
-            ), titleVisibility: .visible) {
+                ), titleVisibility: .visible
+            ) {
                 if let recipe = replacementRecipe {
                     Button("Replace with \(recipe.title)") {
                         save(recipe)
@@ -314,24 +385,52 @@ private struct MealPlanRecipePicker: View {
                     }
                 }
             } message: {
-                Text("This changes \(slot.rawValue.lowercased()) for \(englishDate(date, format: "MMM d, yyyy")). Both recipes stay in your library.")
+                let dateLabel = localizedMealDate(
+                    date,
+                    template: "MMM d, yyyy",
+                    locale: locale
+                )
+                Text(
+                    String(
+                        localized: LocalizedStringResource(
+                            "This changes \(localizedMealSlot(slot).lowercased(with: locale)) for \(dateLabel). Both recipes stay in your library.",
+                            locale: locale
+                        )
+                    )
+                )
             }
-            .alert("Couldn’t plan recipe", isPresented: Binding(
+            .alert(
+                "Couldn’t plan recipe",
+                isPresented: Binding(
                 get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
-            )) {
+                )
+            ) {
                 Button("OK", role: .cancel) { errorMessage = nil }
-            } message: { Text(errorMessage ?? "Please try again.") }
+            } message: {
+                Text(errorMessage ?? "Please try again.")
+            }
         }
         .tint(RecipeTheme.accent)
     }
 
     private var hasPlannedMeal: Bool {
-        store.mealPlan.contains { $0.slot == slot && Calendar.current.isDate($0.date, inSameDayAs: date) }
+        store.mealPlan.contains {
+            $0.slot == slot && Calendar.current.isDate($0.date, inSameDayAs: date)
+        }
+    }
+
+    private func localizedMealSlot(_ slot: MealSlot) -> String {
+        return switch slot {
+        case .breakfast: String(localized: "Breakfast", locale: locale)
+        case .lunch: String(localized: "Lunch", locale: locale)
+        case .dinner: String(localized: "Dinner", locale: locale)
+        }
     }
 
     private func save(_ recipe: Recipe) {
         do {
-            try store.upsertMeal(MealPlanEntry(
+            try store.upsertMeal(
+                MealPlanEntry(
                 recipeID: recipe.id,
                 date: Calendar.current.startOfDay(for: date),
                 slot: slot

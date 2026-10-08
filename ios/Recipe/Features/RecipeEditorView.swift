@@ -1,9 +1,9 @@
 // Developer: gengyun
 // Purpose: Implements recipe editing for metadata, ingredients, steps, temperatures, and timers.
 
-import SwiftUI
 import PhotosUI
 import RecipeCore
+import SwiftUI
 
 struct RecipeEditorView: View {
     @Environment(RecipeStore.self) private var store
@@ -60,11 +60,17 @@ struct RecipeEditorView: View {
                             draft.ingredients.removeAll { $0.id == ingredient.id }
                         }
                     }
-                    Button { draft.ingredients.append(RecipeIngredient(name: "")) } label: {
+                    Button {
+                        draft.ingredients.append(RecipeIngredient(name: ""))
+                    } label: {
                         Label("Add ingredient", systemImage: "plus.circle")
                     }
-                } header: { Text("Ingredients") } footer: {
-                    Text("Keep wording such as “to taste” or “a little”. Only explicit numeric amounts are scaled.")
+                } header: {
+                    Text("Ingredients")
+                } footer: {
+                    Text(
+                        "Keep wording such as “to taste” or “a little”. Only explicit numeric amounts are scaled."
+                    )
                 }
                 Section("Steps") {
                     ForEach($draft.steps) { $step in
@@ -72,7 +78,9 @@ struct RecipeEditorView: View {
                             draft.steps.removeAll { $0.id == step.id }
                         }
                     }
-                    Button { draft.steps.append(RecipeStep(instruction: "")) } label: {
+                    Button {
+                        draft.steps.append(RecipeStep(instruction: ""))
+                    } label: {
                         Label("Add step", systemImage: "plus.circle")
                     }
                     .accessibilityIdentifier("addRecipeStep")
@@ -83,59 +91,89 @@ struct RecipeEditorView: View {
                 Section("Source") {
                     if let value = original.sourceURL {
                         if let url = RecipeDocumentParser.validatedSourceURL(value) {
-                            Link(destination: url) { Label(original.sourceName ?? "Open original recipe", systemImage: "arrow.up.right.square") }
+                            Link(destination: url) {
+                                Label(
+                                    original.sourceName ?? "Open original recipe",
+                                    systemImage: "arrow.up.right.square")
+                            }
                         }
-                        Text(value).font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote)).foregroundStyle(.secondary).textSelection(.enabled)
+                        Text(value).font(
+                            RecipeTheme.text(13, weight: .regular, relativeTo: .footnote)
+                        )
+                        .foregroundStyle(.secondary).textSelection(.enabled)
                     } else {
                         TextField("Original link (optional)", text: $sourceText)
                             .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
                     }
                     if let text = original.sourceText, !text.isEmpty {
                         DisclosureGroup("Original recipe text") {
-                            Text(text).font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote)).textSelection(.enabled)
+                            Text(text).font(
+                                RecipeTheme.text(13, weight: .regular, relativeTo: .footnote)
+                            )
+                            .textSelection(.enabled)
                         }
                     }
                 }
                 if previewNeedsReview {
                     Section {
-                        Label("Missing ingredients or steps? Save a draft and finish it later.", systemImage: "pencil.circle")
-                            .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
+                        Label(
+                            "Missing ingredients or steps? Save a draft and finish it later.",
+                            systemImage: "pencil.circle"
+                        )
+                        .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
+                        .foregroundStyle(
+                            .secondary)
                     }
                 }
             }
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle(isExisting ? "Edit recipe" : "New recipe").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(isExisting ? "Edit recipe" : "New recipe")
+            .navigationBarTitleDisplayMode(
+                .inline
+            )
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { if isDirty { showDiscard = true } else { dismiss() } }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(previewNeedsReview ? "Save draft" : "Save") { save() }
-                        .disabled(draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoadingPhoto)
+                        .disabled(
+                            draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                || isLoadingPhoto
+                        )
                         .accessibilityIdentifier("saveRecipe")
                 }
             }
             .interactiveDismissDisabled(isDirty)
-            .confirmationDialog("Discard your changes?", isPresented: $showDiscard, titleVisibility: .visible) {
+            .confirmationDialog(
+                "Discard your changes?", isPresented: $showDiscard, titleVisibility: .visible
+            ) {
                 Button("Discard changes", role: .destructive) { dismiss() }
                 Button("Keep editing", role: .cancel) {}
             }
-            .alert("Couldn't save your recipe", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+            .alert(
+                "Couldn't save your recipe",
+                isPresented: Binding(
+                    get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+            ) {
                 Button("OK", role: .cancel) {}
-            } message: { Text(errorMessage ?? "") }
+            } message: {
+                Text(errorMessage ?? "")
+            }
             .task(id: photo) {
                 guard let photo else { return }
                 isLoadingPhoto = true
                 defer { isLoadingPhoto = false }
                 do {
-                    guard let data = try await photo.loadTransferable(type: Data.self) else { throw RecipeImportError.unreadableImage }
+                    guard let data = try await photo.loadTransferable(type: Data.self) else {
+                        throw RecipeImportError.unreadableImage
+                    }
                     try Task.checkCancellation()
                     draft.coverData = try RecipeImportService.normalizedPhoto(data)
                     draft.coverAsset = nil
-                } catch is CancellationError { }
-                catch { errorMessage = error.localizedDescription }
+                } catch is CancellationError {} catch { errorMessage = error.localizedDescription }
             }
         }
     }
@@ -166,7 +204,9 @@ struct RecipeEditorView: View {
             || !step.linkedIngredientIDs.isEmpty
     }
 
-    private func numberField(_ title: String, placeholder: String, text: Binding<String>) -> some View {
+    private func numberField(_ title: String, placeholder: String, text: Binding<String>)
+        -> some View
+    {
         HStack {
             Text(title)
             Spacer()
@@ -187,31 +227,46 @@ struct RecipeEditorView: View {
                 let name = ingredient.name.trimmingCharacters(in: .whitespacesAndNewlines)
                 let amount = ingredient.amountText.trimmingCharacters(in: .whitespacesAndNewlines)
                 if name.isEmpty && amount.isEmpty && ingredient.quantity == nil
-                    && (ingredient.unit ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    && (ingredient.unit ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        .isEmpty
+                {
                     return nil
                 }
-                guard !name.isEmpty else { throw EditorError.invalid("Give each ingredient a name, or remove the empty row.") }
-                if let previous = original.ingredients.first(where: { $0.id == ingredient.id }),
-                   previous.amountText.trimmingCharacters(in: .whitespacesAndNewlines) == amount {
-                    var item = ingredient; item.name = name; return item
+                guard !name.isEmpty else {
+                    throw EditorError.invalid(
+                        String(localized: "Give each ingredient a name, or remove the empty row.")
+                    )
                 }
-                var item = RecipeIngredient.from(name: name, amountText: amount, category: ingredient.category)
+                if let previous = original.ingredients.first(where: { $0.id == ingredient.id }),
+                    previous.amountText.trimmingCharacters(in: .whitespacesAndNewlines) == amount
+                {
+                    var item = ingredient
+                    item.name = name
+                    return item
+                }
+                var item = RecipeIngredient.from(
+                    name: name, amountText: amount, category: ingredient.category)
                 item.id = ingredient.id
                 return item
             }
             let validIngredientIDs = Set(recipe.ingredients.map(\.id))
             recipe.steps = draft.steps.filter(hasStepContent).map { step in
                 var cleaned = step
-                cleaned.linkedIngredientIDs = cleaned.linkedIngredientIDs.filter(validIngredientIDs.contains)
+                cleaned.linkedIngredientIDs = cleaned.linkedIngredientIDs.filter(
+                    validIngredientIDs.contains)
                 cleaned.timers = cleaned.timers.filter { $0.durationSeconds > 0 }
-                if cleaned.temperature?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
+                if cleaned.temperature?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    == true
+                {
                     cleaned.temperature = nil
                 }
                 return cleaned
             }
             if original.sourceURL == nil {
                 let value = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard value.isEmpty || RecipeDocumentParser.validatedSourceURL(value) != nil else { throw RecipeImportError.invalidLink }
+                guard value.isEmpty || RecipeDocumentParser.validatedSourceURL(value) != nil else {
+                    throw RecipeImportError.invalidLink
+                }
                 recipe.sourceURL = value.isEmpty ? nil : value
             }
             try store.upsert(recipe)
@@ -223,7 +278,12 @@ struct RecipeEditorView: View {
         let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { return nil }
         guard let number = Int(value), range.contains(number) else {
-            throw EditorError.invalid("\(name) must be a whole number between \(range.lowerBound) and \(range.upperBound), or left blank.")
+            throw EditorError.invalid(
+                String(
+                    localized:
+                        "\(name) must be a whole number between \(range.lowerBound) and \(range.upperBound), or left blank."
+                )
+            )
         }
         return number
     }
@@ -235,7 +295,8 @@ private struct IngredientEditorRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                TextField("Ingredient name", text: $ingredient.name).accessibilityIdentifier("ingredientName")
+                TextField("Ingredient name", text: $ingredient.name).accessibilityIdentifier(
+                    "ingredientName")
                 Button(role: .destructive, action: remove) { Image(systemName: "minus.circle") }
                     .buttonStyle(.borderless).frame(minWidth: 44, minHeight: 44)
                     .accessibilityLabel("Remove ingredient \(ingredient.name)")

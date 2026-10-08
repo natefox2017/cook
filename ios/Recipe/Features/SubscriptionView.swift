@@ -33,6 +33,7 @@ struct SubscriptionView: View {
 }
 
 struct PremiumPaywallContent: View {
+    @Environment(\.locale) private var locale
     @Environment(SubscriptionStore.self) private var subscriptions
 
     let context: PremiumPaywallContext
@@ -265,22 +266,17 @@ struct PremiumPaywallContent: View {
     }
 
     private func periodLabel(_ period: Product.SubscriptionPeriod) -> String {
-        let singular: String
-        let plural: String
-
-        switch period.unit {
+        return switch period.unit {
         case .day:
-            singular = "day"; plural = "days"
+            String(localized: LocalizedStringResource("\(period.value) day", locale: locale))
         case .week:
-            singular = "week"; plural = "weeks"
+            String(localized: LocalizedStringResource("\(period.value) week", locale: locale))
         case .month:
-            singular = "month"; plural = "months"
+            String(localized: LocalizedStringResource("\(period.value) month", locale: locale))
         case .year:
-            singular = "year"; plural = "years"
+            String(localized: LocalizedStringResource("\(period.value) year", locale: locale))
         @unknown default:
-            return "period"
+            String(localized: "Subscription period")
         }
-
-        return period.value == 1 ? singular : "\(period.value) \(plural)"
     }
 }

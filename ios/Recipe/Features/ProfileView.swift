@@ -7,6 +7,10 @@ import UniformTypeIdentifiers
 @preconcurrency import UserNotifications
 import UIKit
 
+enum ProfileRoute: Hashable {
+    case account
+}
+
 struct ProfileView: View {
     @Environment(RecipeStore.self) private var store
     @Environment(CloudSyncCoordinator.self) private var cloudSync
@@ -64,7 +68,12 @@ struct ProfileView: View {
             .listRowBackground(RecipeTheme.card)
 
             Section("Account & subscription") {
-                NavigationLink { AccountView() } label: { ProfileRowLabel(title: "RecipePouch Account", systemImage: "person.badge.key") }
+                NavigationLink(value: ProfileRoute.account) {
+                    ProfileRowLabel(
+                        title: "RecipePouch Account",
+                        systemImage: "person.badge.key"
+                    )
+                }
                 NavigationLink { SubscriptionView() } label: { ProfileRowLabel(title: "RecipePouch Premium", systemImage: "sparkles") }
             }
             .listRowBackground(RecipeTheme.card)
