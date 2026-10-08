@@ -440,20 +440,86 @@ public struct MealPlanEntry: Identifiable, Codable, Hashable, Sendable {
     }
 }
 
+public enum MealPlanWeekStart: String, Codable, CaseIterable, Identifiable, Sendable {
+    case system = "System Default"
+    case sunday = "Sunday"
+    case monday = "Monday"
+
+    public var id: String { rawValue }
+
+    public func applying(to base: Calendar) -> Calendar {
+        var calendar = base
+        switch self {
+        case .system:
+            break
+        case .sunday:
+            calendar.firstWeekday = 1
+        case .monday:
+            calendar.firstWeekday = 2
+        }
+        return calendar
+    }
+}
+
 public struct CookSettings: Codable, Equatable, Sendable {
     public var displayName: String
     public var email: String
     public var appearance: AppAppearance
     public var keepScreenAwake: Bool
     public var timerNotifications: Bool
+    public var consolidateCompatibleGroceries: Bool
+    public var showGroceryRecipeNames: Bool
+    public var mealPlanWeekStart: MealPlanWeekStart
 
-    public init(displayName: String = "", email: String = "",
-                appearance: AppAppearance = .system, keepScreenAwake: Bool = true,
-                timerNotifications: Bool = false) {
+    public init(
+        displayName: String = "",
+        email: String = "",
+        appearance: AppAppearance = .system,
+        keepScreenAwake: Bool = true,
+        timerNotifications: Bool = false,
+        consolidateCompatibleGroceries: Bool = true,
+        showGroceryRecipeNames: Bool = true,
+        mealPlanWeekStart: MealPlanWeekStart = .system
+    ) {
         self.displayName = displayName
         self.email = email
         self.appearance = appearance
         self.keepScreenAwake = keepScreenAwake
         self.timerNotifications = timerNotifications
+        self.consolidateCompatibleGroceries = consolidateCompatibleGroceries
+        self.showGroceryRecipeNames = showGroceryRecipeNames
+        self.mealPlanWeekStart = mealPlanWeekStart
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case displayName
+        case email
+        case appearance
+        case keepScreenAwake
+        case timerNotifications
+        case consolidateCompatibleGroceries
+        case showGroceryRecipeNames
+        case mealPlanWeekStart
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        displayName = try container.decodeIfPresent(String.self, forKey: .displayName) ?? ""
+        email = try container.decodeIfPresent(String.self, forKey: .email) ?? ""
+        appearance = try container.decodeIfPresent(AppAppearance.self, forKey: .appearance) ?? .system
+        keepScreenAwake = try container.decodeIfPresent(Bool.self, forKey: .keepScreenAwake) ?? true
+        timerNotifications = try container.decodeIfPresent(Bool.self, forKey: .timerNotifications) ?? false
+        consolidateCompatibleGroceries = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .consolidateCompatibleGroceries
+        ) ?? true
+        showGroceryRecipeNames = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .showGroceryRecipeNames
+        ) ?? true
+        mealPlanWeekStart = try container.decodeIfPresent(
+            MealPlanWeekStart.self,
+            forKey: .mealPlanWeekStart
+        ) ?? .system
     }
 }
