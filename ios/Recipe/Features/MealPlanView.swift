@@ -174,7 +174,9 @@ struct MealPlanView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(localizedMealDate(date, template: "EEEE, MMMM d, yyyy", locale: locale))
         .accessibilityValue(
-            "\(selected ? "Selected. " : "")\(hasMeals ? "Meals planned" : "No meals planned")"
+            selected
+                ? LocalizedStringKey(hasMeals ? "Selected. Meals planned" : "Selected. No meals planned")
+                : LocalizedStringKey(hasMeals ? "Meals planned" : "No meals planned")
         )
         .accessibilityAddTraits(selected ? [.isSelected] : [])
     }

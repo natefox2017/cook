@@ -105,8 +105,12 @@ struct GroceriesView: View {
                             }
                             .buttonStyle(.plain)
                             .textCase(nil)
-                            .accessibilityLabel("\(category.rawValue), \(items.count) items")
-                            .accessibilityValue(collapsedCategories.contains(category.rawValue) ? "Collapsed" : "Expanded")
+                            .accessibilityLabel(LocalizedStringKey(category.rawValue))
+                            .accessibilityValue(
+                                collapsedCategories.contains(category.rawValue)
+                                    ? LocalizedStringKey("Collapsed, \(items.count) items")
+                                    : LocalizedStringKey("Expanded, \(items.count) items")
+                            )
                             .accessibilityHint("Double tap to expand or collapse this group")
                         }
                         .listRowBackground(RecipeTheme.card)
@@ -190,8 +194,12 @@ struct GroceriesView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Mark \(item.name) as \(item.isChecked ? "to buy" : "bought")")
-            .accessibilityValue(item.isChecked ? "Bought" : "To buy")
+            .accessibilityLabel(
+                item.isChecked
+                    ? LocalizedStringKey("Mark \(item.name) as to buy")
+                    : LocalizedStringKey("Mark \(item.name) as bought")
+            )
+            .accessibilityValue(item.isChecked ? LocalizedStringKey("To buy") : LocalizedStringKey("Bought"))
             .accessibilityIdentifier("grocery.check.\(item.id.uuidString)")
 
             Button {
@@ -231,7 +239,10 @@ struct GroceriesView: View {
                 .tint(RecipeTheme.accent)
         }
         .contextMenu {
-            Button("Edit item", systemImage: "pencil") { editor = GroceryEditorPresentation(item: item) }
+            Button("Edit item", systemImage: "pencil") {
+                editor = GroceryEditorPresentation(item: item)
+            }
+            .accessibilityLabel(LocalizedStringKey("Edit \(item.name), \(item.amountText)"))
             Button("Remove item", systemImage: "trash", role: .destructive) { itemToDelete = item }
         }
     }

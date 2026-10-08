@@ -247,7 +247,7 @@ struct RecipesView: View {
                     .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
                     .frame(minHeight: 44)
             }
-            .accessibilityValue(sort.rawValue)
+            .accessibilityValue(LocalizedStringKey(sort.rawValue))
         }
     }
 
@@ -309,8 +309,12 @@ private struct RecipeLibraryCard: View {
             }
             .buttonStyle(.plain)
             .padding(8)
-            .accessibilityLabel(recipe.isFavorite ? "Remove \(recipe.title) from favorites" : "Favorite \(recipe.title)")
-            .accessibilityValue(recipe.isFavorite ? "Favorite" : "Not favorite")
+            .accessibilityLabel(
+                recipe.isFavorite
+                    ? LocalizedStringKey("Remove \(recipe.title) from favorites")
+                    : LocalizedStringKey("Favorite \(recipe.title)")
+            )
+            .accessibilityValue(recipe.isFavorite ? LocalizedStringKey("Favorite") : LocalizedStringKey("Not favorite"))
         }
     }
 }
