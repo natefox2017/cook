@@ -619,6 +619,15 @@ enum RecipeExportFormat {
 
     @MainActor
     func makeDocument(from store: RecipeStore) throws -> RecipeExportDocument {
+        // Keep the failure path deterministic while preserving the normal test UI and library.
+        if ProcessInfo.processInfo.arguments.contains("--uitesting-export-failure") {
+            throw NSError(
+                domain: "RecipeExportUITest",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Simulated export failure."]
+            )
+        }
+
         let data: Data
         switch self {
         case .recipesJSON:
