@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Implements RecipePouch account authentication and recovery screens.
+
 import AuthenticationServices
 import Foundation
 import SwiftUI
