@@ -15,6 +15,12 @@
 
 Added `RecipePortableExportTests` and `RecipeShareInboxTests` regressions. The focused Foundation-only Swift sanity probe passed for media stripping and empty-data rejection; **these are not tests of the full RecipeCore package**.
 
+## Subsequent fixes merged into main
+
+- [PR #109](https://github.com/natefox2017/cook/pull/109) unifies the historically stable SHA-256-based receipt ID transformation, which was duplicated for URL/text and image/file sources. Two fixed ID fixtures guard compatibility, file retry deduplication and source persistence.
+- [PR #110](https://github.com/natefox2017/cook/pull/110) treats task cancellation during share-job submission/polling as an expected lifecycle event, not an import error. Its regression case verifies the pending receipt remains for retry.
+- The two earlier contract fixes above were merged as [PR #108](https://github.com/natefox2017/cook/pull/108). An isolated Swift/Foundation sanity probe confirmed the data-handling rules, but **full Xcode and RecipeCore test execution remain unverified**.
+
 ## Static findings retained for targeted follow-up
 
 | Priority | Area | Finding | Required verification |
@@ -23,7 +29,6 @@ Added `RecipePortableExportTests` and `RecipeShareInboxTests` regressions. The f
 | P1 | `CloudSyncCoordinator` / Share handoff | Stateful sync and import coordination includes account transitions, network retries and conflict resolution across many await points. Mechanical extraction could introduce stale-account updates or deletion races. | Simulate two accounts/two devices, offline edits, concurrent refresh, token expiry and interrupted erase before further decomposition. |
 | P1 | Release QA | Current environment cannot run Xcode, device sign-in, StoreKit purchases or extension host-app acceptance. Existing minimal PR workflow does not build/test the product. | Run `swift test --package-path ios/RecipeCore`, native `xcodebuild test`, app-language regression and production Supabase ownership tests on a Mac/test deployment. |
 | P2 | `RecipeShareInbox.receive(.text)` | Incoming shared text is trimmed before receipt persistence. This may drop leading/trailing whitespace from original recipe evidence. Changing the fingerprint requires care to preserve idempotency for historical receipts. | Add round-trip whitespace regression and migration-aware identity design before changing existing hashes. |
-| P2 | Documentation | Some `docs/PRODUCT_COMPLETENESS_V1.md` passages still describe previously merged Share/worker PRs as draft or unimplemented. | Correct dated status statements without claiming production integration has passed. |
 
 ## What was deliberately not changed
 
