@@ -8,10 +8,35 @@ import Foundation
 public enum RecipeDocumentParser {
     public static let maximumTextCharacters = 100_000
 
+    // Compile fixed patterns lazily and only once. Each recipe may contain
+    // dozens of ingredients and steps, so per-field compilation is avoidable.
+    private static let jsonLDExpression = try? NSRegularExpression(
+        pattern: #"<script\b[^>]*\btype\s*=\s*[\"']application/ld\+json[\"'][^>]*>([\s\S]*?)</script\s*>"#, options: .caseInsensitive
+    )
+    private static let combinedTimerExpression = try? NSRegularExpression(
+        pattern: #"(?<![\d./])(\d{1,2})(?![\d./])\s*(hours?|hrs?)\s*(?:and\s*)?(\d{1,3})(?![\d./])\s*(minutes?|mins?)\b"#, options: .caseInsensitive
+    )
+    private static let singleTimerExpression = try? NSRegularExpression(
+        pattern: #"(?<![\d./])(\d{1,3})(?![\d./])\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)\b"#, options: .caseInsensitive
+    )
+    private static let explicitIngredientExpression = try? NSRegularExpression(
+        pattern: #"^((?:(?:\d+\s+)?\d+/\d+|\d+(?:\.\d+)?|[¼½¾⅛⅜⅝⅞]))\s+(g|kg|mg|ml|l|oz|lb|lbs|cups?|tbsp|tsp|tablespoons?|teaspoons?|cloves?)\s+(.+)$"#, options: .caseInsensitive
+    )
+    private static let servingsExpression = try? NSRegularExpression(
+        pattern: #"^\s*(\d{1,3})\s*(?:servings?|portions?|people)?\s*$"#, options: .caseInsensitive
+    )
+    private static let isoDurationExpression = try? NSRegularExpression(
+        pattern: #"^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$"#
+    )
+    private static let temperatureExpressions: [NSRegularExpression] = [
+        #"\b\d{2,3}\s*°?\s*[CF]\b"#,
+        #"\b(?:low|medium-low|medium|medium-high|high)\s+heat\b"#
+    ].compactMap { try? NSRegularExpression(pattern: $0, options: .caseInsensitive) }
+
+
     public static func recipe(inHTML html: String, sourceURL: URL) -> Recipe? {
         guard html.utf8.count <= 2_000_000 else { return nil }
-        let pattern = #"<script\b[^>]*\btype\s*=\s*[\"']application/ld\+json[\"'][^>]*>([\s\S]*?)</script\s*>"#
-        guard let expression = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { return nil }
+        guard let expression = Self.jsonLDExpression else { return nil }
         for match in expression.matches(in: html, range: NSRange(html.startIndex..., in: html)) {
             guard let range = Range(match.range(at: 1), in: html),
                   let data = String(html[range]).data(using: .utf8),
@@ -180,10 +205,7 @@ public enum RecipeDocumentParser {
             let timer: RecipeStepTimer
         }
 
-        let combinedPattern = #"(?<![\d./])(\d{1,2})(?![\d./])\s*(hours?|hrs?)\s*(?:and\s*)?(\d{1,3})(?![\d./])\s*(minutes?|mins?)\b"#
-        let singlePattern = #"(?<![\d./])(\d{1,3})(?![\d./])\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)\b"#
-
-        guard let singleRegex = try? NSRegularExpression(pattern: singlePattern, options: .caseInsensitive) else {
+        guard let singleRegex = Self.singleTimerExpression else {
             return []
         }
 
@@ -192,7 +214,7 @@ public enum RecipeDocumentParser {
         var candidates: [Candidate] = []
         var consumedRanges: [NSRange] = []
 
-        if let combinedRegex = try? NSRegularExpression(pattern: combinedPattern, options: .caseInsensitive) {
+        if let combinedRegex = Self.combinedTimerExpression {
             for match in combinedRegex.matches(in: text, range: fullTextRange) {
                 let matchRange = match.range(at: 0)
                 consumedRanges.append(matchRange)
@@ -301,13 +323,8 @@ public enum RecipeDocumentParser {
     }
 
     private static func temperature(in text: String) -> CookingTemperature? {
-        let patterns = [
-            #"\b\d{2,3}\s*°?\s*[CF]\b"#,
-            #"\b(?:low|medium-low|medium|medium-high|high)\s+heat\b"#
-        ]
-        for pattern in patterns {
-            guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
-                  let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+        for regex in Self.temperatureExpressions {
+            guard let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
                   let range = Range(match.range(at: 0), in: text) else { continue }
             return CookingTemperature(text: String(text[range]))
         }
@@ -318,8 +335,7 @@ public enum RecipeDocumentParser {
         let line = removingBullet(clean(raw))
         // Separate only an explicit amount + recognized unit + ingredient name.
         // Other sentences remain verbatim, including qualitative amounts/ranges.
-        let pattern = #"^((?:(?:\d+\s+)?\d+/\d+|\d+(?:\.\d+)?|[¼½¾⅛⅜⅝⅞]))\s+(g|kg|mg|ml|l|oz|lb|lbs|cups?|tbsp|tsp|tablespoons?|teaspoons?|cloves?)\s+(.+)$"#
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+        guard let regex = Self.explicitIngredientExpression,
               let match = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)),
               let number = Range(match.range(at: 1), in: line),
               let unit = Range(match.range(at: 2), in: line),
@@ -331,7 +347,7 @@ public enum RecipeDocumentParser {
         if let values = value as? [Any] { return values.lazy.compactMap { servings($0) }.first }
         if let number = value as? Int, (1...100).contains(number) { return number }
         guard let text = value as? String,
-              let regex = try? NSRegularExpression(pattern: #"^\s*(\d{1,3})\s*(?:servings?|portions?|people)?\s*$"#, options: .caseInsensitive),
+              let regex = Self.servingsExpression,
               let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
               let range = Range(match.range(at: 1), in: text),
               let result = Int(text[range]), (1...100).contains(result) else { return nil }
@@ -339,7 +355,7 @@ public enum RecipeDocumentParser {
     }
 
     private static func minutes(_ value: String?) -> Int? {
-        guard let value, let regex = try? NSRegularExpression(pattern: #"^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$"#),
+        guard let value, let regex = Self.isoDurationExpression,
               let match = regex.firstMatch(in: value, range: NSRange(value.startIndex..., in: value)) else { return nil }
         var parts: [Int] = []
         for index in 1...3 {
