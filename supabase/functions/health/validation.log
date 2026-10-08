@@ -1,0 +1,57 @@
+Check supabase/functions/purge-expired-recipe-import-artifacts/purge_test.ts
+Check supabase/functions/admin-auth/index_test.ts
+Check supabase/functions/_shared/admin-role_test.ts
+Check supabase/functions/_shared/bounded-json_test.ts
+Check supabase/functions/_shared/errors_test.ts
+Check supabase/functions/_shared/storage-purge_test.ts
+Check supabase/functions/health/auth_test.ts
+running 7 tests from ./supabase/functions/purge-expired-recipe-import-artifacts/purge_test.ts
+cleanup processes 205 rows across stable pages without offset skips ... ok (47ms)
+Storage failure retains a retryable record ... ok (871µs)
+cleanup rejects cross-user paths and corrupted metadata without deleting ... ok (192µs)
+one run is bounded, reports backlog, and the next run drains it ... ok (14ms)
+concurrent state update is reported rather than silently committed ... ok (246µs)
+cleanup limits concurrent Storage calls to eight ... ok (445µs)
+cleanup secret and timestamp validators fail closed ... ok (364µs)
+running 6 tests from ./supabase/functions/admin-auth/index_test.ts
+production bootstrap rejects a missing server token before its handler ... ok (25ms)
+production bootstrap rejects missing and invalid tokens before its handler ... ok (1ms)
+production bootstrap rejects prefixes, suffixes and oversized headers ... ok (639µs)
+production bootstrap accepts the configured header or bearer token ... ok (1ms)
+bootstrap token header is allowed by public CORS preflight ... ok (1ms)
+non-production bootstrap keeps the existing no-token behavior ... ok (343µs)
+running 5 tests from ./supabase/functions/_shared/admin-role_test.ts
+all four database-backed admin roles parse exactly ... ok (394µs)
+unknown and missing roles fail closed instead of becoming owner ... ok (370µs)
+owner authorization never accepts admin, operator or readonly ... ok (168µs)
+readonly cannot mutate subscription or financial routes ... ok (78µs)
+authorization handles malformed role before checking allowed roles ... ok (83µs)
+running 6 tests from ./supabase/functions/_shared/bounded-json_test.ts
+small valid JSON objects pass unchanged ... ok (26ms)
+honest or dishonest Content-Length cannot bypass the byte limit ... ok (1ms)
+streaming body is rejected one byte past its exact cap ... ok (697µs)
+malformed JSON, arrays and missing bodies fail as validation errors ... ok (1ms)
+invalid UTF-8 bytes cannot become a login object ... ok (2ms)
+the parser rejects invalid size configurations ... ok (374µs)
+running 3 tests from ./supabase/functions/_shared/errors_test.ts
+HTTP 5xx replies never expose database internals ... ok (31ms)
+Validation errors can retain public client-actionable details ... ok (477µs)
+Unhandled exceptions never return raw error messages ...
+------- post-test output -------
+unhandled_error SUPABASE_SERVICE_ROLE_KEY=secret
+----- post-test output end -----
+Unhandled exceptions never return raw error messages ... ok (690µs)
+running 3 tests from ./supabase/functions/_shared/storage-purge_test.ts
+purges only the requested user's files, including nested folders ... ok (1ms)
+paginates listings and chunks removals at the API limit ... ok (268µs)
+stops cleanup when listing or removal fails ...
+------- post-test output -------
+{"ts":"2026-10-08T18:28:12.930Z","level":"error","event":"storage_list_failed","bucket":"one","prefix":"user-a","message":"list failed"}
+{"ts":"2026-10-08T18:28:12.933Z","level":"error","event":"storage_remove_failed","bucket":"one","message":"remove failed","count":1}
+----- post-test output end -----
+stops cleanup when listing or removal fails ... ok (3ms)
+running 2 tests from ./supabase/functions/health/auth_test.ts
+health rejects a missing bearer header before creating a client ... ok (27ms)
+pinned Auth client verifies the user and keeps service credentials separate ... ok (13ms)
+
+ok | 32 passed | 0 failed (850ms)
