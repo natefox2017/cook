@@ -89,6 +89,35 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
     }
 }
 
+public struct RecipeCollection: Identifiable, Codable, Hashable, Sendable {
+    public var id: UUID
+    public var name: String
+    public var createdAt: Date
+    public var updatedAt: Date
+
+    public init(
+        id: UUID = UUID(),
+        name: String,
+        createdAt: Date = .now,
+        updatedAt: Date = .now
+    ) {
+        self.id = id
+        self.name = name
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct RecipeCollectionMembership: Codable, Hashable, Sendable {
+    public var recipeID: UUID
+    public var collectionID: UUID
+
+    public init(recipeID: UUID, collectionID: UUID) {
+        self.recipeID = recipeID
+        self.collectionID = collectionID
+    }
+}
+
 public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
     public var id: UUID
     public var name: String
