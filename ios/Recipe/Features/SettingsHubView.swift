@@ -108,27 +108,239 @@ private struct SettingsRow: View {
 }
 
 struct CloudSyncSettingsView: View {
-    @AppStorage("recipe.sync.mode") private var mode = "Automatic"
+    @Environment(CloudSyncCoordinator.self) private var cloudSync
+    @State private var auth = RecipeAuthService.shared
+    @State private var conflictChoices: [String: LibraryMergeSource] = [:]
 
     var body: some View {
         Form {
             Section("Status") {
-                LabeledContent("Account", value: "Not connected")
-                LabeledContent("Last synced", value: "Never")
-                LabeledContent("Status", value: "Local only")
-                LabeledContent("Manual Sync", value: "Available after sign in")
+                LabeledContent("Account", value: accountLabel)
+                LabeledContent("Last synced", value: lastSyncedLabel)
+                LabeledContent("Status", value: statusLabel)
+
+                if isSignedIn {
+                    Button("Sync Now") {
+                        Task { await cloudSync.syncNow() }
+                    }
+                    .disabled(isSyncing)
+                } else {
+                    LabeledContent(
+                        "Manual Sync",
+                        value: "Available after sign in"
+                    )
+                }
             }
 
             Section("Sync behavior") {
-                Picker("Update", selection: $mode) {
-                    Text("Automatic").tag("Automatic")
-                    Text("Wi-Fi Only").tag("Wi-Fi Only")
-                    Text("Manually").tag("Manually")
+                Picker("Update", selection: modeBinding) {
+                    ForEach(CloudSyncMode.allCases, id: \.rawValue) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
                 }
             }
+
+            stateActions
         }
         .navigationTitle("Cloud Sync")
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: conflictIDs) { _, ids in
+            conflictChoices = conflictChoices.filter {
+                ids.contains($0.key)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var stateActions: some View {
+        switch cloudSync.state {
+        case .initialChoice(let local, let cloud):
+            Section("First sync") {
+                Text(
+                    "Choose how to connect this iPhone’s local library to "
+                        + "your RecipePouch account."
+                )
+
+                LabeledContent(
+                    "This iPhone",
+                    value: countSummary(local)
+                )
+                LabeledContent(
+                    "Cloud",
+                    value: cloud.map(countSummary) ?? "Empty"
+                )
+
+                Button("Merge Local + Cloud") {
+                    Task {
+                        await cloudSync.chooseInitialSync(.mergeLibraries)
+                    }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+
+                Button("Keep Local for Now") {
+                    Task {
+                        await cloudSync.chooseInitialSync(.keepLocalUntilLater)
+                    }
+                }
+            }
+
+        case .conflicts(let conflicts):
+            Section("Conflicts") {
+                Text(
+                    "Both this iPhone and the cloud changed the same data. "
+                        + "Choose which version to keep for each conflict."
+                )
+                .foregroundStyle(.secondary)
+
+                ForEach(conflicts) { conflict in
+                    Picker(
+                        conflictLabel(conflict),
+                        selection: conflictBinding(for: conflict)
+                    ) {
+                        Text("Choose…").tag(Optional<LibraryMergeSource>.none)
+                        Text("This iPhone").tag(
+                            Optional(LibraryMergeSource.local)
+                        )
+                        Text("Cloud").tag(
+                            Optional(LibraryMergeSource.cloud)
+                        )
+                    }
+                }
+
+                Button("Resolve & Sync") {
+                    let choices = conflicts.compactMap { conflict in
+                        conflictChoices[conflict.id].map {
+                            LibraryMergeChoice(
+                                conflict: conflict,
+                                source: $0
+                            )
+                        }
+                    }
+                    Task {
+                        await cloudSync.resolveConflicts(with: choices)
+                    }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(
+                    conflicts.contains {
+                        conflictChoices[$0.id] == nil
+                    }
+                )
+            }
+
+        case .error(let message):
+            Section("Sync Error") {
+                Text(message)
+                    .foregroundStyle(.red)
+                if isSignedIn {
+                    Button("Try Again") {
+                        Task { await cloudSync.syncNow() }
+                    }
+                }
+            }
+
+        case .localOnly, .syncing, .synced:
+            EmptyView()
+        }
+    }
+
+    private var modeBinding: Binding<CloudSyncMode> {
+        Binding(
+            get: { cloudSync.mode },
+            set: { cloudSync.setMode($0) }
+        )
+    }
+
+    private var isSignedIn: Bool {
+        if case .signedIn = auth.state { return true }
+        return false
+    }
+
+    private var isSyncing: Bool {
+        if case .syncing = cloudSync.state { return true }
+        return false
+    }
+
+    private var accountLabel: String {
+        switch auth.state {
+        case .signedIn(_, let email):
+            return email ?? "Signed in"
+        case .loading, .authenticating:
+            return "Checking…"
+        default:
+            return "Not connected"
+        }
+    }
+
+    private var lastSyncedLabel: String {
+        guard let date = cloudSync.lastSyncedAt else { return "Never" }
+        return date.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    private var statusLabel: String {
+        switch cloudSync.state {
+        case .localOnly:
+            return "Local only"
+        case .syncing:
+            return "Syncing…"
+        case .synced:
+            return "Synced"
+        case .initialChoice:
+            return "Waiting for your choice"
+        case .conflicts(let conflicts):
+            return "\(conflicts.count) conflict"
+                + (conflicts.count == 1 ? "" : "s")
+        case .error:
+            return "Needs attention"
+        }
+    }
+
+    private var conflictIDs: Set<String> {
+        if case .conflicts(let conflicts) = cloudSync.state {
+            return Set(conflicts.map(\.id))
+        }
+        return []
+    }
+
+    private func conflictBinding(
+        for conflict: LibraryMergeConflict
+    ) -> Binding<LibraryMergeSource?> {
+        Binding(
+            get: { conflictChoices[conflict.id] },
+            set: { conflictChoices[conflict.id] = $0 }
+        )
+    }
+
+    private func conflictLabel(
+        _ conflict: LibraryMergeConflict
+    ) -> String {
+        if conflict.id.hasPrefix("collection-name:") {
+            return "Collection name"
+        }
+        if conflict.id.hasPrefix("meal-slot:") {
+            return "Meal plan slot"
+        }
+
+        switch conflict.entity {
+        case .recipe:
+            return "Recipe"
+        case .grocery:
+            return "Grocery item"
+        case .meal:
+            return "Meal plan entry"
+        case .collection:
+            return "Collection"
+        case .membership:
+            return "Collection membership"
+        case .settings:
+            return "Settings"
+        }
+    }
+
+    private func countSummary(_ counts: CloudLibraryCounts) -> String {
+        "\(counts.recipes) recipes · "
+            + "\(counts.groceries) groceries · "
+            + "\(counts.plannedMeals) planned"
     }
 }
 
