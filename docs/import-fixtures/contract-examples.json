@@ -3,6 +3,110 @@
   "notes": "Synthetic contract examples only. example.org is not asserted to contain a recipe. Neither production API nor native share path is validated by these fixtures.",
   "cases": [
     {
+      "name": "completed result keeps source, evidence, review gaps and user edit distinct",
+      "schema": "JobResponse",
+      "valid": true,
+      "submitted_input": {
+        "input_type": "url",
+        "url": "https://example.org/article/soy-soup?share=raw"
+      },
+      "data": {
+        "job_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "client_request_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "status": "completed",
+        "created_at": "2026-10-08T00:00:00Z",
+        "updated_at": "2026-10-08T00:00:05Z",
+        "queue_confirmed_at": "2026-10-08T00:00:01Z",
+        "attempt_count": 1,
+        "stage": "done",
+        "recipe_id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "recipe_status": "needs_review",
+        "review_count": 2,
+        "result": {
+          "recipe_id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          "status": "needs_review",
+          "source": {
+            "input_type": "url",
+            "original_url": "https://example.org/article/soy-soup?share=raw",
+            "canonical_url": "https://example.org/recipes/soy-soup",
+            "platform": "web",
+            "source_title": "Soy soup"
+          },
+          "fields": {
+            "title": {
+              "raw_value": "Soy soup",
+              "normalized_value": "Soy soup",
+              "evidence_ids": [
+                "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+              ],
+              "confidence": 0.99,
+              "user_confirmed": false,
+              "origin": "extracted"
+            },
+            "ingredients[0].amount": {
+              "raw_value": "盐适量",
+              "normalized_value": null,
+              "evidence_ids": [
+                "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"
+              ],
+              "confidence": 0.42,
+              "user_confirmed": false,
+              "origin": "extracted"
+            },
+            "steps[0].instruction": {
+              "raw_value": "煮至软即可。",
+              "normalized_value": "小火煮至软即可。",
+              "evidence_ids": [
+                "ffffffff-ffff-4fff-8fff-ffffffffffff",
+                "11111111-1111-4111-8111-111111111111"
+              ],
+              "confidence": 1,
+              "user_confirmed": true,
+              "origin": "user"
+            }
+          },
+          "evidence": [
+            {
+              "id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+              "source_type": "webpage_structured_data",
+              "origin": "extracted",
+              "excerpt": "Soy soup",
+              "confidence": 0.99,
+              "captured_at": "2026-10-08T00:00:02Z"
+            },
+            {
+              "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+              "source_type": "webpage_structured_data",
+              "origin": "extracted",
+              "excerpt": "盐适量",
+              "confidence": 0.42,
+              "captured_at": "2026-10-08T00:00:02Z"
+            },
+            {
+              "id": "ffffffff-ffff-4fff-8fff-ffffffffffff",
+              "source_type": "webpage_structured_data",
+              "origin": "extracted",
+              "excerpt": "煮至软即可。",
+              "confidence": 0.94,
+              "captured_at": "2026-10-08T00:00:02Z"
+            },
+            {
+              "id": "11111111-1111-4111-8111-111111111111",
+              "source_type": "user",
+              "origin": "user",
+              "excerpt": "小火煮至软即可。",
+              "confidence": 1,
+              "captured_at": "2026-10-08T00:00:04Z"
+            }
+          ],
+          "review_fields": [
+            "ingredients[0].amount",
+            "steps[1].instruction"
+          ]
+        }
+      }
+    },
+    {
       "name": "valid URL request",
       "schema": "ImportRequest",
       "valid": true,
