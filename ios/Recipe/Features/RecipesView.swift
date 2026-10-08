@@ -107,9 +107,6 @@ struct RecipesView: View {
                         Text("\(shareInbox.pendingReceipts.count) sources saved")
                             .font(RecipeTheme.text(16, weight: .semibold))
                             .foregroundStyle(.primary)
-                        Text("On this iPhone · waiting for recipe processing")
-                            .font(RecipeTheme.text(13))
-                            .foregroundStyle(.secondary)
                     }
                     Spacer()
                     Image(systemName: "chevron.right")
@@ -125,6 +122,7 @@ struct RecipesView: View {
 
         if let failure = shareInbox.failureMessage {
             Text(failure)
+                .lineLimit(1)
                 .font(RecipeTheme.text(13, relativeTo: .footnote))
                 .foregroundStyle(.secondary)
         }
@@ -173,11 +171,6 @@ struct RecipesView: View {
                 }
                 .frame(minHeight: 44)
                 .accessibilityIdentifier("loadSampleRecipes")
-                Text("Explore a few sample recipes. You can edit or delete them at any time.")
-                    .font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
             }
             .padding(.top, RecipeSpacing.large)
         } else if visibleRecipes.isEmpty {
@@ -321,7 +314,7 @@ private struct RecipeLibraryCard: View {
                     }
                     .aspectRatio(1.4, contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 18))
-                    Text(recipe.title.isEmpty ? "Untitled Recipe" : recipe.title)
+                    Text(recipe.title.isEmpty ? String(localized: "Untitled Recipe") : recipe.title)
                         .font(RecipeTheme.title(20))
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.leading)
