@@ -118,3 +118,24 @@ private func temporaryShareContainer() throws -> URL {
     #expect(Set(results.compactMap { $0 }).count == 12)
     #expect(try inbox.pendingReceipts().count == 12)
 }
+
+@Test func localDeletionClearsPendingAndAcknowledgedSourceFiles() throws {
+    let container = try temporaryShareContainer()
+    defer { try? FileManager.default.removeItem(at: container) }
+
+    let inbox = try RecipeShareInbox(containerURL: container)
+    let pending = try inbox.receive("https://example.org/private-recipe", as: .url)
+    let acknowledged = try inbox.receive("Salt to taste", as: .text)
+    try inbox.acknowledge(acknowledged, jobID: UUID())
+
+    #expect(try inbox.pendingReceipts().map(\.id) == [pending.id])
+    try inbox.eraseAllLocalReceipts()
+
+    #expect(try inbox.pendingReceipts().isEmpty)
+    #expect(throws: (any Error).self) {
+        try inbox.source(for: pending)
+    }
+    #expect(throws: (any Error).self) {
+        try inbox.source(for: acknowledged)
+    }
+}
