@@ -233,7 +233,7 @@ struct RecipesView: View {
 
     private var resultsHeader: some View {
         HStack {
-            Text("\(visibleRecipes.count) \(visibleRecipes.count == 1 ? "Recipe" : "Recipes")")
+            Text("\(visibleRecipes.count) Recipes", comment: "Recipe library count. Plural forms are chosen by the String Catalog for the current language.")
                 .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("recipeCount")
