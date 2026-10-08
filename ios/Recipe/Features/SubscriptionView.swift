@@ -51,16 +51,8 @@ struct PremiumPaywallContent: View {
                 Text("RecipePouch Premium")
                     .font(RecipeTheme.title(34))
                     .multilineTextAlignment(.center)
-
-                Text(context == .onboarding
-                     ? "Choose a plan if Premium fits your kitchen. You can also continue with the free app."
-                     : "Your App Store plan and purchase status live here.")
-                    .font(RecipeTheme.body())
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
             }
 
-            premiumValueSummary
 
             switch subscriptions.state {
             case .loading:
@@ -100,29 +92,6 @@ struct PremiumPaywallContent: View {
         }
     }
 
-    private var premiumValueSummary: some View {
-        VStack(spacing: 0) {
-            premiumRow(
-                icon: "sparkles",
-                title: "Plans come from the App Store",
-                detail: "Names, descriptions, prices, and billing periods are loaded from your current storefront."
-            )
-            Divider().padding(.leading, 54)
-            premiumRow(
-                icon: "lock.shield",
-                title: "No locked-in recipe data",
-                detail: "Your saved recipes stay readable even if Premium is not active."
-            )
-            Divider().padding(.leading, 54)
-            premiumRow(
-                icon: "arrow.clockwise",
-                title: "Restore anytime",
-                detail: "Already subscribed with this App Store account? Restore Purchases checks the verified entitlement."
-            )
-        }
-        .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 22))
-    }
-
     @ViewBuilder
     private var activeSubscription: some View {
         VStack(spacing: 14) {
@@ -160,11 +129,7 @@ struct PremiumPaywallContent: View {
                         .accessibilityHidden(true)
                     Text("Premium plans aren’t available right now.")
                         .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
-                    Text("You can keep using RecipePouch for free and check again later.")
-                        .font(RecipeTheme.text(15, relativeTo: .subheadline))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
+                    }
                 .frame(maxWidth: .infinity)
                 .padding(20)
                 .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 22))
@@ -193,15 +158,13 @@ struct PremiumPaywallContent: View {
                                 Text(product.description)
                                     .font(RecipeTheme.text(14, relativeTo: .subheadline))
                                     .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.leading)
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
                             }
 
                             if subscriptions.isTrialEligible(for: product),
                                let offer = product.subscription?.introductoryOffer {
-                                Text(
-                                    "Start \(periodLabel(offer.period, count: offer.periodCount)) free, "
-                                        + "then \(priceLine(for: product))."
-                                )
+                                Text("Start \(periodLabel(offer.period, count: offer.periodCount)) free, then \(priceLine(for: product)).")
                                     .font(RecipeTheme.text(14, weight: .semibold, relativeTo: .subheadline))
                                     .foregroundStyle(RecipeTheme.accentForeground)
                             }
@@ -254,28 +217,6 @@ struct PremiumPaywallContent: View {
         }
     }
 
-    private func premiumRow(icon: String, title: String, detail: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: icon)
-                .foregroundStyle(RecipeTheme.accentForeground)
-                .frame(width: 38, height: 38)
-                .background(RecipeTheme.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 11))
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
-                Text(detail)
-                    .font(RecipeTheme.text(14, relativeTo: .subheadline))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(14)
-    }
-
     private func priceLine(for product: Product) -> String {
         guard let period = product.subscription?.subscriptionPeriod else {
             return product.displayPrice
@@ -286,22 +227,22 @@ struct PremiumPaywallContent: View {
     private var activeStatusTitle: String {
         switch subscriptions.state {
         case .trial:
-            "Free trial active"
+            String(localized: "Free trial active")
         case .gracePeriod:
-            "Subscription in billing grace period"
+            String(localized: "Subscription in billing grace period")
         default:
-            "Subscription active"
+            String(localized: "Subscription active")
         }
     }
 
     private var statusMessage: String? {
         switch subscriptions.state {
         case .billingRetry:
-            "There is a billing issue with your previous subscription. Premium access is not currently active."
+            String(localized: "There is a billing issue with your previous subscription. Premium access is not currently active.")
         case .expired:
-            "Your previous subscription has expired. Your saved recipes remain available."
+            String(localized: "Your previous subscription has expired. Your saved recipes remain available.")
         case .revoked:
-            "The App Store revoked your previous subscription. Your saved recipes remain available."
+            String(localized: "The App Store revoked your previous subscription. Your saved recipes remain available.")
         case .unavailable(let reason):
             reason
         default:
@@ -310,20 +251,18 @@ struct PremiumPaywallContent: View {
     }
 
     private func periodLabel(_ period: Product.SubscriptionPeriod, count: Int) -> String {
-        let unit: String
         switch period.unit {
         case .day:
-            unit = count == 1 ? "day" : "days"
+            return String(localized: LocalizedStringResource("\(count) day", locale: locale))
         case .week:
-            unit = count == 1 ? "week" : "weeks"
+            return String(localized: LocalizedStringResource("\(count) week", locale: locale))
         case .month:
-            unit = count == 1 ? "month" : "months"
+            return String(localized: LocalizedStringResource("\(count) month", locale: locale))
         case .year:
-            unit = count == 1 ? "year" : "years"
+            return String(localized: LocalizedStringResource("\(count) year", locale: locale))
         @unknown default:
-            unit = "periods"
+            return String(localized: "Subscription period")
         }
-        return "\(count) \(unit)"
     }
 
     private func periodLabel(_ period: Product.SubscriptionPeriod) -> String {
