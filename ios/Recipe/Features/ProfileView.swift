@@ -115,12 +115,12 @@ struct ProfileView: View {
 
             Section("Help & about") {
                 NavigationLink {
-                    CookHelpView()
+                    RecipeHelpView()
                 } label: {
                     ProfileRowLabel(title: "Using Cook", systemImage: "questionmark.circle")
                 }
                 NavigationLink {
-                    CookAboutView()
+                    RecipeAboutView()
                 } label: {
                     ProfileRowLabel(title: "About & Your Data", systemImage: "info.circle")
                 }
@@ -397,7 +397,7 @@ private enum RecipeNotificationCleanup {
     }
 }
 
-private struct CookHelpView: View {
+private struct RecipeHelpView: View {
     var body: some View {
         List {
             Section("Getting started") {
@@ -432,7 +432,7 @@ private struct CookHelpView: View {
     }
 }
 
-private struct CookAboutView: View {
+private struct RecipeAboutView: View {
     var body: some View {
         List {
             Section("Cook") {
