@@ -155,3 +155,11 @@ Worker 所有写入都必须允许安全重试。
 - OCR Provider 应接收 `application/octet-stream` 请求，附带 `X-OCR-Content-Type`、`X-OCR-Max-Pages` 和 `X-OCR-Max-Pixels-Per-Page` 边界，返回 JSON `{ "pages": [{ "page_number": 1, "text": "...", "confidence": 0.98, "pixel_count": 1500000 }] }`；配置的服务必须在解码前执行页数/像素/时间上限。生产启用前还必须确认服务的访问政策、数据保留、区域合规与成本。
 - 接入结果按 `ocr` evidence 记录页码、来源 artifact UUID、原文 excerpt 和 confidence；低于 0.85 的字段强制 review，含糊用量不填规范化数值。空文本、异常响应、配额不足、服务超时或未配置 Provider 均保留私有原件并进入 `needs_review`，不伪装为识别成功。
 - 仓库 mock fixture 只说明契约/安全边界；未运行真实 OCR 供应商、未部署 Edge/Storage/Queue，相关线上测试仍由 #135/#138/#141 承接。
+
+## 14. 私有 PDF 的可选中文本提取（#116 补充）
+
+- 本项目复用 [UnJS unpdf](https://github.com/unjs/unpdf) 的 Edge/serverless Mozilla PDF.js build（MIT 许可，`npm:unpdf@1.8.1`），不实现自制 PDF 二进制解析器。仅当已通过 owner / artifact UUID / Storage 路径 / 有效期校验后，Worker 才从私有 Bucket 下载原件。
+- 文件限制 10 MB、PDF 1–20 页、总提取文字不超过 100,000 字符；配置 PDF.js `maxImageSize=16777216`，逐页读取文字层以避免全页并发提取。8 秒为 best-effort 操作期限，复杂恶意 PDF 仍需 Edge runtime 资源隔离与 staging 测试，不应把源码检查视为 CPU 可抢占超时保障。
+- 只有可从 PDF 文字层抽取的内容可进入字段；每页单独保存 `user / extracted` evidence（原始 artifact UUID + 页码 + excerpt），字段引用对应 evidence ID。份量原文不被强行转换为数字；食材/步骤缺失则继续 `needs_review`。
+- 只有扫描 PDF 没有文字层时才可能尝试单独配置并经持有人授权的 OCR（#117）；默认未批准 Provider 时保留 PDF 原件及来源记录，返回明确的 `PDF_NO_SELECTABLE_TEXT` / `needs_review`。解析器失败、过多页和超限也不虚构成功结果。
+- `artifactPDF_test.ts` 包含构造的真实 PDF 1.4 文字层 fixture 与页码/缺失/越界负例。新增 npm 依赖与 `deno.lock` 必须由具备 Deno 的受控环境更新并运行 `deno test`，当前提交不代表构建/线上验收 PASS；详见 #134/#135/#141。
