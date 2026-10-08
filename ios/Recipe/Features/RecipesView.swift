@@ -425,9 +425,10 @@ private struct PendingSharesView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("These sources are safely stored on this iPhone. They have not been accepted by the cloud or converted into recipes yet.")
+                    Text("Saved locally. Import is pending.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
                 ForEach(inbox.pendingReceipts) { receipt in
                     PendingShareRow(receipt: receipt)
