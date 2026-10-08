@@ -7,6 +7,7 @@ import RecipeCore
 struct RecipesView: View {
     @Environment(RecipeStore.self) private var store
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.locale) private var locale
     @State private var searchText = ""
     @State private var filter: RecipeLibraryFilter = .all
     @State private var selectedCollectionID: UUID?
@@ -219,7 +220,9 @@ struct RecipesView: View {
     private var emptyScopeTitle: String {
         if let selectedCollectionID,
            let collection = store.collection(id: selectedCollectionID) {
-            return "\(collection.name) is empty"
+            return String(
+                localized: LocalizedStringResource("\(collection.name) is empty", locale: locale)
+            )
         }
         return filter.emptyTitle
     }
@@ -263,6 +266,7 @@ struct RecipesView: View {
 }
 
 private struct RecipeLibraryCard: View {
+    @Environment(\.locale) private var locale
     let recipe: Recipe
     let toggleFavorite: () -> Void
 
@@ -282,7 +286,12 @@ private struct RecipeLibraryCard: View {
                         .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: 6) {
                         if let minutes = recipe.totalMinutes {
-                            Label("\(minutes) min", systemImage: "clock")
+                            Label(
+                                Duration.seconds(minutes * 60).formatted(
+                                    .units(width: .abbreviated, maximumUnitCount: 1).locale(locale)
+                                ),
+                                systemImage: "clock"
+                            )
                         } else {
                             Text(LocalizedStringKey(recipe.category.rawValue))
                         }

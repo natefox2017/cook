@@ -145,7 +145,7 @@ struct GroceriesView: View {
             GroceryItemEditorView(item: presentation.item)
         }
         .confirmationDialog("Clear bought items?", isPresented: $confirmsClear, titleVisibility: .visible) {
-            Button("Clear \(purchasedCount) bought items", role: .destructive) {
+            Button("Clear \(purchasedCount) bought item", role: .destructive) {
                 perform { try store.clearCheckedGroceries() }
             }
         } message: {
@@ -230,7 +230,11 @@ struct GroceriesView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Edit \(item.name)\(item.amountText.isEmpty ? "" : ", \(item.amountText)")")
+            .accessibilityLabel(
+                item.amountText.isEmpty
+                    ? LocalizedStringKey("Edit \(item.name)")
+                    : LocalizedStringKey("Edit \(item.name), \(item.amountText)")
+            )
         }
         .padding(.vertical, 3)
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -242,7 +246,11 @@ struct GroceriesView: View {
             Button("Edit item", systemImage: "pencil") {
                 editor = GroceryEditorPresentation(item: item)
             }
-            .accessibilityLabel(LocalizedStringKey("Edit \(item.name), \(item.amountText)"))
+            .accessibilityLabel(
+                item.amountText.isEmpty
+                    ? LocalizedStringKey("Edit \(item.name)")
+                    : LocalizedStringKey("Edit \(item.name), \(item.amountText)")
+            )
             Button("Remove item", systemImage: "trash", role: .destructive) { itemToDelete = item }
         }
     }

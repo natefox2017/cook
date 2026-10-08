@@ -195,7 +195,12 @@ struct MealPlanView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(recipe.title).font(RecipeTheme.text(17, weight: .semibold, relativeTo: .body))
                             if let minutes = recipe.totalMinutes {
-                                Label("\(minutes) min", systemImage: "clock")
+                                Label(
+                                    Duration.seconds(minutes * 60).formatted(
+                                        .units(width: .abbreviated, maximumUnitCount: 1).locale(locale)
+                                    ),
+                                    systemImage: "clock"
+                                )
                                     .font(RecipeTheme.text(12, weight: .regular, relativeTo: .caption))
                                     .foregroundStyle(.secondary)
                             }
@@ -332,10 +337,20 @@ private struct MealPlanRecipePicker: View {
                                 .disabled(alreadyAdded)
                             }
                         } header: {
-                            Text(
-                                "\(slot.rawValue) · \(localizedMealDate(date, template: "MMM d, yyyy", locale: locale))"
+                            let dateLabel = localizedMealDate(
+                                date,
+                                template: "MMM d, yyyy",
+                                locale: locale
                             )
-                                .textCase(nil)
+                            Text(
+                                String(
+                                    localized: LocalizedStringResource(
+                                        "\(localizedMealSlot(slot)) · \(dateLabel)",
+                                        locale: locale
+                                    )
+                                )
+                            )
+                            .textCase(nil)
                         }
                         .listRowBackground(RecipeTheme.card)
                     }
@@ -370,8 +385,18 @@ private struct MealPlanRecipePicker: View {
                     }
                 }
             } message: {
+                let dateLabel = localizedMealDate(
+                    date,
+                    template: "MMM d, yyyy",
+                    locale: locale
+                )
                 Text(
-                    "This changes \(slot.rawValue.lowercased()) for \(localizedMealDate(date, template: "MMM d, yyyy", locale: locale)). Both recipes stay in your library."
+                    String(
+                        localized: LocalizedStringResource(
+                            "This changes \(localizedMealSlot(slot).lowercased(with: locale)) for \(dateLabel). Both recipes stay in your library.",
+                            locale: locale
+                        )
+                    )
                 )
             }
             .alert(
@@ -391,6 +416,14 @@ private struct MealPlanRecipePicker: View {
     private var hasPlannedMeal: Bool {
         store.mealPlan.contains {
             $0.slot == slot && Calendar.current.isDate($0.date, inSameDayAs: date)
+        }
+    }
+
+    private func localizedMealSlot(_ slot: MealSlot) -> String {
+        return switch slot {
+        case .breakfast: String(localized: "Breakfast", locale: locale)
+        case .lunch: String(localized: "Lunch", locale: locale)
+        case .dinner: String(localized: "Dinner", locale: locale)
         }
     }
 
