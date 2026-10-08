@@ -309,7 +309,7 @@ private struct CollectionRecipeRow: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(recipe.title.isEmpty ? "Untitled Recipe" : recipe.title)
+                Text(recipe.title.isEmpty ? String(localized: "Untitled Recipe") : recipe.title)
                     .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
                     .foregroundStyle(.primary)
                 if let minutes = recipe.totalMinutes {
@@ -357,7 +357,7 @@ private struct CollectionRecipePickerSheet: View {
                         HStack(spacing: 12) {
                             Image(systemName: isMember ? "checkmark.circle.fill" : "circle")
                                 .foregroundStyle(isMember ? RecipeTheme.accentForeground : Color.secondary)
-                            Text(recipe.title.isEmpty ? "Untitled Recipe" : recipe.title)
+                            Text(recipe.title.isEmpty ? String(localized: "Untitled Recipe") : recipe.title)
                                 .foregroundStyle(.primary)
                             Spacer()
                         }
