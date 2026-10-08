@@ -103,6 +103,7 @@ private struct RecipeRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(FirstLaunchFlowView.completionKey) private var hasCompletedOnboarding = false
     @State private var selectedTab: RecipeTab = .recipes
+    @State private var shareInbox = RecipeShareInboxCoordinator()
     @State private var profilePath: [ProfileRoute] = []
 
     let bypassOnboarding: Bool
@@ -172,6 +173,14 @@ private struct RecipeRootView: View {
             }
         }
         }
+        .environment(shareInbox)
+        .task {
+            // In UI-test mode App Group provisioning may not be installed.
+            // Normal installs read durable receipts from the shared container.
+            if !bypassOnboarding {
+                await shareInbox.synchronize(store: store)
+            }
+        }
         .task {
             await cloudSync.bind(
                 store: store,
@@ -187,8 +196,18 @@ private struct RecipeRootView: View {
             await subscriptions.refreshEntitlements()
         }
         .onChange(of: auth.state) { _, state in
+            // An ACK from the previous account must not hide a receipt from
+            // the newly signed-in account after an authentication transition.
+            if !bypassOnboarding {
+                shareInbox.refresh()
+            }
             Task {
                 await cloudSync.authenticationChanged(state)
+            }
+            Task {
+                if !bypassOnboarding {
+                    await shareInbox.synchronize(store: store)
+                }
             }
         }
         .onChange(of: auth.authCallbackGeneration) { _, _ in
@@ -201,8 +220,16 @@ private struct RecipeRootView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
+            if !bypassOnboarding {
+                shareInbox.refresh()
+            }
             Task {
                 await cloudSync.appBecameActive()
+            }
+            Task {
+                if !bypassOnboarding {
+                    await shareInbox.synchronize(store: store)
+                }
             }
             Task {
                 await subscriptions.refreshEntitlements()

@@ -512,6 +512,15 @@ enum RecipeLocalDataDeletion {
             shareDefaults.removeObject(forKey: "cook.shareInbox")
         }
 
+        // Newly file-backed Share Extension receipts live outside both
+        // RecipeStore and UserDefaults. Erase their original source bytes as
+        // part of the same user-confirmed on-device deletion.
+        do {
+            try RecipeShareInbox.shared().eraseAllLocalReceipts()
+        } catch {
+            cleanupError = cleanupError ?? error
+        }
+
         await RecipeNotificationCleanup.removeTimerReminders()
 
         // Clear independently stored personal data even if legacy file deletion
