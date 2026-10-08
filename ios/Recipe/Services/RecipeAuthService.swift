@@ -20,19 +20,29 @@ enum RecipeAuthState: Equatable, Sendable {
 @MainActor @Observable
 final class RecipeAuthService {
     static let shared = RecipeAuthService()
+    private static let pendingPasswordRecoveryKey = "recipe.auth.pending_password_recovery"
 
     private(set) var state: RecipeAuthState = .loading
     private(set) var nonblockingNotice: String?
     private let client: SupabaseClient
+    private let defaults: UserDefaults
 
-    init(client: SupabaseClient = RecipeSupabase.client) {
+    init(
+        client: SupabaseClient = RecipeSupabase.client,
+        defaults: UserDefaults = .standard
+    ) {
         self.client = client
+        self.defaults = defaults
         Task { [weak self, client] in
             for await (event, session) in client.auth.authStateChanges {
                 guard let self else { return }
                 if event == .passwordRecovery, let session {
                     self.state = .passwordRecovery(userID: session.user.id)
                 } else if let session {
+                    if case .passwordRecovery(let recoveryUserID) = self.state,
+                       recoveryUserID == session.user.id {
+                        continue
+                    }
                     self.state = .signedIn(userID: session.user.id, email: session.user.email)
                 } else {
                     self.state = .signedOut
@@ -74,7 +84,11 @@ final class RecipeAuthService {
     func sendPasswordReset(to email: String) async throws {
         state = .authenticating
         do {
-            try await client.auth.resetPasswordForEmail(email, redirectTo: RecipeSupabase.redirectURL)
+            try await client.auth.resetPasswordForEmail(
+                email,
+                redirectTo: RecipeSupabase.redirectURL
+            )
+            defaults.set(true, forKey: Self.pendingPasswordRecoveryKey)
             state = .passwordResetSent(email)
         } catch {
             state = .error(error.localizedDescription)
@@ -153,7 +167,40 @@ final class RecipeAuthService {
         guard url.scheme == RecipeSupabase.redirectURL.scheme,
               url.host == RecipeSupabase.redirectURL.host,
               url.path == RecipeSupabase.redirectURL.path else { return }
-        client.auth.handle(url)
+
+        let isPasswordRecovery = callbackType(in: url) == "recovery"
+            || defaults.bool(forKey: Self.pendingPasswordRecoveryKey)
+        Task {
+            do {
+                let session = try await client.auth.session(from: url)
+                defaults.removeObject(forKey: Self.pendingPasswordRecoveryKey)
+                if isPasswordRecovery {
+                    state = .passwordRecovery(userID: session.user.id)
+                }
+            } catch {
+                state = .error(error.localizedDescription)
+            }
+        }
+    }
+
+    private func callbackType(in url: URL) -> String? {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return nil
+        }
+        let queryItems = components.queryItems ?? []
+        if let type = queryItems.first(where: { $0.name == "type" })?.value {
+            return type
+        }
+        if let flow = queryItems.first(where: { $0.name == "flow" })?.value {
+            return flow
+        }
+        guard let fragment = components.fragment,
+              let fragmentComponents = URLComponents(string: "?\(fragment)") else {
+            return nil
+        }
+        let fragmentItems = fragmentComponents.queryItems ?? []
+        return fragmentItems.first(where: { $0.name == "type" })?.value
+            ?? fragmentItems.first(where: { $0.name == "flow" })?.value
     }
 
     static func makeAppleNonce() -> (raw: String, hashed: String) {
