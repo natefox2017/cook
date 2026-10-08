@@ -196,6 +196,18 @@ final class CookUITests: XCTestCase {
         next.tap()
         assertCookingStep("Step 5 of 8", in: app)
         XCTAssertTrue(app.staticTexts["1 done"].waitForExistence(timeout: 8))
+
+        app.buttons["closeCookingButton"].tap()
+        let restartAtStepTwo = app.buttons["cookFromStep.2"]
+        reveal(
+            restartAtStepTwo,
+            in: app,
+            scrollView: app.scrollViews["recipeDetailScroll"],
+            maximumSwipes: 8
+        )
+        restartAtStepTwo.tap()
+        assertCookingStep("Step 2 of 8", in: app)
+        XCTAssertTrue(app.staticTexts["1 done"].exists == false)
     }
 
     @MainActor
