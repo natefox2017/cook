@@ -20,10 +20,17 @@ struct RecipesView: View {
 
     private var visibleRecipes: [Recipe] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Build membership sets once, rather than scanning all memberships
+        // for every recipe card in a selected collection.
+        let selectedRecipeIDs = selectedCollectionID.map { collectionID in
+            RecipeCollectionIndex(memberships: store.collectionMemberships)
+                .recipeIDs(inCollection: collectionID)
+        }
+
         return store.recipes.filter { recipe in
             let matchesScope: Bool
-            if let selectedCollectionID {
-                matchesScope = store.collectionIDs(forRecipe: recipe.id).contains(selectedCollectionID)
+            if let selectedRecipeIDs {
+                matchesScope = selectedRecipeIDs.contains(recipe.id)
             } else {
                 matchesScope = filter.includes(recipe)
             }
