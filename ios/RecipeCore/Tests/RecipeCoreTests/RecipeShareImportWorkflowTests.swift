@@ -504,3 +504,156 @@ func cancelledSubmissionLeavesReceiptForRetryWithoutFalseFailure() async throws 
     #expect(try fixture.inbox.pendingReceipts(for: ownerID).map(\.id) == [receipt.id])
     #expect(fixture.store.recipes.isEmpty)
 }
+
+@Test @MainActor
+func lateCompletionFillsOnlyUneditedMissingSections() async throws {
+    let fixture = try ShareWorkflowFixture()
+    defer { fixture.removeFiles() }
+    let ownerID = UUID()
+    let receipt = try fixture.inbox.receive("A soup note", as: .text)
+    let jobID = UUID()
+    let recipeID = UUID()
+    let evidenceID = UUID()
+    let partial = completedResult(
+        recipeID: recipeID,
+        inputType: "text",
+        title: "Soup"
+    )
+    let complete = RecipeImportJobResponse.Result(
+        recipeID: recipeID,
+        status: "ready",
+        source: partial.source,
+        fields: [
+            "title": .init(rawValue: "A new server title"),
+            "ingredients[0].raw_text": .init(
+                rawValue: "Salt to taste",
+                evidenceIDs: [evidenceID],
+                confidence: 0.95
+            ),
+            "steps[0].instruction": .init(
+                rawValue: "Simmer until tender",
+                evidenceIDs: [evidenceID],
+                confidence: 0.95
+            )
+        ],
+        evidence: [
+            .init(
+                id: evidenceID,
+                sourceType: "user",
+                origin: "extracted",
+                excerpt: "Salt to taste; Simmer until tender"
+            )
+        ],
+        reviewFields: []
+    )
+    let queued = jobResponse(
+        receipt: receipt,
+        jobID: jobID,
+        status: .queued,
+        queueConfirmedAt: "2026-10-08T00:00:00Z"
+    )
+    let initial = jobResponse(
+        receipt: receipt,
+        jobID: jobID,
+        status: .completed,
+        queueConfirmedAt: "2026-10-08T00:00:00Z",
+        recipeID: recipeID,
+        result: partial
+    )
+    let updated = jobResponse(
+        receipt: receipt,
+        jobID: jobID,
+        status: .completed,
+        queueConfirmedAt: "2026-10-08T00:00:00Z",
+        recipeID: recipeID,
+        result: complete
+    )
+    let client = StubRecipeImportJobClient(
+        submitResponse: queued,
+        fetchResponses: [initial, updated]
+    )
+
+    _ = await RecipeShareImportWorkflow.synchronize(
+        inbox: fixture.inbox, store: fixture.store, client: client,
+        ownerID: ownerID, currentOwnerID: { ownerID },
+        maxPollRounds: 1, pollInterval: .zero
+    )
+    let savedBefore = try #require(fixture.store.recipe(id: recipeID))
+    #expect(savedBefore.title == "Soup")
+    #expect(savedBefore.ingredients.isEmpty)
+
+    _ = await RecipeShareImportWorkflow.synchronize(
+        inbox: fixture.inbox, store: fixture.store, client: client,
+        ownerID: ownerID, currentOwnerID: { ownerID },
+        maxPollRounds: 1, pollInterval: .zero
+    )
+    let savedAfter = try #require(fixture.store.recipe(id: recipeID))
+    #expect(savedAfter.title == "Soup")
+    #expect(savedAfter.ingredients.first?.amountText.contains("to taste") == true)
+    #expect(savedAfter.steps.first?.instruction == "Simmer until tender")
+    #expect(savedAfter.importRecord?.result.fields["title"]?.rawValue == "Soup")
+    #expect(savedAfter.importRecord?.result.fields["ingredients[0].raw_text"]?
+        .evidenceIDs == [evidenceID])
+
+    _ = await RecipeShareImportWorkflow.synchronize(
+        inbox: fixture.inbox, store: fixture.store, client: client,
+        ownerID: ownerID, currentOwnerID: { ownerID },
+        maxPollRounds: 1, pollInterval: .zero
+    )
+    #expect(fixture.store.recipes.count == 1)
+    #expect(fixture.store.recipe(id: recipeID)?.ingredients.count == 1)
+}
+
+@Test @MainActor
+func manualReviewLocksAnIncompleteImportedRecipeAgainstLateResults() async throws {
+    let fixture = try ShareWorkflowFixture()
+    defer { fixture.removeFiles() }
+    let ownerID = UUID()
+    let receipt = try fixture.inbox.receive("Soup note", as: .text)
+    let jobID = UUID()
+    let recipeID = UUID()
+    let partial = completedResult(
+        recipeID: recipeID, inputType: "text", title: "Soup"
+    )
+    let queued = jobResponse(
+        receipt: receipt, jobID: jobID, status: .queued,
+        queueConfirmedAt: "2026-10-08T00:00:00Z"
+    )
+    let first = jobResponse(
+        receipt: receipt, jobID: jobID, status: .completed,
+        queueConfirmedAt: "2026-10-08T00:00:00Z",
+        recipeID: recipeID, result: partial
+    )
+    let second = jobResponse(
+        receipt: receipt, jobID: jobID, status: .completed,
+        queueConfirmedAt: "2026-10-08T00:00:00Z",
+        recipeID: recipeID,
+        result: .init(
+            recipeID: recipeID, status: "ready", source: partial.source,
+            fields: ["title": .init(rawValue: "Replace with server title")],
+            reviewFields: []
+        )
+    )
+    let client = StubRecipeImportJobClient(
+        submitResponse: queued, fetchResponses: [first, second]
+    )
+    _ = await RecipeShareImportWorkflow.synchronize(
+        inbox: fixture.inbox, store: fixture.store, client: client,
+        ownerID: ownerID, currentOwnerID: { ownerID },
+        maxPollRounds: 1, pollInterval: .zero
+    )
+    var manuallyEdited = try #require(fixture.store.recipe(id: recipeID))
+    manuallyEdited.title = "My soup"
+    manuallyEdited.importRecord?.reviewedAt = .now
+    try fixture.store.upsert(manuallyEdited)
+
+    _ = await RecipeShareImportWorkflow.synchronize(
+        inbox: fixture.inbox, store: fixture.store, client: client,
+        ownerID: ownerID, currentOwnerID: { ownerID },
+        maxPollRounds: 1, pollInterval: .zero
+    )
+    let retained = try #require(fixture.store.recipe(id: recipeID))
+    #expect(retained.title == "My soup")
+    #expect(retained.importRecord?.reviewedAt != nil)
+    #expect(retained.importRecord?.result.fields["title"]?.rawValue == "Soup")
+}
