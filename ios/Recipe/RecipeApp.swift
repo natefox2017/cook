@@ -104,7 +104,8 @@ private struct RecipeRootView: View {
     @AppStorage(FirstLaunchFlowView.completionKey) private var hasCompletedOnboarding = false
     @State private var selectedTab: RecipeTab = .recipes
     @State private var shareInbox = RecipeShareInboxCoordinator()
-    @State private var profilePath: [ProfileRoute] = []
+    @State private var isAccountPresented = false
+    @State private var accountDetent: PresentationDetent = .medium
 
     let bypassOnboarding: Bool
 
@@ -156,14 +157,8 @@ private struct RecipeRootView: View {
                 }
                 .tag(RecipeTab.groceries)
 
-                NavigationStack(path: $profilePath) {
-                    ProfileView()
-                        .navigationDestination(for: ProfileRoute.self) { route in
-                            switch route {
-                            case .account:
-                                AccountView()
-                            }
-                        }
+                NavigationStack {
+                    ProfileView(onOpenAccount: presentAccount)
                 }
                 .tabItem {
                     Label(RecipeTab.profile.title, systemImage: RecipeTab.profile.symbol)
@@ -174,6 +169,19 @@ private struct RecipeRootView: View {
         }
         }
         .environment(shareInbox)
+        .sheet(isPresented: $isAccountPresented) {
+            NavigationStack {
+                AccountView {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        accountDetent = .large
+                    }
+                }
+            }
+            .presentationDetents([.medium, .large], selection: $accountDetent)
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(28)
+            .presentationBackground(RecipeTheme.canvas)
+        }
         .task {
             // In UI-test mode App Group provisioning may not be installed.
             // Normal installs read durable receipts from the shared container.
@@ -241,9 +249,15 @@ private struct RecipeRootView: View {
         }
     }
 
+    private func presentAccount() {
+        accountDetent = .medium
+        isAccountPresented = true
+    }
+
     private func openAccountForAuthCallback() {
-        selectedTab = .profile
-        profilePath = [.account]
+        // Keep the current tab and reveal the recovery/account callback as a sheet.
+        accountDetent = .large
+        isAccountPresented = true
     }
 }
 
