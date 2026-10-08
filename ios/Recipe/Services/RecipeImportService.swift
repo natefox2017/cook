@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Coordinates client-side recipe import and preserves truthful partial results.
+
 import Foundation
 import UIKit
 import Vision
