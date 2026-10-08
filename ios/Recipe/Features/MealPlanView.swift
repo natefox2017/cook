@@ -6,6 +6,7 @@ import SwiftUI
 
 struct MealPlanView: View {
     @Environment(RecipeStore.self) private var store
+    @Environment(\.locale) private var locale
     @AppStorage("recipe.meal.weekStart") private var weekStart = "System Default"
     @State private var selectedDate = Date()
     @State private var recipePicker: MealPlanPickerPresentation?
@@ -25,7 +26,7 @@ struct MealPlanView: View {
 
     private var weekDescription: String {
         guard let start = weekDates.first, let end = weekDates.last else { return "This week" }
-        return "\(englishDate(start, format: "MMM d")) – \(englishDate(end, format: "MMM d, yyyy"))"
+        return "\(localizedMealDate(start, template: "MMM d", locale: locale)) – \(localizedMealDate(end, template: "MMM d, yyyy", locale: locale))"
     }
 
     private var weeklyMealCount: Int {
@@ -139,9 +140,9 @@ struct MealPlanView: View {
             selectedDate = date
         } label: {
             VStack(spacing: 4) {
-                Text(englishDate(date, format: "EEE"))
+                Text(localizedMealDate(date, template: "EEE", locale: locale))
                     .font(RecipeTheme.text(12, weight: .regular, relativeTo: .caption))
-                Text(englishDate(date, format: "d"))
+                Text(localizedMealDate(date, template: "d", locale: locale))
                     .font(RecipeTheme.text(20, weight: .semibold, relativeTo: .title3))
                 Circle()
                     .fill(hasMeals ? (selected ? Color.white : RecipeTheme.accent) : Color.clear)
@@ -154,7 +155,7 @@ struct MealPlanView: View {
             .background(selected ? RecipeTheme.accent : RecipeTheme.card, in: RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(englishDate(date, format: "EEEE, MMMM d, yyyy"))
+        .accessibilityLabel(localizedMealDate(date, template: "EEEE, MMMM d, yyyy", locale: locale))
         .accessibilityValue("\(selected ? "Selected. " : "")\(hasMeals ? "Meals planned" : "No meals planned")")
         .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
@@ -208,10 +209,12 @@ struct MealPlanView: View {
     }
 }
 
-private func englishDate(_ date: Date, format: String) -> String {
+// Date templates are resolved for the active SwiftUI locale, including the
+// English UI-test override and the iPhone's preferred language in production.
+private func localizedMealDate(_ date: Date, template: String, locale: Locale) -> String {
     let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "en")
-    formatter.dateFormat = format
+    formatter.locale = locale
+    formatter.setLocalizedDateFormatFromTemplate(template)
     return formatter.string(from: date)
 }
 
@@ -223,6 +226,7 @@ private struct MealPlanPickerPresentation: Identifiable {
 
 private struct MealPlanRecipePicker: View {
     @Environment(RecipeStore.self) private var store
+    @Environment(\.locale) private var locale
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
     @State private var replacementRecipe: Recipe?
@@ -281,7 +285,7 @@ private struct MealPlanRecipePicker: View {
                                 .disabled(alreadyAdded)
                             }
                         } header: {
-                            Text("\(slot.rawValue) · \(englishDate(date, format: "MMM d, yyyy"))")
+                            Text("\(slot.rawValue) · \(localizedMealDate(date, template: "MMM d, yyyy", locale: locale))")
                                 .textCase(nil)
                         }
                         .listRowBackground(RecipeTheme.card)
@@ -314,7 +318,7 @@ private struct MealPlanRecipePicker: View {
                     }
                 }
             } message: {
-                Text("This changes \(slot.rawValue.lowercased()) for \(englishDate(date, format: "MMM d, yyyy")). Both recipes stay in your library.")
+                Text("This changes \(slot.rawValue.lowercased()) for \(localizedMealDate(date, template: "MMM d, yyyy", locale: locale)). Both recipes stay in your library.")
             }
             .alert("Couldn’t plan recipe", isPresented: Binding(
                 get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
