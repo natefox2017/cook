@@ -47,7 +47,8 @@ export function errorResponse(
       {
         error: {
           code: err.code,
-          message: err.message,
+          // AppError messages can also contain accidental database details.
+          message: err.status >= 500 ? "The service is temporarily unavailable." : err.message,
           // Never send server/database details to untrusted callers on 5xx.
           details: err.status >= 500 ? null : (err.details ?? null),
         },

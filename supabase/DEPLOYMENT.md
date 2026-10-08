@@ -88,6 +88,20 @@ Confirm a rollback strategy before the separate production release window.
 For a migration failure, restore from the planned recovery point or deploy a
 forward migration; never delete user data or casually drop the job queue.
 
+## Existing production Edge drift
+
+The production project also runs `revenuecat-webhook`, `admin-subscriptions`,
+`admin-users`, `admin-dashboard`, `admin-ai`, `health` and `openapi`.
+Most of those functions are **not** version-controlled in this public repository.
+The checked-in replacement for `health` uses local shared imports but is not
+deployed by merging this PR. Some currently deployed functions import code or
+OpenAPI specs from branches of a separate `cookapp` repository, which is not
+accessible with the current GitHub connector. Track source provenance,
+repository visibility, immutable dependencies and deployment in
+[Issue #155](https://github.com/natefox2017/cook/issues/155). Do not copy
+potentially private sources or secrets into this public repository without
+explicitly resolving their intended visibility.
+
 ## References
 
 - [Supabase RLS guidance](https://supabase.com/docs/guides/database/postgres/row-level-security)
