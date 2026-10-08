@@ -129,8 +129,12 @@ begin
     for update;
 
     if found then
+        -- The persisted source is the unmodified input, not v_source (which
+        -- is trimmed solely for validation/fingerprinting). Comparing against
+        -- the trimmed value makes identical requests with outer whitespace
+        -- fail their own idempotent replay.
         if v_job.input_type <> p_input_type
-           or v_job.source_value <> v_source then
+           or v_job.source_value <> p_source_value then
             raise exception 'CLIENT_REQUEST_ID_CONFLICT' using errcode = '23505';
         end if;
         return next v_job;
