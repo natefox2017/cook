@@ -327,6 +327,55 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testLocalDataDeletionRequiresConfirmationAndClearsLocalLibrary() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let sampleRecipe = app.buttons[
+            "recipe.C0010000-0000-4000-8000-000000000001"
+        ]
+        waitUntilReady(sampleRecipe)
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let deleteLocalData = app.buttons["profile.delete-data"]
+        reveal(deleteLocalData, in: app, maximumSwipes: 8)
+        deleteLocalData.tap()
+        let confirmDelete = app.buttons["Delete All RecipePouch Data"]
+        waitUntilReady(confirmDelete)
+        XCTAssertTrue(
+            app.staticTexts.matching(
+                NSPredicate(format: "label CONTAINS %@", "Cloud data")
+            ).firstMatch.exists
+        )
+        app.buttons["Cancel"].tap()
+
+        let recipes = app.tabBars.buttons["Recipes"]
+        waitUntilReady(recipes)
+        recipes.tap()
+        XCTAssertTrue(sampleRecipe.waitForExistence(timeout: 8))
+        attachScreenshot("Local deletion canceled; recipe remains", app: app)
+
+        waitUntilReady(profile)
+        profile.tap()
+        reveal(deleteLocalData, in: app, maximumSwipes: 8)
+        deleteLocalData.tap()
+        waitUntilReady(confirmDelete)
+        confirmDelete.tap()
+
+        waitUntilReady(recipes)
+        recipes.tap()
+        XCTAssertTrue(
+            app.staticTexts["Make room for your favorites"]
+                .waitForExistence(timeout: 8)
+        )
+        XCTAssertFalse(sampleRecipe.exists)
+        attachScreenshot("Confirmed deletion clears the local library", app: app)
+    }
+
+    @MainActor
     func testCookingIngredientCheckoffPersistsInSession() {
         let app = launchSeededApp()
         defer { app.terminate() }
