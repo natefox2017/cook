@@ -697,12 +697,9 @@ struct CookingView: View {
         }
 
         didRestoreSession = true
-        var restoredExistingSession = false
-
         if let data = UserDefaults.standard.data(forKey: sessionKey) {
             do {
                 session = try JSONDecoder().decode(PersistedCookingSession.self, from: data)
-                restoredExistingSession = true
             } catch {
                 requiresSessionRecovery = true
                 errorMessage = "Your previous cooking session could not be restored. \(error.localizedDescription)"
@@ -710,12 +707,6 @@ struct CookingView: View {
         }
 
         if let recipe {
-            if !restoredExistingSession,
-               let startStepID,
-               recipe.steps.contains(where: { $0.id == startStepID }) {
-                session.stepID = startStepID
-            }
-
             if !recipe.steps.contains(where: { $0.id == session.stepID }) {
                 session.stepID = recipe.steps.first?.id
             }
@@ -731,6 +722,11 @@ struct CookingView: View {
             }
 
             reconcileTimers(with: recipe)
+
+            if let startStepID,
+               recipe.steps.contains(where: { $0.id == startStepID }) {
+                applyRequestedStartStep(startStepID, in: recipe)
+            }
         }
 
         updateScreenAwake()
@@ -935,6 +931,25 @@ struct CookingView: View {
                 persistSession()
             }
         )
+    }
+
+    private func applyRequestedStartStep(_ requestedStepID: UUID, in recipe: Recipe) {
+        guard let startIndex = recipe.steps.firstIndex(where: { $0.id == requestedStepID }) else { return }
+
+        session.stepID = requestedStepID
+        session.isComplete = false
+
+        let earlierStepIDs = Set(recipe.steps.prefix(startIndex).map(\.id))
+        session.completedStepIDs.formIntersection(earlierStepIDs)
+
+        let resetStepIDs = Set(recipe.steps.dropFirst(startIndex).map(\.id))
+        for (timerID, active) in Array(session.timers) {
+            guard !active.isManual,
+                  let stepID = active.stepID,
+                  resetStepIDs.contains(stepID) else { continue }
+            session.timers.removeValue(forKey: timerID)
+            cancelNotification(for: timerID)
+        }
     }
 
     private func reconcileTimers(with recipe: Recipe) {
