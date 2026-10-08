@@ -49,6 +49,8 @@
     <string>sb_publishable_yhwoE_GwRNtohok44YUwKQ_hi_1uhCO</string>
     <key>RecipeSubscriptionProductIDs</key>
     <string>$(RECIPE_SUBSCRIPTION_PRODUCT_IDS)</string>
+    <key>LegacyCookSubscriptionProductIDs</key>
+    <string>$(COOK_SUBSCRIPTION_PRODUCT_IDS)</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSCameraUsageDescription</key>
