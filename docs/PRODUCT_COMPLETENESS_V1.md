@@ -1,10 +1,10 @@
-# Cook V1 Product Completeness Specification
+# RecipePouch V1 Product Completeness Specification
 
-Updated: 2026-10-07
+Updated: 2026-10-08
 
 ## Product benchmark
 
-Cook is a private recipe utility: collect → organize → cook → shop → plan → sync. It does not add a public feed in V1.
+RecipePouch is a private recipe utility: collect → organize → cook → shop → plan → sync. It does not add a public feed in V1.
 
 Repeated patterns verified in established products:
 - ReciMe: account login, multi-device recipe sync, mobile subscription, subscription status and Restore Purchase; recipe import, cookbooks, groceries and meal planning.
@@ -24,7 +24,7 @@ Required:
 - Local data migration/linking decision when signing in on a device that already has local recipes.
 - Auth errors, offline state, cancelled Apple sign-in, email verification state.
 
-Implementation status: **NOT IMPLEMENTED**. Current Profile is deliberately local-only.
+Implementation status: **IMPLEMENTED at the client/service boundary**. Email auth, password recovery, Sign in with Apple, sign-out, and account UI are wired to Supabase Auth. Production provider/delivery acceptance remains #27/#34.
 
 ### 2. Subscription
 Required:
@@ -38,7 +38,7 @@ Required:
 - Purchase pending/cancelled/failed and restore-no-purchase states.
 - Core user data must remain readable when premium expires; premium-only creation/import limits may be enforced by product policy.
 
-Implementation status: **NOT IMPLEMENTED**. No StoreKit entitlement layer or paywall exists.
+Implementation status: **IMPLEMENTED at the StoreKit client boundary**. Product loading, purchase, entitlement refresh, restore, and Manage Subscription are present; real App Store product/offer acceptance remains #28/#34.
 
 ### 3. Recipe library
 Required:
@@ -47,7 +47,7 @@ Required:
 - Open recipe detail.
 - Collections/cookbooks are P0 in the existing product overview and need a concrete UI/data model if retained in V1.
 
-Implementation status: **IMPLEMENTED locally**, including custom Collections/cookbooks with stable IDs, multi-membership, Favorites independence, local persistence and filtering. Remote Collection sync remains part of cloud sync.
+Implementation status: **IMPLEMENTED locally**, including custom Collections/cookbooks with stable IDs, multi-membership, Favorites independence, persistence, filtering, and JSON export. Remote Collection sync remains part of #29.
 
 ### 4. Add/import
 Required:
@@ -58,7 +58,7 @@ Required:
 - Clipboard/text import.
 - Keep source and partial result when extraction is incomplete.
 - Duplicate source handling.
-- Share Extension: third-party app → Share → Cook → durable receipt → return immediately.
+- Share Extension: third-party app → Share → RecipePouch → durable receipt → return immediately.
 - Social source backend fallback (caption/article/ASR/OCR/visual evidence) without fabricating quantities.
 
 Implementation status: local URL/text/photo/PDF/manual paths are **IMPLEMENTED**; Share Extension, durable backend import worker and social-video AI pipeline are **NOT IMPLEMENTED**.
@@ -130,11 +130,11 @@ Required:
 - Account deletion.
 - Never put service role/provider secrets in the client.
 
-Implementation status: **NOT IMPLEMENTED**.
+Implementation status: **PARTIALLY IMPLEMENTED**. Supabase `user_snapshots`, RLS, revision/CAS migrations, and account deletion infrastructure exist in the active `cookapp` project. The production client sync/conflict UI and two-device acceptance remain #29/#34.
 
 ## Navigation and UI contract
 
-Primary navigation remains Recipes / Groceries / Profile with a floating/native Liquid Glass treatment where the OS supports it. Add is a Recipes action, not a fourth permanent tab. Cooking is full-screen and hides global navigation.
+Primary navigation is Recipes / Plan / Groceries / Profile with native platform treatment. Add is a Recipes action. Cooking is full-screen and hides global navigation. Cooking is full-screen and hides global navigation.
 
 Visual requirements:
 - warm cream canvas, green accent, rounded food photography/cards;
@@ -155,8 +155,8 @@ Visual requirements:
 - profile → local preferences/export/reset.
 
 ### Flows that cannot currently close
-- register/sign in/forgot password/sign out;
-- subscribe/restore/manage entitlement;
+- production-verified Auth/provider delivery across supported sign-in paths;
+- production-verified App Store purchase/restore/entitlement behavior;
 - authenticated multi-device sync;
 - Share Extension durable receipt;
 - TikTok/Instagram/YouTube backend AI extraction;
@@ -179,9 +179,9 @@ Implemented in branch `codex/v1-production-integrations`:
 - Share Extension durable App Group inbox source implementation.
 
 External configuration still blocks production-complete status:
-- Supabase project `cookapp` is currently INACTIVE, so Auth/RLS/sync cannot be applied or integration-tested.
+- Supabase project `cookapp` is ACTIVE_HEALTHY. Owner-scoped snapshot/RLS/revision migrations are applied; client two-account/two-device acceptance is still pending.
 - Apple Developer Sign in with Apple capability/provider settings are not available in this environment.
-- App Store Connect subscription product IDs/offers are not available; the app reads them from `COOK_SUBSCRIPTION_PRODUCT_IDS` and never invents price/trial terms.
+- App Store Connect subscription product IDs/offers are not available; the app reads them from `RECIPE_SUBSCRIPTION_PRODUCT_IDS` (retained build setting) and never invents price/trial terms.
 - The Share Extension source exists, but its Xcode extension target/App Group entitlement/provisioning must be created with the Apple team before host-app testing.
 - Social-video AI backend worker/provider credentials remain undeployed.
 

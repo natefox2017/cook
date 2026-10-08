@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Receives shared source content and records it for the RecipePouch host app.
+
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -17,11 +20,11 @@ struct ShareRootView: View {
         .task {
             do {
                 try ShareInbox.save(payload)
-                status = "Saved to Cook"
+                status = "Saved to RecipePouch"
                 try? await Task.sleep(for: .milliseconds(350))
                 complete()
             } catch {
-                status = "Couldn’t save to Cook"
+                status = "Couldn’t save to RecipePouch"
             }
         }
     }
@@ -29,10 +32,19 @@ struct ShareRootView: View {
 
 enum ShareInbox {
     static let suite = "group.com.modelhub.cook"
+    private static let inboxKey = "recipe.shareInbox"
+    private static let legacyInboxKey = "cook.shareInbox"
+
     static func save(_ payload: String) throws {
         guard let defaults = UserDefaults(suiteName: suite) else { throw CocoaError(.fileNoSuchFile) }
-        var inbox = defaults.stringArray(forKey: "cook.shareInbox") ?? []
+        var inbox = defaults.stringArray(forKey: inboxKey) ?? []
+        inbox.append(contentsOf: defaults.stringArray(forKey: legacyInboxKey) ?? [])
+        var seen = Set<String>()
+        inbox = inbox.filter { seen.insert($0).inserted }
         if !inbox.contains(payload) { inbox.append(payload) }
-        defaults.set(inbox, forKey: "cook.shareInbox")
+        // Keep the deployed App Group and legacy key synchronized until the
+        // host app migration in #30 is complete.
+        defaults.set(inbox, forKey: inboxKey)
+        defaults.set(inbox, forKey: legacyInboxKey)
     }
 }

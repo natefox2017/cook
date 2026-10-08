@@ -4,11 +4,11 @@ Updated: 2026-10-07
 
 ## Account model
 
-Cook needs one application account identity for cloud data. Supported V1 sign-in:
+Recipe needs one application account identity for cloud data. Supported V1 sign-in:
 - Sign in with Apple.
 - Email + password: sign up, sign in, forgot/reset password.
 
-Do not infer that an App Store purchase identity is the same thing as a Cook account. ReciMe explicitly documents that subscription method and sign-in method can differ. A restore can recover an App Store entitlement but cannot recover recipes from the wrong Cook account.
+Do not infer that an App Store purchase identity is the same thing as a Recipe account. ReciMe explicitly documents that subscription method and sign-in method can differ. A restore can recover an App Store entitlement but cannot recover recipes from the wrong Recipe account.
 
 ### Session states
 - signedOut
@@ -67,7 +67,7 @@ The actual product IDs, localized price, trial/intro eligibility and terms come 
 - Unverified transactions never unlock premium.
 
 ### Account ↔ entitlement
-Server may record an entitlement association for cross-platform/account policy, but the iOS client must still validate App Store entitlement. Signing out of Cook does not cancel the Apple subscription. Restoring an Apple purchase does not choose which Cook cloud account contains the user’s recipes.
+Server may record an entitlement association for cross-platform/account policy, but the iOS client must still validate App Store entitlement. Signing out of Recipe does not cancel the Apple subscription. Restoring an Apple purchase does not choose which Recipe cloud account contains the user’s recipes.
 
 ## Paywall contract
 
@@ -121,7 +121,7 @@ Subscription:
 - restore with no matching purchase;
 - expired/revoked entitlement;
 - Manage Subscription;
-- Cook account mismatch does not imply recipes were restored.
+- Recipe account mismatch does not imply recipes were restored.
 
 Sync:
 - first upload;

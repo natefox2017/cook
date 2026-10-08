@@ -14,12 +14,12 @@
 - https://recime.app/help/en/articles/11661452-import-from-tiktok
 - https://recime.app/help/en/articles/11596425-import-from-instagram
 
-对 Cook 的启发：
+对 Recipe 的启发：
 - Share Sheet 是核心入口
 - 分享动作应尽量少
 - 来源解析需要多级 fallback
 
-Cook 的改进：
+Recipe 的改进：
 - Share Extension 不要求用户等待完整解析
 - 解析在后台异步完成
 - 视觉/OCR 作为补充证据
@@ -40,7 +40,7 @@ Cook 的改进：
 参考：
 - https://www.recipekeeperonline.com/
 
-对 Cook 的启发：
+对 Recipe 的启发：
 - “私人食谱库 → 做饭 → 购物 → 计划”是稳定闭环
 - 手动/扫描入口不能删除，但不应压过自动导入
 

@@ -17,12 +17,11 @@
 
 ## 当前阶段
 
-用户于 2026-10-07 明确要求“把 ui 界面功能写好提交上去”。本轮已实现原生 App 与客户端本地闭环；先读 [实现与验收记录](docs/IOS/UI_IMPLEMENTATION.md)，再打开 `ios/Cook.xcodeproj`。
+用户于 2026-10-07 明确要求“把 ui 界面功能写好提交上去”。本轮已实现原生 App 与客户端本地闭环；先读 [实现与验收记录](docs/IOS/UI_IMPLEMENTATION.md)，再打开 `ios/Recipe.xcodeproj`。
 
-本轮以 main 的三 Tab 产品范围和已存设计资源为依据，复用 PR #10 的 `IngredientAmount`。历史设计审批表不被追溯改写为已批准；本轮新增 UI、工程和 CI 改动随 PR 交付审阅。
+当前主导航为 Recipes / Plan / Groceries / Profile 四个 Tab。技术工程统一使用 `Recipe` 命名，用户可见品牌使用 RecipePouch。用户在当前对话中明确要求直接实现的 UI/功能可直接开发，并在 Issue/PR 中记录实际状态。
 
 当前阶段禁止：
-- 未确认 UI 就直接写正式页面
 - 擅自增加社区、Feed、关注、评论、点赞等功能
 - 把“手动录入”提升为主入口
 - 在 Share Extension 内执行长耗时 AI 解析

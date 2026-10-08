@@ -1,8 +1,8 @@
-# Cook V1 Documentation
+# Recipe V1 Documentation
 
 ## Scope
 
-Cook V1 only develops:
+Recipe V1 only develops:
 
 - iOS App (SwiftUI)
 - iOS Share Extension

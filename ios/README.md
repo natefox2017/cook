@@ -1,17 +1,17 @@
-# Cook iOS
+# Recipe iOS
 
-Open `Cook.xcodeproj` with Xcode 26.2 or later and select the shared `Cook` scheme.
+Open `Recipe.xcodeproj` with Xcode 26.2 or later and select the shared `Recipe` scheme.
 
-- iPhone app: iOS 18.0 or later, `com.modelhub.cook`.
-- SwiftUI screens: `Cook/Features/`; shared appearance: `Cook/Design/`.
-- Local domain and persistence: the `CookCore` Swift package, with no external package dependency.
-- UI tests: `CookUITests/`; `--uitesting` uses an isolated in-memory sample library and clears only Cook cooking-session keys.
-- Fonts: Source Sans 3 under SIL OFL; sample photos reuse existing project design resources. See `Cook/Resources/ASSET_SOURCES.md`.
+- iPhone app: iOS 18.0 or later, `com.modelhub.cook` (retained for existing app identity).
+- SwiftUI screens: `Recipe/Features/`; shared appearance: `Recipe/Design/`.
+- Local domain and persistence: the `RecipeCore` Swift package, with no external package dependency.
+- UI tests: `RecipeUITests/`; `--uitesting` uses an isolated in-memory sample library and clears only legacy cooking-session keys.
+- Fonts: Source Sans 3 under SIL OFL; sample photos reuse existing project design resources. See `Recipe/Resources/ASSET_SOURCES.md`.
 - Native iOS 26 navigation uses the system materials. iOS 18 uses that OS's native appearance.
 
 ```sh
-swift test --package-path CookCore
-xcodebuild -project Cook.xcodeproj -scheme Cook \
+swift test --package-path RecipeCore
+xcodebuild -project Recipe.xcodeproj -scheme Recipe \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max,OS=26.2' \
   CODE_SIGNING_ALLOWED=NO test
 ```
