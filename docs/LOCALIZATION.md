@@ -20,7 +20,7 @@ Initial targets: English (en), Simplified Chinese (zh-Hans), Traditional Chinese
 4. Use locale-aware FormatStyle for dates, numbers, quantities and currency.
 5. StoreKit product names/prices/offers come from StoreKit localized metadata.
 6. Server/API errors map to localizable client messages.
-7. Recipe titles and source text remain in the user's/source language; Cook does not silently translate imported recipes.
+7. Recipe titles and source text remain in the user's/source language; Recipe does not silently translate imported recipes.
 8. English is the required test locale. Additional locale QA covers truncation, CJK fallback, pluralization and Dynamic Type before release.
 
 ## Translation status

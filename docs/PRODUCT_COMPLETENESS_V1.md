@@ -1,10 +1,10 @@
-# Cook V1 Product Completeness Specification
+# Recipe V1 Product Completeness Specification
 
 Updated: 2026-10-07
 
 ## Product benchmark
 
-Cook is a private recipe utility: collect → organize → cook → shop → plan → sync. It does not add a public feed in V1.
+Recipe is a private recipe utility: collect → organize → cook → shop → plan → sync. It does not add a public feed in V1.
 
 Repeated patterns verified in established products:
 - ReciMe: account login, multi-device recipe sync, mobile subscription, subscription status and Restore Purchase; recipe import, cookbooks, groceries and meal planning.
@@ -58,7 +58,7 @@ Required:
 - Clipboard/text import.
 - Keep source and partial result when extraction is incomplete.
 - Duplicate source handling.
-- Share Extension: third-party app → Share → Cook → durable receipt → return immediately.
+- Share Extension: third-party app → Share → Recipe → durable receipt → return immediately.
 - Social source backend fallback (caption/article/ASR/OCR/visual evidence) without fabricating quantities.
 
 Implementation status: local URL/text/photo/PDF/manual paths are **IMPLEMENTED**; Share Extension, durable backend import worker and social-video AI pipeline are **NOT IMPLEMENTED**.
@@ -181,7 +181,7 @@ Implemented in branch `codex/v1-production-integrations`:
 External configuration still blocks production-complete status:
 - Supabase project `cookapp` is currently INACTIVE, so Auth/RLS/sync cannot be applied or integration-tested.
 - Apple Developer Sign in with Apple capability/provider settings are not available in this environment.
-- App Store Connect subscription product IDs/offers are not available; the app reads them from `COOK_SUBSCRIPTION_PRODUCT_IDS` and never invents price/trial terms.
+- App Store Connect subscription product IDs/offers are not available; the app reads them from `COOK_SUBSCRIPTION_PRODUCT_IDS` (retained build setting) and never invents price/trial terms.
 - The Share Extension source exists, but its Xcode extension target/App Group entitlement/provisioning must be created with the Apple team before host-app testing.
 - Social-video AI backend worker/provider credentials remain undeployed.
 

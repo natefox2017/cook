@@ -16,7 +16,7 @@ This document is the UI completeness checklist for the current codebase. Product
 - Profile overview — implemented.
 - Edit local profile — implemented.
 - Settings hub — implemented.
-- Cook Account — implemented UI + Supabase Auth actions: sign in/sign up/forgot password/password recovery/Sign in with Apple/sign out; provider delivery still requires production verification.
+- Recipe Account — implemented UI + Supabase Auth actions: sign in/sign up/forgot password/password recovery/Sign in with Apple/sign out; provider delivery still requires production verification.
 - Subscription — implemented UI + StoreKit 2 service: products/purchase/status/restore/manage; real App Store products deferred.
 - Cloud Sync — implemented settings/status/mode page; production Supabase connection deferred.
 - Notifications — implemented.
@@ -78,7 +78,7 @@ No screen should claim those production services succeeded while they are unconf
 
 Corrections applied after static path review:
 - Root navigation is now four tabs: Recipes / Plan / Groceries / Profile.
-- Fixed a literal escaped newline in CookApp.swift that could prevent compilation.
+- Fixed a literal escaped newline in RecipeApp.swift that could prevent compilation.
 - Injected SubscriptionStore into the SwiftUI environment so Subscription does not crash on access.
 - Removed a no-op Sync Now button.
 - Replaced a fake always-on appearance toggle with truthful read-only state.

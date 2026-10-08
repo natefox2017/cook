@@ -1,13 +1,13 @@
-# Cook Product Overview V1
+# Recipe Product Overview V1
 
 ## Positioning
 
-Cook converts recipes found on social platforms into structured personal recipes.
+Recipe converts recipes found on social platforms into structured personal recipes.
 
 Core flow:
 
 Share from TikTok / Instagram / YouTube / Pinterest / web
-→ Cook Share Extension
+→ Recipe Share Extension
 → Async AI extraction
 → Recipe library
 → Cooking mode
@@ -19,7 +19,7 @@ Save a recipe with almost the same effort as saving a video.
 
 Normal flow:
 1. Tap Share
-2. Choose Cook
+2. Choose Recipe
 3. Return to original app
 
 AI processing happens in background.

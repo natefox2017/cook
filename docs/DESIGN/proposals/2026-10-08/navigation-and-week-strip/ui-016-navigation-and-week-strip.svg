@@ -15,7 +15,7 @@
     </filter>
   </defs>
   <rect width="1280" height="940" fill="#f4f2ec"/>
-  <text x="72" y="78" fill="#1d2820" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="34" font-weight="700">Cook · UI-016</text>
+  <text x="72" y="78" fill="#1d2820" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="34" font-weight="700">Recipe · UI-016</text>
   <text x="72" y="116" fill="#68716a" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="19">Compact week strip + native Liquid Glass tab navigation</text>
 
   <!-- Week selector -->

@@ -1,4 +1,4 @@
-# Cook Design System V1
+# Recipe Design System V1
 
 ## Platform
 

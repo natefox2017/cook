@@ -4,7 +4,7 @@
 
 1. 用户在 TikTok / Instagram / YouTube / 小红书 / 抖音 / Bilibili / Safari 等看到食谱。
 2. 点击系统分享。
-3. 选择 Cook。
+3. 选择 Recipe。
 4. Share Extension 接收 URL/文本/附件。
 5. 显示简短反馈：“已收下，正在整理”。
 6. 请求立即结束，用户回到原 App。

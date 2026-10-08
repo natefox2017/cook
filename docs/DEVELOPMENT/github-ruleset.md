@@ -8,8 +8,9 @@
 
 - Require pull request before merging
 - Require status checks:
-  - iOS CI
-  - Docs Check
+  - `Validate iOS project` (job in the iOS CI workflow)
+  - `docs` (job in the Docs Check workflow)
+- Trigger each GitHub Actions check on both `pull_request` and `merge_group` (`checks_requested`) so PRs and queued merge commits report the same required statuses.
 - Require branches to be up to date
 - Block force pushes
 - Block branch deletion

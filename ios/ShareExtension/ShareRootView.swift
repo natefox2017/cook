@@ -17,22 +17,31 @@ struct ShareRootView: View {
         .task {
             do {
                 try ShareInbox.save(payload)
-                status = "Saved to Cook"
+                status = "Saved to Recipe"
                 try? await Task.sleep(for: .milliseconds(350))
                 complete()
             } catch {
-                status = "Couldn’t save to Cook"
+                status = "Couldn’t save to Recipe"
             }
         }
     }
 }
 
 enum ShareInbox {
-    static let suite = "group.com.modelhub.cook"
+    static let suite = "group.com.modelhub.recipe"
+    private static let legacySuite = "group.com.modelhub.cook"
+    private static let inboxKey = "recipe.shareInbox"
+    private static let legacyInboxKey = "cook.shareInbox"
+
     static func save(_ payload: String) throws {
         guard let defaults = UserDefaults(suiteName: suite) else { throw CocoaError(.fileNoSuchFile) }
-        var inbox = defaults.stringArray(forKey: "cook.shareInbox") ?? []
+        let legacyDefaults = UserDefaults(suiteName: legacySuite)
+        var inbox = defaults.stringArray(forKey: inboxKey) ?? []
+        inbox.append(contentsOf: defaults.stringArray(forKey: legacyInboxKey) ?? [])
+        inbox.append(contentsOf: legacyDefaults?.stringArray(forKey: legacyInboxKey) ?? [])
+        var seen = Set<String>()
+        inbox = inbox.filter { seen.insert($0).inserted }
         if !inbox.contains(payload) { inbox.append(payload) }
-        defaults.set(inbox, forKey: "cook.shareInbox")
+        defaults.set(inbox, forKey: inboxKey)
     }
 }
