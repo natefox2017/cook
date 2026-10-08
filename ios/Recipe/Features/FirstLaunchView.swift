@@ -41,10 +41,12 @@ struct FirstLaunchFlowView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if step < 2 {
                     VStack(spacing: 10) {
-                        Button(step == 0 ? "Get Started" : "See Plans") {
+                        Button {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 step += 1
                             }
+                        } label: {
+                            Text(LocalizedStringKey(step == 0 ? "Get Started" : "See Plans"))
                         }
                         .buttonStyle(PrimaryButtonStyle())
                         .accessibilityIdentifier("onboarding.primary")
