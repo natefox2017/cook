@@ -66,6 +66,26 @@ periodically and the cleanup endpoint **daily**; log executions and alert on
 queue backlog, repeated 503s and stuck expired artifacts. Do not put live
 credentials, signed URLs, JWTs or user source text in logs or GitHub Issues.
 
+### Expired artifact cleanup contract
+
+The cron endpoint scans stable, ordered database pages **before** modifying any
+rows, processes at most 1,000 expired artifacts per request, and verifies the
+bucket and exact `owner_id/artifact_id` Storage path before deleting. Its
+JSON response is `{ attempted, expired, failed, has_more }`.
+
+- `200`: no row-level failures; when `has_more=true`, invoke another
+  **authenticated server-side** batch promptly instead of waiting until the
+  next day's run.
+- `503`: DB/Storage errors or partial cleanup failures. Alert and retry;
+  failures leave the corresponding row eligible for the next cleanup attempt.
+- Concurrency: upload completion uses a conditional expiry check at write time;
+  cleanup updates only unchanged, still-expired owner-scoped rows.
+- Monitor the `failed` count and repeated `has_more` signals; a single daily
+  invocation is not enough if the backlog exceeds 1,000 files.
+- The six isolated cases in `purge_test.ts` were additionally run with a
+  Node 22 TypeScript strip-types adapter against identical Git blobs. This
+  does **not** replace the Deno runtime and staging Storage/SQL tests.
+
 ## Minimum release acceptance
 
 - A/B accounts: direct RLS and REST lookup of another owner's job/artifact/
