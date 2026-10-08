@@ -366,8 +366,12 @@ public final class RecipeStore {
         try commit(next)
     }
 
-    public func addToGroceries(recipeID: UUID, servings: Int?,
-                               ingredientIDs: Set<UUID>) throws {
+    public func addToGroceries(
+        recipeID: UUID,
+        servings: Int?,
+        ingredientIDs: Set<UUID>,
+        consolidateCompatibleIngredients: Bool = true
+    ) throws {
         guard let recipe = recipe(id: recipeID) else { throw RecipeStoreError.missingRecipe }
         guard ingredientIDs.isSubset(of: Set(recipe.ingredients.map(\.id))) else {
             throw RecipeStoreError.missingItem
@@ -393,7 +397,8 @@ public final class RecipeStore {
             let item = try groceryItem(from: ingredient, recipeID: recipeID,
                                        originalServings: originalServings,
                                        requestedServings: requestedServings)
-            if let index = next.groceries.firstIndex(where: {
+            if consolidateCompatibleIngredients,
+               let index = next.groceries.firstIndex(where: {
                 !$0.isChecked && $0.quantity != nil && item.quantity != nil
                     && normalized($0.name) == normalized(item.name)
                     && unitKey($0.unit) == unitKey(item.unit)
