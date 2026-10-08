@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Creates the Recipe iOS app, shared services, compatibility migrations, and primary navigation.
+
 import StoreKit
 import SwiftUI
 import RecipeCore
