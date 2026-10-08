@@ -125,6 +125,22 @@ Validate the live admin-login, owner bootstrap and change-password routes in
 staging before updating `admin-auth` production version; do not include a
 bootstrap token, password or admin session in test output.
 
+## Admin role authorization
+
+The production `admin_accounts.role` constraint permits `owner`, `admin`,
+`operator`, and `readonly`. Missing or unrecognized session roles must
+**fail closed**; they must never silently become `owner`. The shared
+`parseAdminRole` and `requireAdminRole(role, allowedRoles)` helpers provide
+this contract and are exercised by `admin-role_test.ts`.
+
+The deployed `admin-subscriptions` implementation is not in this repository
+and uses only `requireAdminSession` on some plan and financial routes; the
+readonly/operator authorization boundary therefore requires explicit review in
+the original authorized source before deployment. In a controlled staging
+environment, create separate roles and assert HTTP 403 for prohibited
+mutations and financial reads. Do not treat a successful login as permission
+to mutate any resource. Track this in #155.
+
 ## Existing production Edge drift
 
 The production project also runs `revenuecat-webhook`, `admin-subscriptions`,
