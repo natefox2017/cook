@@ -317,10 +317,19 @@ public enum RecipeShareImportWorkflow {
             throw RecipeShareImportWorkflowError.responseMismatch
         }
 
-        // Server IDs and normalized source URLs prevent retries from replacing
-        // locally edited recipes or creating duplicate imports.
-        guard store.recipe(id: result.recipeID) == nil,
-              !isDuplicate(
+        // A repeated completion may add only previously missing sourced fields.
+        // Never overwrite locally edited fields or reinterpret a different job.
+        if let existing = store.recipe(id: result.recipeID) {
+            try mergeMissingFields(
+                existing: existing,
+                incoming: result,
+                jobID: response.jobID,
+                store: store
+            )
+            return
+        }
+
+        guard !isDuplicate(
                 result: result,
                 source: source,
                 receipt: receipt,
@@ -374,6 +383,143 @@ public enum RecipeShareImportWorkflow {
             result: result
         )
         try store.upsert(recipe)
+    }
+
+    /// Add only whole missing sections with traceable evidence from the same
+    /// server job. Editing/confirming an imported recipe freezes all its fields.
+    /// Files/images remain immutable: their artifact deletion metadata must
+    /// never be reset by a late completion.
+    private static func mergeMissingFields(
+        existing: Recipe,
+        incoming: RecipeImportJobResponse.Result,
+        jobID: UUID,
+        store: RecipeStore
+    ) throws {
+        guard let old = existing.importRecord,
+              old.jobID == jobID,
+              old.result.recipeID == incoming.recipeID,
+              old.reviewedAt == nil,
+              old.result.resultStatus == .needsReview,
+              ["text", "url"].contains(old.result.source.inputType),
+              old.result.source.inputType == incoming.source.inputType,
+              old.result.source.originalURL == incoming.source.originalURL,
+              old.result.source.sourceArtifactID == nil,
+              incoming.source.sourceArtifactID == nil else {
+            return
+        }
+
+        let evidenceIDs = Set(incoming.evidence.map(\.id))
+        let proven = incoming.fields.filter { path, field in
+            old.result.fields[path] == nil
+                && !field.evidenceIDs.isEmpty
+                && field.evidenceIDs.allSatisfy { evidenceIDs.contains($0) }
+        }
+
+        let newTitle = existing.title == "Imported recipe"
+            ? nonempty(proven["title"]?.rawValue)
+            : nil
+        let ingredientText = existing.ingredients.isEmpty
+            ? indexedValues(
+                proven,
+                pattern: #"^ingredients\[(\d+)\]\.raw_text$"#
+            )
+            : []
+        let ingredients = ingredientText.isEmpty && existing.ingredients.isEmpty
+            ? indexedValues(
+                proven,
+                pattern: #"^ingredients\[(\d+)\]\.amount$"#
+            )
+            : ingredientText
+        let steps = existing.steps.isEmpty
+            ? indexedValues(
+                proven,
+                pattern: #"^steps\[(\d+)\]\.instruction$"#
+            )
+            : []
+
+        guard newTitle != nil || !ingredients.isEmpty || !steps.isEmpty else {
+            return
+        }
+
+        var text = newTitle ?? existing.title
+        if !ingredients.isEmpty {
+            text += "\n\nIngredients\n" + ingredients.joined(separator: "\n")
+        }
+        if !steps.isEmpty {
+            text += "\n\nInstructions\n" + steps.joined(separator: "\n")
+        }
+        let parsed = RecipeDocumentParser.recipe(
+            fromText: text,
+            title: newTitle ?? existing.title
+        )
+
+        var updated = existing
+        var acceptedPaths = Set<String>()
+        if let newTitle {
+            updated.title = newTitle
+            acceptedPaths.insert("title")
+        }
+        if existing.ingredients.isEmpty && !parsed.ingredients.isEmpty {
+            updated.ingredients = parsed.ingredients
+            acceptedPaths.formUnion(proven.keys.filter {
+                $0.hasPrefix("ingredients[")
+            })
+        }
+        if existing.steps.isEmpty && !parsed.steps.isEmpty {
+            updated.steps = parsed.steps
+            acceptedPaths.formUnion(proven.keys.filter {
+                $0.hasPrefix("steps[")
+            })
+        }
+        guard !acceptedPaths.isEmpty else { return }
+
+        var fields = old.result.fields
+        var addedEvidenceIDs = Set<UUID>()
+        for path in acceptedPaths {
+            guard let field = proven[path] else { continue }
+            fields[path] = field
+            addedEvidenceIDs.formUnion(field.evidenceIDs)
+        }
+
+        var evidence = old.result.evidence
+        var seen = Set(evidence.map(\.id))
+        for item in incoming.evidence
+        where addedEvidenceIDs.contains(item.id) && seen.insert(item.id).inserted {
+            evidence.append(item)
+        }
+
+        var review = Set(old.result.reviewFields ?? [])
+        review.formUnion(incoming.reviewFields ?? [])
+        if updated.title != "Imported recipe" && !updated.title.isEmpty {
+            review.remove("title")
+        }
+        if !updated.ingredients.isEmpty { review.remove("ingredients") }
+        if !updated.steps.isEmpty { review.remove("steps") }
+        if updated.ingredients.isEmpty { review.insert("ingredients") }
+        if updated.steps.isEmpty { review.insert("steps") }
+        // Unknown/low-confidence values can be suggested, not silently
+        // marked as verified. Keep a review marker when source support is weak.
+        if acceptedPaths.contains(where: {
+            guard let confidence = proven[$0]?.confidence else { return true }
+            return confidence < 0.7
+        }) {
+            review.insert("evidence")
+        }
+
+        let mergedResult = RecipeImportJobResponse.Result(
+            recipeID: old.result.recipeID,
+            status: review.isEmpty ? "ready" : "needs_review",
+            source: old.result.source,
+            fields: fields,
+            evidence: evidence,
+            reviewFields: review.sorted()
+        )
+        updated.importRecord = RecipeImportRecord(
+            jobID: old.jobID,
+            result: mergedResult,
+            reviewedAt: old.reviewedAt
+        )
+        try store.upsert(updated)
     }
 
     private static func indexedValues(

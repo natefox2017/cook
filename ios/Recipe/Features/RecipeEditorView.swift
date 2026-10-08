@@ -268,7 +268,10 @@ struct RecipeEditorView: View {
                 }
                 recipe.sourceURL = value.isEmpty ? nil : value
             }
-            if recipe.importRecord?.result.resultStatus == .needsReview {
+            // Saving any imported recipe is an explicit local review,
+            // including ones the worker initially classified as ready.
+            // Later background completions must not replace manual edits.
+            if recipe.importRecord != nil {
                 recipe.importRecord?.reviewedAt = .now
             }
             try store.upsert(recipe)
