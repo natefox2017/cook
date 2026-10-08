@@ -53,7 +53,6 @@ struct PremiumPaywallContent: View {
                     .multilineTextAlignment(.center)
             }
 
-
             switch subscriptions.state {
             case .loading:
                 ProgressView("Checking App Store plans…")
@@ -119,11 +118,11 @@ struct PremiumPaywallContent: View {
         VStack(spacing: RecipeSpacing.small) {
             if let statusMessage {
                 Text(statusMessage)
-                    .lineLimit(1)
                     .font(RecipeTheme.text(15, relativeTo: .subheadline))
+                    .fixedSize(horizontal: false, vertical: true)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, RecipeSpacing.xxSmall)
             }
 
             if subscriptions.products.isEmpty {
@@ -151,17 +150,11 @@ struct PremiumPaywallContent: View {
                         Task { await subscriptions.purchase(product) }
                     } label: {
                         VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
-                            HStack(alignment: .firstTextBaseline) {
-                                Text(product.displayName)
-                                    .font(RecipeTheme.text(18, weight: .semibold, relativeTo: .headline))
-                                Spacer()
-                                Text(priceLine(for: product))
-                                    .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .subheadline))
-                            }
+                            planHeader(for: product)
 
                             if !product.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                 Text(product.description)
-                                    .font(RecipeTheme.text(14, relativeTo: .subheadline))
+                                    .font(RecipeTheme.text(15, relativeTo: .subheadline))
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)
                                     .truncationMode(.tail)
@@ -170,13 +163,13 @@ struct PremiumPaywallContent: View {
                             if subscriptions.isTrialEligible(for: product),
                                let offer = product.subscription?.introductoryOffer {
                                 Text("Start \(periodLabel(offer.period, count: offer.periodCount)) free, then \(priceLine(for: product)).")
-                                    .lineLimit(1)
-                                    .font(RecipeTheme.text(14, weight: .semibold, relativeTo: .subheadline))
+                                    .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                                     .foregroundStyle(RecipeTheme.accentForeground)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(18)
+                        .padding(RecipeSpacing.medium)
                         .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 20))
                         .overlay(
                             RoundedRectangle(cornerRadius: 20)
@@ -206,7 +199,7 @@ struct PremiumPaywallContent: View {
     private var legalFooter: some View {
         VStack(spacing: RecipeSpacing.xSmall) {
             Text("Auto-renews until canceled in the App Store.")
-                .font(RecipeTheme.text(12, relativeTo: .caption))
+                .font(RecipeTheme.text(13, relativeTo: .footnote))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
@@ -220,6 +213,26 @@ struct PremiumPaywallContent: View {
                 }
             }
             .font(RecipeTheme.text(13, weight: .semibold, relativeTo: .footnote))
+        }
+    }
+
+    private func planHeader(for product: Product) -> some View {
+        let title = Text(product.displayName)
+            .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
+        let price = Text(priceLine(for: product))
+            .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+
+        return ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: RecipeSpacing.small) {
+                title.fixedSize(horizontal: true, vertical: false)
+                Spacer(minLength: RecipeSpacing.xSmall)
+                price.fixedSize(horizontal: true, vertical: false)
+            }
+
+            VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
+                title
+                price
+            }
         }
     }
 
