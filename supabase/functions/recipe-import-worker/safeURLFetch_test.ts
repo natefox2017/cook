@@ -195,7 +195,7 @@ Deno.test("enforces body size, content type and content encoding", async () => {
         }),
       }),
     SafeFetchError,
-    "did not return an HTML",
+    "did not return a supported source webpage",
   );
   await assertRejects(
     () =>
