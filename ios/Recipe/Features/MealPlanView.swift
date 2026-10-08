@@ -134,7 +134,7 @@ struct MealPlanView: View {
         return Button {
             selectedDate = date
         } label: {
-            VStack(spacing: 7) {
+            VStack(spacing: 4) {
                 Text(englishDate(date, format: "EEE"))
                     .font(RecipeTheme.text(12, weight: .regular, relativeTo: .caption))
                 Text(englishDate(date, format: "d"))
@@ -144,9 +144,9 @@ struct MealPlanView: View {
                     .frame(width: 5, height: 5)
             }
             .foregroundStyle(selected ? Color.white : Color.primary)
-            .frame(minWidth: 44)
+            .frame(minWidth: 44, minHeight: 44)
             .padding(.horizontal, 5)
-            .padding(.vertical, 10)
+            .padding(.vertical, 5)
             .background(selected ? RecipeTheme.accent : RecipeTheme.card, in: RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)

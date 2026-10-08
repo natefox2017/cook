@@ -69,6 +69,7 @@ struct ProfileView: View {
             Section("Your kitchen") {
                 NavigationLink {
                     RecipesView()
+                        .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(
                         title: "Saved Recipes",
@@ -77,6 +78,7 @@ struct ProfileView: View {
                 }
                 NavigationLink {
                     CollectionsView()
+                        .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(title: "Collections", systemImage: "folder")
                 }
@@ -84,6 +86,7 @@ struct ProfileView: View {
 
                 NavigationLink {
                     MealPlanView()
+                        .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(title: "Meal Plan", systemImage: "calendar")
                 }
@@ -94,6 +97,7 @@ struct ProfileView: View {
             Section {
                 NavigationLink {
                     NotificationPreferencesView()
+                        .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(title: "Notifications", systemImage: "bell")
                 }
@@ -116,11 +120,13 @@ struct ProfileView: View {
             Section("Help & about") {
                 NavigationLink {
                     RecipeHelpView()
+                        .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(title: "Using RecipePouch", systemImage: "questionmark.circle")
                 }
                 NavigationLink {
                     RecipeAboutView()
+                        .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(title: "About & Your Data", systemImage: "info.circle")
                 }
