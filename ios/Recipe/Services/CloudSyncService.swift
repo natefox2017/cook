@@ -450,7 +450,14 @@ final class CloudSyncCoordinator {
 
         await refreshFromCloudIfAllowed(force: true)
         guard accountID == requestedAccountID else { return }
-        if case .conflicts = state { return }
+        // A failed download is not permission to overwrite unknown server data.
+        // Do not bypass a first-sync consent screen or unresolved conflicts.
+        switch state {
+        case .initialChoice, .conflicts, .error, .syncing:
+            return
+        case .localOnly, .synced:
+            break
+        }
         await uploadLocalSnapshot(forceFollowUp: true)
     }
 
@@ -680,8 +687,16 @@ final class CloudSyncCoordinator {
         guard accountID != nil, let store, store.changeToken != lastExportedToken,
               !automaticSyncPaused,
               !isSyncing, canSyncAutomatically else { return }
-        if case .initialChoice = state { return }
-        if case .conflicts = state { return }
+
+        // loadAccountSnapshot() awaits the server while displaying .syncing.
+        // Concurrent edits must not upload another account's local library
+        // before its owner and the first-sync decision have been resolved.
+        switch state {
+        case .initialChoice, .conflicts, .error, .syncing:
+            return
+        case .localOnly, .synced:
+            break
+        }
         await uploadLocalSnapshot()
     }
 
