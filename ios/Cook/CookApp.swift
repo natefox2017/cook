@@ -28,6 +28,10 @@ struct CookApp: App {
         }
 
         let localStore = CookStore(fileURL: isUITesting ? nil : libraryURL)
+        if !isUITesting {
+            Self.migrateLegacyPreferences(into: localStore)
+        }
+
         if isUITesting {
             for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("cook.cookingSession.") {
                 UserDefaults.standard.removeObject(forKey: key)
@@ -40,6 +44,52 @@ struct CookApp: App {
         }
 
         _store = State(initialValue: localStore)
+    }
+
+    private static func migrateLegacyPreferences(into store: CookStore) {
+        let defaults = UserDefaults.standard
+        let migrationKey = "cook.settings.snapshotPreferencesMigrated"
+        guard !defaults.bool(forKey: migrationKey) else { return }
+
+        var settings = store.settings
+        var hasLegacyValue = false
+
+        if defaults.object(forKey: "cook.grocery.consolidate") != nil {
+            settings.consolidateCompatibleGroceries = defaults.bool(
+                forKey: "cook.grocery.consolidate"
+            )
+            hasLegacyValue = true
+        }
+
+        if defaults.object(forKey: "cook.grocery.sources") != nil {
+            settings.showGroceryRecipeNames = defaults.bool(
+                forKey: "cook.grocery.sources"
+            )
+            hasLegacyValue = true
+        }
+
+        if let raw = defaults.string(forKey: "cook.meal.weekStart"),
+           let value = MealPlanWeekStart(rawValue: raw) {
+            settings.mealPlanWeekStart = value
+            hasLegacyValue = true
+        }
+
+        do {
+            if hasLegacyValue {
+                try store.updateSettings(settings)
+            } else if store.loadError != nil {
+                // Keep the migration retryable while the persisted library is unreadable.
+                return
+            }
+
+            defaults.removeObject(forKey: "cook.grocery.consolidate")
+            defaults.removeObject(forKey: "cook.grocery.sources")
+            defaults.removeObject(forKey: "cook.meal.weekStart")
+            defaults.set(true, forKey: migrationKey)
+        } catch {
+            // Keep legacy keys untouched so the next launch can retry after
+            // persistence becomes available again.
+        }
     }
 
     var body: some Scene {
