@@ -172,12 +172,14 @@ public struct RecipeShareInbox: Sendable {
 
     public func source(for receipt: RecipeShareReceipt) throws -> String {
         let ref = receipt.payload.reference
-        guard ref.hasPrefix("sources/"),
-              !ref.contains(".."),
-              ref.dropFirst("sources/".count).allSatisfy({
-                  $0.isASCII && ($0.isHexDigit || $0 == "."
-                  || $0 == "t" || $0 == "x")
-              }) else {
+        guard ref.hasPrefix("sources/") else {
+            throw RecipeShareInboxError.sourceMissing
+        }
+        let name = String(ref.dropFirst("sources/".count))
+        guard name.range(
+            of: "^[0-9a-f]{64}\\.txt$",
+            options: .regularExpression
+        ) != nil else {
             throw RecipeShareInboxError.sourceMissing
         }
         let url = root.appendingPathComponent(ref)
