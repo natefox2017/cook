@@ -7,11 +7,9 @@ import UniformTypeIdentifiers
 @preconcurrency import UserNotifications
 import UIKit
 
-enum ProfileRoute: Hashable {
-    case account
-}
-
 struct ProfileView: View {
+    let onOpenAccount: () -> Void
+
     @Environment(RecipeStore.self) private var store
     @Environment(CloudSyncCoordinator.self) private var cloudSync
     @State private var editsProfile = false
@@ -68,12 +66,14 @@ struct ProfileView: View {
             .listRowBackground(RecipeTheme.card)
 
             Section("Account & subscription") {
-                NavigationLink(value: ProfileRoute.account) {
+                Button(action: onOpenAccount) {
                     ProfileRowLabel(
                         title: "Account",
                         systemImage: "person.badge.key"
                     )
                 }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("profile.account")
                 NavigationLink { SubscriptionView() } label: { ProfileRowLabel(title: "Premium", systemImage: "sparkles") }
             }
             .listRowBackground(RecipeTheme.card)
