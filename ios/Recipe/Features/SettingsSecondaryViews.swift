@@ -297,7 +297,7 @@ private struct HelpArticleView: View {
             VStack(alignment: .leading, spacing: 16) {
                 Text(title)
                     .font(RecipeTheme.title(30))
-                Text(articleBody)
+                Text(LocalizedStringKey(articleBody))
                     .font(
                         RecipeTheme.text(
                             17,
