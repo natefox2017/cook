@@ -385,24 +385,44 @@ final class RecipeUITests: XCTestCase {
         for format in ["Recipes (JSON)", "Recipes (HTML)", "All Local Library Data (JSON)"] {
             XCTAssertTrue(app.buttons[format].waitForExistence(timeout: 5))
         }
-        app.buttons["Cancel"].tap()
+        app.buttons["Recipes (JSON)"].tap()
+        let profileExportCancel = fileExporterCancel(in: app)
+        XCTAssertTrue(
+            profileExportCancel.waitForExistence(timeout: 8),
+            app.debugDescription
+        )
+        profileExportCancel.tap()
 
-        let settings = app.buttons["Settings"]
-        reveal(settings, in: app, maximumSwipes: 5)
+        app.terminate()
+        let settingsApp = launchSeededApp()
+        defer { settingsApp.terminate() }
+
+        let profileTab = settingsApp.tabBars.buttons["Profile"]
+        waitUntilReady(profileTab)
+        profileTab.tap()
+
+        let settings = settingsApp.buttons["Settings"]
+        reveal(settings, in: settingsApp, maximumSwipes: 5)
         settings.tap()
 
-        let dataAndPrivacy = app.buttons["Data & Privacy"]
-        reveal(dataAndPrivacy, in: app, maximumSwipes: 6)
+        let dataAndPrivacy = settingsApp.buttons["Data & Privacy"]
+        reveal(dataAndPrivacy, in: settingsApp, maximumSwipes: 6)
         dataAndPrivacy.tap()
 
-        let settingsExport = app.buttons["Export Data"]
+        let settingsExport = settingsApp.buttons["Export Data"]
         waitUntilReady(settingsExport)
         settingsExport.tap()
         for format in ["Recipes (JSON)", "Recipes (HTML)", "All Local Library Data (JSON)"] {
-            XCTAssertTrue(app.buttons[format].waitForExistence(timeout: 5))
+            XCTAssertTrue(settingsApp.buttons[format].waitForExistence(timeout: 5))
         }
-        app.buttons["Cancel"].tap()
-        attachScreenshot("Export format choices", app: app)
+        settingsApp.buttons["Recipes (HTML)"].tap()
+        let settingsExportCancel = fileExporterCancel(in: settingsApp)
+        XCTAssertTrue(
+            settingsExportCancel.waitForExistence(timeout: 8),
+            settingsApp.debugDescription
+        )
+        settingsExportCancel.tap()
+        attachScreenshot("Export format choices", app: settingsApp)
     }
 
     @MainActor
@@ -443,6 +463,13 @@ final class RecipeUITests: XCTestCase {
         waitUntilReady(app.buttons["addRecipeButton"])
         waitUntilReady(app.buttons["recipe.C0010000-0000-4000-8000-000000000001"])
         return app
+    }
+
+    @MainActor
+    private func fileExporterCancel(in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label IN %@", ["Cancel", "取消"]))
+            .firstMatch
     }
 
     @MainActor
