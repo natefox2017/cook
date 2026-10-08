@@ -3,6 +3,7 @@
 
 import { load } from "cheerio";
 import type { PageTextEvidence } from "./pageContent.ts";
+import { publicSocialSourceIdentity } from "./socialSource.ts";
 
 interface EvidenceField {
   raw_value: string | null;
@@ -39,6 +40,7 @@ export interface ParsedWebRecipe {
     platform: string | null;
     author_name: string | null;
     source_title: string | null;
+    external_content_id?: string | null;
   };
   fields: Record<string, EvidenceField>;
   evidence: Array<Record<string, unknown>>;
@@ -62,11 +64,16 @@ function recipeNodes(html: string): {
   malformed: boolean;
   excerpts: string[];
   sourceTitle: string | null;
+  pageAuthor: string | null;
 } {
   const $ = load(html, { scriptingEnabled: false });
   const sourceTitle = textValue(
     $("meta[property='og:title']").attr("content") ?? $("title").text(),
-  );
+  )?.slice(0, 240) ?? null;
+  const pageAuthor = textValue(
+    $("meta[property='article:author']").attr("content") ??
+      $("meta[name='author']").attr("content"),
+  )?.slice(0, 160) ?? null;
   const nodes: RecipeNode[] = [];
   const visited = new Set<object>();
   let malformed = false;
@@ -116,7 +123,7 @@ function recipeNodes(html: string): {
     }
   });
 
-  return { nodes, malformed, excerpts, sourceTitle };
+  return { nodes, malformed, excerpts, sourceTitle, pageAuthor };
 }
 
 function textValue(value: unknown): string | null {
@@ -161,9 +168,9 @@ export function parseSchemaOrgRecipePage(input: {
   html: string;
   source: SourceMetadata;
 }): ParsedWebRecipe {
-  const { nodes, malformed, excerpts, sourceTitle: pageName } = recipeNodes(
-    input.html,
-  );
+  const { nodes, malformed, excerpts, sourceTitle: pageName, pageAuthor } =
+    recipeNodes(input.html);
+  const identity = publicSocialSourceIdentity(input.source.canonicalURL);
   const evidenceID = crypto.randomUUID();
   const timestamp = new Date().toISOString();
   const fields: Record<string, EvidenceField> = {};
@@ -213,7 +220,7 @@ export function parseSchemaOrgRecipePage(input: {
     const title = textValue(recipe.name);
     const ingredients = ingredientValues(recipe.recipeIngredient);
     const instructions = instructionValues(recipe.recipeInstructions);
-    authorName = textValue(recipe.author);
+    authorName = textValue(recipe.author) ?? pageAuthor;
     if (malformed) reviewFields.add("structured_data");
 
     if (title) addField("title", title);
@@ -238,6 +245,7 @@ export function parseSchemaOrgRecipePage(input: {
     reviewFields.add("ingredients");
     reviewFields.add("steps");
     if (malformed) reviewFields.add("structured_data");
+    authorName = pageAuthor;
   }
 
   return {
@@ -248,9 +256,10 @@ export function parseSchemaOrgRecipePage(input: {
       original_url: input.source.originalURL,
       canonical_url: input.source.canonicalURL,
       source_artifact_id: null,
-      platform: input.source.platformHint,
+      platform: identity?.platform ?? input.source.platformHint,
       author_name: authorName,
       source_title: pageName,
+      external_content_id: identity?.id ?? null,
     },
     fields,
     evidence,
@@ -263,6 +272,7 @@ export function incompleteWebRecipe(input: {
   originalURL: string;
   platformHint: string | null;
 }): ParsedWebRecipe {
+  const identity = publicSocialSourceIdentity(input.originalURL);
   return {
     recipe_id: input.id,
     status: "needs_review",
@@ -271,9 +281,10 @@ export function incompleteWebRecipe(input: {
       original_url: input.originalURL,
       canonical_url: null,
       source_artifact_id: null,
-      platform: input.platformHint,
+      platform: identity?.platform ?? input.platformHint,
       author_name: null,
       source_title: null,
+      external_content_id: identity?.id ?? null,
     },
     fields: {},
     evidence: [],
