@@ -128,7 +128,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
       if (claimed.input_type === "url") {
         // URL fetching remains explicitly disabled until the server has
         // DNS-pinned/per-redirect SSRF controls and source rights reviewed.
-        const { error } = await admin.from("recipe_import_jobs").update({
+        const { data: stored, error } = await admin.from("recipe_import_jobs").update({
           status: "failed",
           stage: "done",
           error: {
@@ -140,8 +140,10 @@ Deno.serve(async (request: Request): Promise<Response> => {
           },
           completed_at: now(),
           updated_at: now(),
-        }).eq("id", jobID).eq("queue_message_id", queueID).eq("status", "extracting");
-        if (error) throw error;
+        }).eq("id", jobID).eq("queue_message_id", queueID).eq("status", "extracting")
+          .select("id")
+          .maybeSingle();
+        if (error || !stored) throw error ?? new Error("Import state changed before save");
         await archive(queueID);
         failed++;
         continue;
@@ -151,7 +153,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
         id: claimed.id,
         source_value: claimed.source_value,
       });
-      const { error: saveError } = await admin.from("recipe_import_jobs").update({
+      const { data: saved, error: saveError } = await admin.from("recipe_import_jobs").update({
         status: "completed",
         stage: "done",
         recipe_id: result.recipe_id,
@@ -161,8 +163,12 @@ Deno.serve(async (request: Request): Promise<Response> => {
         error: null,
         completed_at: now(),
         updated_at: now(),
-      }).eq("id", jobID).eq("queue_message_id", queueID).eq("status", "extracting");
-      if (saveError) throw saveError;
+      }).eq("id", jobID).eq("queue_message_id", queueID).eq("status", "extracting")
+        .select("id")
+        .maybeSingle();
+      if (saveError || !saved) {
+        throw saveError ?? new Error("Import state changed before save");
+      }
 
       // Queue ACK is LAST. A worker crash before this line will replay a
       // completed job idempotently without creating a second recipe.
