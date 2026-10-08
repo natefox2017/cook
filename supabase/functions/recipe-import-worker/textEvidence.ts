@@ -11,10 +11,19 @@ interface EvidenceField {
   updated_at: string;
 }
 
-export function parseLocalText(job: { id: string; source_value: string }): {
+export function parseLocalText(job: {
+  id: string;
+  source_value: string;
+  original_source_url?: string | null;
+  platform_hint?: string | null;
+}): {
   recipe_id: string;
   status: "ready" | "needs_review";
-  source: { input_type: "text" };
+  source: {
+    input_type: "text";
+    original_url: string | null;
+    platform: string | null;
+  };
   fields: Record<string, EvidenceField>;
   evidence: Array<Record<string, unknown>>;
   review_fields: string[];
@@ -96,7 +105,11 @@ export function parseLocalText(job: { id: string; source_value: string }): {
   return {
     recipe_id: job.id, // A stable result ID across worker retries.
     status: review.length ? "needs_review" : "ready",
-    source: { input_type: "text" },
+    source: {
+      input_type: "text",
+      original_url: job.original_source_url ?? null,
+      platform: job.platform_hint ?? null,
+    },
     fields,
     evidence,
     review_fields: review,

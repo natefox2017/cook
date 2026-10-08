@@ -1,7 +1,7 @@
 create extension if not exists pgtap;
 
 begin;
-select plan(35);
+select plan(39);
 
 select ok(
     to_regclass('pgmq.q_recipe_import_v1') is not null,
@@ -16,8 +16,12 @@ select ok(
     'anonymous users cannot submit jobs'
 );
 select ok(
-    has_function_privilege('authenticated', 'public.submit_own_recipe_import(uuid,text,text,text)', 'EXECUTE'),
-    'authenticated users can use the owner-checked submit RPC'
+    not has_function_privilege('authenticated', 'public.submit_own_recipe_import(uuid,text,text,text)', 'EXECUTE'),
+    'authenticated users cannot bypass frozen request validation through the internal RPC'
+);
+select ok(
+    has_function_privilege('authenticated', 'public.submit_own_recipe_import(uuid,text,text,text,text)', 'EXECUTE'),
+    'authenticated users can use the full owner-checked submit RPC'
 );
 select ok(
     not has_function_privilege('anon', 'public.recipe_import_v1_queue_read(integer,integer)', 'EXECUTE'),
@@ -95,7 +99,9 @@ begin
     from public.submit_own_recipe_import(
         'e0fb0c8c-7a27-48e7-99fd-8d62c46d4caa',
         'text',
-        'Ingredients: rice\nSteps: cook until done'
+        'Ingredients: rice\nSteps: cook until done',
+        'social',
+        'https://social.example/posts/123'
     );
     perform set_config('test.job_id', v_job.id::text, true);
     perform set_config('test.v1_message_id', v_job.queue_message_id::text, true);
@@ -111,10 +117,42 @@ select is(
     (select id::text from public.submit_own_recipe_import(
         'e0fb0c8c-7a27-48e7-99fd-8d62c46d4caa',
         'text',
-        'Ingredients: rice\nSteps: cook until done'
+        'Ingredients: rice\nSteps: cook until done',
+        'social',
+        'https://social.example/posts/123'
     )),
     current_setting('test.job_id'),
     'same request replay returns the existing job'
+);
+select is(
+    (select original_source_url from public.recipe_import_jobs
+     where id = current_setting('test.job_id')::uuid),
+    'https://social.example/posts/123',
+    'optional original source URL is stored with the job'
+);
+select throws_ok(
+    $$select * from public.submit_own_recipe_import(
+        'e0fb0c8c-7a27-48e7-99fd-8d62c46d4caa',
+        'text',
+        'Ingredients: rice\nSteps: cook until done',
+        'social',
+        'https://social.example/posts/changed'
+    )$$,
+    '23505',
+    'CLIENT_REQUEST_ID_CONFLICT',
+    'same request ID cannot replace immutable source metadata'
+);
+select throws_ok(
+    $$select * from public.submit_own_recipe_import(
+        'e0fb0c8c-7a27-48e7-99fd-8d62c46d4caa',
+        'text',
+        'Ingredients: rice\nSteps: cook until done',
+        'different-platform',
+        'https://social.example/posts/123'
+    )$$,
+    '23505',
+    'CLIENT_REQUEST_ID_CONFLICT',
+    'same request ID cannot replace platform metadata'
 );
 select throws_ok(
     $$select * from public.submit_own_recipe_import(

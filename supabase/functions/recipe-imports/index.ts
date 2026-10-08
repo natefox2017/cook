@@ -2,6 +2,7 @@
 // Purpose: Exposes authenticated, idempotent RecipePouch import-job creation and lookup.
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { hasImportRequestShape } from "./requestValidation.ts";
 
 type ErrorCode =
   | "INVALID_INPUT"
@@ -358,7 +359,10 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     const id = params.client_request_id;
     const type = params.input_type;
-    if (typeof id !== "string" || !UUID.test(id)) {
+    if (
+      !hasImportRequestShape(params) ||
+      typeof id !== "string" || !UUID.test(id)
+    ) {
       return failure(
         "INVALID_INPUT",
         "A valid client_request_id is required.",
@@ -414,11 +418,29 @@ Deno.serve(async (request: Request): Promise<Response> => {
       );
     }
 
+    const originalSourceURL = params.original_source_url;
+    if (
+      originalSourceURL != null &&
+      (typeof originalSourceURL !== "string" ||
+        !isPublicCandidateURL(originalSourceURL))
+    ) {
+      return failure(
+        "INVALID_INPUT",
+        "Invalid original source URL.",
+        400,
+        false,
+        requestID,
+        null,
+        headers,
+      );
+    }
+
     const { data, error } = await client.rpc("submit_own_recipe_import", {
       p_client_request_id: id,
       p_input_type: type,
       p_source_value: value,
       p_platform_hint: platform ?? null,
+      p_original_source_url: originalSourceURL ?? null,
     });
     if (error) return sqlFailure(error, headers, requestID);
     const row = (Array.isArray(data) ? data[0] : data) as ImportJob | undefined;

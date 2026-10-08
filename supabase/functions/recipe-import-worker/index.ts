@@ -21,6 +21,7 @@ interface Job {
   owner_id: string;
   input_type: "url" | "text";
   source_value: string;
+  original_source_url: string | null;
   platform_hint: string | null;
   status: string;
   attempt_count: number;
@@ -199,7 +200,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
           id: claimed.id,
           html: page.html,
           source: {
-            originalURL: claimed.source_value,
+            originalURL: claimed.original_source_url ?? claimed.source_value,
             canonicalURL: page.canonicalURL,
             platformHint: claimed.platform_hint,
           },
@@ -208,6 +209,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
         result = parseLocalText({
           id: claimed.id,
           source_value: claimed.source_value,
+          original_source_url: claimed.original_source_url,
+          platform_hint: claimed.platform_hint,
         });
       }
 

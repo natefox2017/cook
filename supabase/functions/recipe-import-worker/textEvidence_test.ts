@@ -19,6 +19,8 @@ Ingredients
 Steps
 1. Simmer until tender
 2. Serve`,
+    original_source_url: "https://social.example/posts/123",
+    platform_hint: "social",
   });
   expect(result.recipe_id === jobID, "Recipe ID must be deterministic");
   expect(
@@ -40,6 +42,11 @@ Steps
   expect(
     result.review_fields.length === 0,
     "Complete labelled example was flagged",
+  );
+  expect(
+    result.source.original_url === "https://social.example/posts/123" &&
+      result.source.platform === "social",
+    "Original source metadata was discarded",
   );
 });
 
