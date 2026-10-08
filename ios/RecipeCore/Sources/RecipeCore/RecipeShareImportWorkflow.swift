@@ -190,7 +190,7 @@ public enum RecipeShareImportWorkflow {
                             throw RecipeShareImportWorkflowError.localSourceChanged
                         }
                         if response.status == .completed {
-                            try saveCompletedTextResult(
+                            try saveCompletedResult(
                                 response,
                                 receipt: receipt,
                                 source: source,
@@ -199,8 +199,14 @@ public enum RecipeShareImportWorkflow {
                         } else if response.status == .failed {
                             let serverMessage = response.error?.message
                                 ?? "The import could not be completed."
+                            let suggestedAction = nonempty(
+                                response.error?.suggestedAction
+                            )
+                            let detail = [serverMessage, suggestedAction]
+                                .compactMap { $0 }
+                                .joined(separator: " ")
                             firstFailure = firstFailure
-                                ?? "A shared source failed: \(serverMessage)"
+                                ?? "A shared source failed: \(detail)"
                         }
 
                         hasActiveJobs = hasActiveJobs || response.isActive
@@ -283,53 +289,145 @@ public enum RecipeShareImportWorkflow {
         }
     }
 
-    private static func saveCompletedTextResult(
+    private static func saveCompletedResult(
         _ response: RecipeImportJobResponse,
         receipt: RecipeShareReceipt,
         source: String,
         store: RecipeStore
     ) throws {
-        guard receipt.inputType == .text else {
-            throw RecipeShareImportWorkflowError.unsupportedCompletedInput
-        }
         guard let result = response.result else {
             throw RecipeShareImportWorkflowError.completedResultMissing
         }
-        guard result.source.inputType == "text",
+        guard result.source.inputType == receipt.inputType.rawValue,
+              let resultStatus = result.resultStatus,
               response.recipeID == nil || response.recipeID == result.recipeID,
+              response.recipeStatus == nil
+                || response.recipeStatus == resultStatus.rawValue,
               response.existingRecipeID == nil
                 || response.existingRecipeID == result.recipeID else {
             throw RecipeShareImportWorkflowError.responseMismatch
         }
 
-        // A replay must never replace a locally edited recipe. The server ID
-        // is stable across job retries; exact source text catches cross-job duplicates.
+        // Server IDs and normalized source URLs prevent retries from replacing
+        // locally edited recipes or creating duplicate imports.
         guard store.recipe(id: result.recipeID) == nil,
-              !store.recipes.contains(where: { $0.sourceText == source }) else {
+              !isDuplicate(
+                result: result,
+                source: source,
+                receipt: receipt,
+                recipes: store.recipes
+              ) else {
             return
         }
 
-        var title = "Imported recipe"
-        if let rawTitle = result.fields["title"]?.rawValue {
-            let trimmedTitle = rawTitle.trimmingCharacters(
-                in: .whitespacesAndNewlines
+        let title = nonempty(result.fields["title"]?.rawValue)
+            ?? "Imported recipe"
+        var structuredText = title
+        let rawIngredients = indexedValues(
+            result.fields,
+            pattern: #"^ingredients\[(\d+)\]\.raw_text$"#
+        )
+        let ingredients = rawIngredients.isEmpty
+            ? indexedValues(
+                result.fields,
+                pattern: #"^ingredients\[(\d+)\]\.amount$"#
             )
-            if !trimmedTitle.isEmpty {
-                title = trimmedTitle
-            }
+            : rawIngredients
+        let steps = indexedValues(
+            result.fields,
+            pattern: #"^steps\[(\d+)\]\.instruction$"#
+        )
+        if !ingredients.isEmpty {
+            structuredText += "\n\nIngredients\n" + ingredients.joined(separator: "\n")
+        }
+        if !steps.isEmpty {
+            structuredText += "\n\nInstructions\n" + steps.joined(separator: "\n")
         }
         var recipe = RecipeDocumentParser.recipe(
-            fromText: source,
+            fromText: structuredText,
             title: title
         )
         recipe.id = result.recipeID
-        recipe.sourceText = source
-        recipe.sourceURL = result.source.originalURL
-            ?? result.source.canonicalURL
-        recipe.sourceName = result.source.sourceTitle
-            ?? result.source.authorName
-            ?? result.source.platform
-            ?? "Shared text"
+        recipe.servings = nil
+        recipe.sourceText = receipt.inputType == .text ? source : nil
+        let sharedURL = receipt.inputType == .url
+            ? validatedURL(source)?.absoluteString
+            : nil
+        recipe.sourceURL = sharedURL
+            ?? validatedURL(result.source.originalURL)?.absoluteString
+            ?? validatedURL(result.source.canonicalURL)?.absoluteString
+        recipe.sourceName = nonempty(result.source.sourceTitle)
+            ?? nonempty(result.source.authorName)
+            ?? nonempty(result.source.platform)
+            ?? (receipt.inputType == .text ? "Shared text" : "Recipe website")
+        recipe.importRecord = RecipeImportRecord(
+            jobID: response.jobID,
+            result: result
+        )
         try store.upsert(recipe)
+    }
+
+    private static func indexedValues(
+        _ fields: [String: RecipeImportJobResponse.Field],
+        pattern: String
+    ) -> [String] {
+        guard let expression = try? NSRegularExpression(pattern: pattern) else {
+            return []
+        }
+        return fields.compactMap { entry -> (Int, String)? in
+            let (key, field) = entry
+            let range = NSRange(key.startIndex..., in: key)
+            guard let match = expression.firstMatch(in: key, range: range),
+                  let indexRange = Range(match.range(at: 1), in: key),
+                  let index = Int(key[indexRange]),
+                  let value = nonempty(field.rawValue) else {
+                return nil
+            }
+            return (index, value)
+        }
+        .sorted { $0.0 < $1.0 }
+        .map { $0.1 }
+    }
+
+    private static func isDuplicate(
+        result: RecipeImportJobResponse.Result,
+        source: String,
+        receipt: RecipeShareReceipt,
+        recipes: [Recipe]
+    ) -> Bool {
+        if receipt.inputType == .text,
+           recipes.contains(where: { $0.sourceText == source }) {
+            return true
+        }
+
+        var importedURLs = [result.source.originalURL, result.source.canonicalURL]
+            .compactMap(validatedURL)
+        if receipt.inputType == .url, let sourceURL = validatedURL(source) {
+            importedURLs.append(sourceURL)
+        }
+        let importedKeys = Set(importedURLs.map {
+            RecipeDocumentParser.sourceKey($0)
+        })
+        guard !importedKeys.isEmpty else { return false }
+        return recipes.contains { recipe in
+            guard let sourceURL = recipe.sourceURL,
+                  let existingURL = validatedURL(sourceURL) else {
+                return false
+            }
+            return importedKeys.contains(RecipeDocumentParser.sourceKey(existingURL))
+        }
+    }
+
+    private static func validatedURL(_ value: String?) -> URL? {
+        guard let value else { return nil }
+        return RecipeDocumentParser.validatedSourceURL(value)
+    }
+
+    private static func nonempty(_ value: String?) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty else {
+            return nil
+        }
+        return value
     }
 }

@@ -38,6 +38,7 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
     public var sourceURL: String?
     public var sourceText: String?
     public var sourceName: String?
+    public var importRecord: RecipeImportRecord?
     public var coverData: Data?
     public var coverAsset: String?
     public var isFavorite: Bool
@@ -51,6 +52,7 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
         prepMinutes: Int? = nil, cookMinutes: Int? = nil,
         ingredients: [RecipeIngredient] = [], steps: [RecipeStep] = [],
         sourceURL: String? = nil, sourceText: String? = nil, sourceName: String? = nil,
+        importRecord: RecipeImportRecord? = nil,
         coverData: Data? = nil, coverAsset: String? = nil,
         isFavorite: Bool = false, notes: String = "",
         createdAt: Date = .now, updatedAt: Date = .now
@@ -67,6 +69,7 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
         self.sourceURL = sourceURL
         self.sourceText = sourceText
         self.sourceName = sourceName
+        self.importRecord = importRecord
         self.coverData = coverData
         self.coverAsset = coverAsset
         self.isFavorite = isFavorite
@@ -76,7 +79,8 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
     }
 
     public var needsReview: Bool {
-        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        importRecord?.result.resultStatus == .needsReview
+            || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || ingredients.isEmpty || steps.isEmpty
             || ingredients.contains { $0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
             || steps.contains { $0.instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }

@@ -19,60 +19,81 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         public let message: String
         public let recoverable: Bool?
         public let suggestedAction: String?
+        public let requestID: UUID?
 
         private enum CodingKeys: String, CodingKey {
             case code
             case message
             case recoverable
             case suggestedAction = "suggested_action"
+            case requestID = "request_id"
         }
 
         public init(
             code: String,
             message: String,
             recoverable: Bool?,
-            suggestedAction: String? = nil
+            suggestedAction: String? = nil,
+            requestID: UUID? = nil
         ) {
             self.code = code
             self.message = message
             self.recoverable = recoverable
             self.suggestedAction = suggestedAction
+            self.requestID = requestID
         }
     }
 
-    public struct Field: Decodable, Sendable {
+    public struct Field: Codable, Hashable, Sendable {
         public let rawValue: String?
+        public let normalizedValue: RecipeImportFieldValue?
+        public let unit: String?
         public let evidenceIDs: [UUID]
+        public let confidence: Double?
         public let userConfirmed: Bool
         public let origin: String
+        public let updatedAt: String?
 
         private enum CodingKeys: String, CodingKey {
             case rawValue = "raw_value"
+            case normalizedValue = "normalized_value"
+            case unit
             case evidenceIDs = "evidence_ids"
+            case confidence
             case userConfirmed = "user_confirmed"
             case origin
+            case updatedAt = "updated_at"
         }
 
         public init(
             rawValue: String?,
+            normalizedValue: RecipeImportFieldValue? = nil,
+            unit: String? = nil,
             evidenceIDs: [UUID] = [],
+            confidence: Double? = nil,
             userConfirmed: Bool = false,
-            origin: String = "extracted"
+            origin: String = "extracted",
+            updatedAt: String? = nil
         ) {
             self.rawValue = rawValue
+            self.normalizedValue = normalizedValue
+            self.unit = unit
             self.evidenceIDs = evidenceIDs
+            self.confidence = confidence
             self.userConfirmed = userConfirmed
             self.origin = origin
+            self.updatedAt = updatedAt
         }
     }
 
-    public struct Source: Decodable, Sendable {
+    public struct Source: Codable, Hashable, Sendable {
         public let inputType: String
         public let originalURL: String?
         public let canonicalURL: String?
         public let platform: String?
         public let authorName: String?
         public let sourceTitle: String?
+        public let externalContentID: String?
 
         private enum CodingKeys: String, CodingKey {
             case inputType = "input_type"
@@ -81,6 +102,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
             case platform
             case authorName = "author_name"
             case sourceTitle = "source_title"
+            case externalContentID = "external_content_id"
         }
 
         public init(
@@ -89,7 +111,8 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
             canonicalURL: String? = nil,
             platform: String? = nil,
             authorName: String? = nil,
-            sourceTitle: String? = nil
+            sourceTitle: String? = nil,
+            externalContentID: String? = nil
         ) {
             self.inputType = inputType
             self.originalURL = originalURL
@@ -97,15 +120,21 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
             self.platform = platform
             self.authorName = authorName
             self.sourceTitle = sourceTitle
+            self.externalContentID = externalContentID
         }
     }
 
-    public struct Evidence: Decodable, Sendable {
+    public struct Evidence: Codable, Hashable, Sendable {
         public let id: UUID
         public let sourceType: String
         public let origin: String
         public let excerpt: String?
         public let confidence: Double?
+        public let timestampStartSeconds: Double?
+        public let timestampEndSeconds: Double?
+        public let frameReference: String?
+        public let sourceArtifactID: UUID?
+        public let capturedAt: String?
 
         private enum CodingKeys: String, CodingKey {
             case id
@@ -113,6 +142,11 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
             case origin
             case excerpt
             case confidence
+            case timestampStartSeconds = "timestamp_start_seconds"
+            case timestampEndSeconds = "timestamp_end_seconds"
+            case frameReference = "frame_ref"
+            case sourceArtifactID = "source_artifact_id"
+            case capturedAt = "captured_at"
         }
 
         public init(
@@ -120,23 +154,37 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
             sourceType: String,
             origin: String,
             excerpt: String? = nil,
-            confidence: Double? = nil
+            confidence: Double? = nil,
+            timestampStartSeconds: Double? = nil,
+            timestampEndSeconds: Double? = nil,
+            frameReference: String? = nil,
+            sourceArtifactID: UUID? = nil,
+            capturedAt: String? = nil
         ) {
             self.id = id
             self.sourceType = sourceType
             self.origin = origin
             self.excerpt = excerpt
             self.confidence = confidence
+            self.timestampStartSeconds = timestampStartSeconds
+            self.timestampEndSeconds = timestampEndSeconds
+            self.frameReference = frameReference
+            self.sourceArtifactID = sourceArtifactID
+            self.capturedAt = capturedAt
         }
     }
 
-    public struct Result: Decodable, Sendable {
+    public struct Result: Codable, Hashable, Sendable {
         public let recipeID: UUID
         public let status: String
         public let source: Source
         public let fields: [String: Field]
         public let evidence: [Evidence]
         public let reviewFields: [String]?
+
+        public var resultStatus: RecipeImportResultStatus? {
+            RecipeImportResultStatus(rawValue: status)
+        }
 
         private enum CodingKeys: String, CodingKey {
             case recipeID = "recipe_id"
@@ -168,6 +216,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
     public let clientRequestID: UUID
     public let status: Status
     public let stage: String?
+    public let progressHint: String?
     public let attemptCount: Int
     public let queueConfirmedAt: String?
     public let recipeID: UUID?
@@ -182,6 +231,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         case clientRequestID = "client_request_id"
         case status
         case stage
+        case progressHint = "progress_hint"
         case attemptCount = "attempt_count"
         case queueConfirmedAt = "queue_confirmed_at"
         case recipeID = "recipe_id"
@@ -197,6 +247,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         clientRequestID: UUID,
         status: Status,
         stage: String? = nil,
+        progressHint: String? = nil,
         attemptCount: Int = 0,
         queueConfirmedAt: String? = nil,
         recipeID: UUID? = nil,
@@ -210,6 +261,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         self.clientRequestID = clientRequestID
         self.status = status
         self.stage = stage
+        self.progressHint = progressHint
         self.attemptCount = attemptCount
         self.queueConfirmedAt = queueConfirmedAt
         self.recipeID = recipeID
@@ -246,6 +298,55 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         case .completed, .failed:
             false
         }
+    }
+}
+
+public enum RecipeImportFieldValue: Codable, Hashable, Sendable {
+    case string(String)
+    case number(Decimal)
+    case boolean(Bool)
+    case null
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if try container.decodeNil() {
+            self = .null
+        } else if let value = try? container.decode(String.self) {
+            self = .string(value)
+        } else if let value = try? container.decode(Bool.self) {
+            self = .boolean(value)
+        } else {
+            self = .number(try container.decode(Decimal.self))
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .string(let value):
+            try container.encode(value)
+        case .number(let value):
+            try container.encode(value)
+        case .boolean(let value):
+            try container.encode(value)
+        case .null:
+            try container.encodeNil()
+        }
+    }
+}
+
+public enum RecipeImportResultStatus: String, Codable, Sendable {
+    case ready
+    case needsReview = "needs_review"
+}
+
+public struct RecipeImportRecord: Codable, Hashable, Sendable {
+    public let jobID: UUID
+    public let result: RecipeImportJobResponse.Result
+
+    public init(jobID: UUID, result: RecipeImportJobResponse.Result) {
+        self.jobID = jobID
+        self.result = result
     }
 }
 
