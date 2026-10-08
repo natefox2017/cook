@@ -714,9 +714,14 @@ struct CookingView: View {
                 session.stepID = recipe.steps.first?.id
             }
 
-            session.completedStepIDs = Set(session.completedStepIDs.filter { completedID in
-                recipe.steps.contains(where: { $0.id == completedID })
-            })
+            if session.needsLegacyCompletedStepMigration {
+                session.completedStepIDs = Set(recipe.steps.map(\.id))
+                session.needsLegacyCompletedStepMigration = false
+            } else {
+                session.completedStepIDs = Set(session.completedStepIDs.filter { completedID in
+                    recipe.steps.contains(where: { $0.id == completedID })
+                })
+            }
 
             if let original = recipe.servings, original > 0 {
                 session.servings = max(1, servings ?? session.servings ?? original)
@@ -1126,6 +1131,7 @@ private struct PersistedCookingSession: Codable {
     var servings: Int?
     var usedIngredientIDs: Set<UUID>
     var completedStepIDs: Set<UUID>
+    var needsLegacyCompletedStepMigration: Bool
 
     init(
         stepID: UUID? = nil,
@@ -1141,6 +1147,7 @@ private struct PersistedCookingSession: Codable {
         self.servings = servings
         self.usedIngredientIDs = usedIngredientIDs
         self.completedStepIDs = completedStepIDs
+        self.needsLegacyCompletedStepMigration = false
     }
 
     func runningTimerCount(at date: Date = .now) -> Int {
@@ -1164,6 +1171,7 @@ private struct PersistedCookingSession: Codable {
         isComplete = try container.decodeIfPresent(Bool.self, forKey: .isComplete) ?? false
         servings = try container.decodeIfPresent(Int.self, forKey: .servings)
         usedIngredientIDs = try container.decodeIfPresent(Set<UUID>.self, forKey: .usedIngredientIDs) ?? []
+        needsLegacyCompletedStepMigration = isComplete && !container.contains(.completedStepIDs)
         completedStepIDs = try container.decodeIfPresent(Set<UUID>.self, forKey: .completedStepIDs) ?? []
 
         if let current = try? container.decode([UUID: PersistedActiveTimer].self, forKey: .timers) {
