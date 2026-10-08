@@ -1,4 +1,4 @@
-# Cook
+# Recipe
 
 把第三方平台和网页里的做饭内容，一键收进自己的食谱库，并自动整理成可执行食谱。
 
@@ -7,7 +7,7 @@
 ```
 第三方平台 / 网页
         ↓
-系统分享 → Cook
+系统分享 → Recipe
         ↓
 “已收下”并立即返回
         ↓
@@ -44,7 +44,7 @@ V1 **不做社区**：不做 Feed、发帖、关注、点赞、评论、达人�
 
 ## 当前状态
 
-已建立原生 SwiftUI iPhone App，最低 iOS 18，主 App Bundle ID 为 `com.modelhub.cook`。用 Xcode 26.2 或更新版本打开 `ios/Cook.xcodeproj`，选择共享的 `Cook` scheme 后运行。
+已建立原生 SwiftUI iPhone App，最低 iOS 18，主 App Bundle ID 继续使用已注册的 `com.modelhub.cook`，以保留现有安装身份。用 Xcode 26.2 或更新版本打开 `ios/Recipe.xcodeproj`，选择共享的 `Recipe` scheme 后运行。
 
 客户端包含食谱库、搜索/筛选/收藏、详情与编辑、网页/文字/照片/文档导入、烹饪计时、购物清单、简单周计划及本地设置。用户数据原子保存到本机；首启为空库，演示数据只通过明确入口加载。
 
@@ -53,8 +53,8 @@ V1 **不做社区**：不做 Feed、发帖、关注、点赞、评论、达人�
 检查命令：
 
 ```sh
-swift test --package-path ios/CookCore
-xcodebuild -project ios/Cook.xcodeproj -scheme Cook \
+swift test --package-path ios/RecipeCore
+xcodebuild -project ios/Recipe.xcodeproj -scheme Recipe \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max,OS=26.2' \
   CODE_SIGNING_ALLOWED=NO test
 ```

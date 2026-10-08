@@ -17,7 +17,7 @@
 
 ## 当前阶段
 
-用户于 2026-10-07 明确要求“把 ui 界面功能写好提交上去”。本轮已实现原生 App 与客户端本地闭环；先读 [实现与验收记录](docs/IOS/UI_IMPLEMENTATION.md)，再打开 `ios/Cook.xcodeproj`。
+用户于 2026-10-07 明确要求“把 ui 界面功能写好提交上去”。本轮已实现原生 App 与客户端本地闭环；先读 [实现与验收记录](docs/IOS/UI_IMPLEMENTATION.md)，再打开 `ios/Recipe.xcodeproj`。
 
 本轮以 main 的三 Tab 产品范围和已存设计资源为依据，复用 PR #10 的 `IngredientAmount`。历史设计审批表不被追溯改写为已批准；本轮新增 UI、工程和 CI 改动随 PR 交付审阅。
 

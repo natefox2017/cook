@@ -6,9 +6,9 @@ in Supabase or another server-side secret store.
 
 ## Redirect URL
 
-The app handles `cook://auth/callback` for email confirmation and password
-recovery. Add this exact URI to the Supabase Auth redirect URL allowlist. The
-app registers the `cook` URL scheme in `ios/Cook/Info.plist`.
+The app continues to handle the registered `cook://auth/callback` URL for email
+confirmation and password recovery. Keep this URI in the Supabase Auth redirect
+allowlist and in `ios/Recipe/Info.plist` until the provider configuration is migrated.
 
 ## Email and password
 
@@ -21,7 +21,7 @@ app callback and the recovered password is submitted through Supabase Auth.
 
 The client exchanges Apple's identity token with Supabase Auth and sends the raw
 nonce used for the Apple request. Before enabling the Apple action, enable the
-**Sign in with Apple** capability for the Cook App ID (`com.modelhub.cook`) and
+**Sign in with Apple** capability for the existing App ID (`com.modelhub.cook`) and
 its Xcode target, ensure the provisioning profile carries that capability, and
 configure the corresponding Apple provider in Supabase Auth. Keep any Apple
 private key and provider secrets in provider configuration; never add them to

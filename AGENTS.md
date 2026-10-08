@@ -1,10 +1,10 @@
-# Cook — Agent Instructions
+# Recipe — Agent Instructions
 
 Use this file as the repository-wide guide for coding agents. Keep changes scoped to the user's request, preserve unrelated work in the checkout, and follow the current project documentation listed below.
 
 ## Project Overview
 
-Cook is a personal recipe collection and cooking app. V1 focuses on collecting recipes from third-party sources, organizing them privately, and using them for cooking, shopping, and simple meal planning. The current client is a native iOS app built with SwiftUI, with a native Share Extension and a Supabase backend planned for asynchronous imports and sync.
+Recipe is a personal recipe collection and cooking app. V1 focuses on collecting recipes from third-party sources, organizing them privately, and using them for cooking, shopping, and simple meal planning. The current client is a native iOS app built with SwiftUI, with a native Share Extension and a Supabase backend planned for asynchronous imports and sync.
 
 ## Source of Truth
 
@@ -22,7 +22,7 @@ Read the relevant documents before making a substantial product or architecture 
 
 ## Product Rules
 
-- The normal collection flow is: share from a third-party app, choose Cook, receive an acknowledgment, and return to the source app.
+- The normal collection flow is: share from a third-party app, choose Recipe, receive an acknowledgment, and return to the source app.
 - The Share Extension receives and queues input, then finishes promptly. It must not wait for full parsing or AI processing.
 - Import complete information automatically. Send only missing, anomalous, or low-confidence fields to a review flow.
 - Keep manual recipe entry as a fallback.
@@ -41,8 +41,8 @@ Read the relevant documents before making a substantial product or architecture 
 
 ## Repository Map
 
-- `ios/Cook/` — iOS app, screens, design helpers, and services
-- `ios/CookCore/` — shared domain models and local persistence
+- `ios/Recipe/` — iOS app, screens, design helpers, and services
+- `ios/RecipeCore/` — shared domain models and local persistence
 - `ios/ShareExtension/` — native share extension
 - `supabase/` — backend configuration, migrations, and functions
 - `docs/` — product, design, architecture, and implementation references
@@ -65,13 +65,13 @@ Run the checks relevant to the change and report what actually ran. Do not claim
 Core tests:
 
 ```sh
-swift test --package-path ios/CookCore
+swift test --package-path ios/RecipeCore
 ```
 
 iOS simulator tests (use an installed iPhone simulator supported by the local Xcode):
 
 ```sh
-xcodebuild -project ios/Cook.xcodeproj -scheme Cook \
+xcodebuild -project ios/Recipe.xcodeproj -scheme Recipe \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max,OS=26.2' \
   CODE_SIGNING_ALLOWED=NO test
 ```

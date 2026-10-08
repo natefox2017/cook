@@ -4,7 +4,7 @@
 
 The user requested: “你帮我把 ui 界面功能写好提交上去”. This authorizes implementing and submitting this UI work. It does not retrospectively approve every historical design frame or authorize merging unrelated pending PRs.
 
-This change starts from main commit `3df9064aebb70526d15592763b9b85dff1e7f1ed`, follows V1 Recipes / Groceries / Profile navigation and the saved Cook design resources. It reuses PR #10's IngredientAmount implementation and tests. The five-entry recommendation home is not added to the three-tab baseline.
+This change starts from main commit `3df9064aebb70526d15592763b9b85dff1e7f1ed`, follows V1 Recipes / Groceries / Profile navigation and the saved Recipe design resources. It reuses PR #10's IngredientAmount implementation and tests. The five-entry recommendation home is not added to the three-tab baseline.
 
 Historical PENDING rows remain unchanged. This PR provides the concrete implementation for review; future visual changes continue to use the existing design process.
 
@@ -25,7 +25,7 @@ Historical PENDING rows remain unchanged. This PR provides the concrete implemen
 
 ## Persistence and failures
 
-CookStore owns one versioned Codable snapshot in application support. Each mutation validates a copy, atomically writes it, then publishes the observable state. Write failures do not publish unsaved changes. An unreadable/unsupported file stays in place and blocks further writes, including reset; retry reloads it.
+RecipeStore owns one versioned Codable snapshot in application support. Each mutation validates a copy, atomically writes it, then publishes the observable state. Write failures do not publish unsaved changes. An unreadable/unsupported file stays in place and blocks further writes, including reset; retry reloads it.
 
 Original sources and unknown amounts remain intact. Explicit quantities use Decimal and the existing safe amount helper. Ranges and “to taste” remain textual; inexact ratios are expressed rather than fabricated as long decimals. Unit spellings are not silently converted. Recipe deletion cleans plan entries and grocery source references but retains grocery tasks.
 
@@ -41,13 +41,13 @@ Data is local to this installation. JSON export is user-driven; cloud backup and
 
 ## Build and validation
 
-The native `ios/Cook.xcodeproj` contains App and UI-test targets, a local CookCore package and shared Cook scheme. No generator or additional UI framework is required.
+The native `ios/Recipe.xcodeproj` contains App and UI-test targets, a local RecipeCore package and shared Recipe scheme. No generator or additional UI framework is required.
 
 ```sh
-swift test --package-path ios/CookCore
-xcodebuild -project ios/Cook.xcodeproj -scheme Cook \
+swift test --package-path ios/RecipeCore
+xcodebuild -project ios/Recipe.xcodeproj -scheme Recipe \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max,OS=26.2' \
-  -resultBundlePath TestResults/Cook.xcresult \
+  -resultBundlePath TestResults/Recipe.xcresult \
   CODE_SIGNING_ALLOWED=NO test
 ```
 

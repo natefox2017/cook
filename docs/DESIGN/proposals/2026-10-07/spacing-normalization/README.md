@@ -1,4 +1,4 @@
-# Cook UI spacing normalization
+# Recipe UI spacing normalization
 
 Status: APPROVED by the user on 2026-10-08. The simulator screenshots are unmodified references captured from the merged app on iPhone 18 Pro Max (iOS 27.0). The supplied `settings-reference.jpg` is the visual reference for section spacing and direct menu icons.
 

@@ -24,7 +24,7 @@ Exit：
 - duplicate detection
 
 Exit：
-第三方 App → 分享 → Cook → “已收下” → 返回，后台能生成最小食谱记录。
+第三方 App → 分享 → Recipe → “已收下” → 返回，后台能生成最小食谱记录。
 
 ## Phase 2：AI 结构化
 - caption/article extraction
