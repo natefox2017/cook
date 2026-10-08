@@ -1,4 +1,4 @@
-# Recipe
+# RecipePouch
 
 把第三方平台和网页里的做饭内容，一键收进自己的食谱库，并自动整理成可执行食谱。
 
@@ -7,7 +7,7 @@
 ```
 第三方平台 / 网页
         ↓
-系统分享 → Recipe
+系统分享 → RecipePouch
         ↓
 “已收下”并立即返回
         ↓
@@ -48,7 +48,7 @@ V1 **不做社区**：不做 Feed、发帖、关注、点赞、评论、达人�
 
 客户端包含食谱库、搜索/筛选/收藏、详情与编辑、网页/文字/照片/文档导入、烹饪计时、购物清单、简单周计划及本地设置。用户数据原子保存到本机；首启为空库，演示数据只通过明确入口加载。
 
-网页导入仅处理实际存在的 Schema.org Recipe；照片文字由 Apple Vision 在设备上识别。无法识别时保留来源供补充，不把示例食谱当识别结果。Supabase 账户/同步、社交视频 AI 解析、Share Extension 和后台耐久导入队列仍是后续集成范围，本次没有部署生产后端。
+网页导入仅处理实际存在的 Schema.org Recipe；照片文字由 Apple Vision 在设备上识别。无法识别时保留来源供补充，不把示例食谱当识别结果。Supabase Auth 客户端与生产项目已接入基础能力，Collections 已完成本地闭环；跨设备同步/冲突 UI、Share Extension 完整 Target 联调、社交视频 AI 与后台耐久导入仍由对应 Issue 继续完成。
 
 检查命令：
 
@@ -59,6 +59,6 @@ xcodebuild -project ios/Recipe.xcodeproj -scheme Recipe \
   CODE_SIGNING_ALLOWED=NO test
 ```
 
-CI 使用可用的 iPhone 17 Pro Max 模拟器验证大屏布局；不把它称为尚未实际运行的 iPhone 18 Pro Max 真机验收。签名安装需在 Xcode 中选择自己的开发团队。
+CI 只保留轻量 PR 自动合并状态，不自动运行 Xcode/Simulator/Swift Test。需要的构建、模拟器和真机验收按 Issue 手动执行并如实记录。签名安装需在 Xcode 中选择自己的开发团队。
 
 总入口 Issue: #1
