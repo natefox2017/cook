@@ -9,8 +9,10 @@ import UIKit
 
 struct ProfileView: View {
     @Environment(RecipeStore.self) private var store
+    @Environment(CloudSyncCoordinator.self) private var cloudSync
     @State private var editsProfile = false
     @State private var confirmsReset = false
+    @State private var isDeletingLocalData = false
     @State private var exportsData = false
     @State private var exportDocument = RecipeExportDocument(data: Data())
     @State private var errorMessage: String?
@@ -166,17 +168,24 @@ struct ProfileView: View {
         }
         .confirmationDialog("Delete all local data?", isPresented: $confirmsReset, titleVisibility: .visible) {
             Button("Delete All RecipePouch Data", role: .destructive) {
-                do {
-                    try store.resetLibrary()
-                    for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("recipe.cookingSession.") || key.hasPrefix("cook.cookingSession.") {
-                        UserDefaults.standard.removeObject(forKey: key)
+                guard !isDeletingLocalData else { return }
+                isDeletingLocalData = true
+                Task {
+                    defer { isDeletingLocalData = false }
+                    do {
+                        try await RecipeLocalDataDeletion.erase(
+                            store: store,
+                            cloudSync: cloudSync
+                        )
+                        exportDocument = RecipeExportDocument(data: Data())
+                    } catch {
+                        errorMessage = error.localizedDescription
                     }
-                    exportDocument = RecipeExportDocument(data: Data())
-                    Task { await RecipeNotificationCleanup.removeTimerReminders() }
-                } catch { errorMessage = error.localizedDescription }
+                }
             }
+            .disabled(isDeletingLocalData)
         } message: {
-            Text("This permanently deletes your recipes, grocery list, meal plan, local profile and preferences from this iPhone. Export a copy first if you want to keep them.")
+            Text("This deletes only data on this iPhone. Sign out first; cloud data and your App Store subscription remain intact. Signing in again may restore cloud recipes. Export local data first if needed.")
         }
         .alert("Couldn’t update your data", isPresented: Binding(
             get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
@@ -393,13 +402,66 @@ struct NotificationPreferencesView: View {
 }
 
 @MainActor
-private enum RecipeNotificationCleanup {
+enum RecipeNotificationCleanup {
     static func removeTimerReminders() async {
         let center = UNUserNotificationCenter.current()
+        let prefixes = ["cook.timer.", "recipe.timer."]
         let pending = await center.pendingNotificationRequests()
-        center.removePendingNotificationRequests(withIdentifiers: pending.map(\.identifier).filter { $0.hasPrefix("cook.timer.") })
+        center.removePendingNotificationRequests(
+            withIdentifiers: pending.map(\.identifier).filter { id in
+                prefixes.contains { id.hasPrefix($0) }
+            }
+        )
         let delivered = await center.deliveredNotifications()
-        center.removeDeliveredNotifications(withIdentifiers: delivered.map(\.request.identifier).filter { $0.hasPrefix("cook.timer.") })
+        center.removeDeliveredNotifications(
+            withIdentifiers: delivered.map(\.request.identifier).filter { id in
+                prefixes.contains { id.hasPrefix($0) }
+            }
+        )
+    }
+}
+
+/// Shared by both local-delete entry points. This does not call any remote
+/// deletion API, delete the signed-in account, or cancel an App Store purchase.
+@MainActor
+enum RecipeLocalDataDeletion {
+    static func erase(
+        store: RecipeStore,
+        cloudSync: CloudSyncCoordinator
+    ) async throws {
+        guard case .signedOut = RecipeAuthService.shared.state else {
+            throw RecipeLocalResetError.requiresSignOut
+        }
+        try cloudSync.verifyLocalOnlyResetAllowed()
+
+        // Persist an empty local snapshot with no deletion tombstones before
+        // removing any preferences, so a failed write preserves existing data.
+        try store.clearLocalLibraryOnly()
+        try cloudSync.forgetLocalSyncHistoryAfterReset()
+
+        let defaults = UserDefaults.standard
+        let prefixes = [
+            "recipe.cookingSession.",
+            "cook.cookingSession."
+        ]
+        for key in defaults.dictionaryRepresentation().keys
+        where prefixes.contains(where: { key.hasPrefix($0) }) {
+            defaults.removeObject(forKey: key)
+        }
+        for key in [
+            "recipe.grocery.consolidate",
+            "cook.grocery.consolidate",
+            "recipe.grocery.sources",
+            "cook.grocery.sources",
+            "recipe.meal.weekStart",
+            "cook.meal.weekStart",
+            "recipe.collections",
+            "cook.collections"
+        ] {
+            defaults.removeObject(forKey: key)
+        }
+
+        await RecipeNotificationCleanup.removeTimerReminders()
     }
 }
 

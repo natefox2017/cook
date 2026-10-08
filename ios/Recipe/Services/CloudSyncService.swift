@@ -193,6 +193,20 @@ struct SupabaseCloudSync: RecipeCloudSyncing {
 
 }
 
+enum RecipeLocalResetError: LocalizedError {
+    case requiresSignOut
+    case syncInProgress
+
+    var errorDescription: String? {
+        switch self {
+        case .requiresSignOut:
+            "Sign out of your RecipePouch account before deleting only this iPhone's data. Your cloud library will stay intact."
+        case .syncInProgress:
+            "A cloud sync operation is still finishing. Try deleting local data again after it stops."
+        }
+    }
+}
+
 /// Coordinates account changes, user-approved first sync, and revision-checked updates.
 @Observable @MainActor
 final class CloudSyncCoordinator {
@@ -231,6 +245,56 @@ final class CloudSyncCoordinator {
             }
         }
         pathMonitor.start(queue: pathQueue)
+    }
+
+    /// Reject local-only deletion while a cloud account or write is active.
+    /// `RecipeStore.resetLibrary()` produces tombstones and must not be used
+    /// for this operation.
+    func verifyLocalOnlyResetAllowed() throws {
+        guard accountID == nil else {
+            throw RecipeLocalResetError.requiresSignOut
+        }
+        guard !isSyncing else {
+            throw RecipeLocalResetError.syncInProgress
+        }
+    }
+
+    /// Forget only cached local sync history after the empty local snapshot
+    /// has been committed. Remote snapshots and server accounts are untouched.
+    func forgetLocalSyncHistoryAfterReset() throws {
+        try verifyLocalOnlyResetAllowed()
+
+        let syncDirectory = URL.applicationSupportDirectory
+            .appendingPathComponent("Recipe", isDirectory: true)
+            .appendingPathComponent("Sync", isDirectory: true)
+        if FileManager.default.fileExists(atPath: syncDirectory.path) {
+            try FileManager.default.removeItem(at: syncDirectory)
+        }
+
+        let defaults = UserDefaults.standard
+        for key in defaults.dictionaryRepresentation().keys
+        where key.hasPrefix("recipe.sync.lastAt.")
+            || key.hasPrefix("cook.sync.lastAt.") {
+            defaults.removeObject(forKey: key)
+        }
+        for key in [
+            "recipe.sync.localAccountID",
+            "cook.sync.localAccountID",
+            "recipe.sync.mode",
+            "cook.sync.mode"
+        ] {
+            defaults.removeObject(forKey: key)
+        }
+
+        mode = .automatic
+        remoteSnapshot = nil
+        mergeBaseSnapshot = nil
+        expectedRevision = 0
+        lastExportedToken = store?.changeToken ?? 0
+        lastSyncedAt = nil
+        automaticSyncPaused = false
+        deferredInitialChoice = nil
+        state = .localOnly
     }
 
     func bind(store: RecipeStore, authState: RecipeAuthState) async {

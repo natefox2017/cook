@@ -722,3 +722,50 @@ func groceryConsolidationPreferenceIsNonRetroactive() throws {
     #expect(store.groceries[1].quantity == 50)
     #expect(store.groceries.allSatisfy { $0.recipeIDs == [recipe.id] })
 }
+
+@Test @MainActor
+func localOnlyClearDoesNotCreateCloudDeletionTombstones() throws {
+    let url = try libraryURL()
+    defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+    let store = RecipeStore(fileURL: url)
+    let deletedRecipe = exampleRecipe()
+    let remainingRecipe = Recipe(
+        title: "Saved soup",
+        ingredients: [.from(name: "Broth", amountText: "1 cup")],
+        steps: [.init(instruction: "Simmer.")]
+    )
+
+    try store.upsert(deletedRecipe)
+    try store.deleteRecipe(id: deletedRecipe.id)
+    try store.upsert(remainingRecipe)
+    try store.addToGroceries(
+        recipeID: remainingRecipe.id,
+        servings: nil,
+        ingredientIDs: Set(remainingRecipe.ingredients.map(\.id))
+    )
+    try store.updateSettings(
+        RecipeSettings(displayName: "Local person", appearance: .dark)
+    )
+
+    // A normal reset preserves deletion tombstones for cloud synchronization.
+    #expect(
+        try store.exportCloudSnapshot().deletedEntities?.contains(
+            "recipe:\(deletedRecipe.id.uuidString)"
+        ) == true
+    )
+
+    // Local-only deletion explicitly discards tombstones and saved preferences.
+    try store.clearLocalLibraryOnly()
+    #expect(store.recipes.isEmpty)
+    #expect(store.groceries.isEmpty)
+    #expect(store.mealPlan.isEmpty)
+    #expect(store.collections.isEmpty)
+    #expect(store.settings == RecipeSettings())
+    #expect(try store.exportCloudSnapshot().deletedEntities?.isEmpty == true)
+
+    let restarted = RecipeStore(fileURL: url)
+    #expect(restarted.loadError == nil)
+    #expect(!restarted.hasUserData)
+    #expect(try restarted.exportCloudSnapshot().deletedEntities?.isEmpty == true)
+}
