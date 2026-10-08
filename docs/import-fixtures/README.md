@@ -11,6 +11,19 @@ python3 -m pip install 'jsonschema>=4.21'
 python3 docs/import-fixtures/validate_contract.py
 ```
 
+Run the cross-field evidence regression with Deno:
+
+```bash
+deno test --allow-read=docs/import-fixtures docs/import-fixtures/contract-evidence_test.ts
+```
+
+The Deno regression checks that an original submitted URL stays separate from
+the canonical URL, field evidence references resolve, vague/low-confidence
+amounts and missing steps remain reviewable, and a confirmed user edit keeps
+both the extracted value and the user-origin evidence. It supplements the
+JSON Schema fixture checks; it does not add fields or endpoints to the V1
+contract.
+
 The validator uses JSON Schema Draft 2020-12, checks external OpenAPI references, and checks all positive/negative fixtures. A schema check is not an iOS build, deployed API check or real source import.
 
 ## Evidence acquisition
