@@ -9,10 +9,12 @@
 - The backend obtains `owner_id` from the verified Supabase JWT, never from an import request field. `(owner_id, client_request_id)` is the idempotency boundary. User-visible duplicates are also matched by canonical URL/platform content ID/fingerprint without cross-user deduplication.
 - The backend returns HTTP 202 with `received` only after **durably recording** the job; it must never claim `queued` until a durable queue message has been confirmed. Worker retries must not create duplicate recipes. An unavailable queue leaves a truthful `received` record or returns a recoverable error.
 - The job state machine is `received → queued → extracting → parsing → validating → completed`, with `failed` as a terminal/retryable error. `needs_review` is **recipe.status**, not a job state; a completed job can produce a partial recipe with `recipe_status=needs_review`.
-- `image`/`file` requests may only reference an owner-controlled and already available artifact ID; no client-provided Storage path or public URL-to-private-media proxy. Artifact upload/download handshake remains a separate implementation task.
+- `image`/`file` requests may only reference an owner-controlled and already available artifact ID; no client-chosen Storage path or public URL-to-private-media proxy. `recipe-import-artifacts` creates a private upload intent, confirms the stored object, issues owner-checked short-lived download URLs, and expires artifacts after seven days.
 - Evidence links to each extracted/inferred field; `user_confirmed=true` wins over re-parsing. `to taste`, `适量`, ungrounded time/amount, and uncertain visual inference stay raw/nullable; never substitute fabricated exact measurements.
 - Error envelopes always carry `code`, `message`, `recoverable`, and `request_id`; 401/403/404/409/422/429/503 have distinct meanings. Client must show a recoverable fallback and preserve the local receipt.
 - Server-side URL fetch must revalidate every redirect and resolved IP, reject private/link-local/metadata targets, enforce MIME/body-size/time limits and prevent DNS rebinding; authenticated client access must be owner-scoped through RLS.
+
+`docs/schemas/import-v1.openapi.json` also defines the additive authenticated artifact handshake: create/resume upload intent, complete upload, issue a one-minute download URL, and delete. Its new endpoint schemas do not alter the frozen `/recipe-imports` request, response, or job state contract. Upload and download tokens are short-lived capabilities and must not be logged or stored as durable client state.
 
 
 正式实现时以 OpenAPI 文件为机器可读真相源；本文件先冻结语义。

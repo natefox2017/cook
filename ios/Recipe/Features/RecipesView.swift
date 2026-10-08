@@ -460,20 +460,54 @@ private struct PendingShareRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             Label(
-                receipt.inputType == .url ? "Shared Link" : "Shared Text",
-                systemImage: receipt.inputType == .url ? "link" : "text.alignleft"
+                title,
+                systemImage: symbol
             )
             .font(RecipeTheme.text(15, weight: .semibold))
-            Text(originalSource)
-                .font(RecipeTheme.text(14))
-                .lineLimit(4)
-                .textSelection(.enabled)
+            if receipt.inputType == .image || receipt.inputType == .file {
+                Text("Attachment saved on this iPhone")
+                    .font(RecipeTheme.text(14))
+                    .foregroundStyle(.secondary)
+            } else {
+                Text(originalSource)
+                    .font(RecipeTheme.text(14))
+                    .lineLimit(4)
+                    .textSelection(.enabled)
+            }
             Text("Received \(receipt.receivedAt.formatted(date: .abbreviated, time: .shortened)) · Not queued")
                 .font(RecipeTheme.text(12))
                 .foregroundStyle(.secondary)
         }
         .task {
-            originalSource = inbox.source(for: receipt) ?? "Source unavailable"
+            if receipt.inputType == .url || receipt.inputType == .text {
+                originalSource = inbox.source(for: receipt) ?? "Source unavailable"
+            }
+        }
+    }
+
+    private var title: LocalizedStringKey {
+        switch receipt.inputType {
+        case .url:
+            "Shared Link"
+        case .text:
+            "Shared Text"
+        case .image:
+            "Shared Image"
+        case .file:
+            "Shared Document"
+        }
+    }
+
+    private var symbol: String {
+        switch receipt.inputType {
+        case .url:
+            "link"
+        case .text:
+            "text.alignleft"
+        case .image:
+            "photo"
+        case .file:
+            "doc"
         }
     }
 }

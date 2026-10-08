@@ -5532,6 +5532,98 @@
         }
       }
     },
+    "Shared Image": {
+      "extractionState": "new",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有画像"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享的图片"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享的圖片"
+          }
+        }
+      }
+    },
+    "Shared Document": {
+      "extractionState": "new",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有書類"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享的文档"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享的文件"
+          }
+        }
+      }
+    },
+    "Attachment saved on this iPhone": {
+      "extractionState": "new",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添付ファイルをこの iPhone に保存しました"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "附件已保存在此 iPhone"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "附件已儲存在此 iPhone"
+          }
+        }
+      }
+    },
+    "Share a public recipe link, readable text, image, or PDF.": {
+      "extractionState": "new",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公開レシピのリンク、読み取れるテキスト、画像、または PDF を共有してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请分享公开食谱链接、可读取的文字、图片或 PDF。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請分享公開食譜連結、可讀取的文字、圖片或 PDF。"
+          }
+        }
+      }
+    },
     "Shopping group": {
       "extractionState": "stale",
       "localizations": {

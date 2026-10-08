@@ -359,7 +359,7 @@ public enum RecipeShareImportWorkflow {
         recipe.sourceName = nonempty(result.source.sourceTitle)
             ?? nonempty(result.source.authorName)
             ?? nonempty(result.source.platform)
-            ?? (receipt.inputType == .text ? "Shared text" : "Recipe website")
+            ?? defaultSourceName(for: receipt.inputType)
         recipe.importRecord = RecipeImportRecord(
             jobID: response.jobID,
             result: result
@@ -387,6 +387,21 @@ public enum RecipeShareImportWorkflow {
         }
         .sorted { $0.0 < $1.0 }
         .map { $0.1 }
+    }
+
+    private static func defaultSourceName(
+        for inputType: RecipeShareInputType
+    ) -> String {
+        switch inputType {
+        case .url:
+            "Recipe website"
+        case .text:
+            "Shared text"
+        case .image:
+            "Shared image"
+        case .file:
+            "Shared document"
+        }
     }
 
     private static func isDuplicate(

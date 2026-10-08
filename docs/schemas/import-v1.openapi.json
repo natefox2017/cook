@@ -30,7 +30,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "./import-v1.schema.json#/$defs/ImportRequest"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextOrURLImportRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ArtifactImportRequest"
+                  }
+                ]
               }
             }
           }
@@ -118,6 +125,309 @@
           },
           "503": {
             "description": "The service cannot currently accept this import",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipe-import-artifacts": {
+      "post": {
+        "tags": [
+          "Imports"
+        ],
+        "operationId": "createRecipeImportArtifact",
+        "summary": "Create or resume an owner-scoped private artifact upload intent",
+        "description": "Requires a non-anonymous authenticated session. The server chooses the private Storage path. upload_token is a short-lived bearer capability and must only be used by this user to upload the declared bytes. A repeated client_request_id for the same source returns the existing artifact or a fresh token for its pending intent.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArtifactUploadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "New private upload intent created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactUploadIntent"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Existing available artifact or resumed pending upload intent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactUploadIntent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid artifact type, MIME type, size, or request ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A signed-in non-anonymous session is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The idempotency key conflicts with an existing source or intent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body exceeds the 2 KiB limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The artifact intent cannot be uploaded in its current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Artifact metadata or signed upload service is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipe-import-artifacts/{artifact_id}/complete": {
+      "post": {
+        "tags": [
+          "Imports"
+        ],
+        "operationId": "completeRecipeImportArtifactUpload",
+        "summary": "Confirm uploaded bytes and make the private artifact available",
+        "description": "Requires the artifact owner. The server checks stored object size, MIME type, and file signature before changing upload_pending to available. Request has no body.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ArtifactId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Uploaded artifact confirmed and available for an import job.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A signed-in non-anonymous session is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artifact is missing or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Intent expired, object is absent, or bytes do not match declared type and size.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage or artifact metadata service is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipe-import-artifacts/{artifact_id}/download": {
+      "get": {
+        "tags": [
+          "Imports"
+        ],
+        "operationId": "createRecipeImportArtifactDownloadURL",
+        "summary": "Create a short-lived private download URL for an available artifact",
+        "description": "Requires the artifact owner. The signed URL expires after 60 seconds and is returned only for an unexpired available artifact.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ArtifactId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped artifact metadata and ephemeral download URL.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactDownloadResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A signed-in non-anonymous session is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artifact is missing, foreign-owned, or unavailable for download.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage or signed URL service is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipe-import-artifacts/{artifact_id}": {
+      "delete": {
+        "tags": [
+          "Imports"
+        ],
+        "operationId": "deleteRecipeImportArtifact",
+        "summary": "Delete an artifact from private Storage and expire its metadata",
+        "description": "Requires the artifact owner. The original object is removed through the Storage API; the metadata row is retained as expired until ordinary retention/account cleanup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ArtifactId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artifact object removed and metadata expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactDeleteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A signed-in non-anonymous session is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artifact is missing or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage or artifact metadata service is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -306,6 +616,248 @@
     }
   },
   "components": {
+    "parameters": {
+      "ArtifactId": {
+        "name": "artifact_id",
+        "in": "path",
+        "required": true,
+        "description": "UUID of an artifact owned by the authenticated user.",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "schemas": {
+      "TextOrURLImportRequest": {
+        "allOf": [
+          {
+            "$ref": "./import-v1.schema.json#/$defs/ImportRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "input_type": {
+                "enum": [
+                  "url",
+                  "text"
+                ]
+              }
+            },
+            "not": {
+              "required": [
+                "artifact_id"
+              ]
+            }
+          }
+        ]
+      },
+      "ArtifactImportRequest": {
+        "allOf": [
+          {
+            "$ref": "./import-v1.schema.json#/$defs/ImportRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "input_type": {
+                "enum": [
+                  "image",
+                  "file"
+                ]
+              }
+            },
+            "required": [
+              "artifact_id"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "url"
+                  ]
+                },
+                {
+                  "required": [
+                    "text"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "ArtifactUploadRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "client_request_id",
+          "input_type",
+          "mime_type",
+          "size_bytes"
+        ],
+        "properties": {
+          "client_request_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Stable idempotency key from the local share receipt."
+          },
+          "input_type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "file"
+            ]
+          },
+          "mime_type": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/heic",
+              "image/heif",
+              "application/pdf",
+              "text/plain"
+            ]
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10485760
+          }
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "input_type": {
+                "const": "image"
+              },
+              "mime_type": {
+                "enum": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/heic",
+                  "image/heif"
+                ]
+              }
+            }
+          },
+          {
+            "properties": {
+              "input_type": {
+                "const": "file"
+              },
+              "mime_type": {
+                "enum": [
+                  "application/pdf",
+                  "text/plain"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ArtifactMetadata": {
+        "$ref": "./import-v1.schema.json#/$defs/Artifact"
+      },
+      "ArtifactUploadIntent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact"
+        ],
+        "properties": {
+          "artifact": {
+            "$ref": "#/components/schemas/ArtifactMetadata"
+          },
+          "upload_path": {
+            "type": "string",
+            "description": "Server-chosen private Storage path; clients must not construct or alter it."
+          },
+          "upload_token": {
+            "type": "string",
+            "readOnly": true,
+            "description": "Ephemeral signed upload capability; treat as a secret and never persist or log it."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "artifact": {
+                  "properties": {
+                    "state": {
+                      "const": "upload_pending"
+                    }
+                  },
+                  "required": [
+                    "state"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "upload_path",
+                "upload_token"
+              ]
+            }
+          }
+        ]
+      },
+      "ArtifactResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact"
+        ],
+        "properties": {
+          "artifact": {
+            "$ref": "#/components/schemas/ArtifactMetadata"
+          }
+        }
+      },
+      "ArtifactDownloadResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact",
+          "download_url",
+          "expires_in_seconds"
+        ],
+        "properties": {
+          "artifact": {
+            "$ref": "#/components/schemas/ArtifactMetadata"
+          },
+          "download_url": {
+            "type": "string",
+            "format": "uri",
+            "readOnly": true
+          },
+          "expires_in_seconds": {
+            "type": "integer",
+            "const": 60
+          }
+        }
+      },
+      "ArtifactDeleteResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact_id",
+          "state"
+        ],
+        "properties": {
+          "artifact_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "const": "expired"
+          }
+        }
+      }
+    },
     "securitySchemes": {
       "bearerAuth": {
         "type": "http",

@@ -128,4 +128,16 @@ Worker 所有写入都必须允许安全重试。
 - 首选 Schema.org Recipe JSON-LD。缺失字段时再从可见 `article` / `main` 正文和页面直接内嵌的 transcript/caption 文本补充；文本 track 仅读取公开的 `.vtt` / `.webvtt`，不抓取视频或其他媒体二进制。
 - 正文与字幕各自作为 `article_body`、`caption` 或 `subtitle` evidence 保存来源 URL 与 excerpt。只有明确标注的 Ingredients/Steps 等段落会映射为食材/步骤字段；字段引用对应 evidence ID，已存在的 JSON-LD 字段优先保留。
 - 登录/付费墙、封锁、无正文或需要客户端 JavaScript 渲染时不尝试绕过。可抓取但没有足够来源内容时保留原始 URL，返回 `needs_review`；无法安全取得页面时也保留 URL，并返回无伪造网页 evidence 的 `needs_review` 结果。
+
+## 11. 当前来源支持范围
+
+| 来源 | 入口与处理 | 结果边界 |
+| --- | --- | --- |
+| 公开 HTTPS 食谱页 | 手动导入或分享 URL；本地和 worker 保留来源 URL，worker 读取安全可访问的结构化数据、正文和公开字幕证据 | 字段证据充分时可保存；缺失或不确定字段进入 `needs_review` |
+| 文字 | 手动粘贴或分享；本地/worker 只解析有明确标题、食材、步骤语义的文字 | 原文保留；不猜精确用量 |
+| 图片 | 手动添加可使用现有本地 Vision OCR；分享图片作为私有 artifact 上传并关联 job | 分享队列当前不运行 OCR/图像识别；保存原件并以 `needs_review` 等待补充 |
+| PDF/文字文件 | 手动添加可使用现有 PDFKit/UTF-8 文本读取；分享 PDF/文字文件作为私有 artifact 上传并关联 job | 分享队列不提取附件文字；保存原件并以 `needs_review` 等待补充 |
+| 视频、音频、登录墙或需客户端渲染的页面 | 当前后台队列不下载媒体、不绕过访问控制 | 保留可用的来源信息并提示补充；不声称完成媒体解析 |
+
+分享附件的上传 intent 两小时失效，已确认 artifact 保留七天。附件 API 提供 owner-scoped 删除操作，但当前 App 没有单个附件的删除入口；到期清理函数需要由受信任的项目 scheduler 每日调用。
 - 本路径不做 ASR、OCR、模型补全、视频二进制抓取或平台登录。源码支持不证明线上 DNS/TLS/redirect 行为、VTT 来源可访问性或端到端 Share 交接。

@@ -8,6 +8,8 @@ import Foundation
 public enum RecipeShareInputType: String, Codable, Sendable {
     case url
     case text
+    case image
+    case file
 }
 
 public enum RecipeShareReceiptState: String, Codable, Sendable {
@@ -19,6 +21,17 @@ public enum RecipeShareReceiptState: String, Codable, Sendable {
 public struct RecipeShareReceipt: Codable, Sendable, Identifiable, Equatable {
     public struct Payload: Codable, Sendable, Equatable {
         public let reference: String
+        public let mimeType: String?
+
+        private enum CodingKeys: String, CodingKey {
+            case reference
+            case mimeType = "mime_type"
+        }
+
+        public init(reference: String, mimeType: String? = nil) {
+            self.reference = reference
+            self.mimeType = mimeType
+        }
     }
 
     public let receiptID: UUID
@@ -50,9 +63,9 @@ public enum RecipeShareInboxError: LocalizedError {
         case .appGroupUnavailable:
             "RecipePouch's shared storage is not available. Check App Group signing."
         case .invalidInput:
-            "Share a public HTTPS link or readable text to RecipePouch."
+            "Share a public HTTPS link, readable text, image, or PDF to RecipePouch."
         case .sourceMissing:
-            "The original shared text is missing. Share the source again."
+            "The original shared source is missing. Share it again."
         }
     }
 }
@@ -109,6 +122,8 @@ public struct RecipeShareInbox: Sendable {
             guard !original.isEmpty, original.count <= 100_000 else {
                 throw RecipeShareInboxError.invalidInput
             }
+        case .image, .file:
+            throw RecipeShareInboxError.invalidInput
         }
 
         // Stable per-device key also deduplicates rapid concurrent shares and
@@ -143,6 +158,54 @@ public struct RecipeShareInbox: Sendable {
             receivedAt: .now,
             localState: .received,
             payload: .init(reference: sourceRef)
+        )
+        let receiptURL = receiptFile(for: identifier)
+        try writeOnce(try encoder().encode(receipt), to: receiptURL)
+        return try decoder().decode(
+            RecipeShareReceipt.self,
+            from: Data(contentsOf: receiptURL)
+        )
+    }
+
+    @discardableResult
+    public func receiveFile(
+        _ data: Data,
+        as type: RecipeShareInputType,
+        mimeType: String
+    ) throws -> RecipeShareReceipt {
+        guard data.count <= 10 * 1024 * 1024,
+              (type == .image && ["image/jpeg", "image/png", "image/heic", "image/heif"].contains(mimeType)
+                || type == .file && ["application/pdf", "text/plain"].contains(mimeType))
+        else {
+            throw RecipeShareInboxError.invalidInput
+        }
+
+        var identity = Data((type.rawValue + "\n" + mimeType + "\n").utf8)
+        identity.append(data)
+        let fingerprint = Array(SHA256.hash(data: identity))
+        let hex = fingerprint.map { String(format: "%02x", $0) }.joined()
+        var uuidBytes = Array(fingerprint.prefix(16))
+        uuidBytes[6] = (uuidBytes[6] & 0x0F) | 0x50
+        uuidBytes[8] = (uuidBytes[8] & 0x3F) | 0x80
+        let idHex = uuidBytes.map { String(format: "%02x", $0) }.joined()
+        let idString = String(idHex.prefix(8)) + "-"
+            + String(idHex.dropFirst(8).prefix(4)) + "-"
+            + String(idHex.dropFirst(12).prefix(4)) + "-"
+            + String(idHex.dropFirst(16).prefix(4)) + "-"
+            + String(idHex.dropFirst(20))
+        guard let identifier = UUID(uuidString: idString) else {
+            throw RecipeShareInboxError.invalidInput
+        }
+
+        let sourceRef = "sources/" + hex + "." + fileExtension(for: mimeType)
+        try writeOnce(data, to: root.appendingPathComponent(sourceRef))
+        let receipt = RecipeShareReceipt(
+            receiptID: identifier,
+            clientRequestID: identifier,
+            inputType: type,
+            receivedAt: .now,
+            localState: .received,
+            payload: .init(reference: sourceRef, mimeType: mimeType)
         )
         let receiptURL = receiptFile(for: identifier)
         try writeOnce(try encoder().encode(receipt), to: receiptURL)
@@ -286,17 +349,39 @@ public struct RecipeShareInbox: Sendable {
             throw RecipeShareInboxError.sourceMissing
         }
         let name = String(ref.dropFirst("sources/".count))
-        guard name.range(
-            of: "^[0-9a-f]{64}\\.txt$",
-            options: .regularExpression
-        ) != nil else {
+        guard validSourceName(name) else {
             throw RecipeShareInboxError.sourceMissing
         }
         let url = root.appendingPathComponent(ref)
+        if receipt.inputType == .image || receipt.inputType == .file {
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                throw RecipeShareInboxError.sourceMissing
+            }
+            return ref
+        }
         guard let source = String(data: try Data(contentsOf: url), encoding: .utf8) else {
             throw RecipeShareInboxError.sourceMissing
         }
         return source
+    }
+
+    public func fileData(for receipt: RecipeShareReceipt) throws -> Data {
+        guard receipt.inputType == .image || receipt.inputType == .file,
+              receipt.payload.reference.hasPrefix("sources/"),
+              validSourceName(
+                String(receipt.payload.reference.dropFirst("sources/".count))
+              ),
+              let mimeType = receipt.payload.mimeType,
+              DataSourceType.isSupported(mimeType, for: receipt.inputType)
+        else {
+            throw RecipeShareInboxError.sourceMissing
+        }
+        let url = root.appendingPathComponent(receipt.payload.reference)
+        let data = try Data(contentsOf: url)
+        guard !data.isEmpty, data.count <= 10 * 1024 * 1024 else {
+            throw RecipeShareInboxError.sourceMissing
+        }
+        return data
     }
 
     /// Call only after the owner-authenticated server confirms a durable job.
@@ -388,6 +473,24 @@ public struct RecipeShareInbox: Sendable {
         return record.ownerID == ownerID && record.queueConfirmedAt != nil
     }
 
+    private func validSourceName(_ name: String) -> Bool {
+        name.range(
+            of: "^[0-9a-f]{64}\\.(?:txt|jpg|png|heic|heif|pdf)$",
+            options: .regularExpression
+        ) != nil
+    }
+
+    private func fileExtension(for mimeType: String) -> String {
+        switch mimeType {
+        case "image/jpeg": "jpg"
+        case "image/png": "png"
+        case "image/heic": "heic"
+        case "image/heif": "heif"
+        case "application/pdf": "pdf"
+        default: "txt"
+        }
+    }
+
     private func encoder() -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -436,6 +539,19 @@ public struct RecipeShareInbox: Sendable {
         defer { _ = Darwin.close(descriptor) }
         guard Darwin.fsync(descriptor) == 0 else {
             throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+        }
+    }
+}
+
+private enum DataSourceType {
+    static func isSupported(_ mimeType: String, for type: RecipeShareInputType) -> Bool {
+        switch type {
+        case .image:
+            ["image/jpeg", "image/png", "image/heic", "image/heif"].contains(mimeType)
+        case .file:
+            ["application/pdf", "text/plain"].contains(mimeType)
+        case .url, .text:
+            false
         }
     }
 }
