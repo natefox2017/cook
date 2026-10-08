@@ -188,10 +188,18 @@ struct GroceriesView: View {
                         if !item.amountText.isEmpty {
                             Text(item.amountText).font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
                         }
-                        if !item.recipeIDs.isEmpty {
-                            Text("From \(item.recipeIDs.count) \(item.recipeIDs.count == 1 ? "recipe" : "recipes")")
-                                .font(CookTheme.text(12, weight: .regular, relativeTo: .caption))
-                                .foregroundStyle(.secondary)
+                        if store.settings.showGroceryRecipeNames {
+                            let sourceNames = recipeSourceNames(for: item)
+                            if !sourceNames.isEmpty {
+                                Text("From \(sourceNames)")
+                                    .font(CookTheme.text(
+                                        12,
+                                        weight: .regular,
+                                        relativeTo: .caption
+                                    ))
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                         }
                     }
                     Spacer(minLength: 4)
@@ -215,6 +223,16 @@ struct GroceriesView: View {
             Button("Edit item", systemImage: "pencil") { editor = GroceryEditorPresentation(item: item) }
             Button("Remove item", systemImage: "trash", role: .destructive) { itemToDelete = item }
         }
+    }
+
+    private func recipeSourceNames(for item: GroceryItem) -> String {
+        var seen: Set<UUID> = []
+        return item.recipeIDs
+            .filter { seen.insert($0).inserted }
+            .compactMap { store.recipe(id: $0)?.title }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
     }
 
     private func emptyState(title: String, message: String, actionTitle: String, action: @escaping () -> Void) -> some View {
