@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Implements RecipePouch account authentication and recovery screens.
+// Purpose: Presents RecipePouch account sign-in, recovery, and session controls in a compact sheet.
 
 import AuthenticationServices
 import Foundation
@@ -10,18 +10,25 @@ struct AccountView: View {
     private enum Mode: String, CaseIterable, Identifiable {
         case signIn = "Sign In"
         case signUp = "Create Account"
+
         var id: Self { self }
     }
 
+    let onExpand: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
     @State private var auth = RecipeAuthService.shared
     @State private var mode: Mode = .signIn
+    @State private var isEmailExpanded = false
     @State private var email = ""
     @State private var password = ""
     @State private var newPassword = ""
     @State private var confirmPassword = ""
     @State private var isUpdatingPassword = false
+    @State private var dismissAfterAuthentication = false
     @State private var appleNonce: String?
     @State private var localMessage: String?
+    @State private var nonblockingMessage: String?
 
     var body: some View {
         Group {
@@ -30,8 +37,8 @@ struct AccountView: View {
                 ProgressView("Checking account…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            case .signedIn(_, let email):
-                signedInView(email: email)
+            case .signedIn(_, let address):
+                signedInView(email: address)
 
             case .passwordRecovery:
                 passwordRecoveryView
@@ -40,181 +47,349 @@ struct AccountView: View {
                 signedOutView
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(RecipeTheme.canvas)
-        .navigationTitle("Account")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.hidden, for: .tabBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("Close")
+                .accessibilityIdentifier("account.close")
+            }
+        }
+        .onChange(of: mode) { _, _ in
+            localMessage = nil
+        }
         .onChange(of: auth.state) { _, state in
-            // Credentials are transient input; discard them after successful
-            // authentication or password recovery.
             if case .signedIn = state {
                 password = ""
                 newPassword = ""
                 confirmPassword = ""
+                if dismissAfterAuthentication {
+                    dismissAfterAuthentication = false
+                    dismiss()
+                }
             }
         }
         .onChange(of: auth.nonblockingNotice) { _, notice in
             if let notice {
-                localMessage = notice
+                nonblockingMessage = notice
                 auth.dismissNotice()
             }
-        }
-        .alert(
-            "Account",
-            isPresented: Binding(
-                get: { localMessage != nil },
-                set: { if !$0 { localMessage = nil } }
-            )
-        ) {
-            Button("OK", role: .cancel) { localMessage = nil }
-        } message: {
-            Text(localMessage ?? "")
         }
     }
 
     private var signedOutView: some View {
-        Form {
-            Section {
-                Picker("Account action", selection: $mode) {
-                    ForEach(Mode.allCases) { item in
-                        Text(LocalizedStringKey(item.rawValue)).tag(item)
+        ScrollView {
+            VStack(spacing: 18) {
+                header(
+                    "Welcome to RecipePouch",
+                    symbol: "leaf.fill",
+                    subtitle: "Save and sync your recipes."
+                )
+
+                VStack(spacing: 16) {
+                    SignInWithAppleButton(mode == .signUp ? .signUp : .signIn) { request in
+                        let nonce = RecipeAuthService.makeAppleNonce()
+                        appleNonce = nonce.raw
+                        request.nonce = nonce.hashed
+                        request.requestedScopes = [.email, .fullName]
+                    } onCompletion: { result in
+                        handleAppleResult(result)
+                    }
+                    .signInWithAppleButtonStyle(.black)
+                    .frame(height: 50)
+                    .disabled(isAuthenticating)
+                    .accessibilityIdentifier("account.apple")
+
+                    HStack(spacing: 12) {
+                        Rectangle()
+                            .fill(Color.secondary.opacity(0.18))
+                            .frame(height: 1)
+                        Text("or")
+                            .font(RecipeTheme.text(13, relativeTo: .caption))
+                            .foregroundStyle(.secondary)
+                        Rectangle()
+                            .fill(Color.secondary.opacity(0.18))
+                            .frame(height: 1)
+                    }
+                    .accessibilityHidden(true)
+
+                    if isEmailExpanded {
+                        emailForm
+                    } else {
+                        Button {
+                            localMessage = nil
+                            isEmailExpanded = true
+                            onExpand()
+                        } label: {
+                            Label("Continue with email", systemImage: "envelope")
+                                .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
+                                .frame(maxWidth: .infinity, minHeight: 50)
+                                .foregroundStyle(RecipeTheme.accentForeground)
+                                .background(
+                                    RecipeTheme.accent.opacity(0.09),
+                                    in: RoundedRectangle(cornerRadius: 15)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isAuthenticating)
+                        .accessibilityIdentifier("account.email")
                     }
                 }
-                .pickerStyle(.segmented)
+                .padding(16)
+                .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 22))
 
-                TextField("Email", text: $email)
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                if let feedback {
+                    feedbackView(feedback)
+                }
+            }
+            .frame(maxWidth: 520)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, RecipeSpacing.pageInset)
+            .padding(.top, 12)
+            .padding(.bottom, 32)
+        }
+        .scrollDismissesKeyboard(.interactively)
+    }
 
-                SecureField("Password", text: $password)
-                    .textContentType(mode == .signIn ? .password : .newPassword)
+    private var emailForm: some View {
+        VStack(spacing: 12) {
+            Picker("Account action", selection: $mode) {
+                ForEach(Mode.allCases) { item in
+                    Text(LocalizedStringKey(item.rawValue)).tag(item)
+                }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("account.mode")
 
-                Button {
-                    performEmailAction()
-                } label: {
+            TextField("Email", text: $email)
+                .textContentType(.emailAddress)
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.next)
+                .accountInputStyle()
+
+            SecureField("Password", text: $password)
+                .textContentType(mode == .signIn ? .password : .newPassword)
+                .submitLabel(.go)
+                .onSubmit {
+                    if canSubmitEmail && !isAuthenticating {
+                        performEmailAction()
+                    }
+                }
+                .accountInputStyle()
+
+            Button {
+                performEmailAction()
+            } label: {
+                HStack(spacing: 10) {
+                    if isAuthenticating {
+                        ProgressView().tint(.white)
+                    }
                     Text(LocalizedStringKey(mode.rawValue))
                 }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(!canSubmitEmail || isAuthenticating)
-                .accessibilityIdentifier("account.submit")
-
-                if isAuthenticating {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .accessibilityLabel("Signing in")
-                }
-            } header: {
-                Text("Account")
             }
+            .buttonStyle(PrimaryButtonStyle())
+            .disabled(!canSubmitEmail || isAuthenticating)
+            .accessibilityIdentifier("account.submit")
 
             if mode == .signIn {
-                Section {
-                    Button("Forgot Password?") {
-                        sendPasswordReset()
-                    }
-                    .disabled(!isValidEmail || isAuthenticating)
+                Button("Forgot Password?") {
+                    sendPasswordReset()
                 }
-            }
-
-            Section {
-                SignInWithAppleButton(.signIn) { request in
-                    let nonce = RecipeAuthService.makeAppleNonce()
-                    appleNonce = nonce.raw
-                    request.nonce = nonce.hashed
-                    request.requestedScopes = [.email, .fullName]
-                } onCompletion: { result in
-                    handleAppleResult(result)
-                }
-                .signInWithAppleButtonStyle(.black)
-                .frame(height: 50)
-                .disabled(isAuthenticating)
-                .accessibilityIdentifier("account.apple")
-            }
-
-            if let statusMessage {
-                Section("Status") {
-                    Label(statusMessage, systemImage: statusIcon)
-                        .foregroundStyle(statusIsError ? Color.red : RecipeTheme.accentForeground)
-                }
+                .font(RecipeTheme.text(14, weight: .medium, relativeTo: .subheadline))
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .disabled(!isValidEmail || isAuthenticating)
             }
         }
-        .listSectionSpacing(RecipeSpacing.medium)
-        .scrollContentBackground(.hidden)
     }
 
     private func signedInView(email: String?) -> some View {
-        Form {
-            Section {
-                Label("Signed in", systemImage: "checkmark.seal.fill")
-                    .foregroundStyle(RecipeTheme.accentForeground)
+        ScrollView {
+            VStack(spacing: 20) {
+                header("Signed in", symbol: "checkmark.seal.fill")
 
                 if let email, !email.isEmpty {
-                    LabeledContent("Email", value: email)
+                    Label(email, systemImage: "envelope")
+                        .font(RecipeTheme.text(15, relativeTo: .subheadline))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(18)
+                        .background(
+                            RecipeTheme.card,
+                            in: RoundedRectangle(cornerRadius: 18)
+                        )
+                        .textSelection(.enabled)
                 }
-            } header: {
-                Text("Account")
-            }
 
-            Section {
-                Button("Sign Out", role: .destructive) {
+                Button(role: .destructive) {
                     Task {
                         do {
                             try await auth.signOut()
+                            dismiss()
                         } catch {
                             localMessage = error.localizedDescription
                         }
                     }
+                } label: {
+                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                        .frame(maxWidth: .infinity, minHeight: 50)
                 }
+                .buttonStyle(.bordered)
                 .disabled(isAuthenticating)
+
+                if let feedback {
+                    feedbackView(feedback)
+                }
             }
+            .frame(maxWidth: 520)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, RecipeSpacing.pageInset)
+            .padding(.top, 12)
+            .padding(.bottom, 32)
         }
-        .listSectionSpacing(RecipeSpacing.medium)
-        .scrollContentBackground(.hidden)
     }
 
     private var passwordRecoveryView: some View {
-        Form {
-            Section {
-                SecureField("New Password", text: $newPassword)
-                    .textContentType(.newPassword)
-                SecureField("Confirm Password", text: $confirmPassword)
-                    .textContentType(.newPassword)
+        ScrollView {
+            VStack(spacing: 18) {
+                header("Choose a new password", symbol: "key.fill")
 
-                Button("Update Password") {
-                    guard !isUpdatingPassword else { return }
-                    guard newPassword == confirmPassword else {
-                        localMessage = String(localized: "The passwords do not match.")
-                        return
-                    }
-                    isUpdatingPassword = true
-                    Task {
-                        defer { isUpdatingPassword = false }
-                        do {
-                            try await auth.setRecoveredPassword(newPassword)
-                            newPassword = ""
-                            confirmPassword = ""
-                        } catch {
-                            localMessage = error.localizedDescription
+                VStack(spacing: 12) {
+                    SecureField("New Password", text: $newPassword)
+                        .textContentType(.newPassword)
+                        .accountInputStyle()
+
+                    SecureField("Confirm Password", text: $confirmPassword)
+                        .textContentType(.newPassword)
+                        .accountInputStyle()
+
+                    Button("Update Password") {
+                        guard !isUpdatingPassword else { return }
+                        guard newPassword == confirmPassword else {
+                            localMessage = String(localized: "The passwords do not match.")
+                            return
+                        }
+                        isUpdatingPassword = true
+                        dismissAfterAuthentication = true
+
+                        Task {
+                            defer { isUpdatingPassword = false }
+                            do {
+                                try await auth.setRecoveredPassword(newPassword)
+                            } catch {
+                                dismissAfterAuthentication = false
+                                localMessage = error.localizedDescription
+                            }
                         }
                     }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .disabled(
+                        newPassword.count < 8
+                            || confirmPassword.isEmpty
+                            || isAuthenticating
+                            || isUpdatingPassword
+                    )
+
+                    Text("Use at least 8 characters.")
+                        .font(RecipeTheme.text(13, relativeTo: .footnote))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(
-                    newPassword.count < 8
-                        || confirmPassword.isEmpty
-                        || isAuthenticating
-                        || isUpdatingPassword
-                )
-            } header: {
-                Text("Choose a new password")
-            } footer: {
-                Text("Use at least 8 characters.")
+                .padding(16)
+                .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 22))
+
+                if let feedback {
+                    feedbackView(feedback)
+                }
+            }
+            .frame(maxWidth: 520)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, RecipeSpacing.pageInset)
+            .padding(.top, 12)
+            .padding(.bottom, 32)
+        }
+        .scrollDismissesKeyboard(.interactively)
+    }
+
+    private func header(
+        _ title: LocalizedStringKey,
+        symbol: String,
+        subtitle: LocalizedStringKey? = nil
+    ) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: symbol)
+                .font(.system(size: 26, weight: .light))
+                .foregroundStyle(RecipeTheme.accentForeground)
+                .frame(width: 60, height: 60)
+                .background(RecipeTheme.accent.opacity(0.11), in: Circle())
+                .accessibilityHidden(true)
+
+            Text(title)
+                .font(RecipeTheme.title(28))
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.8)
+
+            if let subtitle {
+                Text(subtitle)
+                    .font(RecipeTheme.text(15, relativeTo: .subheadline))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
         }
-        .listSectionSpacing(RecipeSpacing.medium)
-        .scrollContentBackground(.hidden)
+        .frame(maxWidth: .infinity)
+    }
+
+    private func feedbackView(_ feedback: (message: String, isError: Bool)) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: feedback.isError ? "exclamationmark.circle" : "info.circle")
+                .accessibilityHidden(true)
+            Text(feedback.message)
+                .font(RecipeTheme.text(14, relativeTo: .subheadline))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .foregroundStyle(feedback.isError ? Color.red : RecipeTheme.accentForeground)
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RecipeTheme.accent.opacity(0.07),
+            in: RoundedRectangle(cornerRadius: 15)
+        )
+        .accessibilityIdentifier("account.feedback")
+    }
+
+    private var feedback: (message: String, isError: Bool)? {
+        if let localMessage {
+            return (localMessage, true)
+        }
+
+        switch auth.state {
+        case .needsEmailVerification(let address):
+            return (
+                String(localized: "Check \(address) to verify your account, then return to RecipePouch."),
+                false
+            )
+        case .passwordResetSent:
+            return (String(localized: "Check your inbox for the reset link."), false)
+        case .error(let message):
+            return (message, true)
+        default:
+            if let nonblockingMessage {
+                return (nonblockingMessage, false)
+            }
+            return nil
+        }
     }
 
     private var canSubmitEmail: Bool {
@@ -232,49 +407,36 @@ struct AccountView: View {
         return false
     }
 
-    private var statusMessage: String? {
-        switch auth.state {
-        case .needsEmailVerification(let address):
-            return String(localized: "Check \(address) to verify your account, then return to RecipePouch.")
-        case .passwordResetSent(let address):
-            return String(localized: "If an account exists for \(address), check its inbox for a password reset link.")
-        case .error(let message):
-            return message
-        default:
-            return nil
-        }
-    }
-
-    private var statusIsError: Bool {
-        if case .error = auth.state { return true }
-        return false
-    }
-
-    private var statusIcon: String {
-        statusIsError ? "exclamationmark.triangle" : "envelope.badge"
-    }
-
     private func performEmailAction() {
-        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard canSubmitEmail, !isAuthenticating else { return }
+        localMessage = nil
+        dismissAfterAuthentication = true
+        let address = email.trimmingCharacters(in: .whitespacesAndNewlines)
+
         Task {
             do {
                 switch mode {
                 case .signIn:
-                    try await auth.signIn(email: trimmedEmail, password: password)
+                    try await auth.signIn(email: address, password: password)
                 case .signUp:
-                    try await auth.signUp(email: trimmedEmail, password: password)
+                    try await auth.signUp(email: address, password: password)
                 }
             } catch {
+                dismissAfterAuthentication = false
                 localMessage = error.localizedDescription
             }
         }
     }
 
     private func sendPasswordReset() {
-        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard isValidEmail, !isAuthenticating else { return }
+        localMessage = nil
+        dismissAfterAuthentication = false
+        let address = email.trimmingCharacters(in: .whitespacesAndNewlines)
+
         Task {
             do {
-                try await auth.sendPasswordReset(to: trimmedEmail)
+                try await auth.sendPasswordReset(to: address)
             } catch {
                 localMessage = error.localizedDescription
             }
@@ -282,8 +444,7 @@ struct AccountView: View {
     }
 
     private func handleAppleResult(_ result: Result<ASAuthorization, Error>) {
-        // The nonce belongs only to this system authorization result.
-        // Copy it before the async exchange and clear it even on cancellation.
+        // Each nonce is valid for only one Apple authorization attempt.
         let pendingNonce = appleNonce
         appleNonce = nil
 
@@ -303,6 +464,8 @@ struct AccountView: View {
                 return formatted.isEmpty ? nil : formatted
             }
 
+            localMessage = nil
+            dismissAfterAuthentication = true
             Task {
                 do {
                     try await auth.signInWithApple(
@@ -311,6 +474,7 @@ struct AccountView: View {
                         fullName: fullName
                     )
                 } catch {
+                    dismissAfterAuthentication = false
                     localMessage = error.localizedDescription
                 }
             }
@@ -322,5 +486,18 @@ struct AccountView: View {
             }
             localMessage = error.localizedDescription
         }
+    }
+}
+
+private extension View {
+    func accountInputStyle() -> some View {
+        self
+            .font(RecipeTheme.body())
+            .padding(.horizontal, 16)
+            .frame(minHeight: 52)
+            .background(
+                RecipeTheme.canvas,
+                in: RoundedRectangle(cornerRadius: 14)
+            )
     }
 }
