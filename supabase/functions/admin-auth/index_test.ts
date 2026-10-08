@@ -72,7 +72,7 @@ Deno.test("production bootstrap rejects missing and invalid tokens before its ha
 
 Deno.test("production bootstrap rejects prefixes, suffixes and oversized headers", async () => {
   for (const token of [
-    "expected-secret ",
+    "prefix-expected-secret",
     "expected-secret-extra",
     "expected-secre",
     "x".repeat(513),
