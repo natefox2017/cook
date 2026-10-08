@@ -6,6 +6,7 @@ struct RecipesView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var searchText = ""
     @State private var filter: RecipeLibraryFilter = .all
+    @State private var selectedCollectionID: UUID?
     @State private var sort: RecipeLibrarySort = .recent
     @State private var isAdding = false
     @State private var errorMessage: String?
@@ -14,7 +15,15 @@ struct RecipesView: View {
     private var visibleRecipes: [Recipe] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return store.recipes.filter { recipe in
-            filter.includes(recipe) && (query.isEmpty || searchableText(recipe).localizedStandardContains(query))
+            let matchesScope: Bool
+            if let selectedCollectionID {
+                matchesScope = store.collectionIDs(forRecipe: recipe.id).contains(selectedCollectionID)
+            } else {
+                matchesScope = filter.includes(recipe)
+            }
+            return matchesScope && (
+                query.isEmpty || searchableText(recipe).localizedStandardContains(query)
+            )
         }.sorted { lhs, rhs in
             switch sort {
             case .recent:
@@ -67,6 +76,12 @@ struct RecipesView: View {
         .alert("Unable to Update Recipe", isPresented: errorPresented) {
             Button("OK", role: .cancel) { errorMessage = nil }
         } message: { Text(errorMessage ?? "") }
+        .onChange(of: store.collections.map(\.id)) { _, collectionIDs in
+            if let selectedCollectionID, !collectionIDs.contains(selectedCollectionID) {
+                self.selectedCollectionID = nil
+                filter = .all
+            }
+        }
     }
 
     private var searchField: some View {
@@ -121,11 +136,15 @@ struct RecipesView: View {
             .padding(.top, CookSpacing.large)
         } else if visibleRecipes.isEmpty {
             EmptyStateView(
-                title: searchText.isEmpty ? filter.emptyTitle : "No recipes found",
-                message: searchText.isEmpty ? filter.emptyMessage : "Try another dish or ingredient, or clear your filters.",
-                systemImage: "magnifyingglass",
+                title: searchText.isEmpty ? emptyScopeTitle : "No recipes found",
+                message: searchText.isEmpty ? emptyScopeMessage : "Try another dish or ingredient, or clear your filters.",
+                systemImage: selectedCollectionID == nil ? "magnifyingglass" : "folder",
                 actionTitle: "Show All Recipes",
-                action: { searchText = ""; filter = .all }
+                action: {
+                    searchText = ""
+                    selectedCollectionID = nil
+                    filter = .all
+                }
             )
             .padding(.top, CookSpacing.large)
         } else {
@@ -144,19 +163,69 @@ struct RecipesView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(RecipeLibraryFilter.allCases) { item in
-                    Button { filter = item } label: {
+                    let isSelected = selectedCollectionID == nil && filter == item
+                    Button {
+                        selectedCollectionID = nil
+                        filter = item
+                    } label: {
                         Text(item.title)
-                            .font(CookTheme.text(15, weight: filter == item ? .semibold : .regular, relativeTo: .subheadline))
+                            .font(CookTheme.text(
+                                15,
+                                weight: isSelected ? .semibold : .regular,
+                                relativeTo: .subheadline
+                            ))
                             .padding(.horizontal, 18)
                             .frame(minHeight: 44)
-                            .background(filter == item ? CookTheme.accent : CookTheme.card, in: Capsule())
-                            .foregroundStyle(filter == item ? CookTheme.canvas : Color.primary)
+                            .background(
+                                isSelected ? CookTheme.accent : CookTheme.card,
+                                in: Capsule()
+                            )
+                            .foregroundStyle(isSelected ? CookTheme.canvas : Color.primary)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityAddTraits(filter == item ? .isSelected : [])
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+                }
+
+                ForEach(store.collections) { collection in
+                    let isSelected = selectedCollectionID == collection.id
+                    Button {
+                        filter = .all
+                        selectedCollectionID = collection.id
+                    } label: {
+                        Label(collection.name, systemImage: "folder")
+                            .font(CookTheme.text(
+                                15,
+                                weight: isSelected ? .semibold : .regular,
+                                relativeTo: .subheadline
+                            ))
+                            .padding(.horizontal, 18)
+                            .frame(minHeight: 44)
+                            .background(
+                                isSelected ? CookTheme.accent : CookTheme.card,
+                                in: Capsule()
+                            )
+                            .foregroundStyle(isSelected ? CookTheme.canvas : Color.primary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
                 }
             }
         }
+    }
+
+    private var emptyScopeTitle: String {
+        if let selectedCollectionID,
+           let collection = store.collection(id: selectedCollectionID) {
+            return "\(collection.name) is empty"
+        }
+        return filter.emptyTitle
+    }
+
+    private var emptyScopeMessage: String {
+        if selectedCollectionID != nil {
+            return "Add recipes from a recipe page or from Collections."
+        }
+        return filter.emptyMessage
     }
 
     private var resultsHeader: some View {
