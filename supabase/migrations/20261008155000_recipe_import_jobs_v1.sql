@@ -106,9 +106,9 @@ begin
         if length(v_source) > 8192
            or v_authority is null
            or v_authority !~ '^[A-Za-z0-9.-]+(:443)?$'
-           or v_host !~ '^([a-z0-9-]+\\.)+[a-z0-9-]+$'
-           or v_host ~ '^([0-9]+\\.){3}[0-9]+$'
-           or v_host ~ '\\.(local|internal|lan|test|invalid|onion)$'
+           or v_host !~ '^([a-z0-9-]+[.])+[a-z0-9-]+$'
+           or v_host ~ '^([0-9]+[.]){3}[0-9]+$'
+           or v_host ~ '[.](local|internal|lan|test|invalid|onion)$'
         then
             raise exception 'INVALID_INPUT' using errcode = '22023';
         end if;
