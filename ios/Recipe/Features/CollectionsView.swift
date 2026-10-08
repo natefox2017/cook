@@ -129,7 +129,8 @@ struct CollectionsView: View {
     }
 
     private func migrateLegacyCollectionsIfNeeded() {
-        let names = legacyEncoded
+        let names =
+            legacyEncoded
             .split(separator: "|")
             .map(String.init)
 
@@ -141,7 +142,10 @@ struct CollectionsView: View {
             // fails, the legacy value remains so the migration can retry.
             legacyEncoded = ""
         } catch {
-            errorMessage = "Your older collection names are still safe. Migration can be retried. \(error.localizedDescription)"
+            errorMessage = String(
+                localized:
+                    "Your older collection names are still safe. Migration can be retried. \(error.localizedDescription)"
+            )
         }
     }
 }
@@ -210,10 +214,9 @@ private struct CollectionDetailView: View {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return store.recipes(inCollection: collectionID)
             .filter { recipe in
-                query.isEmpty || (
-                    [recipe.title, recipe.summary, recipe.notes]
-                        + recipe.ingredients.map(\.name)
-                )
+                query.isEmpty
+                    || ([recipe.title, recipe.summary, recipe.notes]
+                        + recipe.ingredients.map(\.name))
                 .joined(separator: "\n")
                 .localizedStandardContains(query)
             }

@@ -8,6 +8,7 @@ struct RecipeDetailView: View {
     let recipeID: UUID
     @Environment(RecipeStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.locale) private var locale
     @State private var servings = 1
     @State private var didLoadServings = false
     @State private var didAdjustServings = false
@@ -162,18 +163,25 @@ struct RecipeDetailView: View {
 
     @ViewBuilder
     private func recipeMetadata(_ recipe: Recipe) -> some View {
-        if let minutes = recipe.totalMinutes { Label("\(minutes) min", systemImage: "clock") }
-        if let originalServings = recipe.servings, originalServings > 0 {
-            Label("\(originalServings) \(originalServings == 1 ? "serving" : "servings")", systemImage: "person.2")
+        if let minutes = recipe.totalMinutes {
+            Label(
+                Duration.seconds(minutes * 60).formatted(
+                    .units(width: .abbreviated, maximumUnitCount: 1).locale(locale)
+                ),
+                systemImage: "clock"
+            )
         }
-        Text(recipe.category.rawValue)
+        if let originalServings = recipe.servings, originalServings > 0 {
+            Label("\(originalServings) servings", systemImage: "person.2")
+        }
+        Text(LocalizedStringKey(recipe.category.rawValue))
     }
 
     private func ingredients(_ recipe: Recipe) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("Ingredients")
             if let originalServings = recipe.servings, originalServings > 0 {
-                Stepper("\(servings) \(servings == 1 ? "serving" : "servings")", value: servingsSelection, in: 1...max(100, max(originalServings, servings)))
+                Stepper("\(servings) servings", value: servingsSelection, in: 1...max(100, max(originalServings, servings)))
                     .accessibilityIdentifier("recipeServingsStepper")
                 if servings != originalServings {
                     Text("Numeric amounts adjust with servings. Amounts such as “to taste” stay as written.")
@@ -353,7 +361,7 @@ struct RecipeDetailView: View {
 
     private func showAddedFeedback() {
         if let count = addedIngredientCount {
-            feedbackMessage = "\(count) \(count == 1 ? "ingredient" : "ingredients") added to Groceries."
+            feedbackMessage = String(localized: "\(count) ingredients added to Groceries.")
             addedIngredientCount = nil
         }
     }
@@ -368,7 +376,12 @@ struct RecipeDetailView: View {
     }
 
     private func timerDurationLabel(_ seconds: Int) -> String {
-        seconds % 60 == 0 ? "\(seconds / 60) min timer" : "\(seconds / 60)m \(seconds % 60)s timer"
+        let duration = Duration.seconds(seconds).formatted(
+            .units(width: .abbreviated, maximumUnitCount: 2).locale(locale)
+        )
+        return String(
+            localized: LocalizedStringResource("\(duration) timer", locale: locale)
+        )
     }
 }
 
@@ -438,7 +451,11 @@ private struct RecipeIngredientsSelectionView: View {
         List {
             Section {
                 if let original = recipe.servings, original > 0 {
-                    Stepper("\(servings) \(servings == 1 ? "serving" : "servings")", value: $servings, in: 1...max(100, max(original, initialServings)))
+                    Stepper(
+                        "\(servings) servings",
+                        value: $servings,
+                        in: 1...max(100, max(original, initialServings))
+                    )
                 } else {
                     Text("Original amounts · servings not specified").foregroundStyle(.secondary)
                 }
@@ -458,8 +475,16 @@ private struct RecipeIngredientsSelectionView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("\(ingredient.name), \(ingredient.displayAmount(servings: servings, originalServings: recipe.servings))")
-                    .accessibilityValue(selection.contains(ingredient.id) ? "Selected" : "Not selected")
+                    .accessibilityLabel(
+                        LocalizedStringKey(
+                            "\(ingredient.name), \(ingredient.displayAmount(servings: servings, originalServings: recipe.servings))"
+                        )
+                    )
+                    .accessibilityValue(
+                        selection.contains(ingredient.id)
+                            ? LocalizedStringKey("Selected")
+                            : LocalizedStringKey("Not selected")
+                    )
                     .accessibilityHint("Double-tap to change selection")
                 }
             } header: { Text("Choose ingredients") } footer: {
@@ -473,7 +498,7 @@ private struct RecipeIngredientsSelectionView: View {
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .safeAreaInset(edge: .bottom) {
-            Button("Add \(selection.count) \(selection.count == 1 ? "Ingredient" : "Ingredients")") { add(recipe) }
+            Button("Add \(selection.count) ingredient") { add(recipe) }
                 .buttonStyle(PrimaryButtonStyle())
                 .frame(maxWidth: .infinity)
                 .disabled(selection.isEmpty)
@@ -569,7 +594,9 @@ private struct RecipeCollectionMembershipSheet: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityValue(
-                                isMember ? "In collection" : "Not in collection"
+                                isMember
+                                    ? LocalizedStringKey("In collection")
+                                    : LocalizedStringKey("Not in collection")
                             )
                         }
                     }

@@ -7,6 +7,7 @@ import RecipeCore
 struct RecipesView: View {
     @Environment(RecipeStore.self) private var store
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.locale) private var locale
     @State private var searchText = ""
     @State private var filter: RecipeLibraryFilter = .all
     @State private var selectedCollectionID: UUID?
@@ -171,7 +172,7 @@ struct RecipesView: View {
                         selectedCollectionID = nil
                         filter = item
                     } label: {
-                        Text(item.title)
+                        Text(LocalizedStringKey(item.title))
                             .font(RecipeTheme.text(
                                 15,
                                 weight: isSelected ? .semibold : .regular,
@@ -219,7 +220,9 @@ struct RecipesView: View {
     private var emptyScopeTitle: String {
         if let selectedCollectionID,
            let collection = store.collection(id: selectedCollectionID) {
-            return "\(collection.name) is empty"
+            return String(
+                localized: LocalizedStringResource("\(collection.name) is empty", locale: locale)
+            )
         }
         return filter.emptyTitle
     }
@@ -233,21 +236,21 @@ struct RecipesView: View {
 
     private var resultsHeader: some View {
         HStack {
-            Text("\(visibleRecipes.count) \(visibleRecipes.count == 1 ? "Recipe" : "Recipes")")
+            Text("\(visibleRecipes.count) Recipes", comment: "Recipe library count. Plural forms are chosen by the String Catalog for the current language.")
                 .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("recipeCount")
             Spacer()
             Menu {
                 Picker("Sort recipes", selection: $sort) {
-                    ForEach(RecipeLibrarySort.allCases) { item in Text(item.rawValue).tag(item) }
+                    ForEach(RecipeLibrarySort.allCases) { item in Text(LocalizedStringKey(item.rawValue)).tag(item) }
                 }
             } label: {
                 Label("Sort", systemImage: "arrow.up.arrow.down")
                     .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
                     .frame(minHeight: 44)
             }
-            .accessibilityValue(sort.rawValue)
+            .accessibilityValue(LocalizedStringKey(sort.rawValue))
         }
     }
 
@@ -263,6 +266,7 @@ struct RecipesView: View {
 }
 
 private struct RecipeLibraryCard: View {
+    @Environment(\.locale) private var locale
     let recipe: Recipe
     let toggleFavorite: () -> Void
 
@@ -282,9 +286,14 @@ private struct RecipeLibraryCard: View {
                         .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: 6) {
                         if let minutes = recipe.totalMinutes {
-                            Label("\(minutes) min", systemImage: "clock")
+                            Label(
+                                Duration.seconds(minutes * 60).formatted(
+                                    .units(width: .abbreviated, maximumUnitCount: 1).locale(locale)
+                                ),
+                                systemImage: "clock"
+                            )
                         } else {
-                            Text(recipe.category.rawValue)
+                            Text(LocalizedStringKey(recipe.category.rawValue))
                         }
                     }
                     .font(RecipeTheme.text(12, weight: .regular, relativeTo: .caption))
@@ -309,8 +318,12 @@ private struct RecipeLibraryCard: View {
             }
             .buttonStyle(.plain)
             .padding(8)
-            .accessibilityLabel(recipe.isFavorite ? "Remove \(recipe.title) from favorites" : "Favorite \(recipe.title)")
-            .accessibilityValue(recipe.isFavorite ? "Favorite" : "Not favorite")
+            .accessibilityLabel(
+                recipe.isFavorite
+                    ? LocalizedStringKey("Remove \(recipe.title) from favorites")
+                    : LocalizedStringKey("Favorite \(recipe.title)")
+            )
+            .accessibilityValue(recipe.isFavorite ? LocalizedStringKey("Favorite") : LocalizedStringKey("Not favorite"))
         }
     }
 }

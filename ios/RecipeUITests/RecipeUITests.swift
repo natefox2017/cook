@@ -18,7 +18,9 @@ final class RecipeUITests: XCTestCase {
         attachScreenshot("Recipe library", app: app)
         openSamplePasta(in: app)
         let addIngredients = app.buttons["addToGroceries"]
-        reveal(addIngredients, in: app, scrollView: app.scrollViews["recipeDetailScroll"], maximumSwipes: 3)
+        reveal(
+            addIngredients, in: app, scrollView: app.scrollViews["recipeDetailScroll"],
+            maximumSwipes: 3)
         addIngredients.tap()
 
         let confirm = app.buttons["confirmAddIngredientsButton"]
@@ -28,14 +30,19 @@ final class RecipeUITests: XCTestCase {
 
         let confirmation = app.alerts["Recipe"]
         XCTAssertTrue(confirmation.waitForExistence(timeout: 8))
-        XCTAssertTrue(confirmation.staticTexts.matching(NSPredicate(format: "label ENDSWITH %@", "added to Groceries.")).firstMatch.exists)
+        XCTAssertTrue(
+            confirmation.staticTexts.matching(
+                NSPredicate(format: "label ENDSWITH %@", "added to Groceries.")
+            ).firstMatch.exists)
         confirmation.buttons["OK"].tap()
 
         let groceriesTab = app.tabBars.buttons["Groceries"]
         waitUntilReady(groceriesTab)
         groceriesTab.tap()
 
-        let grocery = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "grocery.check.")).firstMatch
+        let grocery = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "grocery.check.")
+        ).firstMatch
         waitUntilReady(grocery)
         XCTAssertEqual(grocery.value as? String, "To buy")
         let groceryIdentifier = grocery.identifier
@@ -71,7 +78,8 @@ final class RecipeUITests: XCTestCase {
         amount.tap()
         amount.typeText("2")
 
-        let instruction = app.descendants(matching: .any).matching(identifier: "stepInstruction").firstMatch
+        let instruction = app.descendants(matching: .any).matching(identifier: "stepInstruction")
+            .firstMatch
         revealFormField(instruction, in: app)
         instruction.tap()
         instruction.typeText("Slice the tomatoes and arrange them on warm toast.")
@@ -96,9 +104,11 @@ final class RecipeUITests: XCTestCase {
         waitUntilReady(search)
         search.tap()
         search.typeText(recipeTitle)
-        let result = app.buttons.matching(NSPredicate(
+        let result = app.buttons.matching(
+            NSPredicate(
             format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "recipe.", recipeTitle
-        )).firstMatch
+            )
+        ).firstMatch
         waitUntilReady(result)
         XCTAssertEqual(app.staticTexts["recipeCount"].label, "1 Recipe")
         result.tap()
@@ -149,7 +159,6 @@ final class RecipeUITests: XCTestCase {
         waitUntilReady(app.buttons["startCooking"])
         waitUntilReady(app.tabBars.buttons["Recipes"])
     }
-
 
     @MainActor
     func testComplexCookingStepShowsIngredientsAndMultipleTimers() {
@@ -252,7 +261,6 @@ final class RecipeUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Garlic Butter Shrimp Pasta"].waitForExistence(timeout: 8))
         attachScreenshot("Recipe added directly to meal plan", app: app)
     }
-
 
     @MainActor
     func testRecipeCanBelongToLocalCollection() {
@@ -361,13 +369,15 @@ final class RecipeUITests: XCTestCase {
         app.buttons["startCooking"].tap()
         waitUntilReady(app.buttons["Ingredients"])
         app.buttons["Ingredients"].tap()
-        let tomato = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pasta")).firstMatch
+        let tomato = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pasta"))
+            .firstMatch
         waitUntilReady(tomato)
         tomato.tap()
         XCTAssertTrue(tomato.label.contains("used"))
         app.navigationBars.buttons["Done"].tap()
         app.buttons["Ingredients"].tap()
-        let restored = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pasta")).firstMatch
+        let restored = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pasta"))
+            .firstMatch
         waitUntilReady(restored)
         XCTAssertTrue(restored.label.contains("used"))
     }
@@ -464,14 +474,7 @@ final class RecipeUITests: XCTestCase {
 
         let app = launchSeededApp(storeKitTestProductID: Self.localStoreKitProductID)
         defer { app.terminate() }
-
-        let profile = app.tabBars.buttons["Profile"]
-        waitUntilReady(profile)
-        profile.tap()
-
-        let premium = app.buttons["RecipePouch Premium"]
-        reveal(premium, in: app, maximumSwipes: 4)
-        premium.tap()
+        openSubscription(in: app)
 
         let restore = app.buttons["subscription.restore"]
         waitUntilReady(restore)
@@ -573,9 +576,85 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testFourLocaleTabLabelsUseStringCatalog() {
+        // Each launch uses --uitesting fixtures, but only explicit locale
+        // smoke cases override the usual deterministic English UI policy.
+        let examples: [(String, String, String, String, String, String, String)] = [
+            ("en", "en_US", "Recipes", "Recipe", "Profile", "Settings", "RecipePouch Account"),
+            ("zh-Hans", "zh_CN", "食谱", "份食谱", "我的", "设置", "RecipePouch 账号"),
+            ("zh-Hant", "zh_TW", "食譜", "份食譜", "個人", "設定", "RecipePouch 帳號"),
+            ("ja", "ja_JP", "レシピ", "件のレシピ", "マイページ", "設定", "RecipePouch アカウント"),
+        ]
+
+        for (language, region, recipesLabel, countNoun, profileLabel, settingsTitle, accountLabel)
+            in examples
+        {
+            let app = XCUIApplication()
+            app.launchArguments = [
+                "--uitesting",
+                "--uitesting-locale", language,
+                "-AppleLanguages", "(\(language))",
+                "-AppleLocale", region,
+            ]
+            app.launch()
+            XCTAssertTrue(
+                app.tabBars.buttons[recipesLabel].waitForExistence(timeout: 10),
+                "Missing localized Recipes tab for \(language)"
+            )
+            XCTAssertTrue(app.buttons["addRecipeButton"].exists)
+            let recipeCount = app.staticTexts["recipeCount"]
+            XCTAssertTrue(
+                recipeCount.waitForExistence(timeout: 10),
+                "Missing recipe-count label for \(language)"
+            )
+            XCTAssertTrue(
+                recipeCount.label.contains(countNoun),
+                "Recipe count not localized for \(language): \(recipeCount.label)"
+            )
+
+            let profileTab = app.tabBars.buttons[profileLabel]
+            XCTAssertTrue(profileTab.waitForExistence(timeout: 8))
+            profileTab.tap()
+            let settingsLink = app.buttons[settingsTitle]
+            XCTAssertTrue(settingsLink.waitForExistence(timeout: 8))
+            settingsLink.tap()
+            XCTAssertTrue(
+                app.navigationBars[settingsTitle].waitForExistence(timeout: 8),
+                "Settings screen not localized for \(language)"
+            )
+            XCTAssertTrue(
+                app.buttons[accountLabel].exists,
+                "Settings account row not localized for \(language)"
+            )
+            attachScreenshot("Localized settings \(language)", app: app)
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testSettingsRemainReachableAtAccessibilityDynamicType() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--uitesting-locale", "en"]
+        app.launchEnvironment["UIPreferredContentSizeCategoryName"] =
+            "UICTContentSizeCategoryAccessibilityXXXL"
+        app.launch()
+
+        XCTAssertTrue(app.buttons["Profile"].waitForExistence(timeout: 10))
+        app.buttons["Profile"].tap()
+        XCTAssertTrue(app.buttons["Settings"].waitForExistence(timeout: 8))
+        app.buttons["Settings"].tap()
+
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["RecipePouch Account"].exists)
+        XCTAssertTrue(app.buttons["Subscription"].exists)
+        XCTAssertTrue(app.buttons["Cloud Sync"].exists)
+        attachScreenshot("Settings accessibility text size", app: app)
+    }
+
+    @MainActor
     private func launchSeededApp(storeKitTestProductID: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting"]
+        app.launchArguments = ["--uitesting", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         if let storeKitTestProductID {
             app.launchEnvironment["RECIPE_STOREKIT_TEST_PRODUCT_IDS"] = storeKitTestProductID
         }
@@ -633,49 +712,79 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
-    private func assertCookingStep(_ label: String, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
+    private func assertCookingStep(
+        _ label: String, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line
+    ) {
         let progress = app.staticTexts["cookingStepProgress"]
-        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", label), object: progress)
-        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 8), .completed, "Cooking did not reach \(label)", file: file, line: line)
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label == %@", label), object: progress)
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation], timeout: 8), .completed,
+            "Cooking did not reach \(label)",
+            file: file, line: line)
     }
 
     @MainActor
-    private func waitUntilReady(_ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+    private func waitUntilReady(
+        _ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line
+    ) {
         let predicate = NSPredicate(format: "exists == true AND hittable == true AND enabled == true")
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
-        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 10), .completed, "Element is not ready: \(element)", file: file, line: line)
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation], timeout: 10), .completed,
+            "Element is not ready: \(element)", file: file, line: line)
     }
 
     @MainActor
-    private func waitUntilAbsent(_ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
-        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)
-        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 8), .completed, "Element did not dismiss: \(element)", file: file, line: line)
+    private func waitUntilAbsent(
+        _ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == false"), object: element)
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation], timeout: 8), .completed,
+            "Element did not dismiss: \(element)", file: file, line: line)
     }
 
     @MainActor
-    private func waitUntilNotHittable(_ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+    private func waitUntilNotHittable(
+        _ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line
+    ) {
         let predicate = NSPredicate(format: "exists == false OR hittable == false")
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
-        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 8), .completed, "Underlying navigation remains interactive: \(element)", file: file, line: line)
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation], timeout: 8), .completed,
+            "Underlying navigation remains interactive: \(element)", file: file, line: line)
     }
 
     @MainActor
-    private func revealFormField(_ element: XCUIElement, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
+    private func revealFormField(
+        _ element: XCUIElement, in app: XCUIApplication, file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
         // Commit the previous single-line field before finding the next row.
         // The Form also dismisses any remaining keyboard during scrolling.
         if app.keyboards.firstMatch.exists {
             for title in ["Done", "Return", "return"] {
                 let key = app.keyboards.firstMatch.buttons[title]
-                if key.exists && key.isHittable { key.tap(); break }
+                if key.exists && key.isHittable {
+                    key.tap()
+                    break
+                }
             }
         }
 
         for _ in 0..<4 {
             if element.exists && element.isHittable { break }
-            let candidates = app.collectionViews.allElementsBoundByIndex
+            let candidates =
+                app.collectionViews.allElementsBoundByIndex
                 + app.tables.allElementsBoundByIndex
                 + app.scrollViews.allElementsBoundByIndex
-            guard let form = candidates.first(where: { $0.exists && $0.isHittable && $0.frame.height > 200 }) else {
+            guard
+                let form = candidates.first(where: {
+                    $0.exists && $0.isHittable && $0.frame.height > 200
+                })
+            else {
                 attachScreenshot("No visible editor form", app: app)
                 XCTFail("No visible form can scroll to \(element)", file: file, line: line)
                 return
@@ -693,7 +802,10 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
-    private func reveal(_ element: XCUIElement, in app: XCUIApplication, scrollView: XCUIElement? = nil, maximumSwipes: Int, file: StaticString = #filePath, line: UInt = #line) {
+    private func reveal(
+        _ element: XCUIElement, in app: XCUIApplication, scrollView: XCUIElement? = nil,
+        maximumSwipes: Int, file: StaticString = #filePath, line: UInt = #line
+    ) {
         for _ in 0..<maximumSwipes {
             if element.exists && element.isHittable { break }
             if let scrollView, scrollView.exists {

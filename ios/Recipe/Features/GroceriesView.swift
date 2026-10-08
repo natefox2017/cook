@@ -35,7 +35,7 @@ struct GroceriesView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(store.groceries.count) items")
                                 .font(RecipeTheme.title(25))
-                            Text("From \(sourceCount) saved \(sourceCount == 1 ? "recipe" : "recipes")")
+                            Text("From \(sourceCount) saved recipes")
                                 .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
                                 .foregroundStyle(.secondary)
                         }
@@ -46,7 +46,7 @@ struct GroceriesView: View {
                     }
                     Picker("Grocery filter", selection: $filter) {
                         ForEach(GroceryFilter.allCases) { filter in
-                            Text(filter.rawValue).tag(filter)
+                            Text(LocalizedStringKey(filter.rawValue)).tag(filter)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -92,7 +92,7 @@ struct GroceriesView: View {
                                 }
                             } label: {
                                 HStack {
-                                    Text(category.rawValue)
+                                    Text(LocalizedStringKey(category.rawValue))
                                     Text("\(items.count)").foregroundStyle(.secondary)
                                     Spacer()
                                     Image(systemName: collapsedCategories.contains(category.rawValue)
@@ -105,8 +105,12 @@ struct GroceriesView: View {
                             }
                             .buttonStyle(.plain)
                             .textCase(nil)
-                            .accessibilityLabel("\(category.rawValue), \(items.count) items")
-                            .accessibilityValue(collapsedCategories.contains(category.rawValue) ? "Collapsed" : "Expanded")
+                            .accessibilityLabel(LocalizedStringKey(category.rawValue))
+                            .accessibilityValue(
+                                collapsedCategories.contains(category.rawValue)
+                                    ? LocalizedStringKey("Collapsed, \(items.count) items")
+                                    : LocalizedStringKey("Expanded, \(items.count) items")
+                            )
                             .accessibilityHint("Double tap to expand or collapse this group")
                         }
                         .listRowBackground(RecipeTheme.card)
@@ -141,7 +145,7 @@ struct GroceriesView: View {
             GroceryItemEditorView(item: presentation.item)
         }
         .confirmationDialog("Clear bought items?", isPresented: $confirmsClear, titleVisibility: .visible) {
-            Button("Clear \(purchasedCount) bought items", role: .destructive) {
+            Button("Clear \(purchasedCount) bought item", role: .destructive) {
                 perform { try store.clearCheckedGroceries() }
             }
         } message: {
@@ -190,8 +194,12 @@ struct GroceriesView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Mark \(item.name) as \(item.isChecked ? "to buy" : "bought")")
-            .accessibilityValue(item.isChecked ? "Bought" : "To buy")
+            .accessibilityLabel(
+                item.isChecked
+                    ? LocalizedStringKey("Mark \(item.name) as to buy")
+                    : LocalizedStringKey("Mark \(item.name) as bought")
+            )
+            .accessibilityValue(item.isChecked ? LocalizedStringKey("To buy") : LocalizedStringKey("Bought"))
             .accessibilityIdentifier("grocery.check.\(item.id.uuidString)")
 
             Button {
@@ -222,7 +230,11 @@ struct GroceriesView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Edit \(item.name)\(item.amountText.isEmpty ? "" : ", \(item.amountText)")")
+            .accessibilityLabel(
+                item.amountText.isEmpty
+                    ? LocalizedStringKey("Edit \(item.name)")
+                    : LocalizedStringKey("Edit \(item.name), \(item.amountText)")
+            )
         }
         .padding(.vertical, 3)
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -231,7 +243,14 @@ struct GroceriesView: View {
                 .tint(RecipeTheme.accent)
         }
         .contextMenu {
-            Button("Edit item", systemImage: "pencil") { editor = GroceryEditorPresentation(item: item) }
+            Button("Edit item", systemImage: "pencil") {
+                editor = GroceryEditorPresentation(item: item)
+            }
+            .accessibilityLabel(
+                item.amountText.isEmpty
+                    ? LocalizedStringKey("Edit \(item.name)")
+                    : LocalizedStringKey("Edit \(item.name), \(item.amountText)")
+            )
             Button("Remove item", systemImage: "trash", role: .destructive) { itemToDelete = item }
         }
     }
@@ -291,7 +310,7 @@ private struct GroceryItemEditorView: View {
                         .accessibilityIdentifier("grocery.editor.amount")
                     Picker("Category", selection: $draft.category) {
                         ForEach(GroceryCategory.allCases) { category in
-                            Text(category.rawValue).tag(category)
+                            Text(LocalizedStringKey(category.rawValue)).tag(category)
                         }
                     }
                     Toggle("Bought", isOn: $draft.isChecked)
