@@ -118,7 +118,7 @@ func offlineHTMLAssociatesCollectionsOnlyWithTheirRecipes() throws {
     let html = try #require(
         String(data: RecipePortableExport.html(snapshot: snapshot), encoding: .utf8)
     )
-    let secondArticle = try #require(html.range(of: "<article id=\\"recipe-2\\">"))
+    let secondArticle = try #require(html.range(of: "<article id=\"recipe-2\">"))
     let appleArticle = html[..<secondArticle.lowerBound]
     let bananaArticle = html[secondArticle.lowerBound...]
 
