@@ -2,6 +2,10 @@
 # Purpose: Keep import API user-authenticated and cron worker secret-authenticated.
 # This is a focused function configuration; no API/provider secrets live here.
 
+[functions.health]
+# Authenticated status: no remote runtime module imports.
+verify_jwt = true
+
 [functions.delete-account]
 # Account deletion always requires a verified Supabase Auth user JWT.
 verify_jwt = true
