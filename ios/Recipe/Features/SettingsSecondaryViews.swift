@@ -13,6 +13,7 @@ struct DataPrivacySettingsView: View {
     @State private var exportsData = false
     @State private var exportDocument = SettingsExportDocument(data: Data())
     @State private var confirmsLocalDelete = false
+    @State private var isDeletingLocalData = false
     @State private var confirmsAccountDelete = false
     @State private var message: String?
 
@@ -81,13 +82,25 @@ struct DataPrivacySettingsView: View {
             titleVisibility: .visible
         ) {
             Button("Delete Local Data", role: .destructive) {
-                do {
-                    try store.resetLibrary()
-                    message = "Local RecipePouch data deleted."
-                } catch {
-                    message = error.localizedDescription
+                guard !isDeletingLocalData else { return }
+                isDeletingLocalData = true
+                Task {
+                    defer { isDeletingLocalData = false }
+                    do {
+                        try await RecipeLocalDataDeletion.erase(
+                            store: store,
+                            cloudSync: cloudSync
+                        )
+                        exportDocument = SettingsExportDocument(data: Data())
+                        message = "Local RecipePouch data deleted."
+                    } catch {
+                        message = error.localizedDescription
+                    }
                 }
             }
+            .disabled(isDeletingLocalData)
+        } message: {
+            Text("Sign out first to erase only this iPhone's data. Cloud data and your subscription are not deleted; signing in again may restore synced recipes.")
         }
         .confirmationDialog(
             "Delete RecipePouch account?",

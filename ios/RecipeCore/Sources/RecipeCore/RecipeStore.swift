@@ -516,6 +516,29 @@ public final class RecipeStore {
         }
     }
 
+    /// Erase this device's library without creating cloud deletion tombstones.
+    /// Use only after the cloud coordinator has confirmed there is no active
+    /// account or in-flight sync. Cloud deletion uses a separate explicit flow.
+    public func clearLocalLibraryOnly() throws {
+        try commit(LibrarySnapshot())
+
+        let support = URL.applicationSupportDirectory
+        let canonical = support
+            .appendingPathComponent("Recipe", isDirectory: true)
+            .appendingPathComponent("library.json")
+        let legacy = support
+            .appendingPathComponent("Cook", isDirectory: true)
+            .appendingPathComponent("library.json")
+
+        // The rename may have left the original file as a safety copy. Once
+        // the canonical empty snapshot was saved, remove that personal data too.
+        guard fileURL?.standardizedFileURL == canonical.standardizedFileURL,
+              FileManager.default.fileExists(atPath: legacy.path) else {
+            return
+        }
+        try FileManager.default.removeItem(at: legacy)
+    }
+
     public func resetLibrary() throws {
         var empty = LibrarySnapshot()
         empty.deletedEntities = deletedEntities
