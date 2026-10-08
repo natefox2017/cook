@@ -151,3 +151,26 @@ func ambiguousCompoundDurationDoesNotLeakInnerTimers(_ instruction: String) thro
     let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/braise")!))
     #expect(recipe.steps[0].timers.isEmpty)
 }
+
+
+@Test func mixedTimerFormatsPreserveSourceOrder() throws {
+    let html = #"<script type='application/ld+json'>{"@type":"Recipe","name":"Timing","recipeIngredient":["1 cup water"],"recipeInstructions":[{"@type":"HowToStep","name":"Cook","text":"Rest 10 minutes, then bake 1 hour 30 minutes, then cool 5 minutes."}]}</script>"#
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/timing")!))
+    #expect(recipe.steps[0].timers.map(\.durationSeconds) == [600, 5_400, 300])
+}
+
+@Test func extractedTimerCountIsGloballyCappedAtTwelve() throws {
+    let compounds = Array(repeating: "Cook 1 hour 30 minutes.", count: 12).joined(separator: " ")
+    let instruction = compounds + " Then rest 5 minutes."
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Many timers\",\"recipeIngredient\":[\"1 cup water\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/many")!))
+    #expect(recipe.steps[0].timers.count == 12)
+    #expect(recipe.steps[0].timers.allSatisfy { $0.durationSeconds == 5_400 })
+}
+
+@Test func parenthesizedUntilConditionDoesNotBecomeTimer() throws {
+    let html = #"<script type='application/ld+json'>{"@type":"Recipe","name":"Bake","recipeIngredient":["1 cup flour"],"recipeInstructions":[{"@type":"HowToStep","text":"Bake for 10 minutes (or until golden)."}]}</script>"#
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/bake")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+}
