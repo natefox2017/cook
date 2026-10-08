@@ -3,6 +3,16 @@
 
 import SwiftUI
 
+// The share extension has a separate bundle, so these values match RecipeTheme
+// without importing the main app target.
+private enum ShareVisualStyle {
+    static let accent = Color(red: 66.0 / 255, green: 168.0 / 255, blue: 90.0 / 255)
+    static let body = Font.custom("Lora-Regular", size: 17, relativeTo: .body)
+    static let headline = Font.custom("Lora-Regular", size: 17, relativeTo: .headline)
+        .weight(.semibold)
+    static let footnote = Font.custom("Lora-Regular", size: 13, relativeTo: .footnote)
+}
+
 enum SharePresentationState {
     case receiving
     case saved
@@ -22,24 +32,24 @@ struct ShareRootView: View {
             case .receiving:
                 ProgressView()
                 Text("Saving source…")
-                    .font(.headline)
+                    .font(ShareVisualStyle.headline)
 
             case .saved:
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 42))
-                    .foregroundStyle(Color(red: 66 / 255, green: 168 / 255, blue: 90 / 255))
+                    .foregroundStyle(ShareVisualStyle.accent)
                 Text("Saved on this iPhone")
-                    .font(.headline)
+                    .font(ShareVisualStyle.headline)
 
             case .failed(let message):
                 Image(systemName: "exclamationmark.triangle")
                     .font(.system(size: 36))
                     .foregroundStyle(.orange)
                 Text("Couldn’t save your source")
-                    .font(.headline)
+                    .font(ShareVisualStyle.headline)
                 Text(message)
                     .lineLimit(1)
-                    .font(.footnote)
+                    .font(ShareVisualStyle.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                 HStack(spacing: 12) {
@@ -50,6 +60,7 @@ struct ShareRootView: View {
                 }
             }
         }
+        .font(ShareVisualStyle.body)
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .contain)

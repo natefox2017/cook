@@ -19,6 +19,7 @@
         B30000000000000000000003 = { isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "ShareExtension/Info.plist"; sourceTree = "<group>"; };
         C62600000000000000000101 = { isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = "ShareExtension/Localizable.xcstrings"; sourceTree = "<group>"; };
         C62600000000000000000102 = { isa = PBXBuildFile; fileRef = "C62600000000000000000101"; };
+        B30000000000000000000024 = { isa = PBXBuildFile; fileRef = "51CF165429D76650010C25E5"; };
         B30000000000000000000004 = { isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "ShareExtension/ShareExtension.entitlements"; sourceTree = "<group>"; };
         B30000000000000000000005 = { isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "RecipeShare.appex"; sourceTree = "BUILT_PRODUCTS_DIR"; };
         B30000000000000000000006 = { isa = PBXBuildFile; fileRef = "B30000000000000000000001"; };
@@ -40,7 +41,7 @@
         B3000000000000000000000C = {
             isa = PBXResourcesBuildPhase;
             buildActionMask = 2147483647;
-            files = ("C62600000000000000000102",);
+            files = ("C62600000000000000000102", "B30000000000000000000024",);
             runOnlyForDeploymentPostprocessing = 0;
         };
         B3000000000000000000000D = {
