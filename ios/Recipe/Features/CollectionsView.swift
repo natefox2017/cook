@@ -13,7 +13,10 @@ struct CollectionsView: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        List {
+        // Build collection counts in one pass for the entire list.
+        let membershipIndex = RecipeCollectionIndex(memberships: store.collectionMemberships)
+
+        return List {
             Section {
                 HStack(spacing: 12) {
                     TextField("New collection", text: $newName)
@@ -44,7 +47,7 @@ struct CollectionsView: View {
                         CollectionRow(
                             name: collection.name,
                             systemImage: "folder",
-                            count: store.recipes(inCollection: collection.id).count
+                            count: membershipIndex.count(inCollection: collection.id)
                         )
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
