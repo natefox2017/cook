@@ -13794,6 +13794,29 @@
           }
         }
       }
+    },
+    "Saved locally. Import is pending.": {
+      "comment": "One-line status for pending Share Extension receipts.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已在本机保存，等待导入。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已在本機儲存，等待匯入。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "端末に保存済み。インポート待ちです。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
