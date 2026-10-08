@@ -64,8 +64,11 @@ struct DataPrivacySettingsView: View {
                 }
             }
         }
+        .listSectionSpacing(RecipeSpacing.medium)
+        .scrollContentBackground(.hidden)
+        .background(RecipeTheme.canvas)
         .navigationTitle("Data & Privacy")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
         .fileExporter(
             isPresented: $exportsData,
@@ -177,8 +180,11 @@ struct StoredDataView: View {
                 systemImage: "gearshape"
             )
         }
+        .listSectionSpacing(RecipeSpacing.medium)
+        .scrollContentBackground(.hidden)
+        .background(RecipeTheme.canvas)
         .navigationTitle("What RecipePouch Stores")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
     }
 }
@@ -186,10 +192,7 @@ struct StoredDataView: View {
 struct PrivacySummaryView: View {
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Text("Privacy Summary")
-                    .font(RecipeTheme.title(30))
-
+            VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
                 Text(
                     String(localized: LocalizedStringResource("RecipePouch is designed as a private recipe utility. It does not publish your recipes to a public feed.", locale: RecipeLanguage.active)))
 
@@ -204,8 +207,9 @@ struct PrivacySummaryView: View {
             }
             .padding()
         }
-        .navigationTitle("Privacy")
-        .navigationBarTitleDisplayMode(.inline)
+        .background(RecipeTheme.canvas)
+        .navigationTitle("Privacy Summary")
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
     }
 }
@@ -255,8 +259,11 @@ struct HelpCenterView: View {
                 }
             }
         }
+        .listSectionSpacing(RecipeSpacing.medium)
+        .scrollContentBackground(.hidden)
+        .background(RecipeTheme.canvas)
         .navigationTitle("Help & Support")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
     }
 }
@@ -267,9 +274,7 @@ private struct HelpArticleView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(LocalizedStringKey(title))
-                    .font(RecipeTheme.title(30))
+            VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
                 Text(LocalizedStringKey(articleBody))
                     .font(
                         RecipeTheme.text(
@@ -279,10 +284,11 @@ private struct HelpArticleView: View {
                         )
                     )
             }
-            .padding()
+            .padding(RecipeSpacing.pageInset)
         }
+        .background(RecipeTheme.canvas)
         .navigationTitle(Text(LocalizedStringKey(title)))
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
     }
 }
@@ -296,7 +302,7 @@ struct AboutSettingsView: View {
                         .font(.system(size: 34))
                         .foregroundStyle(RecipeTheme.accentForeground)
                     Text("RecipePouch")
-                        .font(RecipeTheme.title(28))
+                        .font(RecipeTheme.heading(.title))
                 }
             }
 
@@ -321,8 +327,11 @@ struct AboutSettingsView: View {
                 )
             }
         }
+        .listSectionSpacing(RecipeSpacing.medium)
+        .scrollContentBackground(.hidden)
+        .background(RecipeTheme.canvas)
         .navigationTitle("About RecipePouch")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
     }
 }
@@ -340,8 +349,11 @@ private struct LicensesView: View {
                     String(localized: LocalizedStringResource("SwiftUI, StoreKit, AuthenticationServices, Vision, and related Apple frameworks are used under Apple platform terms.", locale: RecipeLanguage.active)))
             }
         }
+        .listSectionSpacing(RecipeSpacing.medium)
+        .scrollContentBackground(.hidden)
+        .background(RecipeTheme.canvas)
         .navigationTitle("Licenses")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
     }
 }
@@ -354,8 +366,9 @@ private struct AcknowledgementsView: View {
             )
             .padding()
         }
+        .background(RecipeTheme.canvas)
         .navigationTitle("Acknowledgements")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
     }
 }
