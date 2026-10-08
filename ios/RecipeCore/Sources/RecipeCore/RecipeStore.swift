@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Implements RecipeStore for the Recipe iOS app.
+// Purpose: Owns RecipePouch's validated local library and cloud snapshot synchronization boundary.
 
 import Foundation
 import Observation
@@ -27,23 +27,25 @@ public enum RecipeStoreError: LocalizedError, Equatable {
     }
 }
 
-private struct LibrarySnapshot: Codable {
-    var version: Int
-    var recipes: [Recipe]
-    var groceries: [GroceryItem]
-    var mealPlan: [MealPlanEntry]
-    var collections: [RecipeCollection]
-    var collectionMemberships: [RecipeCollectionMembership]
-    var settings: RecipeSettings
+public struct RecipeLibrarySnapshot: Codable, Sendable {
+    public var version: Int
+    public var recipes: [Recipe]
+    public var groceries: [GroceryItem]
+    public var mealPlan: [MealPlanEntry]
+    public var collections: [RecipeCollection]
+    public var collectionMemberships: [RecipeCollectionMembership]
+    public var settings: RecipeSettings
+    public var deletedEntities: Set<String>?
 
-    init(
+    public init(
         version: Int = 2,
         recipes: [Recipe] = [],
         groceries: [GroceryItem] = [],
         mealPlan: [MealPlanEntry] = [],
         collections: [RecipeCollection] = [],
         collectionMemberships: [RecipeCollectionMembership] = [],
-        settings: RecipeSettings = RecipeSettings()
+        settings: RecipeSettings = RecipeSettings(),
+        deletedEntities: Set<String>? = []
     ) {
         self.version = version
         self.recipes = recipes
@@ -52,6 +54,7 @@ private struct LibrarySnapshot: Codable {
         self.collections = collections
         self.collectionMemberships = collectionMemberships
         self.settings = settings
+        self.deletedEntities = deletedEntities
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -62,9 +65,10 @@ private struct LibrarySnapshot: Codable {
         case collections
         case collectionMemberships
         case settings
+        case deletedEntities
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
         recipes = try container.decodeIfPresent([Recipe].self, forKey: .recipes) ?? []
@@ -76,6 +80,39 @@ private struct LibrarySnapshot: Codable {
             forKey: .collectionMemberships
         ) ?? []
         settings = try container.decodeIfPresent(RecipeSettings.self, forKey: .settings) ?? RecipeSettings()
+        deletedEntities = try container.decodeIfPresent(Set<String>.self, forKey: .deletedEntities) ?? []
+    }
+}
+
+private typealias LibrarySnapshot = RecipeLibrarySnapshot
+
+public enum LibraryMergeEntity: String, Codable, Sendable {
+    case recipe
+    case grocery
+    case meal
+    case collection
+    case settings
+}
+
+public struct LibraryMergeConflict: Hashable, Sendable, Identifiable {
+    public let entity: LibraryMergeEntity
+    public let entityID: UUID?
+
+    public var id: String { "\(entity.rawValue):\(entityID?.uuidString ?? "settings")" }
+}
+
+public enum LibraryMergeSource: Sendable, Equatable {
+    case local
+    case cloud
+}
+
+public struct LibraryMergeChoice: Sendable {
+    public let conflict: LibraryMergeConflict
+    public let source: LibraryMergeSource
+
+    public init(conflict: LibraryMergeConflict, source: LibraryMergeSource) {
+        self.conflict = conflict
+        self.source = source
     }
 }
 
@@ -88,6 +125,13 @@ public final class RecipeStore {
     public private(set) var collectionMemberships: [RecipeCollectionMembership] = []
     public private(set) var settings = RecipeSettings()
     public private(set) var loadError: String?
+    public private(set) var changeToken: UInt64 = 0
+    private var deletedEntities: Set<String> = []
+
+    public var hasUserData: Bool {
+        !recipes.isEmpty || !groceries.isEmpty || !mealPlan.isEmpty
+            || !collections.isEmpty || settings != RecipeSettings()
+    }
 
     @ObservationIgnored private let fileURL: URL?
 
@@ -164,6 +208,7 @@ public final class RecipeStore {
 
         var next = snapshot
         let collection = RecipeCollection(name: cleaned)
+        next.deletedEntities?.remove(Self.deletionKey(.collection, collection.id))
         next.collections.append(collection)
         next.collections.sort {
             $0.name.localizedStandardCompare($1.name) == .orderedAscending
@@ -198,6 +243,7 @@ public final class RecipeStore {
         }
         var next = snapshot
         next.collections.removeAll { $0.id == id }
+        next.deletedEntities?.insert(Self.deletionKey(.collection, id))
         next.collectionMemberships.removeAll { $0.collectionID == id }
         try commit(next)
     }
@@ -218,9 +264,12 @@ public final class RecipeStore {
         guard exists != isMember else { return }
 
         var next = snapshot
+        let membershipKey = Self.membershipDeletionKey(membership)
         if isMember {
+            next.deletedEntities?.remove(membershipKey)
             next.collectionMemberships.append(membership)
         } else {
+            next.deletedEntities?.insert(membershipKey)
             next.collectionMemberships.removeAll { $0 == membership }
         }
         try commit(next)
@@ -256,6 +305,7 @@ public final class RecipeStore {
 
     public func upsert(_ recipe: Recipe) throws {
         var next = snapshot
+        next.deletedEntities?.remove(Self.deletionKey(.recipe, recipe.id))
         var saved = recipe
         saved.updatedAt = .now
         if let index = next.recipes.firstIndex(where: { $0.id == recipe.id }) {
@@ -270,6 +320,13 @@ public final class RecipeStore {
     public func deleteRecipe(id: UUID) throws {
         var next = snapshot
         next.recipes.removeAll { $0.id == id }
+        next.deletedEntities?.insert(Self.deletionKey(.recipe, id))
+        for membership in next.collectionMemberships where membership.recipeID == id {
+            next.deletedEntities?.insert(Self.membershipDeletionKey(membership))
+        }
+        for entry in next.mealPlan where entry.recipeID == id {
+            next.deletedEntities?.insert(Self.deletionKey(.meal, entry.id))
+        }
         next.mealPlan.removeAll { $0.recipeID == id }
         next.collectionMemberships.removeAll { $0.recipeID == id }
         for index in next.groceries.indices {
@@ -341,6 +398,7 @@ public final class RecipeStore {
 
     public func upsertGrocery(_ item: GroceryItem) throws {
         var next = snapshot
+        next.deletedEntities?.remove(Self.deletionKey(.grocery, item.id))
         if let index = next.groceries.firstIndex(where: { $0.id == item.id }) {
             next.groceries[index] = item
         } else {
@@ -361,11 +419,15 @@ public final class RecipeStore {
     public func deleteGrocery(id: UUID) throws {
         var next = snapshot
         next.groceries.removeAll { $0.id == id }
+        next.deletedEntities?.insert(Self.deletionKey(.grocery, id))
         try commit(next)
     }
 
     public func clearCheckedGroceries() throws {
         var next = snapshot
+        for item in next.groceries where item.isChecked {
+            next.deletedEntities?.insert(Self.deletionKey(.grocery, item.id))
+        }
         next.groceries.removeAll(where: \.isChecked)
         try commit(next)
     }
@@ -376,9 +438,17 @@ public final class RecipeStore {
             throw RecipeStoreError.invalidValue("Choose a valid date for your meal.")
         }
         var next = snapshot
+        next.deletedEntities?.remove(Self.deletionKey(.meal, entry.id))
         var saved = entry
         saved.date = Calendar.current.startOfDay(for: entry.date)
         // One recipe per day and meal slot, including when editing an existing entry.
+        let replacedIDs = next.mealPlan.filter {
+            $0.id == entry.id
+                || ($0.slot == entry.slot && Calendar.current.isDate($0.date, inSameDayAs: entry.date))
+        }.map(\.id).filter { $0 != entry.id }
+        for replacedID in replacedIDs {
+            next.deletedEntities?.insert(Self.deletionKey(.meal, replacedID))
+        }
         next.mealPlan.removeAll {
             $0.id == entry.id
                 || ($0.slot == entry.slot && Calendar.current.isDate($0.date, inSameDayAs: entry.date))
@@ -391,6 +461,7 @@ public final class RecipeStore {
     public func deleteMeal(id: UUID) throws {
         var next = snapshot
         next.mealPlan.removeAll { $0.id == id }
+        next.deletedEntities?.insert(Self.deletionKey(.meal, id))
         try commit(next)
     }
 
@@ -421,7 +492,13 @@ public final class RecipeStore {
     }
 
     public func resetLibrary() throws {
-        try commit(LibrarySnapshot())
+        var empty = LibrarySnapshot()
+        empty.deletedEntities = deletedEntities
+        empty.deletedEntities?.formUnion(recipes.map { Self.deletionKey(.recipe, $0.id) })
+        empty.deletedEntities?.formUnion(groceries.map { Self.deletionKey(.grocery, $0.id) })
+        empty.deletedEntities?.formUnion(mealPlan.map { Self.deletionKey(.meal, $0.id) })
+        empty.deletedEntities?.formUnion(collections.map { Self.deletionKey(.collection, $0.id) })
+        try commit(empty)
     }
 
     public func loadSampleRecipes() throws {
@@ -436,6 +513,151 @@ public final class RecipeStore {
         return try encoded(snapshot)
     }
 
+    public func exportCloudSnapshot() throws -> RecipeLibrarySnapshot {
+        if let loadError { throw RecipeStoreError.unreadableLibrary(loadError) }
+        return snapshot
+    }
+
+    public func replaceLibrary(with data: Data) throws {
+        if let loadError { throw RecipeStoreError.unreadableLibrary(loadError) }
+        let incoming = try JSONDecoder().decode(LibrarySnapshot.self, from: data)
+        try validate(incoming)
+        try commit(incoming)
+    }
+
+    public func replaceLibrary(with snapshot: RecipeLibrarySnapshot) throws {
+        if let loadError { throw RecipeStoreError.unreadableLibrary(loadError) }
+        try validate(snapshot)
+        try commit(snapshot)
+    }
+
+    @discardableResult
+    public func mergeCloudLibrary(
+        with data: Data,
+        choices: [LibraryMergeChoice] = []
+    ) throws -> [LibraryMergeConflict] {
+        let cloud = try JSONDecoder().decode(LibrarySnapshot.self, from: data)
+        return try mergeCloudLibrary(with: cloud, choices: choices)
+    }
+
+    @discardableResult
+    public func mergeCloudLibrary(
+        with cloud: RecipeLibrarySnapshot,
+        choices: [LibraryMergeChoice] = []
+    ) throws -> [LibraryMergeConflict] {
+        if let loadError { throw RecipeStoreError.unreadableLibrary(loadError) }
+        try validate(cloud)
+
+        let local = snapshot
+        let choicesByID = Dictionary(uniqueKeysWithValues: choices.map { ($0.conflict.id, $0.source) })
+        let localDeleted = local.deletedEntities ?? []
+        let cloudDeleted = cloud.deletedEntities ?? []
+        var mergedDeleted = localDeleted.union(cloudDeleted)
+        var conflicts: [LibraryMergeConflict] = []
+
+        func merge<T: Identifiable & Hashable>(
+            _ localItems: [T], _ cloudItems: [T], entity: LibraryMergeEntity
+        ) -> [T] where T.ID == UUID {
+            let localByID = Dictionary(uniqueKeysWithValues: localItems.map { ($0.id, $0) })
+            let cloudByID = Dictionary(uniqueKeysWithValues: cloudItems.map { ($0.id, $0) })
+            let ids = Set(localByID.keys).union(cloudByID.keys)
+                .union(localDeleted.compactMap { Self.deletedID($0, entity: entity) })
+                .union(cloudDeleted.compactMap { Self.deletedID($0, entity: entity) })
+            var result: [T] = []
+
+            for id in ids {
+                let localValue = localByID[id]
+                let cloudValue = cloudByID[id]
+                let localHasDeletion = localDeleted.contains(Self.deletionKey(entity, id))
+                let cloudHasDeletion = cloudDeleted.contains(Self.deletionKey(entity, id))
+                var source: LibraryMergeSource?
+
+                if localHasDeletion != cloudHasDeletion,
+                   localValue != nil || cloudValue != nil {
+                    let conflict = LibraryMergeConflict(entity: entity, entityID: id)
+                    source = choicesByID[conflict.id]
+                    if source == nil { conflicts.append(conflict) }
+                } else if let localValue, let cloudValue, localValue != cloudValue {
+                    let conflict = LibraryMergeConflict(entity: entity, entityID: id)
+                    source = choicesByID[conflict.id]
+                    if source == nil { conflicts.append(conflict) }
+                }
+
+                let selected: T?
+                if let source {
+                    selected = source == .local ? localValue : cloudValue
+                    if source == .local ? localHasDeletion : cloudHasDeletion { continue }
+                } else if localHasDeletion || cloudHasDeletion {
+                    continue
+                } else {
+                    selected = localValue ?? cloudValue
+                }
+                if let selected {
+                    mergedDeleted.remove(Self.deletionKey(entity, id))
+                    result.append(selected)
+                }
+            }
+            return result
+        }
+
+        var memberships: Set<RecipeCollectionMembership> = []
+        let localMemberships = Set(local.collectionMemberships)
+        let cloudMemberships = Set(cloud.collectionMemberships)
+        let allMemberships = localMemberships.union(cloudMemberships)
+        for membership in allMemberships {
+            let key = Self.membershipDeletionKey(membership)
+            let localHasDeletion = localDeleted.contains(key)
+            let cloudHasDeletion = cloudDeleted.contains(key)
+            let existsLocally = localMemberships.contains(membership)
+            let existsInCloud = cloudMemberships.contains(membership)
+            if localHasDeletion != cloudHasDeletion,
+               existsLocally || existsInCloud {
+                let conflict = LibraryMergeConflict(entity: .collection, entityID: membership.collectionID)
+                guard let source = choicesByID[conflict.id] else {
+                    conflicts.append(conflict)
+                    continue
+                }
+                if source == .local ? existsLocally : existsInCloud {
+                    memberships.insert(membership)
+                    mergedDeleted.remove(key)
+                }
+            } else if !localHasDeletion && !cloudHasDeletion {
+                memberships.insert(membership)
+            }
+        }
+
+        var merged = LibrarySnapshot(
+            recipes: merge(local.recipes, cloud.recipes, entity: .recipe),
+            groceries: merge(local.groceries, cloud.groceries, entity: .grocery),
+            mealPlan: merge(local.mealPlan, cloud.mealPlan, entity: .meal),
+            collections: merge(local.collections, cloud.collections, entity: .collection),
+            collectionMemberships: Array(memberships),
+            settings: local.settings,
+            deletedEntities: mergedDeleted
+        )
+        if local.settings != cloud.settings {
+            let conflict = LibraryMergeConflict(entity: .settings, entityID: nil)
+            if let source = choicesByID[conflict.id] {
+                merged.settings = source == .local ? local.settings : cloud.settings
+            } else {
+                conflicts.append(conflict)
+            }
+        }
+        guard conflicts.isEmpty else { return conflicts.sorted { $0.id < $1.id } }
+
+        let recipeIDs = Set(merged.recipes.map(\.id))
+        let collectionIDs = Set(merged.collections.map(\.id))
+        merged.collectionMemberships.removeAll {
+            !recipeIDs.contains($0.recipeID) || !collectionIDs.contains($0.collectionID)
+        }
+        merged.mealPlan.removeAll { !recipeIDs.contains($0.recipeID) }
+        for index in merged.groceries.indices {
+            merged.groceries[index].recipeIDs.removeAll { !recipeIDs.contains($0) }
+        }
+        try commit(merged)
+        return []
+    }
+
     private var snapshot: LibrarySnapshot {
         LibrarySnapshot(
             recipes: recipes,
@@ -443,7 +665,8 @@ public final class RecipeStore {
             mealPlan: mealPlan,
             collections: collections,
             collectionMemberships: collectionMemberships,
-            settings: settings
+            settings: settings,
+            deletedEntities: deletedEntities
         )
     }
 
@@ -474,6 +697,8 @@ public final class RecipeStore {
         collections = snapshot.collections
         collectionMemberships = snapshot.collectionMemberships
         settings = snapshot.settings
+        deletedEntities = snapshot.deletedEntities ?? []
+        changeToken &+= 1
     }
 
     private func validate(_ snapshot: LibrarySnapshot) throws {
@@ -487,6 +712,14 @@ public final class RecipeStore {
         }
         let recipeIDs = Set(snapshot.recipes.map(\.id))
         let collectionIDs = Set(snapshot.collections.map(\.id))
+        let deletedEntities = snapshot.deletedEntities ?? []
+        guard !snapshot.recipes.contains(where: { deletedEntities.contains(Self.deletionKey(.recipe, $0.id)) }),
+              !snapshot.groceries.contains(where: { deletedEntities.contains(Self.deletionKey(.grocery, $0.id)) }),
+              !snapshot.mealPlan.contains(where: { deletedEntities.contains(Self.deletionKey(.meal, $0.id)) }),
+              !snapshot.collections.contains(where: { deletedEntities.contains(Self.deletionKey(.collection, $0.id)) }),
+              !snapshot.collectionMemberships.contains(where: { deletedEntities.contains(Self.membershipDeletionKey($0)) }) else {
+            throw RecipeStoreError.invalidValue("The library contains an item that is also marked as deleted.")
+        }
 
         var collectionNameKeys: Set<String> = []
         for collection in snapshot.collections {
@@ -576,6 +809,19 @@ public final class RecipeStore {
             throw RecipeStoreError.invalidValue("Favorites is already built in.")
         }
         return cleaned
+    }
+
+    private static func deletionKey(_ entity: LibraryMergeEntity, _ id: UUID) -> String {
+        "\(entity.rawValue):\(id.uuidString)"
+    }
+
+    private static func deletedID(_ key: String, entity: LibraryMergeEntity) -> UUID? {
+        guard key.hasPrefix(entity.rawValue + ":") else { return nil }
+        return UUID(uuidString: String(key.dropFirst(entity.rawValue.count + 1)))
+    }
+
+    private static func membershipDeletionKey(_ membership: RecipeCollectionMembership) -> String {
+        "membership:\(membership.collectionID.uuidString):\(membership.recipeID.uuidString)"
     }
 
     private func normalized(_ text: String) -> String {
