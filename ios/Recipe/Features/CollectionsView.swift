@@ -314,6 +314,7 @@ private struct CollectionRecipeRow: View {
                     .foregroundStyle(.primary)
                 if let minutes = recipe.totalMinutes {
                     Text("\(minutes) min")
+                        .lineLimit(1)
                         .font(RecipeTheme.text(12, relativeTo: .caption))
                         .foregroundStyle(.secondary)
                 }
