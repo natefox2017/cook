@@ -27,7 +27,7 @@ Initial targets: English (en), Simplified Chinese (zh-Hans), Traditional Chinese
 
 **First implementation slice, not full language acceptance:**
 
-- `ios/Recipe/Resources/Localizable.xcstrings` contains **219 English-source UI keys**, each with actual `zh-Hans`, `zh-Hant` and `ja` values. This covers the four tab names and a broad first pass across recipe detail/editing, ingredient/grocery actions, meal planning, Settings, Account, StoreKit and Cloud Sync. This is a source review, not a complete page pass.
+- `ios/Recipe/Resources/Localizable.xcstrings` contains **293 English-source UI keys**, each with actual `zh-Hans`, `zh-Hant` and `ja` values. This covers the four tab names and broad literal-UI coverage across recipe detail/editing, groceries, meal planning, cooking, Collections, Settings, privacy, Account, StoreKit and Cloud Sync. This is a source review, not a complete page pass.
 - `ios/Recipe/Resources/InfoPlist.xcstrings` translates `NSCameraUsageDescription` for the same three non-English languages. Both catalogs are registered with the **Recipe app target** in `ios/Recipe.xcodeproj/project.pbxproj`; Xcode `knownRegions` lists en/zh-Hans/zh-Hant/ja.
 - `ios/Recipe/Info.plist` advertises only those four shipping locales. es/fr/de/ko/pt-BR are **planned only** and intentionally not advertised until real catalog coverage exists.
 - The four Tab title values are `LocalizedStringKey`; dynamic Account/Settings labels, enum-backed recipe/grocery categories, meal slots, Appearance and Sync modes now explicitly look up localization keys. Persisted identifiers, API values, original recipe names, collections and StoreKit prices are not translated.
