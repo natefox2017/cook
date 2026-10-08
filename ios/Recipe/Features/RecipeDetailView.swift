@@ -23,6 +23,8 @@ struct RecipeDetailView: View {
     @State private var isPlanningMeal = false
     @State private var isManagingCollections = false
     @State private var isLoadingSourceArtifact = false
+    @State private var isDeletingSourceArtifact = false
+    @State private var confirmsSourceArtifactDeletion = false
 
     var body: some View {
         Group {
@@ -60,6 +62,18 @@ struct RecipeDetailView: View {
             Button("Delete Recipe", role: .destructive, action: deleteRecipe)
             Button("Cancel", role: .cancel) {}
         } message: { Text("This removes the recipe from your library and meal plan.") }
+        .confirmationDialog(
+            "Delete original attachment?",
+            isPresented: $confirmsSourceArtifactDeletion,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Original Attachment", role: .destructive) {
+                Task { await deleteSourceArtifact() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Your recipe will stay saved.")
+        }
         .alert("Recipe", isPresented: feedbackPresented) {
             Button("OK", role: .cancel) { feedbackMessage = nil }
         } message: { Text(feedbackMessage ?? "") }
@@ -302,7 +316,9 @@ struct RecipeDetailView: View {
 
     @ViewBuilder
     private func source(_ recipe: Recipe) -> some View {
-        let artifactID = recipe.importRecord?.result.source.sourceArtifactID
+        let artifactID = recipe.importRecord?.sourceArtifactDeletedAt == nil
+            ? recipe.importRecord?.result.source.sourceArtifactID
+            : nil
         let sourceType = recipe.importRecord?.result.source.inputType
         if recipe.sourceName != nil
             || recipe.sourceURL != nil
@@ -357,7 +373,14 @@ struct RecipeDetailView: View {
                             .frame(minHeight: 44, alignment: .leading)
                         }
                     }
-                    .disabled(isLoadingSourceArtifact)
+                    .disabled(isLoadingSourceArtifact || isDeletingSourceArtifact)
+
+                    Button("Delete Original Attachment", systemImage: "trash", role: .destructive) {
+                        confirmsSourceArtifactDeletion = true
+                    }
+                    .frame(minHeight: 44, alignment: .leading)
+                    .disabled(isLoadingSourceArtifact || isDeletingSourceArtifact)
+                    .accessibilityIdentifier("source.deleteAttachment")
                 }
             }
         }
@@ -388,6 +411,47 @@ struct RecipeDetailView: View {
             openURL(url)
         } catch {
             feedbackMessage = String(localized: LocalizedStringResource("The shared source is unavailable. It may have expired.", locale: RecipeLanguage.active))
+        }
+    }
+
+    @MainActor
+    private func deleteSourceArtifact() async {
+        guard let artifactID = store.recipe(id: recipeID)?
+            .importRecord?.result.source.sourceArtifactID,
+            case .signedIn(let ownerID, _) = RecipeAuthService.shared.state
+        else {
+            feedbackMessage = String(localized: LocalizedStringResource(
+                "Sign in required", locale: RecipeLanguage.active
+            ))
+            return
+        }
+
+        isDeletingSourceArtifact = true
+        defer { isDeletingSourceArtifact = false }
+
+        do {
+            // The API resolves artifact ownership from the JWT; never pass an
+            // arbitrary storage path or delete the recipe itself.
+            try await RecipeImportArtifactService().delete(
+                artifactID: artifactID,
+                ownerID: ownerID
+            )
+            guard case .signedIn(let currentOwnerID, _) = RecipeAuthService.shared.state,
+                  currentOwnerID == ownerID
+            else {
+                throw RecipeShareImportWorkflowError.accountChanged
+            }
+            guard var recipe = store.recipe(id: recipeID),
+                  recipe.importRecord?.result.source.sourceArtifactID == artifactID
+            else { return }
+            recipe.importRecord?.sourceArtifactDeletedAt = .now
+            try store.upsert(recipe)
+            feedbackMessage = String(localized: LocalizedStringResource(
+                "Attachment deleted. Your recipe was kept.",
+                locale: RecipeLanguage.active
+            ))
+        } catch {
+            feedbackMessage = error.localizedDescription
         }
     }
 
