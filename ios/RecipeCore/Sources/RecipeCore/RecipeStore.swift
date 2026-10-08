@@ -27,7 +27,7 @@ public enum RecipeStoreError: LocalizedError, Equatable {
     }
 }
 
-public struct RecipeLibrarySnapshot: Codable, Sendable {
+public struct RecipeLibrarySnapshot: Codable, Sendable, Equatable {
     public var version: Int
     public var recipes: [Recipe]
     public var groceries: [GroceryItem]
