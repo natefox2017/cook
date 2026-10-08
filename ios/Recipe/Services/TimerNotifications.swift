@@ -13,7 +13,7 @@ enum TimerNotifications {
             throw TimerNotificationError.notAuthorized
         }
         let content = UNMutableNotificationContent()
-        content.title = String(localized: "Your cooking timer is ready")
+        content.title = String(localized: LocalizedStringResource("Your cooking timer is ready", locale: RecipeLanguage.active))
         content.body = title
         content.sound = .default
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(max(1, seconds)), repeats: false)
@@ -29,7 +29,7 @@ enum TimerNotifications {
     private enum TimerNotificationError: LocalizedError {
         case notAuthorized
         var errorDescription: String? {
-            String(localized: "The timer is running. To also receive an alert when Recipe is closed, enable notifications in Profile.")
+            String(localized: LocalizedStringResource("The timer is running. To also receive an alert when Recipe is closed, enable notifications in Profile.", locale: RecipeLanguage.active))
         }
     }
 }

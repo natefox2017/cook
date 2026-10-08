@@ -115,7 +115,7 @@ struct RecipeDetailView: View {
 
     private func overview(_ recipe: Recipe) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(recipe.title.isEmpty ? String(localized: "Untitled Recipe") : recipe.title)
+            Text(recipe.title.isEmpty ? String(localized: LocalizedStringResource("Untitled Recipe", locale: RecipeLanguage.active)) : recipe.title)
                 .font(RecipeTheme.title(34))
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
@@ -367,7 +367,7 @@ struct RecipeDetailView: View {
     private func openSourceArtifact(_ artifactID: UUID) async {
         guard case .signedIn(let ownerID, _) = RecipeAuthService.shared.state
         else {
-            feedbackMessage = String(localized: "Sign in required")
+            feedbackMessage = String(localized: LocalizedStringResource("Sign in required", locale: RecipeLanguage.active))
             return
         }
 
@@ -432,7 +432,7 @@ struct RecipeDetailView: View {
 
     private func showAddedFeedback() {
         if let count = addedIngredientCount {
-            feedbackMessage = String(localized: "\(count) ingredients added to Groceries.")
+            feedbackMessage = String(localized: LocalizedStringResource("\(count) ingredients added to Groceries.", locale: RecipeLanguage.active))
             addedIngredientCount = nil
         }
     }

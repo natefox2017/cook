@@ -264,7 +264,7 @@ struct RecipesView: View {
 
     private var emptyScopeMessage: String {
         if selectedCollectionID != nil {
-            return String(localized: "Add recipes to this collection.")
+            return String(localized: LocalizedStringResource("Add recipes to this collection.", locale: RecipeLanguage.active))
         }
         return filter.emptyMessage
     }
@@ -314,7 +314,7 @@ private struct RecipeLibraryCard: View {
                     }
                     .aspectRatio(1.4, contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 18))
-                    Text(recipe.title.isEmpty ? String(localized: "Untitled Recipe") : recipe.title)
+                    Text(recipe.title.isEmpty ? String(localized: LocalizedStringResource("Untitled Recipe", locale: RecipeLanguage.active)) : recipe.title)
                         .font(RecipeTheme.title(20))
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.leading)

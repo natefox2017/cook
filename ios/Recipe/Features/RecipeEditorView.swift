@@ -238,7 +238,7 @@ struct RecipeEditorView: View {
                 }
                 guard !name.isEmpty else {
                     throw EditorError.invalid(
-                        String(localized: "Give each ingredient a name, or remove the empty row.")
+                        String(localized: LocalizedStringResource("Give each ingredient a name, or remove the empty row.", locale: RecipeLanguage.active))
                     )
                 }
                 if let previous = original.ingredients.first(where: { $0.id == ingredient.id }),
