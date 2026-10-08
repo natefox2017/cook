@@ -17,7 +17,7 @@
         <string>pt-BR</string>
     </array>
     <key>CFBundleDisplayName</key>
-    <string>Recipe</string>
+    <string>RecipePouch</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -48,7 +48,7 @@
     <key>RecipeSupabasePublishableKey</key>
     <string>sb_publishable_yhwoE_GwRNtohok44YUwKQ_hi_1uhCO</string>
     <key>RecipeSubscriptionProductIDs</key>
-    <string>$(COOK_SUBSCRIPTION_PRODUCT_IDS)</string>
+    <string>$(RECIPE_SUBSCRIPTION_PRODUCT_IDS)</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSCameraUsageDescription</key>
