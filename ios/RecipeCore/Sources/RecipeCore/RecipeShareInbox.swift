@@ -170,6 +170,24 @@ public struct RecipeShareInbox: Sendable {
         return results.sorted { $0.receivedAt < $1.receivedAt }
     }
 
+    /// User-confirmed local erasure must also clear pending private source
+    /// text and acknowledged receipt metadata in the App Group container.
+    /// Errors propagate so the app never reports a full deletion while
+    /// shared personal source files remain.
+    public func eraseAllLocalReceipts() throws {
+        for name in ["receipts", "acknowledgements", "sources"] {
+            let directory = root.appendingPathComponent(
+                name, isDirectory: true
+            )
+            for file in try FileManager.default.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: nil
+            ) {
+                try FileManager.default.removeItem(at: file)
+            }
+        }
+    }
+
     public func source(for receipt: RecipeShareReceipt) throws -> String {
         let ref = receipt.payload.reference
         guard ref.hasPrefix("sources/") else {
