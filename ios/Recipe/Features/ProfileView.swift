@@ -78,7 +78,7 @@ struct ProfileView: View {
             }
             .listRowBackground(RecipeTheme.card)
 
-            Section("Your kitchen") {
+            Section {
                 NavigationLink {
                     RecipesView()
                         .toolbar(.hidden, for: .tabBar)
