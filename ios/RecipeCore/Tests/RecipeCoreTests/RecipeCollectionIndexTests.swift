@@ -1,46 +1,47 @@
 // Developer: gengyun
 // Purpose: Verifies collection indexing, deduplication, and membership lookups.
 
-import XCTest
+import Foundation
+import Testing
 @testable import RecipeCore
 
-final class RecipeCollectionIndexTests: XCTestCase {
-    func testMembershipsAreIndexedByCollectionAndRecipe() {
-        let firstRecipe = UUID()
-        let secondRecipe = UUID()
-        let firstCollection = UUID()
-        let secondCollection = UUID()
+@Test
+func membershipsAreIndexedByCollectionAndRecipe() {
+    let firstRecipe = UUID()
+    let secondRecipe = UUID()
+    let firstCollection = UUID()
+    let secondCollection = UUID()
 
-        let index = RecipeCollectionIndex(memberships: [
-            RecipeCollectionMembership(recipeID: firstRecipe, collectionID: firstCollection),
-            RecipeCollectionMembership(recipeID: firstRecipe, collectionID: secondCollection),
-            RecipeCollectionMembership(recipeID: secondRecipe, collectionID: firstCollection),
-            RecipeCollectionMembership(recipeID: firstRecipe, collectionID: firstCollection)
-        ])
+    let index = RecipeCollectionIndex(memberships: [
+        RecipeCollectionMembership(recipeID: firstRecipe, collectionID: firstCollection),
+        RecipeCollectionMembership(recipeID: firstRecipe, collectionID: secondCollection),
+        RecipeCollectionMembership(recipeID: secondRecipe, collectionID: firstCollection),
+        RecipeCollectionMembership(recipeID: firstRecipe, collectionID: firstCollection)
+    ])
 
-        // Duplicate input must not inflate collection counts.
-        XCTAssertEqual(index.count(inCollection: firstCollection), 2)
-        XCTAssertEqual(index.count(inCollection: secondCollection), 1)
-        XCTAssertEqual(
-            index.recipeIDs(inCollection: firstCollection),
-            Set([firstRecipe, secondRecipe])
-        )
-        XCTAssertEqual(
-            index.collectionIDs(forRecipe: firstRecipe),
-            Set([firstCollection, secondCollection])
-        )
-        XCTAssertTrue(index.contains(recipeID: firstRecipe, inCollection: secondCollection))
-        XCTAssertFalse(index.contains(recipeID: secondRecipe, inCollection: secondCollection))
-    }
+    // Duplicate input must not inflate collection counts.
+    #expect(index.count(inCollection: firstCollection) == 2)
+    #expect(index.count(inCollection: secondCollection) == 1)
+    #expect(
+        index.recipeIDs(inCollection: firstCollection)
+            == Set([firstRecipe, secondRecipe])
+    )
+    #expect(
+        index.collectionIDs(forRecipe: firstRecipe)
+            == Set([firstCollection, secondCollection])
+    )
+    #expect(index.contains(recipeID: firstRecipe, inCollection: secondCollection))
+    #expect(!index.contains(recipeID: secondRecipe, inCollection: secondCollection))
+}
 
-    func testEmptyAndUnknownMembershipsReturnEmptyResults() {
-        let index = RecipeCollectionIndex(memberships: [])
-        let recipeID = UUID()
-        let collectionID = UUID()
+@Test
+func unknownMembershipsReturnEmptyResults() {
+    let index = RecipeCollectionIndex(memberships: [])
+    let recipeID = UUID()
+    let collectionID = UUID()
 
-        XCTAssertEqual(index.count(inCollection: collectionID), 0)
-        XCTAssertTrue(index.recipeIDs(inCollection: collectionID).isEmpty)
-        XCTAssertTrue(index.collectionIDs(forRecipe: recipeID).isEmpty)
-        XCTAssertFalse(index.contains(recipeID: recipeID, inCollection: collectionID))
-    }
+    #expect(index.count(inCollection: collectionID) == 0)
+    #expect(index.recipeIDs(inCollection: collectionID).isEmpty)
+    #expect(index.collectionIDs(forRecipe: recipeID).isEmpty)
+    #expect(!index.contains(recipeID: recipeID, inCollection: collectionID))
 }
