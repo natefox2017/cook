@@ -90,6 +90,8 @@ struct SettingsHubView: View {
 }
 
 private struct SettingsRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let title: String
     let icon: String
 
@@ -99,16 +101,17 @@ private struct SettingsRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: RecipeSpacing.small) {
             Image(systemName: icon)
-                .frame(width: 32)
+                .font(.system(size: 19))
+                .frame(width: 24)
                 .foregroundStyle(RecipeTheme.accentForeground)
+                .accessibilityHidden(true)
 
-            // These labels are static product copy routed through a shared
-            // String helper, not user-authored settings values.
             Text(LocalizedStringKey(title))
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
+                .font(RecipeTheme.text(17, relativeTo: .body))
+                .foregroundStyle(.primary)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
         }
         .frame(minHeight: 50)
     }

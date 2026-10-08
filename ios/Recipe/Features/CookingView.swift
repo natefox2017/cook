@@ -213,7 +213,7 @@ struct CookingView: View {
                 }
                 .buttonStyle(.bordered)
             }
-            .padding(RecipeSpacing.pageInset)
+            .recipePageContentInsets()
         }
         .accessibilityIdentifier("cookingScroll")
         .safeAreaInset(edge: .bottom) {
@@ -453,7 +453,8 @@ struct CookingView: View {
                     "The saved session could not be read. Its original data has been kept. Start a new session to cook this recipe again.",
                 systemImage: "clock.badge.exclamationmark",
                 actionTitle: "Start a New Session",
-                action: { isConfirmingSessionRecovery = true }
+                action: { isConfirmingSessionRecovery = true },
+                messageLineLimit: nil
             )
             .disabled(isReplacingSession)
 

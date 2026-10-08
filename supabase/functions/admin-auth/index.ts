@@ -5,6 +5,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { handleCors, publicCorsHeaders } from "../_shared/cors.ts";
 import { AppError, errorResponse, json } from "../_shared/errors.ts";
+import { parseAdminRole } from "../_shared/admin-role.ts";
+import { readBoundedJSONObject } from "../_shared/bounded-json.ts";
 import { createServiceClient } from "../_shared/auth.ts";
 import { log } from "../_shared/logger.ts";
 import {
@@ -26,14 +28,12 @@ function routeAction(req: Request): string {
   return (action ?? "").toLowerCase();
 }
 
+// Includes passwords, not media. A large request is an error, not an
+// invitation to buffer arbitrary attacker-controlled data in the Edge worker.
+const MAX_ADMIN_AUTH_BODY_BYTES = 16 * 1024;
+
 async function readJson(req: Request): Promise<Record<string, unknown>> {
-  try {
-    const body = await req.json();
-    if (!body || typeof body !== "object") return {};
-    return body as Record<string, unknown>;
-  } catch {
-    throw new AppError("validation_error", "Invalid JSON body", 400);
-  }
+  return readBoundedJSONObject(req, MAX_ADMIN_AUTH_BODY_BYTES);
 }
 
 async function loadAdminRow(adminId: string) {
@@ -61,7 +61,7 @@ function mapAdmin(row: {
   return {
     id: row.id,
     username: row.username,
-    role: row.role ?? "owner",
+    role: parseAdminRole(row.role),
     mustChangePassword: Boolean(row.must_change_password),
   };
 }
@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
               admin: {
                 id: row.id,
                 username: row.username,
-                role: row.role ?? "owner",
+                role: parseAdminRole(row.role),
                 mustChangePassword: false,
               },
             },

@@ -7,7 +7,7 @@ Deno.test("HTTP 5xx replies never expose database internals", async () => {
   const response = errorResponse(
     new AppError(
       "internal_error",
-      "Session lookup failed",
+      "Session lookup failed: relation public.admin_sessions is missing",
       500,
       { message: "relation public.admin_sessions not found", sql: "select * ..." },
     ),

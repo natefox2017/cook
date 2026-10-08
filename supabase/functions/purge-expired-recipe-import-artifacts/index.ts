@@ -1,59 +1,75 @@
-// Developer: gengyun
-// Purpose: Removes expired recipe import objects while retaining minimal metadata.
+// Developer: RecipePouch
+// Purpose: Private scheduled cleanup of expired recipe import attachments.
 
 import { createServiceClient } from "../_shared/auth.ts";
+import {
+  purgeExpiredArtifacts,
+  securelyEqual,
+  type ArtifactPurgeSource,
+  type ExpiredArtifact,
+} from "./purge.ts";
 
 const BUCKET = "recipe-import-artifacts";
-const BATCH_SIZE = 100;
+const EXPIRABLE_STATES = ["upload_pending", "available", "rejected"];
 
 Deno.serve(async (request: Request): Promise<Response> => {
+  // verify_jwt=false is intentional for scheduler requests; only a separate
+  // high-entropy server secret authorizes service-role cleanup.
   const secret = Deno.env.get("RECIPE_IMPORT_ARTIFACT_CLEANUP_SECRET");
-  const authorization = request.headers.get("Authorization");
-  if (!secret || authorization !== `Bearer ${secret}`) {
+  if (!secret || !securelyEqual(
+    request.headers.get("Authorization") ?? "",
+    `Bearer ${secret}`,
+  )) {
     return Response.json({ code: "AUTH_REQUIRED" }, { status: 401 });
   }
   if (request.method !== "POST") {
     return Response.json({ code: "METHOD_NOT_ALLOWED" }, { status: 405 });
   }
 
-  const admin = createServiceClient();
-  const { data: rows, error } = await admin.from("recipe_import_artifacts")
-    .select("id,storage_path,state")
-    .in("state", ["upload_pending", "available", "rejected"])
-    .lte("expires_at", new Date().toISOString())
-    .order("expires_at", { ascending: true })
-    .limit(BATCH_SIZE);
-  if (error) {
+  try {
+    const admin = createServiceClient();
+    const source: ArtifactPurgeSource = {
+      listExpired: async (cutoff, offset, limit) => {
+        const { data, error } = await admin.from("recipe_import_artifacts")
+          .select("id,owner_id,storage_bucket,storage_path,state,expires_at")
+          .in("state", EXPIRABLE_STATES)
+          .lte("expires_at", cutoff)
+          .order("expires_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(offset, offset + limit - 1);
+        if (error) throw new Error("Artifact cleanup read failed");
+        return (data ?? []) as ExpiredArtifact[];
+      },
+      remove: async (path) => {
+        const { error } = await admin.storage.from(BUCKET).remove([path]);
+        if (error) throw new Error("Artifact cleanup Storage removal failed");
+      },
+      markExpired: async (row, cutoff) => {
+        const { data, error } = await admin.from("recipe_import_artifacts")
+          .update({ state: "expired", updated_at: new Date().toISOString() })
+          .eq("id", row.id)
+          .eq("owner_id", row.owner_id)
+          .eq("storage_bucket", BUCKET)
+          .eq("storage_path", row.storage_path)
+          .eq("expires_at", row.expires_at)
+          .lte("expires_at", cutoff)
+          .in("state", EXPIRABLE_STATES)
+          .select("id")
+          .maybeSingle();
+        if (error) throw new Error("Artifact cleanup state update failed");
+        return data !== null;
+      },
+    };
+
+    const report = await purgeExpiredArtifacts(source);
+    if (report.failed > 0 || report.has_more) {
+      // No user identifiers, source text, tokens or object paths in logs.
+      console.warn("recipe_artifact_cleanup_incomplete", report);
+    }
+    // Partial failure is explicitly retryable for the scheduler and alarm.
+    return Response.json(report, { status: report.failed > 0 ? 503 : 200 });
+  } catch {
+    console.error("recipe_artifact_cleanup_unavailable");
     return Response.json({ code: "SERVICE_UNAVAILABLE" }, { status: 503 });
   }
-
-  let deleted = 0;
-  for (const row of rows ?? []) {
-    const { error: storageError } = await admin.storage.from(BUCKET)
-      .remove([row.storage_path]);
-    if (storageError) {
-      console.error("recipe_import_artifact_cleanup_storage_failed", {
-        artifact_id: row.id,
-      });
-      continue;
-    }
-    const { error: updateError } = await admin.from("recipe_import_artifacts")
-      .update({
-        state: "expired",
-        updated_at: new Date().toISOString(),
-      }).eq("id", row.id).in("state", [
-        "upload_pending",
-        "available",
-        "rejected",
-      ]);
-    if (updateError) {
-      console.error("recipe_import_artifact_cleanup_state_failed", {
-        artifact_id: row.id,
-      });
-      continue;
-    }
-    deleted++;
-  }
-
-  return Response.json({ expired: deleted });
 });

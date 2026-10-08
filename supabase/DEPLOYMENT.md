@@ -66,6 +66,26 @@ periodically and the cleanup endpoint **daily**; log executions and alert on
 queue backlog, repeated 503s and stuck expired artifacts. Do not put live
 credentials, signed URLs, JWTs or user source text in logs or GitHub Issues.
 
+### Expired artifact cleanup contract
+
+The cron endpoint scans stable, ordered database pages **before** modifying any
+rows, processes at most 1,000 expired artifacts per request with eight bounded workers, and verifies the
+bucket and exact `owner_id/artifact_id` Storage path before deleting. Its
+JSON response is `{ attempted, expired, failed, has_more }`.
+
+- `200`: no row-level failures; when `has_more=true`, invoke another
+  **authenticated server-side** batch promptly instead of waiting until the
+  next day's run.
+- `503`: DB/Storage errors or partial cleanup failures. Alert and retry;
+  failures leave the corresponding row eligible for the next cleanup attempt.
+- Concurrency: upload completion uses a conditional expiry check at write time;
+  cleanup updates only unchanged, still-expired owner-scoped rows.
+- Monitor the `failed` count and repeated `has_more` signals; a single daily
+  invocation is not enough if the backlog exceeds 1,000 files.
+- The seven isolated cases in `purge_test.ts` were additionally run with a
+  Node 22 TypeScript strip-types adapter against identical Git blobs. This
+  does **not** replace the Deno runtime and staging Storage/SQL tests.
+
 ## Minimum release acceptance
 
 - A/B accounts: direct RLS and REST lookup of another owner's job/artifact/
@@ -87,6 +107,53 @@ migration versions, Edge versions, HTTP status and final DB mutation.
 Confirm a rollback strategy before the separate production release window.
 For a migration failure, restore from the planned recovery point or deploy a
 forward migration; never delete user data or casually drop the job queue.
+
+## Admin Auth hardening
+
+The checked-in `admin-auth` handler uses a **16 KiB** bounded JSON reader for
+login, bootstrap and password changes. Invalid JSON returns 400, while both
+declared and actual oversized bodies return 413. The server-side bootstrap
+credential uses a bounded comparison that does not stop at the first different
+byte. Deployment must retain `verify_jwt=false` for this custom admin bearer
+protocol; the handler authorizes each admin session and independently gates
+bootstrap with `COOKAPP_ADMIN_BOOTSTRAP_TOKEN`.
+
+The `_shared/bounded-json_test.ts` and `admin-auth/index_test.ts` pure request
+tests were checked against the GitHub blob hashes and executed with Node 22's
+TypeScript adapter. Those checks do not exercise the deployed Deno runtime.
+Validate the live admin-login, owner bootstrap and change-password routes in
+staging before updating `admin-auth` production version; do not include a
+bootstrap token, password or admin session in test output.
+
+## Admin role authorization
+
+The production `admin_accounts.role` constraint permits `owner`, `admin`,
+`operator`, and `readonly`. Missing or unrecognized session roles must
+**fail closed**; they must never silently become `owner`. The shared
+`parseAdminRole` and `requireAdminRole(role, allowedRoles)` helpers provide
+this contract and are exercised by `admin-role_test.ts`.
+
+The deployed `admin-subscriptions` implementation is not in this repository
+and uses only `requireAdminSession` on some plan and financial routes; the
+readonly/operator authorization boundary therefore requires explicit review in
+the original authorized source before deployment. In a controlled staging
+environment, create separate roles and assert HTTP 403 for prohibited
+mutations and financial reads. Do not treat a successful login as permission
+to mutate any resource. Track this in #155.
+
+## Existing production Edge drift
+
+The production project also runs `revenuecat-webhook`, `admin-subscriptions`,
+`admin-users`, `admin-dashboard`, `admin-ai`, `health` and `openapi`.
+Most of those functions are **not** version-controlled in this public repository.
+The checked-in replacement for `health` uses local shared imports but is not
+deployed by merging this PR. Some currently deployed functions import code or
+OpenAPI specs from branches of a separate `cookapp` repository, which is not
+accessible with the current GitHub connector. Track source provenance,
+repository visibility, immutable dependencies and deployment in
+[Issue #155](https://github.com/natefox2017/cook/issues/155). Do not copy
+potentially private sources or secrets into this public repository without
+explicitly resolving their intended visibility.
 
 ## References
 

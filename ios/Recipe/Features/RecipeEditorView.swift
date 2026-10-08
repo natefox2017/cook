@@ -127,6 +127,7 @@ struct RecipeEditorView: View {
                 }
             }
             .listSectionSpacing(RecipeSpacing.medium)
+            .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
             .scrollDismissesKeyboard(.interactively)

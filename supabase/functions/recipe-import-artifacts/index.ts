@@ -316,6 +316,10 @@ Deno.serve(async (request: Request): Promise<Response> => {
         expires_at: availableUntil,
         updated_at: new Date().toISOString(),
       }).eq("id", row.id).eq("owner_id", user.id).eq("state", "upload_pending")
+        // Re-check expiration when committing, not only before downloading.
+        // Otherwise a cleanup invocation can race a long-running completion
+        // and delete a source just after it becomes available.
+        .gt("expires_at", new Date().toISOString())
         .select("*").maybeSingle();
       if (updateError || !updated) {
         // Another completion request may have won the conditional update.

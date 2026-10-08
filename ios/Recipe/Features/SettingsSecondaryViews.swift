@@ -65,6 +65,7 @@ struct DataPrivacySettingsView: View {
             }
         }
         .listSectionSpacing(RecipeSpacing.medium)
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("Data & Privacy")
@@ -181,6 +182,7 @@ struct StoredDataView: View {
             )
         }
         .listSectionSpacing(RecipeSpacing.medium)
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("What RecipePouch Stores")
@@ -205,7 +207,7 @@ struct PrivacySummaryView: View {
                 Text(
                     String(localized: LocalizedStringResource("You can export local data and request deletion of your RecipePouch account data from Settings.", locale: RecipeLanguage.active)))
             }
-            .padding(RecipeSpacing.pageInset)
+            .recipePageContentInsets()
         }
         .background(RecipeTheme.canvas)
         .navigationTitle("Privacy Summary")
@@ -260,6 +262,7 @@ struct HelpCenterView: View {
             }
         }
         .listSectionSpacing(RecipeSpacing.medium)
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("Help & Support")
@@ -284,7 +287,7 @@ private struct HelpArticleView: View {
                         )
                     )
             }
-            .padding(RecipeSpacing.pageInset)
+            .recipePageContentInsets()
         }
         .background(RecipeTheme.canvas)
         .navigationTitle(Text(LocalizedStringKey(title)))
@@ -328,6 +331,7 @@ struct AboutSettingsView: View {
             }
         }
         .listSectionSpacing(RecipeSpacing.medium)
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("About RecipePouch")
@@ -350,6 +354,7 @@ private struct LicensesView: View {
             }
         }
         .listSectionSpacing(RecipeSpacing.medium)
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("Licenses")
@@ -364,7 +369,7 @@ private struct AcknowledgementsView: View {
             Text(
                 String(localized: LocalizedStringResource("RecipePouch’s interaction model is informed by established private recipe managers: collect recipes, organize them, cook step-by-step, plan meals, and shop from ingredients. RecipePouch’s implementation and visual system remain its own.", locale: RecipeLanguage.active))
             )
-            .padding(RecipeSpacing.pageInset)
+            .recipePageContentInsets()
         }
         .background(RecipeTheme.canvas)
         .navigationTitle("Acknowledgements")

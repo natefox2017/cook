@@ -92,7 +92,10 @@ This contract applies to RecipePouch SwiftUI screens. Keep the implemented
 - **Spacing:** horizontal page inset 20 pt, content start 8 pt below the
   native navigation content area, compact text gaps 4 / 8 pt, related
   controls 12 pt, list sections 16 pt, and major groups 24 pt.
-  Shared values live in `RecipeSpacing`.
+  Shared values live in `RecipeSpacing`. For a scrolling secondary page use
+  `recipePageContentInsets()`; native List/Form screens use an 8-pt top
+  scroll-content margin. The system navigation bar retains responsibility for
+  status-bar and top-title placement.
 - **Colors:** primary text uses system `.primary`, supporting information
   uses `.secondary`, links and accents use
   `RecipeTheme.accentForeground`, and actions use
@@ -108,3 +111,14 @@ This contract applies to RecipePouch SwiftUI screens. Keep the implemented
 
 Before release, check the updated pages on iPhone simulator and device at
 standard and accessibility Dynamic Type sizes, in light/dark appearance.
+
+### Compact copy versus essential information
+
+A single-line limit is appropriate for decorative metadata at standard text
+sizes; it is **not** appropriate for recovery errors, account warnings,
+or a StoreKit trial-price/renewal disclosure. At Accessibility Dynamic Type
+sizes, navigation/setting labels may wrap; never shrink normal body labels
+to a fraction of their specified type scale. For subscription choices use a
+horizontal title/price row when it fits and a vertical arrangement when not.
+Maintain the 24-pt profile/settings icon column consistently and preserve
+all VoiceOver text.

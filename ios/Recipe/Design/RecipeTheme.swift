@@ -45,6 +45,13 @@ extension View {
     func recipeRootScrollClearance() -> some View {
         modifier(RecipeRootScrollClearance())
     }
+
+    // Use the same content start below the native navigation bar on scroll screens.
+    func recipePageContentInsets(bottom: CGFloat = RecipeSpacing.large) -> some View {
+        padding(.horizontal, RecipeSpacing.pageInset)
+            .padding(.top, RecipeSpacing.pageTop)
+            .padding(.bottom, bottom)
+    }
 }
 
 enum RecipeTheme {
@@ -117,6 +124,8 @@ struct PrimaryButtonStyle: ButtonStyle {
 }
 
 struct EmptyStateView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let title: String
     let message: String
     let systemImage: String
@@ -137,7 +146,7 @@ struct EmptyStateView: View {
                 .font(RecipeTheme.text(15, relativeTo: .subheadline))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .lineLimit(messageLineLimit)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : messageLineLimit)
             if let actionTitle, let action {
                 Button(action: action) { Text(LocalizedStringKey(actionTitle)) }.buttonStyle(PrimaryButtonStyle())
             }
