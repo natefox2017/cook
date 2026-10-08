@@ -216,7 +216,7 @@ public final class RecipeStore {
 
     public func collectionIDs(forRecipe recipeID: UUID) -> Set<UUID> {
         Set(
-            collectionMemberships
+            collectionMemberships.lazy
                 .filter { $0.recipeID == recipeID }
                 .map(\.collectionID)
         )
@@ -224,7 +224,7 @@ public final class RecipeStore {
 
     public func recipes(inCollection collectionID: UUID) -> [Recipe] {
         let recipeIDs = Set(
-            collectionMemberships
+            collectionMemberships.lazy
                 .filter { $0.collectionID == collectionID }
                 .map(\.recipeID)
         )
