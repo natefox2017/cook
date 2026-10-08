@@ -3,6 +3,7 @@
 
 export const ARTIFACT_CLEANUP_PAGE_SIZE = 100;
 export const ARTIFACT_CLEANUP_MAX_ROWS = 1_000;
+export const ARTIFACT_CLEANUP_CONCURRENCY = 8;
 
 const BUCKET = "recipe-import-artifacts";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -82,26 +83,37 @@ export async function purgeExpiredArtifacts(
 
   let expired = 0;
   let failed = 0;
-  for (const row of rows) {
-    if (!isPurgeableArtifact(row, cutoff)) {
-      failed++;
-      continue;
-    }
+  let next = 0;
 
-    try {
-      // Remove first; if Storage is unavailable the row remains retryable.
-      // Completion must also compare expires_at during its conditional write
-      // so a late upload cannot revive an already expired artifact.
-      await source.remove(row.storage_path);
-      if (await source.markExpired(row, cutoff)) {
-        expired++;
-      } else {
+  // A bounded worker pool avoids thousands of concurrent service-role
+  // requests and keeps a full cleanup pass within Edge wall-time limits.
+  const drain = async (): Promise<void> => {
+    while (next < rows.length) {
+      const row = rows[next++];
+      if (!isPurgeableArtifact(row, cutoff)) {
+        failed++;
+        continue;
+      }
+
+      try {
+        // Remove first; if Storage is unavailable the row remains retryable.
+        // Completion must also compare expires_at during its conditional write
+        // so a late upload cannot revive an already expired artifact.
+        await source.remove(row.storage_path);
+        if (await source.markExpired(row, cutoff)) {
+          expired++;
+        } else {
+          failed++;
+        }
+      } catch {
         failed++;
       }
-    } catch {
-      failed++;
     }
-  }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(ARTIFACT_CLEANUP_CONCURRENCY, rows.length) }, drain),
+  );
 
   return {
     attempted: rows.length,
