@@ -122,6 +122,7 @@ struct EmptyStateView: View {
     let systemImage: String
     var actionTitle: String? = nil
     var action: (() -> Void)? = nil
+    var messageLineLimit: Int? = 1
 
     var body: some View {
         VStack(spacing: RecipeSpacing.medium) {
@@ -132,7 +133,11 @@ struct EmptyStateView: View {
             Text(LocalizedStringKey(title))
                 .font(RecipeTheme.heading(.title))
                 .multilineTextAlignment(.center)
-            Text(LocalizedStringKey(message)).foregroundStyle(.secondary).multilineTextAlignment(.center).lineLimit(1)
+            Text(LocalizedStringKey(message))
+                .font(RecipeTheme.text(15, relativeTo: .subheadline))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(messageLineLimit)
             if let actionTitle, let action {
                 Button(action: action) { Text(LocalizedStringKey(actionTitle)) }.buttonStyle(PrimaryButtonStyle())
             }

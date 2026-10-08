@@ -48,7 +48,8 @@ struct ShareRootView: View {
                 Text("Couldn’t save your source")
                     .font(ShareVisualStyle.headline)
                 Text(message)
-                    .lineLimit(1)
+                    // Errors are actionable information, unlike decorative helper copy.
+                    .lineLimit(3)
                     .font(ShareVisualStyle.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

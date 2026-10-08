@@ -106,7 +106,8 @@ private struct RecipeRootView: View {
                     message: "RecipePouch couldn't read your saved library. The file has been left unchanged.\n\n\(message)",
                     systemImage: "externaldrive.badge.exclamationmark",
                     actionTitle: "Try again",
-                    action: { store.reload() }
+                    action: { store.reload() },
+                    messageLineLimit: nil
                 )
                 .padding()
                 .navigationTitle("RecipePouch")
