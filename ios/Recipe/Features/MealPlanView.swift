@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Implements weekly meal planning, recipe selection, replacement, and navigation.
+
 import RecipeCore
 import SwiftUI
 
