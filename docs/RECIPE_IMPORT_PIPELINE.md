@@ -108,3 +108,13 @@ source_type 示例：
 - timestamps
 
 Worker 所有写入都必须允许安全重试。
+
+
+## 9. 导入协议与部署边界（2026-10-08）
+
+- 协议参考 [API_CONTRACT.md](API_CONTRACT.md) / [import-v1.openapi.json](schemas/import-v1.openapi.json) / [import-v1.schema.json](schemas/import-v1.schema.json)。
+- Share Extension 写入本地可恢复 receipt 并返回宿主 App；不能把 `Saved to RecipePouch` 误认为 Supabase 已接受。App 后续转送，服务端确认后才更新 receipt 的 `acknowledged_job_id`。
+- `received` 表示服务器持久化任务；`queued` 表示消息入队确认。worker 才进入 extracting/parsing/validating，成功后 job=completed，结果 recipe=ready 或 needs_review；两条状态轴不可混用。
+- 发生认证丢失、网络失败、队列未确认、重试或账户切换时，保留原始 receipt/source/evidence，不静默丢弃、不跨 owner 转移。
+- 具体公开来源研究记录见 [import-fixtures/observations.json](import-fixtures/observations.json)：帮助文档不等于真实 URL 解析，也不等于 iOS 第三方 Share → 队列 → 食谱的端到端验收。
+

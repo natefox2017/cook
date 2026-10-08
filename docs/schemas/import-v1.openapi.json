@@ -1,0 +1,308 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "RecipePouch Import API Contract",
+    "version": "1.0.0",
+    "description": "Proposed v1 interface shared by #6, #30 and #31. This file freezes semantics; it does not imply these HTTP endpoints are deployed."
+  },
+  "tags": [
+    {
+      "name": "Imports",
+      "description": "Server-owned asynchronous jobs; receipts are stored on device before calling these APIs."
+    }
+  ],
+  "paths": {
+    "/recipe-imports": {
+      "post": {
+        "tags": [
+          "Imports"
+        ],
+        "operationId": "createRecipeImport",
+        "summary": "Accept a user-owned, idempotent recipe import job without waiting for extraction",
+        "description": "Require authenticated app session. Unique (auth.uid(), client_request_id) prevents duplicate jobs; only return queued after confirmed durable queue insertion. Media artifact references must be uploaded and confirmed available before job creation.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./import-v1.schema.json#/$defs/ImportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Job accepted. received means durable job record only; queued confirms durable queue submission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/JobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request/input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-owner access blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting client request ID or artifact ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unsupported or unconfirmed artifact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service cannot currently accept this import",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipe-imports/{job_id}": {
+      "get": {
+        "tags": [
+          "Imports"
+        ],
+        "operationId": "getRecipeImport",
+        "summary": "Retrieve this user's job, durable queue status, evidence-backed result and recoverable error",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current job progress or final result. completed job can yield ready or needs_review recipe.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/JobResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner mismatch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing job or concealed foreign job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service currently unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipe-imports/{job_id}/retry": {
+      "post": {
+        "tags": [
+          "Imports"
+        ],
+        "operationId": "retryRecipeImport",
+        "summary": "Request idempotent retry of a recoverable failed job",
+        "description": "Reuse existing job and its immutable source evidence; only retry if authorization matches job owner and retries are allowed. Return a durable updated job; no new recipe on duplicate retry.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Existing job accepted for retry; queued only after durable queue admission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/JobResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner mismatch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Job not retryable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Queue admission unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Supabase end-user access token; owner is derived from verified auth.uid(), never request body."
+      }
+    }
+  }
+}

@@ -27,8 +27,10 @@ final class SubscriptionStore {
             for await update in Transaction.updates {
                 guard let self else { return }
                 guard case .verified(let transaction) = update else { continue }
-                await transaction.finish()
-                await self.refreshEntitlements()
+                await self.finishAfterEntitlementDelivery(
+                    transaction,
+                    reportUnavailable: false
+                )
             }
         }
     }
@@ -66,7 +68,10 @@ final class SubscriptionStore {
             await refreshEntitlements()
             hasLoaded = true
         } catch {
-            state = .unavailable(error.localizedDescription)
+            // A storefront/network error must not erase a verified entitlement.
+            if state != .active {
+                state = .unavailable(error.localizedDescription)
+            }
             // Do not cache transient StoreKit failures.
         }
     }
@@ -83,8 +88,10 @@ final class SubscriptionStore {
                     message = "The App Store transaction could not be verified."
                     return
                 }
-                await transaction.finish()
-                await refreshEntitlements()
+                await finishAfterEntitlementDelivery(
+                    transaction,
+                    reportUnavailable: true
+                )
 
             case .pending:
                 message = "Your purchase is pending approval."
@@ -108,7 +115,9 @@ final class SubscriptionStore {
         do {
             try await AppStore.sync()
             await refreshEntitlements()
-            if state != .active {
+            if state == .active {
+                message = "Your active RecipePouch subscription has been restored."
+            } else {
                 message = "No active RecipePouch subscription was found for this App Store account."
             }
         } catch {
@@ -116,23 +125,51 @@ final class SubscriptionStore {
         }
     }
 
-    func refreshEntitlements() async {
-        let configuredProductIDs = Set(Self.productIDs)
-        guard !configuredProductIDs.isEmpty else {
-            state = .unavailable("Subscription products have not been configured.")
+    /// Deliver the verified entitlement before acknowledging a StoreKit
+    /// transaction. A purchase may be verified but not yet reflected in the
+    /// active subscription sequence; never finish it before granting access.
+    private func finishAfterEntitlementDelivery(
+        _ transaction: Transaction,
+        reportUnavailable: Bool
+    ) async {
+        let configuredIDs = Set(Self.productIDs)
+        guard configuredIDs.contains(transaction.productID),
+              transaction.revocationDate == nil else {
+            await refreshEntitlements()
             return
         }
 
+        let entitledIDs = await refreshEntitlements()
+        guard entitledIDs.contains(transaction.productID) else {
+            if reportUnavailable {
+                message = "The App Store verified your purchase, but the entitlement is not yet available. Check your subscription status or try Restore Purchases."
+            }
+            return
+        }
+
+        await transaction.finish()
+    }
+
+    /// The App Store's active entitlement sequence includes subscriptions
+    /// in billing grace periods. Never unlock from an unverified transaction.
+    @discardableResult
+    func refreshEntitlements() async -> Set<String> {
+        let configuredProductIDs = Set(Self.productIDs)
+        guard !configuredProductIDs.isEmpty else {
+            state = .unavailable("Subscription products have not been configured.")
+            return []
+        }
+
+        var entitledProductIDs = Set<String>()
         for await entitlement in Transaction.currentEntitlements {
             guard case .verified(let transaction) = entitlement else { continue }
             guard configuredProductIDs.contains(transaction.productID) else { continue }
             guard transaction.revocationDate == nil else { continue }
-
-            state = .active
-            return
+            entitledProductIDs.insert(transaction.productID)
         }
 
-        state = .free
+        state = entitledProductIDs.isEmpty ? .free : .active
+        return entitledProductIDs
     }
 
     static var productIDs: [String] {
