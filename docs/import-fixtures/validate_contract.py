@@ -6,6 +6,7 @@
 
 import json
 import sys
+import urllib.parse
 from pathlib import Path
 
 try:
@@ -46,6 +47,28 @@ def validate_openapi_references(api: dict, definitions: set[str]) -> None:
     inspect(api["paths"])
 
 
+def has_well_formed_import_url(case: dict) -> bool:
+    if case["schema"] != "ImportRequest":
+        return True
+    request = case["data"]
+    if request.get("input_type") != "url":
+        return True
+
+    try:
+        parsed = urllib.parse.urlsplit(request.get("url", ""))
+        port = parsed.port
+    except (TypeError, ValueError):
+        return False
+
+    return (
+        parsed.scheme == "https"
+        and bool(parsed.hostname)
+        and parsed.username is None
+        and parsed.password is None
+        and port in (None, 443)
+    )
+
+
 def main() -> int:
     schema = read_json(SCHEMA_PATH)
     api = read_json(OPENAPI_PATH)
@@ -79,7 +102,7 @@ def main() -> int:
         }
         validator = Draft202012Validator(selected, format_checker=checker)
         errors = list(validator.iter_errors(case["data"]))
-        observed_valid = not errors
+        observed_valid = not errors and has_well_formed_import_url(case)
 
         if observed_valid != case["valid"]:
             details = "; ".join(error.message for error in errors[:2])

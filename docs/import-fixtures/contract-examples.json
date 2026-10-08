@@ -76,7 +76,7 @@
             },
             {
               "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
-              "source_type": "webpage_structured_data",
+              "source_type": "article_body",
               "origin": "extracted",
               "excerpt": "盐适量",
               "confidence": 0.42,
@@ -146,6 +146,26 @@
         "input_type": "url",
         "url": "http://127.0.0.1/internal",
         "platform_hint": "web"
+      }
+    },
+    {
+      "name": "reject malformed https source",
+      "schema": "ImportRequest",
+      "valid": false,
+      "data": {
+        "client_request_id": "12121212-1212-4121-8121-121212121212",
+        "input_type": "url",
+        "url": "https:///missing-host"
+      }
+    },
+    {
+      "name": "reject empty source text",
+      "schema": "ImportRequest",
+      "valid": false,
+      "data": {
+        "client_request_id": "13131313-1313-4131-8131-131313131313",
+        "input_type": "text",
+        "text": ""
       }
     },
     {
