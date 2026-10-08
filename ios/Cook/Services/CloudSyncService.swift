@@ -65,7 +65,7 @@ protocol CookCloudSyncing: Sendable {
         expectedRevision: Int64,
         for userID: UUID
     ) async throws -> CloudSnapshotEnvelope
-    func download() async throws -> CloudSnapshotEnvelope?
+    func download(for userID: UUID) async throws -> CloudSnapshotEnvelope?
     func deleteAccountAndCloudData() async throws
 }
 
@@ -82,7 +82,10 @@ struct UnconfiguredCloudSync: CookCloudSyncing {
     ) async throws -> CloudSnapshotEnvelope {
         throw NotConfigured()
     }
-    func download() async throws -> CloudSnapshotEnvelope? { throw NotConfigured() }
+    func download(for userID: UUID) async throws -> CloudSnapshotEnvelope? {
+        _ = userID
+        throw NotConfigured()
+    }
     func deleteAccountAndCloudData() async throws { throw NotConfigured() }
 }
 
@@ -144,10 +147,11 @@ struct SupabaseCloudSync: CookCloudSyncing {
         )
     }
 
-    func download() async throws -> CloudSnapshotEnvelope? {
+    func download(for userID: UUID) async throws -> CloudSnapshotEnvelope? {
         let row: RemoteSnapshot? = try await client
             .from("user_snapshots")
             .select()
+            .eq("user_id", value: userID.uuidString)
             .maybeSingle()
             .execute()
             .value
@@ -320,7 +324,7 @@ final class CloudSyncCoordinator {
         guard let store else { return }
         state = .syncing
         do {
-            let remote = try await service.download()
+            let remote = try await service.download(for: userID)
             guard accountID == userID else { return }
             remoteSnapshot = remote
             expectedRevision = remote?.revision ?? 0
@@ -397,7 +401,8 @@ final class CloudSyncCoordinator {
                 followUpSyncNeeded = store.changeToken != submittedToken
             } catch CookCloudSyncError.revisionConflict {
                 guard self.accountID == accountID else { return }
-                let latest = try await service.download()
+                let latest = try await service.download(for: accountID)
+                guard self.accountID == accountID else { return }
                 remoteSnapshot = latest
                 expectedRevision = latest?.revision ?? 0
                 if let latest {
