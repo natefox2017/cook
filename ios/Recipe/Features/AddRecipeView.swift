@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Implements recipe intake from links, text, documents, photos, and manual entry.
+
 import SwiftUI
 import PhotosUI
 import AVFoundation
