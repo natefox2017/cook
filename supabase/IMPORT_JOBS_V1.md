@@ -22,6 +22,14 @@ This directory adds the **first server job/queue slice** for [Issue #31](https:/
 - `supabase/config.toml`: verifies end-user JWT for API; cron worker must validate its separately configured secret.
 - `ios/Recipe/Services/RecipeRemoteImportService.swift`: native authenticated transport, progress lookup and guarded text-to-RecipeStore mapping. This is code prepared for #30's future inbox handoff, **not** an already-working app flow.
 
+## 2026-10-08 source audit and lease-fencing changes
+
+- **SQL idempotency:** original user source bytes remain in `source_value`, while the trimmed copy is used only for basic input validation and an index hint. Repeating the exact same `client_request_id` and original text with leading/trailing whitespace now returns the existing job rather than a false 409. Changing the original text with the same request ID still conflicts.
+- **Worker lease fencing:** terminal `failed`/`completed` updates now compare both `queue_message_id` and the attempt number returned by `claim_recipe_import_job`. When a visibility timeout permits a fresh claim, a stale worker cannot overwrite the new attempt's final status or result. The losing worker must leave the message unacknowledged.
+- **SQL source audit:** one definition each of submit/retry/claim is present; the accidental earlier concatenation has not recurred. This is a source-level check, **not PostgreSQL syntax/runtime proof**.
+- **Read-only production check:** the legacy queue is `pgmq` 1.5.1, with 0 pending and 1 archived message at inspection, and `public.recipe_import_jobs` is still absent. The legacy `recipe_import_enqueue` function still writes `pending/running/imported` and references columns absent from this V1 table. Do not call that function on V1 jobs or deploy before checking consumers and DB migration compatibility.
+- **Required database regressions:** (1) exact whitespace-bearing request replay -> same job ID; (2) same request ID with different raw text -> conflict; (3) worker A claims attempt N, times out, worker B claims attempt N+1, then A's fenced write changes **zero rows**; (4) B persists final result before ACK; (5) account A cannot query or retry account B's job. Run on a disposable database with real authenticated roles before deploying.
+
 ## Required verification before production migration/deploy
 
 Do not infer success from source code, lightweight PR auto-merge or an existing PGMQ table. On a disposable branch/database, validate:
