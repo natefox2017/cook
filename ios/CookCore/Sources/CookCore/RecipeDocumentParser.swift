@@ -207,7 +207,7 @@ public enum RecipeDocumentParser {
                         durationSeconds: seconds
                     )
                 )
-                if timers.count > 12 { break }
+                if timers.count >= 12 { break }
             }
         }
 
@@ -242,7 +242,7 @@ public enum RecipeDocumentParser {
                 : base
 
             timers.append(RecipeStepTimer(label: label, durationSeconds: seconds))
-            if timers.count > 12 { break }
+            if timers.count >= 12 { break }
         }
 
         return timers
