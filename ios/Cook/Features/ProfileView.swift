@@ -69,6 +69,13 @@ struct ProfileView: View {
                     )
                 }
                 NavigationLink {
+                    CollectionsView()
+                } label: {
+                    ProfileRowLabel(title: "Collections", systemImage: "folder")
+                }
+                .accessibilityIdentifier("profile.collections")
+
+                NavigationLink {
                     MealPlanView()
                 } label: {
                     ProfileRowLabel(title: "Meal Plan", systemImage: "calendar")
