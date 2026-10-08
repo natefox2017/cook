@@ -130,7 +130,6 @@ struct CloudSyncSettingsView: View {
                     }
                     .disabled(isSyncing)
                 }
-                }
             }
 
             Section("Sync behavior") {
