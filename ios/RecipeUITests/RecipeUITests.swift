@@ -524,7 +524,8 @@ final class RecipeUITests: XCTestCase {
         }
 
         let savedAlert = app.alerts["RecipePouch"]
-        XCTAssertTrue(savedAlert.waitForExistence(timeout: 12), app.debugDescription)
+        // The native picker can remain busy while its local File Provider writes the export.
+        XCTAssertTrue(savedAlert.waitForExistence(timeout: 45), app.debugDescription)
         let success = savedAlert.staticTexts.matching(
             NSPredicate(format: "label CONTAINS %@", "Export saved as")
         ).firstMatch
