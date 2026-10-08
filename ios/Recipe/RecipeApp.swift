@@ -86,6 +86,7 @@ struct RecipeApp: App {
 private struct RecipeRootView: View {
     @Environment(RecipeStore.self) private var store
     @Environment(CloudSyncCoordinator.self) private var cloudSync
+    @Environment(SubscriptionStore.self) private var subscriptions
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(FirstLaunchFlowView.completionKey) private var hasCompletedOnboarding = false
     @State private var selectedTab: RecipeTab = .recipes
@@ -157,6 +158,11 @@ private struct RecipeRootView: View {
                 authState: RecipeAuthService.shared.state
             )
         }
+        .task {
+            // Recover verified StoreKit entitlements even when the user never
+            // opens the subscription screen in this process.
+            await subscriptions.refreshEntitlements()
+        }
         .onChange(of: RecipeAuthService.shared.state) { _, state in
             Task {
                 await cloudSync.authenticationChanged(state)
@@ -171,6 +177,9 @@ private struct RecipeRootView: View {
             guard phase == .active else { return }
             Task {
                 await cloudSync.appBecameActive()
+            }
+            Task {
+                await subscriptions.refreshEntitlements()
             }
         }
     }
