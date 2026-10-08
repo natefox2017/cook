@@ -618,6 +618,9 @@ final class CloudSyncCoordinator {
         guard force || (!automaticSyncPaused && canSyncAutomatically) else {
             return
         }
+        // The first account download also uses .syncing; it does not hold
+        // isSyncing, so a foreground refresh must not race initial consent.
+        if case .syncing = state { return }
         if case .initialChoice = state { return }
         if case .conflicts = state { return }
 
