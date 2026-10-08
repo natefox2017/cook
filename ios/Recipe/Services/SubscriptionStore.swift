@@ -109,7 +109,7 @@ final class SubscriptionStore {
             try await AppStore.sync()
             await refreshEntitlements()
             if state != .active {
-                message = "No active Recipe subscription was found for this App Store account."
+                message = "No active RecipePouch subscription was found for this App Store account."
             }
         } catch {
             message = error.localizedDescription
@@ -136,13 +136,26 @@ final class SubscriptionStore {
     }
 
     static var productIDs: [String] {
-        guard let raw = Bundle.main.object(forInfoDictionaryKey: "RecipeSubscriptionProductIDs") as? String else {
-            return []
+        let keys = [
+            "RecipeSubscriptionProductIDs",
+            "LegacyCookSubscriptionProductIDs"
+        ]
+
+        for key in keys {
+            guard let raw = Bundle.main.object(forInfoDictionaryKey: key) as? String else {
+                continue
+            }
+
+            let ids = raw
+                .split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty && !$0.hasPrefix("$(") }
+
+            if !ids.isEmpty {
+                return ids
+            }
         }
 
-        return raw
-            .split(separator: ",")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty && !$0.hasPrefix("$(") }
+        return []
     }
 }
