@@ -3,6 +3,8 @@
 
 import RecipeCore
 import SwiftUI
+import UIKit
+import UserNotifications
 
 /// Shared numeric timer clock; spoken durations remain locale-aware in their views.
 private enum CookingClockText {
@@ -18,8 +20,6 @@ private enum CookingClockText {
         return String(format: "%02d:%02d", seconds / 60, seconds % 60)
     }
 }
-import UIKit
-import UserNotifications
 
 struct CookingView: View {
     let recipeID: UUID
