@@ -10,6 +10,7 @@ import RecipeCore
 struct RecipeApp: App {
     @State private var store: RecipeStore
     @State private var subscriptions = SubscriptionStore()
+    @State private var cloudSync = CloudSyncCoordinator()
     private let isUITesting: Bool
 
     init() {
@@ -60,6 +61,7 @@ struct RecipeApp: App {
             RecipeRootView(bypassOnboarding: isUITesting)
                 .environment(store)
                 .environment(subscriptions)
+                .environment(cloudSync)
                 .onOpenURL { RecipeAuthService.shared.handleAuthCallback($0) }
                 .tint(RecipeTheme.accent)
                 .font(RecipeTheme.body())
@@ -83,13 +85,16 @@ struct RecipeApp: App {
 
 private struct RecipeRootView: View {
     @Environment(RecipeStore.self) private var store
+    @Environment(CloudSyncCoordinator.self) private var cloudSync
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage(FirstLaunchFlowView.completionKey) private var hasCompletedOnboarding = false
     @State private var selectedTab: RecipeTab = .recipes
 
     let bypassOnboarding: Bool
 
     var body: some View {
-        if let message = store.loadError {
+        Group {
+            if let message = store.loadError {
             NavigationStack {
                 EmptyStateView(
                     title: "Your saved library needs attention",
@@ -143,6 +148,29 @@ private struct RecipeRootView: View {
                         .accessibilityIdentifier("tab.\(RecipeTab.profile.rawValue)")
                 }
                 .tag(RecipeTab.profile)
+            }
+        }
+        }
+        .task {
+            await cloudSync.bind(
+                store: store,
+                authState: RecipeAuthService.shared.state
+            )
+        }
+        .onChange(of: RecipeAuthService.shared.state) { _, state in
+            Task {
+                await cloudSync.authenticationChanged(state)
+            }
+        }
+        .onChange(of: store.changeToken) { _, token in
+            Task {
+                await cloudSync.localStoreChanged(token: token)
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task {
+                await cloudSync.appBecameActive()
             }
         }
     }
