@@ -190,6 +190,11 @@ export async function extractSelectablePDFArtifact(input: {
     if (error instanceof PDFArtifactError) throw error;
     throw new PDFArtifactError("PDF_PARSE_FAILED", "The shared PDF could not be read safely.");
   } finally {
-    await pdf?.destroy();
+    // A cleanup failure must not mask an actionable parse/no-text error.
+    try {
+      await pdf?.destroy();
+    } catch {
+      // The parser has no persistent state; Edge runtime releases the isolate.
+    }
   }
 }
