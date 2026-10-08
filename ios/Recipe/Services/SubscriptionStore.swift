@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Owns StoreKit products, transactions, entitlement refresh, purchase, and restore state.
+
 import Foundation
 import Observation
 import StoreKit
