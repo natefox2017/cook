@@ -39,13 +39,22 @@
 - id
 - recipe_id
 - order
+- title?
 - instruction
-- duration_seconds?
 - temperature?
 - linked_ingredient_ids[]
+- timers[]
+  - id
+  - label
+  - duration_seconds
 - evidence_id
 - confidence
 - user_confirmed
+
+兼容说明：
+- 旧客户端/旧本地 JSON 的单个 `duration_seconds` 读取时迁移为一个默认 timer。
+- 新数据仍编码第一枚 timer 的 legacy duration，保证升级期向后兼容。
+- 时间范围、"until done" 等不精确信息不得自动转为精确 timer。
 
 ## 5. RecipeSource
 - id

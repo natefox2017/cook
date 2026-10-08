@@ -1,23 +1,31 @@
+import CookCore
 import SwiftUI
 import UIKit
 import UserNotifications
-import CookCore
 
 struct CookingView: View {
     let recipeID: UUID
     let servings: Int?
+    let startStepID: UUID?
     let onServingsChanged: ((Int) -> Void)?
+
     @Environment(CookStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     @State private var session = PersistedCookingSession()
     @State private var didRestoreSession = false
     @State private var requiresSessionRecovery = false
     @State private var isConfirmingSessionRecovery = false
     @State private var isReplacingSession = false
     @State private var isShowingIngredients = false
+    @State private var isShowingTimers = false
+    @State private var isAddingManualTimer = false
     @State private var isConfirmingFinish = false
+    @State private var pendingFinishStepID: UUID?
+    @State private var manualTimerLabel = ""
+    @State private var manualTimerMinutes = 5
     @State private var errorMessage: String?
     @State private var originalIdleTimerDisabled: Bool?
     @State private var notificationTasks: [UUID: Task<Void, Never>] = [:]
@@ -25,9 +33,15 @@ struct CookingView: View {
     private var recipe: Recipe? { store.recipe(id: recipeID) }
     private var sessionKey: String { "cook.cookingSession.\(recipeID.uuidString)" }
 
-    init(recipeID: UUID, servings: Int? = nil, onServingsChanged: ((Int) -> Void)? = nil) {
+    init(
+        recipeID: UUID,
+        servings: Int? = nil,
+        startStepID: UUID? = nil,
+        onServingsChanged: ((Int) -> Void)? = nil
+    ) {
         self.recipeID = recipeID
         self.servings = servings
+        self.startStepID = startStepID
         self.onServingsChanged = onServingsChanged
     }
 
@@ -35,9 +49,13 @@ struct CookingView: View {
         NavigationStack {
             Group {
                 if let recipe, !recipe.steps.isEmpty {
-                    if requiresSessionRecovery { sessionRecoveryContent }
-                    else if session.isComplete { completionContent(recipe) }
-                    else { cookingContent(recipe) }
+                    if requiresSessionRecovery {
+                        sessionRecoveryContent
+                    } else if session.isComplete {
+                        completionContent(recipe)
+                    } else {
+                        cookingContent(recipe)
+                    }
                 } else {
                     EmptyStateView(
                         title: "No cooking steps yet",
@@ -50,21 +68,45 @@ struct CookingView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(CookTheme.canvas)
-            .navigationTitle("Cooking Mode").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Cooking Mode")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar { cookingToolbar }
             .sheet(isPresented: $isShowingIngredients) { ingredientSheet }
-            .confirmationDialog("Finish and stop active timers?", isPresented: $isConfirmingFinish, titleVisibility: .visible) {
+            .sheet(isPresented: $isShowingTimers) { timersSheet }
+            .confirmationDialog(
+                "Finish and stop active timers?",
+                isPresented: $isConfirmingFinish,
+                titleVisibility: .visible
+            ) {
                 Button("Finish Cooking", action: finishCooking)
                     .accessibilityIdentifier("confirmFinishCooking")
-                Button("Keep Cooking", role: .cancel) {}
-            } message: { Text("Your running timers will stop when you finish this recipe.") }
-            .confirmationDialog("Replace saved cooking progress?", isPresented: $isConfirmingSessionRecovery, titleVisibility: .visible) {
+                Button("Keep Cooking", role: .cancel) {
+                    pendingFinishStepID = nil
+                }
+            } message: {
+                Text("Your running timers will stop when you finish this recipe.")
+            }
+            .confirmationDialog(
+                "Replace saved cooking progress?",
+                isPresented: $isConfirmingSessionRecovery,
+                titleVisibility: .visible
+            ) {
                 Button("Start a New Session") { replaceUnreadableSession() }
                 Button("Cancel", role: .cancel) {}
-            } message: { Text("This replaces the unreadable cooking progress for this recipe. The recipe itself is kept.") }
-            .alert("Cooking", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+            } message: {
+                Text("This replaces the unreadable cooking progress for this recipe. The recipe itself is kept.")
+            }
+            .alert(
+                "Cooking",
+                isPresented: Binding(
+                    get: { errorMessage != nil },
+                    set: { if !$0 { errorMessage = nil } }
+                )
+            ) {
                 Button("OK", role: .cancel) { errorMessage = nil }
-            } message: { Text(errorMessage ?? "") }
+            } message: {
+                Text(errorMessage ?? "")
+            }
         }
         .interactiveDismissDisabled()
         .onAppear(perform: appear)
@@ -77,9 +119,11 @@ struct CookingView: View {
         .onChange(of: store.settings.timerNotifications) { _, _ in synchronizeNotifications() }
         .onChange(of: recipe?.id) { _, id in
             if id == nil {
-                for stepID in session.timers.keys { cancelNotification(for: stepID) }
+                for timerID in session.timers.keys { cancelNotification(for: timerID) }
                 Self.discardSession(recipeID: recipeID)
-                if let originalIdleTimerDisabled { UIApplication.shared.isIdleTimerDisabled = originalIdleTimerDisabled }
+                if let originalIdleTimerDisabled {
+                    UIApplication.shared.isIdleTimerDisabled = originalIdleTimerDisabled
+                }
             }
         }
     }
@@ -87,18 +131,33 @@ struct CookingView: View {
     private func cookingContent(_ recipe: Recipe) -> some View {
         let index = stepIndex(in: recipe)
         let step = recipe.steps[index]
+
         return ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 if !dynamicTypeSize.isAccessibilitySize {
-                    RecipeImage(recipe: recipe, height: 170)
+                    RecipeImage(recipe: recipe, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 22))
                 }
-                Text(recipe.title.isEmpty ? "Untitled Recipe" : recipe.title).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline)).foregroundStyle(.secondary)
+
+                Text(recipe.title.isEmpty ? "Untitled Recipe" : recipe.title)
+                    .font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
+                    .foregroundStyle(.secondary)
+
                 progress(index: index, count: recipe.steps.count)
+
                 VStack(alignment: .leading, spacing: 14) {
-                    Text(step.title.isEmpty ? "Step \(index + 1)" : step.title)
-                        .font(CookTheme.title(32))
-                        .accessibilityAddTraits(.isHeader)
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(step.title.isEmpty ? "Step \(index + 1)" : step.title)
+                            .font(CookTheme.title(32))
+                            .accessibilityAddTraits(.isHeader)
+                        Spacer()
+                        if session.completedStepIDs.contains(step.id) {
+                            Label("Done", systemImage: "checkmark.circle.fill")
+                                .font(CookTheme.text(13, weight: .semibold, relativeTo: .footnote))
+                                .foregroundStyle(CookTheme.accentForeground)
+                        }
+                    }
+
                     Text(step.instruction)
                         .font(CookTheme.body(25))
                         .lineSpacing(5)
@@ -106,57 +165,166 @@ struct CookingView: View {
                         .textSelection(.enabled)
                         .accessibilityIdentifier("cookingStepInstruction")
                 }
-                if let duration = step.durationSeconds, duration > 0 {
-                    CookingStepTimerPanel(
-                        timer: session.timers[step.id] ?? CookingTimer(durationSeconds: duration),
-                        notificationsEnabled: store.settings.timerNotifications,
-                        onStart: { startTimer(step) },
-                        onPause: { pauseTimer(step) },
-                        onReset: { resetTimer(step) }
-                    )
+
+                if let temperature = step.temperature, !temperature.text.isEmpty {
+                    Label(temperature.text, systemImage: "thermometer.medium")
+                        .font(CookTheme.text(16, weight: .semibold, relativeTo: .headline))
+                        .foregroundStyle(CookTheme.accentForeground)
+                        .padding(.horizontal, 14)
+                        .frame(minHeight: 44)
+                        .background(CookTheme.accent.opacity(0.08), in: Capsule())
                 }
-                otherTimerLinks(recipe, excluding: step.id)
+
+                stepIngredients(step, recipe: recipe)
+
+                if !step.timers.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(step.timers.count == 1 ? "Timer" : "Timers for this step")
+                            .font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+                        ForEach(step.timers) { definition in
+                            CookingStepTimerPanel(
+                                label: definition.label,
+                                timer: timerState(for: definition),
+                                notificationsEnabled: store.settings.timerNotifications,
+                                onStart: { startTimer(definition, stepID: step.id) },
+                                onPause: { pauseTimer(definition.id) },
+                                onReset: { resetTimer(definition, stepID: step.id) }
+                            )
+                        }
+                    }
+                }
+
+                otherTimerLinks(currentStepID: step.id, recipe: recipe)
+
                 Button { isShowingIngredients = true } label: {
                     Label("View All Ingredients", systemImage: "carrot")
                         .frame(minHeight: 44)
                 }
+                .buttonStyle(.bordered)
             }
             .padding(20)
         }
         .accessibilityIdentifier("cookingScroll")
-        .safeAreaInset(edge: .bottom) { stepControls(recipe, index: index) }
+        .safeAreaInset(edge: .bottom) {
+            stepControls(recipe, index: index)
+        }
     }
 
     private func progress(index: Int, count: Int) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Step \(index + 1) of \(count)")
-                .font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
-                .foregroundStyle(CookTheme.accentForeground)
-                .accessibilityIdentifier("cookingStepProgress")
-            ProgressView(value: Double(index + 1), total: Double(count))
+        let completed = session.completedStepIDs.count
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Step \(index + 1) of \(count)")
+                    .font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+                    .foregroundStyle(CookTheme.accentForeground)
+                    .accessibilityIdentifier("cookingStepProgress")
+                Spacer()
+                Text("\(completed) done")
+                    .font(CookTheme.text(13, relativeTo: .footnote))
+                    .foregroundStyle(.secondary)
+            }
+
+            ProgressView(value: Double(completed), total: Double(max(1, count)))
                 .tint(CookTheme.accent)
-                .accessibilityLabel("Recipe progress")
-                .accessibilityValue("Step \(index + 1) of \(count)")
+                .accessibilityLabel("Cooking progress")
+                .accessibilityValue("\(completed) of \(count) steps completed")
+        }
+    }
+
+    @ViewBuilder
+    private func stepIngredients(_ step: RecipeStep, recipe: Recipe) -> some View {
+        let linked = recipe.ingredients.filter { step.linkedIngredientIDs.contains($0.id) }
+        if !linked.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label("For this step", systemImage: "carrot")
+                        .font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+                    Spacer()
+                    if let servings = session.servings {
+                        Text("\(servings) servings")
+                            .font(CookTheme.text(12, relativeTo: .caption))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                ForEach(linked) { ingredient in
+                    Button { toggleIngredient(ingredient.id) } label: {
+                        HStack(spacing: 12) {
+                            Image(
+                                systemName: session.usedIngredientIDs.contains(ingredient.id)
+                                    ? "checkmark.circle.fill"
+                                    : "circle"
+                            )
+                            .foregroundStyle(
+                                session.usedIngredientIDs.contains(ingredient.id)
+                                    ? CookTheme.accentForeground
+                                    : Color.secondary
+                            )
+
+                            Text(ingredient.name)
+                                .foregroundStyle(.primary)
+
+                            Spacer(minLength: 8)
+
+                            let amount = ingredient.displayAmount(
+                                servings: session.servings,
+                                originalServings: recipe.servings
+                            )
+                            if !amount.isEmpty {
+                                Text(amount)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .frame(minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(
+                        "\(ingredient.name), \(session.usedIngredientIDs.contains(ingredient.id) ? "used" : "not used")"
+                    )
+                }
+            }
+            .padding(16)
+            .background(CookTheme.card, in: RoundedRectangle(cornerRadius: 22))
         }
     }
 
     private func stepControls(_ recipe: Recipe, index: Int) -> some View {
-        let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 10)) : AnyLayout(HStackLayout(spacing: 14))
+        let step = recipe.steps[index]
+        let isDone = session.completedStepIDs.contains(step.id)
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: 10))
+            : AnyLayout(HStackLayout(spacing: 14))
+
         return layout {
-            Button { if index > 0 { selectStep(recipe.steps[index - 1].id) } } label: {
+            Button {
+                if index > 0 { selectStep(recipe.steps[index - 1].id) }
+            } label: {
                 Label("Previous", systemImage: "arrow.left")
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.bordered)
             .disabled(index == 0)
             .accessibilityIdentifier("previousStep")
+
             Button {
-                if index + 1 < recipe.steps.count { selectStep(recipe.steps[index + 1].id) }
-                else { requestFinish() }
+                if index + 1 < recipe.steps.count {
+                    session.completedStepIDs.insert(step.id)
+                    selectStep(recipe.steps[index + 1].id)
+                } else {
+                    requestFinish(stepID: step.id)
+                }
             } label: {
                 HStack {
-                    Text(index + 1 == recipe.steps.count ? "Finish Cooking" : "Next Step")
-                    Image(systemName: index + 1 == recipe.steps.count ? "checkmark" : "arrow.right")
+                    Text(
+                        index + 1 == recipe.steps.count
+                            ? "Finish Cooking"
+                            : (isDone ? "Next Step" : "Done & Next")
+                    )
+                    Image(
+                        systemName: index + 1 == recipe.steps.count
+                            ? "checkmark"
+                            : "arrow.right"
+                    )
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -169,29 +337,57 @@ struct CookingView: View {
     }
 
     @ViewBuilder
-    private func otherTimerLinks(_ recipe: Recipe, excluding currentID: UUID) -> some View {
-        let otherSteps = recipe.steps.enumerated().filter { entry in
-            entry.element.id != currentID && session.timers[entry.element.id]?.deadline != nil
-        }
-        if !otherSteps.isEmpty {
+    private func otherTimerLinks(currentStepID: UUID, recipe: Recipe) -> some View {
+        let others = session.timers.values
+            .filter { $0.isManual || $0.stepID != currentStepID }
+            .filter { $0.timer.isRunning || $0.timer.remaining(at: .now) < $0.timer.durationSeconds }
+            .sorted { $0.label.localizedCaseInsensitiveCompare($1.label) == .orderedAscending }
+
+        if !others.isEmpty {
             TimelineView(.periodic(from: .now, by: 1)) { context in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Other Step Timers").font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
-                    ForEach(otherSteps, id: \.element.id) { index, step in
-                        if let timer = session.timers[step.id] {
-                            let remaining = timer.remaining(at: context.date)
-                            Button { selectStep(step.id) } label: {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Label("Step \(index + 1)\(step.title.isEmpty ? "" : ": \(step.title)")", systemImage: "timer")
-                                    Text(remaining == 0 ? "Time’s up" : "\(remaining / 60)m \(remaining % 60)s remaining")
-                                        .font(CookTheme.text(12, weight: .regular, relativeTo: .caption)).monospacedDigit()
-                                }
-                                .frame(minHeight: 44, alignment: .leading)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Other Timers")
+                            .font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+                        Spacer()
+                        Button("Manage") { isShowingTimers = true }
+                            .font(CookTheme.text(13, weight: .semibold, relativeTo: .footnote))
+                    }
+
+                    ForEach(others) { active in
+                        let remaining = active.timer.remaining(at: context.date)
+                        Button {
+                            if let stepID = active.stepID,
+                               recipe.steps.contains(where: { $0.id == stepID }) {
+                                selectStep(stepID)
+                            } else {
+                                isShowingTimers = true
                             }
-                            .sensoryFeedback(.success, trigger: remaining == 0)
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Label(active.label, systemImage: "timer")
+                                    Text(
+                                        remaining == 0
+                                            ? "Time’s up"
+                                            : "\(clockText(remaining)) remaining"
+                                    )
+                                    .font(CookTheme.text(12, relativeTo: .caption))
+                                    .monospacedDigit()
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .frame(minHeight: 44)
                         }
+                        .buttonStyle(.plain)
+                        .sensoryFeedback(.success, trigger: remaining == 0)
                     }
                 }
+                .padding(16)
+                .background(CookTheme.card, in: RoundedRectangle(cornerRadius: 22))
             }
         }
     }
@@ -201,19 +397,24 @@ struct CookingView: View {
             VStack(spacing: 24) {
                 RecipeImage(recipe: recipe, height: 230)
                     .clipShape(RoundedRectangle(cornerRadius: 24))
+
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 54))
                     .foregroundStyle(CookTheme.accentForeground)
                     .accessibilityHidden(true)
+
                 Text("Ready to enjoy")
                     .font(CookTheme.title(32))
                     .accessibilityAddTraits(.isHeader)
-                Text("You’ve completed \(recipe.title). Enjoy what you made.")
+
+                Text("You completed \(session.completedStepIDs.count) of \(recipe.steps.count) steps for \(recipe.title).")
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
+
                 Button("Back to Recipe") { dismiss() }
                     .buttonStyle(PrimaryButtonStyle())
                     .accessibilityIdentifier("finishCookingButton")
+
                 Button("Cook Again") { restartCooking(recipe) }
                     .frame(minHeight: 44)
             }
@@ -232,7 +433,10 @@ struct CookingView: View {
                 action: { isConfirmingSessionRecovery = true }
             )
             .disabled(isReplacingSession)
-            if isReplacingSession { ProgressView("Starting a fresh session…") }
+
+            if isReplacingSession {
+                ProgressView("Starting a fresh session…")
+            }
         }
     }
 
@@ -242,9 +446,25 @@ struct CookingView: View {
             Button("Close", systemImage: "xmark") { dismiss() }
                 .accessibilityIdentifier("closeCookingButton")
         }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button("Ingredients", systemImage: "list.bullet") { isShowingIngredients = true }
-                .disabled(recipe == nil)
+
+        ToolbarItemGroup(placement: .topBarTrailing) {
+            Button {
+                isShowingTimers = true
+            } label: {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    let runningCount = session.runningTimerCount(at: context.date)
+                    Label(
+                        runningCount > 0 ? "Timers \(runningCount)" : "Timers",
+                        systemImage: "timer"
+                    )
+                }
+            }
+            .disabled(recipe == nil)
+
+            Button("Ingredients", systemImage: "list.bullet") {
+                isShowingIngredients = true
+            }
+            .disabled(recipe == nil)
         }
     }
 
@@ -254,69 +474,269 @@ struct CookingView: View {
                 if let recipe {
                     Section {
                         if let original = recipe.servings, original > 0 {
-                            Stepper("\(session.servings ?? original) servings", value: cookingServings(original: original), in: 1...max(100, max(original, session.servings ?? original)))
+                            Stepper(
+                                "\(session.servings ?? original) servings",
+                                value: cookingServings(original: original),
+                                in: 1...max(100, max(original, session.servings ?? original))
+                            )
                         }
+
                         if recipe.ingredients.isEmpty {
-                            Text("This recipe has no ingredients yet.").foregroundStyle(.secondary)
+                            Text("This recipe has no ingredients yet.")
+                                .foregroundStyle(.secondary)
                         }
+
                         ForEach(recipe.ingredients) { ingredient in
                             Button { toggleIngredient(ingredient.id) } label: {
                                 HStack(spacing: 12) {
-                                    Image(systemName: session.usedIngredientIDs.contains(ingredient.id) ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(session.usedIngredientIDs.contains(ingredient.id) ? CookTheme.accentForeground : Color.secondary)
+                                    Image(
+                                        systemName: session.usedIngredientIDs.contains(ingredient.id)
+                                            ? "checkmark.circle.fill"
+                                            : "circle"
+                                    )
+                                    .foregroundStyle(
+                                        session.usedIngredientIDs.contains(ingredient.id)
+                                            ? CookTheme.accentForeground
+                                            : Color.secondary
+                                    )
+
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(ingredient.name).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
-                                        let amount = ingredient.displayAmount(servings: session.servings, originalServings: recipe.servings)
-                                        if !amount.isEmpty { Text(amount).foregroundStyle(.secondary) }
+                                        Text(ingredient.name)
+                                            .font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
+
+                                        let amount = ingredient.displayAmount(
+                                            servings: session.servings,
+                                            originalServings: recipe.servings
+                                        )
+                                        if !amount.isEmpty {
+                                            Text(amount)
+                                                .foregroundStyle(.secondary)
+                                        }
                                     }
+
                                     Spacer()
                                 }
                                 .padding(.vertical, 4)
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("\(ingredient.name), \(session.usedIngredientIDs.contains(ingredient.id) ? "used" : "not used")")
+                            .accessibilityLabel(
+                                "\(ingredient.name), \(session.usedIngredientIDs.contains(ingredient.id) ? "used" : "not used")"
+                            )
                         }
                     } header: {
-                        Text(recipe.servings.map { $0 > 0 ? "Cooking portions" : "Original recipe amounts" } ?? "Original recipe amounts")
+                        Text(
+                            recipe.servings.map {
+                                $0 > 0 ? "Cooking portions" : "Original recipe amounts"
+                            } ?? "Original recipe amounts"
+                        )
                     }
                 }
             }
             .scrollContentBackground(.hidden)
             .background(CookTheme.canvas)
-            .navigationTitle("Ingredients").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { isShowingIngredients = false } } }
+            .navigationTitle("Ingredients")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { isShowingIngredients = false }
+                }
+            }
+        }
+    }
+
+    private var timersSheet: some View {
+        NavigationStack {
+            Group {
+                if session.timers.isEmpty {
+                    EmptyStateView(
+                        title: "No timers yet",
+                        message: "Start a timer from a cooking step, or add a kitchen timer here.",
+                        systemImage: "timer",
+                        actionTitle: "Add Timer",
+                        action: { isAddingManualTimer = true }
+                    )
+                } else {
+                    List {
+                        Section("Kitchen timers") {
+                            ForEach(session.timers.values.sorted {
+                                $0.label.localizedCaseInsensitiveCompare($1.label) == .orderedAscending
+                            }) { active in
+                                timerManagerRow(active)
+                            }
+                        }
+                    }
+                    .scrollContentBackground(.hidden)
+                }
+            }
+            .background(CookTheme.canvas)
+            .navigationTitle("Timers")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Add", systemImage: "plus") {
+                        isAddingManualTimer = true
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { isShowingTimers = false }
+                }
+            }
+            .sheet(isPresented: $isAddingManualTimer) {
+                manualTimerSheet
+            }
+        }
+    }
+
+    private func timerManagerRow(_ active: PersistedActiveTimer) -> some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let remaining = active.timer.remaining(at: context.date)
+            let running = active.timer.isRunning && remaining > 0
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(active.label)
+                            .font(CookTheme.text(16, weight: .semibold, relativeTo: .headline))
+                        Text(remaining == 0 ? "Time’s up" : clockText(remaining))
+                            .font(CookTheme.text(20, weight: .semibold, relativeTo: .title3))
+                            .monospacedDigit()
+                    }
+                    Spacer()
+                    if active.isManual {
+                        Text("Manual")
+                            .font(CookTheme.text(11, relativeTo: .caption2))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 10) {
+                        timerManagerButtons(active, running: running, remaining: remaining)
+                    }
+                    VStack(spacing: 8) {
+                        timerManagerButtons(active, running: running, remaining: remaining)
+                    }
+                }
+            }
+            .padding(.vertical, 6)
+            .sensoryFeedback(.success, trigger: remaining == 0)
+        }
+    }
+
+    @ViewBuilder
+    private func timerManagerButtons(
+        _ active: PersistedActiveTimer,
+        running: Bool,
+        remaining: Int
+    ) -> some View {
+        Button(running ? "Pause" : (remaining == 0 ? "Start Again" : "Start")) {
+            if running {
+                pauseTimer(active.id)
+            } else {
+                startActiveTimer(active.id)
+            }
+        }
+        .buttonStyle(.borderedProminent)
+
+        Button("Reset") {
+            resetActiveTimer(active.id)
+        }
+        .buttonStyle(.bordered)
+
+        Button("Delete", role: .destructive) {
+            deleteTimer(active.id)
+        }
+        .buttonStyle(.bordered)
+    }
+
+    private var manualTimerSheet: some View {
+        NavigationStack {
+            Form {
+                Section("Timer") {
+                    TextField("Name", text: $manualTimerLabel)
+                    Stepper(
+                        "\(manualTimerMinutes) \(manualTimerMinutes == 1 ? "minute" : "minutes")",
+                        value: $manualTimerMinutes,
+                        in: 1...720
+                    )
+                }
+            }
+            .navigationTitle("Add Timer")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        resetManualTimerDraft()
+                        isAddingManualTimer = false
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Start") {
+                        addManualTimer()
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
         }
     }
 
     private func toggleIngredient(_ id: UUID) {
-        if session.usedIngredientIDs.contains(id) { session.usedIngredientIDs.remove(id) } else { session.usedIngredientIDs.insert(id) }
+        if session.usedIngredientIDs.contains(id) {
+            session.usedIngredientIDs.remove(id)
+        } else {
+            session.usedIngredientIDs.insert(id)
+        }
         persistSession()
     }
 
     private func appear() {
-        if originalIdleTimerDisabled == nil { originalIdleTimerDisabled = UIApplication.shared.isIdleTimerDisabled }
-        guard !didRestoreSession else { updateScreenAwake(); return }
+        if originalIdleTimerDisabled == nil {
+            originalIdleTimerDisabled = UIApplication.shared.isIdleTimerDisabled
+        }
+
+        guard !didRestoreSession else {
+            updateScreenAwake()
+            return
+        }
+
         didRestoreSession = true
         if let data = UserDefaults.standard.data(forKey: sessionKey) {
-            do { session = try JSONDecoder().decode(PersistedCookingSession.self, from: data) }
-            catch {
+            do {
+                session = try JSONDecoder().decode(PersistedCookingSession.self, from: data)
+            } catch {
                 requiresSessionRecovery = true
                 errorMessage = "Your previous cooking session could not be restored. \(error.localizedDescription)"
             }
         }
+
         if let recipe {
-            if !recipe.steps.contains(where: { $0.id == session.stepID }) { session.stepID = recipe.steps.first?.id }
+            if !recipe.steps.contains(where: { $0.id == session.stepID }) {
+                session.stepID = recipe.steps.first?.id
+            }
+
+            if session.needsLegacyCompletedStepMigration {
+                session.completedStepIDs = Set(recipe.steps.map(\.id))
+                session.needsLegacyCompletedStepMigration = false
+            } else {
+                session.completedStepIDs = Set(session.completedStepIDs.filter { completedID in
+                    recipe.steps.contains(where: { $0.id == completedID })
+                })
+            }
+
             if let original = recipe.servings, original > 0 {
                 session.servings = max(1, servings ?? session.servings ?? original)
             } else {
                 session.servings = nil
             }
-            let validTimers = session.timers.filter { entry in
-                recipe.steps.contains { $0.id == entry.key && $0.durationSeconds == entry.value.durationSeconds }
+
+            reconcileTimers(with: recipe)
+
+            if let startStepID,
+               recipe.steps.contains(where: { $0.id == startStepID }) {
+                applyRequestedStartStep(startStepID, in: recipe)
             }
-            for id in session.timers.keys where validTimers[id] == nil { cancelNotification(for: id) }
-            session.timers = validTimers
         }
+
         updateScreenAwake()
         synchronizeNotifications()
         persistSession()
@@ -324,14 +744,27 @@ struct CookingView: View {
 
     private func disappear() {
         persistSession()
-        if !requiresSessionRecovery, let currentServings = session.servings { onServingsChanged?(currentServings) }
-        if let originalIdleTimerDisabled { UIApplication.shared.isIdleTimerDisabled = originalIdleTimerDisabled }
+
+        if !requiresSessionRecovery, let currentServings = session.servings {
+            onServingsChanged?(currentServings)
+        }
+
+        if let originalIdleTimerDisabled {
+            UIApplication.shared.isIdleTimerDisabled = originalIdleTimerDisabled
+        }
         originalIdleTimerDisabled = nil
     }
 
     private func updateScreenAwake() {
         guard let originalIdleTimerDisabled else { return }
-        UIApplication.shared.isIdleTimerDisabled = recipe?.steps.isEmpty == false && !requiresSessionRecovery && !session.isComplete && scenePhase == .active && store.settings.keepScreenAwake ? true : originalIdleTimerDisabled
+        UIApplication.shared.isIdleTimerDisabled =
+            recipe?.steps.isEmpty == false
+            && !requiresSessionRecovery
+            && !session.isComplete
+            && scenePhase == .active
+            && store.settings.keepScreenAwake
+            ? true
+            : originalIdleTimerDisabled
     }
 
     private func stepIndex(in recipe: Recipe) -> Int {
@@ -343,84 +776,266 @@ struct CookingView: View {
         persistSession()
     }
 
-    private func startTimer(_ step: RecipeStep) {
-        guard let duration = step.durationSeconds, duration > 0 else { return }
-        var timer = session.timers[step.id] ?? CookingTimer(durationSeconds: duration)
-        if timer.remaining(at: .now) == 0 { timer.reset() }
+    private func timerState(for definition: RecipeStepTimer) -> CookingTimer {
+        session.timers[definition.id]?.timer
+            ?? CookingTimer(durationSeconds: definition.durationSeconds)
+    }
+
+    private func startTimer(_ definition: RecipeStepTimer, stepID: UUID) {
+        var active = session.timers[definition.id]
+            ?? PersistedActiveTimer(
+                id: definition.id,
+                stepID: stepID,
+                label: definition.label.isEmpty ? "Step timer" : definition.label,
+                timer: CookingTimer(durationSeconds: definition.durationSeconds),
+                isManual: false
+            )
+
+        if active.timer.remaining(at: .now) == 0 {
+            active.timer.reset()
+        }
+        active.timer.start()
+        active.label = definition.label.isEmpty ? "Step timer" : definition.label
+        active.stepID = stepID
+        session.timers[definition.id] = active
+        persistSession()
+        scheduleNotification(for: active)
+    }
+
+    private func startActiveTimer(_ id: UUID) {
+        guard var active = session.timers[id] else { return }
+        if active.timer.remaining(at: .now) == 0 {
+            active.timer.reset()
+        }
+        active.timer.start()
+        session.timers[id] = active
+        persistSession()
+        scheduleNotification(for: active)
+    }
+
+    private func pauseTimer(_ id: UUID) {
+        guard var active = session.timers[id] else { return }
+        active.timer.pause()
+        session.timers[id] = active
+        cancelNotification(for: id)
+        persistSession()
+    }
+
+    private func resetTimer(_ definition: RecipeStepTimer, stepID: UUID) {
+        let active = PersistedActiveTimer(
+            id: definition.id,
+            stepID: stepID,
+            label: definition.label.isEmpty ? "Step timer" : definition.label,
+            timer: CookingTimer(durationSeconds: definition.durationSeconds),
+            isManual: false
+        )
+        session.timers[definition.id] = active
+        cancelNotification(for: definition.id)
+        persistSession()
+    }
+
+    private func resetActiveTimer(_ id: UUID) {
+        guard var active = session.timers[id] else { return }
+        active.timer.reset()
+        session.timers[id] = active
+        cancelNotification(for: id)
+        persistSession()
+    }
+
+    private func deleteTimer(_ id: UUID) {
+        session.timers.removeValue(forKey: id)
+        cancelNotification(for: id)
+        persistSession()
+    }
+
+    private func addManualTimer() {
+        let id = UUID()
+        let label = manualTimerLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        var timer = CookingTimer(durationSeconds: manualTimerMinutes * 60)
         timer.start()
-        session.timers[step.id] = timer
+
+        let active = PersistedActiveTimer(
+            id: id,
+            stepID: session.stepID,
+            label: label.isEmpty ? "Kitchen timer" : label,
+            timer: timer,
+            isManual: true
+        )
+
+        session.timers[id] = active
         persistSession()
-        scheduleNotification(for: step.id, timer: timer)
+        scheduleNotification(for: active)
+        resetManualTimerDraft()
+        isAddingManualTimer = false
     }
 
-    private func pauseTimer(_ step: RecipeStep) {
-        guard var timer = session.timers[step.id] else { return }
-        timer.pause()
-        session.timers[step.id] = timer
-        cancelNotification(for: step.id)
-        persistSession()
+    private func resetManualTimerDraft() {
+        manualTimerLabel = ""
+        manualTimerMinutes = 5
     }
 
-    private func resetTimer(_ step: RecipeStep) {
-        guard let duration = step.durationSeconds, duration > 0 else { return }
-        session.timers[step.id] = CookingTimer(durationSeconds: duration)
-        cancelNotification(for: step.id)
-        persistSession()
-    }
-
-    private func requestFinish() {
-        if session.timers.values.contains(where: { $0.isRunning && $0.remaining(at: .now) > 0 }) {
+    private func requestFinish(stepID: UUID) {
+        pendingFinishStepID = stepID
+        if session.timers.values.contains(where: {
+            $0.timer.isRunning && $0.timer.remaining(at: .now) > 0
+        }) {
             isConfirmingFinish = true
-        } else { finishCooking() }
+        } else {
+            finishCooking()
+        }
     }
 
     private func finishCooking() {
+        if let pendingFinishStepID {
+            session.completedStepIDs.insert(pendingFinishStepID)
+        }
+        self.pendingFinishStepID = nil
+
         for id in Array(session.timers.keys) {
-            if var timer = session.timers[id] { timer.pause(); session.timers[id] = timer }
+            if var active = session.timers[id] {
+                active.timer.pause()
+                session.timers[id] = active
+            }
             cancelNotification(for: id)
         }
+
         session.isComplete = true
         persistSession()
-        if let originalIdleTimerDisabled { UIApplication.shared.isIdleTimerDisabled = originalIdleTimerDisabled }
+
+        if let originalIdleTimerDisabled {
+            UIApplication.shared.isIdleTimerDisabled = originalIdleTimerDisabled
+        }
     }
 
     private func restartCooking(_ recipe: Recipe) {
-        for id in session.timers.keys { cancelNotification(for: id) }
-        session = PersistedCookingSession(stepID: recipe.steps.first?.id, servings: session.servings)
+        for id in session.timers.keys {
+            cancelNotification(for: id)
+        }
+        session = PersistedCookingSession(
+            stepID: recipe.steps.first?.id,
+            servings: session.servings
+        )
         persistSession()
         updateScreenAwake()
     }
 
     private func persistSession() {
         guard didRestoreSession, !requiresSessionRecovery, recipe != nil else { return }
-        do { UserDefaults.standard.set(try JSONEncoder().encode(session), forKey: sessionKey) }
-        catch { errorMessage = "Your cooking progress could not be saved. \(error.localizedDescription)" }
+        do {
+            UserDefaults.standard.set(
+                try JSONEncoder().encode(session),
+                forKey: sessionKey
+            )
+        } catch {
+            errorMessage = "Your cooking progress could not be saved. \(error.localizedDescription)"
+        }
     }
 
     private func cookingServings(original: Int) -> Binding<Int> {
-        Binding(get: { session.servings ?? original }, set: { session.servings = $0; persistSession() })
+        Binding(
+            get: { session.servings ?? original },
+            set: {
+                session.servings = $0
+                persistSession()
+            }
+        )
     }
 
-    private func notificationID(for stepID: UUID) -> String { "cook.timer.\(recipeID.uuidString).\(stepID.uuidString)" }
+    private func applyRequestedStartStep(_ requestedStepID: UUID, in recipe: Recipe) {
+        guard let startIndex = recipe.steps.firstIndex(where: { $0.id == requestedStepID }) else { return }
 
-    private func cancelNotification(for stepID: UUID) {
-        notificationTasks[stepID]?.cancel()
-        TimerNotifications.cancel(id: notificationID(for: stepID))
+        let wasComplete = session.isComplete
+        session.stepID = requestedStepID
+        session.isComplete = false
+
+        let earlierStepIDs = Set(recipe.steps.prefix(startIndex).map(\.id))
+        session.completedStepIDs.formIntersection(earlierStepIDs)
+
+        if wasComplete {
+            for timerID in session.timers.keys {
+                cancelNotification(for: timerID)
+            }
+            session.timers.removeAll()
+            session.usedIngredientIDs.removeAll()
+            return
+        }
+
+        let resetStepIDs = Set(recipe.steps.dropFirst(startIndex).map(\.id))
+        for (timerID, active) in Array(session.timers) {
+            guard !active.isManual,
+                  let stepID = active.stepID,
+                  resetStepIDs.contains(stepID) else { continue }
+            session.timers.removeValue(forKey: timerID)
+            cancelNotification(for: timerID)
+        }
     }
 
-    private func scheduleNotification(for stepID: UUID, timer: CookingTimer) {
-        guard store.settings.timerNotifications, timer.isRunning, timer.remaining(at: .now) > 0 else { return }
-        let previous = notificationTasks[stepID]
+    private func reconcileTimers(with recipe: Recipe) {
+        let definitions = recipe.steps.flatMap { step in
+            step.timers.map { timer in
+                (timer.id, step.id, timer)
+            }
+        }
+
+        let definitionsByID = Dictionary(
+            uniqueKeysWithValues: definitions.map { ($0.0, ($0.1, $0.2)) }
+        )
+
+        var valid: [UUID: PersistedActiveTimer] = [:]
+
+        for (id, active) in session.timers {
+            if active.isManual {
+                valid[id] = active
+                continue
+            }
+
+            guard let (stepID, definition) = definitionsByID[id],
+                  definition.durationSeconds == active.timer.durationSeconds else {
+                cancelNotification(for: id)
+                continue
+            }
+
+            var refreshed = active
+            refreshed.stepID = stepID
+            refreshed.label = definition.label.isEmpty ? "Step timer" : definition.label
+            valid[id] = refreshed
+        }
+
+        session.timers = valid
+    }
+
+    private func notificationID(for timerID: UUID) -> String {
+        "cook.timer.\(recipeID.uuidString).\(timerID.uuidString)"
+    }
+
+    private func cancelNotification(for timerID: UUID) {
+        notificationTasks[timerID]?.cancel()
+        notificationTasks[timerID] = nil
+        TimerNotifications.cancel(id: notificationID(for: timerID))
+    }
+
+    private func scheduleNotification(for active: PersistedActiveTimer) {
+        guard store.settings.timerNotifications,
+              active.timer.isRunning,
+              active.timer.remaining(at: .now) > 0 else { return }
+
+        let previous = notificationTasks[active.id]
         previous?.cancel()
-        let id = notificationID(for: stepID)
-        let title = recipe?.steps.first(where: { $0.id == stepID })?.title ?? "Cooking timer"
-        notificationTasks[stepID] = Task { @MainActor in
+        let id = notificationID(for: active.id)
+
+        notificationTasks[active.id] = Task { @MainActor in
             await previous?.value
             guard !Task.isCancelled else { return }
+
             do {
-                let seconds = timer.remaining(at: .now)
+                let seconds = active.timer.remaining(at: .now)
                 guard seconds > 0 else { return }
-                try await TimerNotifications.schedule(id: id, title: title.isEmpty ? "Cooking timer" : title, seconds: seconds)
+                try await TimerNotifications.schedule(
+                    id: id,
+                    title: active.label.isEmpty ? "Cooking timer" : active.label,
+                    seconds: seconds
+                )
+
                 if Task.isCancelled || !store.settings.timerNotifications {
                     TimerNotifications.cancel(id: id)
                 }
@@ -433,16 +1048,25 @@ struct CookingView: View {
     }
 
     private func synchronizeNotifications() {
-        for (id, timer) in session.timers {
-            if !session.isComplete && store.settings.timerNotifications && timer.isRunning && timer.remaining(at: .now) > 0 {
-                scheduleNotification(for: id, timer: timer)
-            } else { cancelNotification(for: id) }
+        for (id, active) in session.timers {
+            if !session.isComplete
+                && store.settings.timerNotifications
+                && active.timer.isRunning
+                && active.timer.remaining(at: .now) > 0 {
+                scheduleNotification(for: active)
+            } else {
+                cancelNotification(for: id)
+            }
         }
     }
 
     static func discardSession(recipeID: UUID) {
-        UserDefaults.standard.removeObject(forKey: "cook.cookingSession.\(recipeID.uuidString)")
-        Task { @MainActor in await removeSessionNotifications(recipeID: recipeID) }
+        UserDefaults.standard.removeObject(
+            forKey: "cook.cookingSession.\(recipeID.uuidString)"
+        )
+        Task { @MainActor in
+            await removeSessionNotifications(recipeID: recipeID)
+        }
     }
 
     private static func removeSessionNotifications(recipeID: UUID) async {
@@ -450,50 +1074,154 @@ struct CookingView: View {
         let center = UNUserNotificationCenter.current()
         let pending = await center.pendingNotificationRequests()
         let delivered = await center.deliveredNotifications()
-        center.removePendingNotificationRequests(withIdentifiers: pending.map(\.identifier).filter { $0.hasPrefix(prefix) })
-        center.removeDeliveredNotifications(withIdentifiers: delivered.map { $0.request.identifier }.filter { $0.hasPrefix(prefix) })
+
+        center.removePendingNotificationRequests(
+            withIdentifiers: pending.map(\.identifier).filter { $0.hasPrefix(prefix) }
+        )
+        center.removeDeliveredNotifications(
+            withIdentifiers: delivered.map { $0.request.identifier }.filter { $0.hasPrefix(prefix) }
+        )
     }
 
     private func replaceUnreadableSession() {
         guard let recipe, !isReplacingSession else { return }
         isReplacingSession = true
+
         Task { @MainActor in
             await Self.removeSessionNotifications(recipeID: recipeID)
-            let initialServings = recipe.servings.flatMap { $0 > 0 ? max(1, servings ?? $0) : nil }
-            session = PersistedCookingSession(stepID: recipe.steps.first?.id, servings: initialServings)
+            let initialServings = recipe.servings.flatMap {
+                $0 > 0 ? max(1, servings ?? $0) : nil
+            }
+            session = PersistedCookingSession(
+                stepID: startStepID ?? recipe.steps.first?.id,
+                servings: initialServings
+            )
             requiresSessionRecovery = false
             isReplacingSession = false
             persistSession()
             updateScreenAwake()
         }
     }
+
+    private func clockText(_ seconds: Int) -> String {
+        if seconds >= 3_600 {
+            return String(
+                format: "%d:%02d:%02d",
+                seconds / 3_600,
+                seconds / 60 % 60,
+                seconds % 60
+            )
+        }
+        return String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+}
+
+private struct PersistedActiveTimer: Identifiable, Codable {
+    var id: UUID
+    var stepID: UUID?
+    var label: String
+    var timer: CookingTimer
+    var isManual: Bool
 }
 
 private struct PersistedCookingSession: Codable {
-    var stepID: UUID? = nil
-    var timers: [UUID: CookingTimer] = [:]
-    var isComplete = false
-    var servings: Int? = nil
-    var usedIngredientIDs: Set<UUID> = []
+    var stepID: UUID?
+    var timers: [UUID: PersistedActiveTimer]
+    var isComplete: Bool
+    var servings: Int?
+    var usedIngredientIDs: Set<UUID>
+    var completedStepIDs: Set<UUID>
+    var needsLegacyCompletedStepMigration: Bool
+
+    init(
+        stepID: UUID? = nil,
+        timers: [UUID: PersistedActiveTimer] = [:],
+        isComplete: Bool = false,
+        servings: Int? = nil,
+        usedIngredientIDs: Set<UUID> = [],
+        completedStepIDs: Set<UUID> = []
+    ) {
+        self.stepID = stepID
+        self.timers = timers
+        self.isComplete = isComplete
+        self.servings = servings
+        self.usedIngredientIDs = usedIngredientIDs
+        self.completedStepIDs = completedStepIDs
+        self.needsLegacyCompletedStepMigration = false
+    }
+
+    func runningTimerCount(at date: Date = .now) -> Int {
+        timers.values.filter {
+            $0.timer.isRunning && $0.timer.remaining(at: date) > 0
+        }.count
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case stepID
+        case timers
+        case isComplete
+        case servings
+        case usedIngredientIDs
+        case completedStepIDs
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        stepID = try container.decodeIfPresent(UUID.self, forKey: .stepID)
+        isComplete = try container.decodeIfPresent(Bool.self, forKey: .isComplete) ?? false
+        servings = try container.decodeIfPresent(Int.self, forKey: .servings)
+        usedIngredientIDs = try container.decodeIfPresent(Set<UUID>.self, forKey: .usedIngredientIDs) ?? []
+        needsLegacyCompletedStepMigration = isComplete && !container.contains(.completedStepIDs)
+        completedStepIDs = try container.decodeIfPresent(Set<UUID>.self, forKey: .completedStepIDs) ?? []
+
+        if let current = try? container.decode([UUID: PersistedActiveTimer].self, forKey: .timers) {
+            timers = current
+        } else if let legacy = try? container.decode([UUID: CookingTimer].self, forKey: .timers) {
+            timers = legacy.reduce(into: [:]) { result, entry in
+                result[entry.key] = PersistedActiveTimer(
+                    id: entry.key,
+                    stepID: entry.key,
+                    label: "Step timer",
+                    timer: entry.value,
+                    isManual: false
+                )
+            }
+        } else {
+            timers = [:]
+        }
+    }
 }
 
 private struct CookingStepTimerPanel: View {
+    let label: String
     let timer: CookingTimer
     let notificationsEnabled: Bool
     let onStart: () -> Void
     let onPause: () -> Void
     let onReset: () -> Void
+
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let remaining = timer.remaining(at: context.date)
+
             VStack(alignment: .leading, spacing: 14) {
-                Label(remaining == 0 ? "Time’s up" : "Step Timer", systemImage: remaining == 0 ? "bell.badge" : "timer")
+                HStack {
+                    Label(
+                        remaining == 0 ? "Time’s up" : label,
+                        systemImage: remaining == 0 ? "bell.badge" : "timer"
+                    )
                     .font(CookTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                     .foregroundStyle(CookTheme.accentForeground)
+                    Spacer()
+                    Text(durationText(timer.durationSeconds))
+                        .font(CookTheme.text(12, relativeTo: .caption))
+                        .foregroundStyle(.secondary)
+                }
+
                 Text(clockText(remaining))
-                    .font(CookTheme.title(52))
+                    .font(CookTheme.title(48))
                     .monospacedDigit()
                     .contentTransition(.numericText(countsDown: true))
                     .accessibilityLabel("Time remaining")
@@ -501,10 +1229,16 @@ private struct CookingStepTimerPanel: View {
                     .accessibilityIdentifier("cookingTimerValue")
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
+
                 timerControls(remaining: remaining)
-                Text(remaining == 0 ? "Continue when you’re ready. The next step is up to you." : notificationMessage)
-                    .font(CookTheme.text(12, weight: .regular, relativeTo: .caption))
-                    .foregroundStyle(.secondary)
+
+                Text(
+                    remaining == 0
+                        ? "Continue when you’re ready. The next step is still up to you."
+                        : notificationMessage
+                )
+                .font(CookTheme.text(12, relativeTo: .caption))
+                .foregroundStyle(.secondary)
             }
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -514,20 +1248,34 @@ private struct CookingStepTimerPanel: View {
     }
 
     private var notificationMessage: String {
-        notificationsEnabled ? "Your timer keeps time when you leave this screen." : "Your timer progress is saved. Keep Cook open to see when time is up."
+        notificationsEnabled
+            ? "Your timer keeps time when you leave this screen."
+            : "Your timer progress is saved. Keep Cook open to see when time is up."
     }
 
     private func timerControls(remaining: Int) -> some View {
         let running = timer.isRunning && remaining > 0
-        let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: 8))
+            : AnyLayout(HStackLayout(spacing: 12))
+
         return layout {
             Button(action: running ? onPause : onStart) {
-                Label(running ? "Pause" : (remaining == 0 ? "Start Again" : (remaining < timer.durationSeconds ? "Resume" : "Start Timer")),
-                      systemImage: running ? "pause.fill" : "play.fill")
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                Label(
+                    running
+                        ? "Pause"
+                        : (
+                            remaining == 0
+                                ? "Start Again"
+                                : (remaining < timer.durationSeconds ? "Resume" : "Start Timer")
+                        ),
+                    systemImage: running ? "pause.fill" : "play.fill"
+                )
+                .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(PrimaryButtonStyle())
             .accessibilityIdentifier(running ? "timerPause" : "timerStart")
+
             Button(action: onReset) {
                 Label("Reset", systemImage: "arrow.counterclockwise")
                     .frame(maxWidth: .infinity, minHeight: 44)
@@ -539,13 +1287,32 @@ private struct CookingStepTimerPanel: View {
     }
 
     private func clockText(_ seconds: Int) -> String {
-        if seconds >= 3_600 { return String(format: "%d:%02d:%02d", seconds / 3_600, seconds / 60 % 60, seconds % 60) }
+        if seconds >= 3_600 {
+            return String(
+                format: "%d:%02d:%02d",
+                seconds / 3_600,
+                seconds / 60 % 60,
+                seconds % 60
+            )
+        }
         return String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+
+    private func durationText(_ seconds: Int) -> String {
+        if seconds % 3_600 == 0 {
+            return "\(seconds / 3_600) hr"
+        }
+        if seconds % 60 == 0 {
+            return "\(seconds / 60) min"
+        }
+        return "\(seconds / 60)m \(seconds % 60)s"
     }
 
     private func spokenDuration(_ seconds: Int) -> String {
         if seconds == 0 { return "Time’s up" }
-        if seconds >= 3_600 { return "\(seconds / 3_600) hours, \(seconds / 60 % 60) minutes, \(seconds % 60) seconds" }
+        if seconds >= 3_600 {
+            return "\(seconds / 3_600) hours, \(seconds / 60 % 60) minutes, \(seconds % 60) seconds"
+        }
         return "\(seconds / 60) minutes, \(seconds % 60) seconds"
     }
 }

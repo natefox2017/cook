@@ -4,6 +4,47 @@ import Foundation
 public enum SampleRecipes {
     public static var recipes: [Recipe] {
         let created = Date(timeIntervalSince1970: 1_759_795_200)
+
+        let roastChicken = RecipeIngredient(
+            id: UUID(uuidString: "C0051000-0000-4000-8000-000000000001")!,
+            name: "Chicken thighs",
+            amountText: "600 g",
+            quantity: 600,
+            unit: "g",
+            category: .proteins
+        )
+        let potatoes = RecipeIngredient(
+            id: UUID(uuidString: "C0051000-0000-4000-8000-000000000002")!,
+            name: "Baby potatoes",
+            amountText: "500 g",
+            quantity: 500,
+            unit: "g",
+            category: .produce
+        )
+        let oliveOil = RecipeIngredient(
+            id: UUID(uuidString: "C0051000-0000-4000-8000-000000000003")!,
+            name: "Olive oil",
+            amountText: "2 tbsp",
+            quantity: 2,
+            unit: "tbsp",
+            category: .pantry
+        )
+        let lemon = RecipeIngredient(
+            id: UUID(uuidString: "C0051000-0000-4000-8000-000000000004")!,
+            name: "Lemon",
+            amountText: "1",
+            quantity: 1,
+            category: .produce
+        )
+        let garlic = RecipeIngredient(
+            id: UUID(uuidString: "C0051000-0000-4000-8000-000000000005")!,
+            name: "Garlic",
+            amountText: "3 cloves",
+            quantity: 3,
+            unit: "cloves",
+            category: .produce
+        )
+
         return [
             Recipe(
                 id: UUID(uuidString: "C0010000-0000-4000-8000-000000000001")!,
@@ -81,6 +122,96 @@ public enum SampleRecipes {
                     RecipeStep(title: "Serve", instruction: "Divide the leaves between plates, add the salmon, and finish with fresh lemon juice.")
                 ],
                 sourceName: "Sample recipe", coverAsset: "salmon", createdAt: created, updatedAt: created
+            ),
+            Recipe(
+                id: UUID(uuidString: "C0010000-0000-4000-8000-000000000005")!,
+                title: "Roast chicken & potatoes",
+                summary: "A fuller cooking-mode sample with step ingredients, heat cues and overlapping timers.",
+                servings: 4,
+                prepMinutes: 20,
+                cookMinutes: 45,
+                ingredients: [roastChicken, potatoes, oliveOil, lemon, garlic],
+                steps: [
+                    RecipeStep(
+                        title: "Preheat",
+                        instruction: "Heat the oven to 220°C while you prepare the tray.",
+                        temperature: CookingTemperature(text: "220°C")
+                    ),
+                    RecipeStep(
+                        title: "Season chicken",
+                        instruction: "Toss the chicken with half the olive oil, garlic and a squeeze of lemon. Let it stand for 10 minutes.",
+                        linkedIngredientIDs: [roastChicken.id, oliveOil.id, garlic.id, lemon.id],
+                        timers: [
+                            RecipeStepTimer(
+                                id: UUID(uuidString: "C0052000-0000-4000-8000-000000000001")!,
+                                label: "Marinate chicken",
+                                durationSeconds: 600
+                            )
+                        ]
+                    ),
+                    RecipeStep(
+                        title: "Prepare potatoes",
+                        instruction: "Halve the potatoes and toss with the remaining olive oil. Season to taste.",
+                        linkedIngredientIDs: [potatoes.id, oliveOil.id]
+                    ),
+                    RecipeStep(
+                        title: "Start roasting",
+                        instruction: "Arrange the chicken and potatoes on the hot tray and roast at 220°C for 20 minutes.",
+                        linkedIngredientIDs: [roastChicken.id, potatoes.id],
+                        temperature: CookingTemperature(text: "220°C"),
+                        timers: [
+                            RecipeStepTimer(
+                                id: UUID(uuidString: "C0052000-0000-4000-8000-000000000002")!,
+                                label: "First roast",
+                                durationSeconds: 1_200
+                            ),
+                            RecipeStepTimer(
+                                id: UUID(uuidString: "C0052000-0000-4000-8000-000000000003")!,
+                                label: "Check tray halfway",
+                                durationSeconds: 600
+                            )
+                        ]
+                    ),
+                    RecipeStep(
+                        title: "Turn and finish",
+                        instruction: "Turn the potatoes, spoon the pan juices over the chicken, then roast for 15 minutes more. Check doneness rather than relying on time alone.",
+                        linkedIngredientIDs: [roastChicken.id, potatoes.id],
+                        temperature: CookingTemperature(text: "220°C"),
+                        timers: [
+                            RecipeStepTimer(
+                                id: UUID(uuidString: "C0052000-0000-4000-8000-000000000004")!,
+                                label: "Finish roasting",
+                                durationSeconds: 900
+                            )
+                        ]
+                    ),
+                    RecipeStep(
+                        title: "Rest",
+                        instruction: "Move the chicken to a board and rest for 5 minutes before serving.",
+                        linkedIngredientIDs: [roastChicken.id],
+                        timers: [
+                            RecipeStepTimer(
+                                id: UUID(uuidString: "C0052000-0000-4000-8000-000000000005")!,
+                                label: "Rest chicken",
+                                durationSeconds: 300
+                            )
+                        ]
+                    ),
+                    RecipeStep(
+                        title: "Finish tray",
+                        instruction: "Taste the potatoes and pan juices. Add lemon only as needed.",
+                        linkedIngredientIDs: [potatoes.id, lemon.id]
+                    ),
+                    RecipeStep(
+                        title: "Serve",
+                        instruction: "Slice the chicken and serve with the potatoes and pan juices.",
+                        linkedIngredientIDs: [roastChicken.id, potatoes.id]
+                    )
+                ],
+                sourceName: "Sample recipe",
+                coverAsset: "salmon",
+                createdAt: created,
+                updatedAt: created
             )
         ]
     }

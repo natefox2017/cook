@@ -42,6 +42,7 @@ This document is the UI completeness checklist for the current codebase. Product
 - Source/original text — implemented.
 - Delete/favorite — implemented.
 - Cooking full-screen — implemented.
+- Cooking step workspace — implemented locally: step-linked ingredients with serving-aware amounts, temperature/heat cues, completed-step progress, multiple timers per step, cross-step/manual timer management, session recovery and keep-awake behavior.
 - Cooking ingredients checklist/timers/session recovery — implemented.
 
 ## Groceries

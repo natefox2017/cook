@@ -8,8 +8,8 @@
 | UI-002 | 食谱库 | TBD | PENDING | 默认首页 |
 | UI-003 | 添加食谱菜单 | TBD | PENDING | 自动导入优先 |
 | UI-004 | 待完善 | TBD | PENDING | 只展示异常字段 |
-| UI-005 | 食谱详情 | TBD | PENDING | 食材/步骤/来源 |
-| UI-006 | 做饭模式 | TBD | PENDING | 单步骤大字号 |
+| UI-005 | 食谱详情 | 现有 Recipe Detail UI + `DESIGN_SYSTEM.md` | APPROVED | 2026-10-08 用户明确要求不再单独画设计稿，直接按现有 UI 与功能完善详情页 |
+| UI-006 | 做饭模式 | 现有 Cooking Mode UI + `DESIGN_SYSTEM.md` | APPROVED | 2026-10-08 用户明确要求按现有 UI 延伸；保持单步骤大字号并补步骤食材、温度、多计时与进度 |
 | UI-007 | 购物清单 | TBD | PENDING | 合并/勾选/编辑 |
 | UI-008 | 简单周计划 | TBD | PENDING | 二级能力 |
 | UI-009 | 我的/设置（文字精简） | 用户截图（本次对话） | APPROVED | 仅删除辅助性小字；保留全部页面模块、入口和操作，不调整布局 |

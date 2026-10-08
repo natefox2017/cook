@@ -10,6 +10,7 @@ struct RecipeDetailView: View {
     @State private var didAdjustServings = false
     @State private var isEditing = false
     @State private var isCooking = false
+    @State private var cookingStartStepID: UUID?
     @State private var isChoosingIngredients = false
     @State private var isDeleting = false
     @State private var feedbackMessage: String?
@@ -35,7 +36,11 @@ struct RecipeDetailView: View {
             RecipeIngredientsSelectionView(recipeID: recipeID, initialServings: servings) { addedIngredientCount = $0 }
         }
         .fullScreenCover(isPresented: $isCooking) {
-            CookingView(recipeID: recipeID, servings: didAdjustServings ? servings : nil) { currentServings in
+            CookingView(
+                recipeID: recipeID,
+                servings: didAdjustServings ? servings : nil,
+                startStepID: cookingStartStepID
+            ) { currentServings in
                 servings = currentServings
                 didAdjustServings = false
             }
@@ -81,7 +86,10 @@ struct RecipeDetailView: View {
         }
         .accessibilityIdentifier("recipeDetailScroll")
         .safeAreaInset(edge: .bottom) {
-            Button { isCooking = true } label: {
+            Button {
+                cookingStartStepID = nil
+                isCooking = true
+            } label: {
                 Label("Start Cooking", systemImage: "play.fill")
                     .frame(maxWidth: .infinity)
             }
@@ -171,24 +179,84 @@ struct RecipeDetailView: View {
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(Array(recipe.steps.enumerated()), id: \.element.id) { index, step in
-                    HStack(alignment: .top, spacing: 14) {
-                        Text("\(index + 1)")
-                            .font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
-                            .foregroundStyle(CookTheme.accentForeground)
-                            .frame(minWidth: 32, minHeight: 32)
-                            .background(CookTheme.accent.opacity(0.1), in: Circle())
-                        VStack(alignment: .leading, spacing: 6) {
-                            if !step.title.isEmpty { Text(step.title).font(CookTheme.text(17, weight: .semibold, relativeTo: .headline)) }
-                            Text(step.instruction).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
-                            if let seconds = step.durationSeconds, seconds > 0 {
-                                Label(timerDurationLabel(seconds), systemImage: "timer")
-                                    .font(CookTheme.text(12, weight: .regular, relativeTo: .caption)).foregroundStyle(CookTheme.accentForeground)
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(alignment: .top, spacing: 14) {
+                            Text("\(index + 1)")
+                                .font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
+                                .foregroundStyle(CookTheme.accentForeground)
+                                .frame(minWidth: 32, minHeight: 32)
+                                .background(CookTheme.accent.opacity(0.1), in: Circle())
+
+                            VStack(alignment: .leading, spacing: 6) {
+                                if !step.title.isEmpty {
+                                    Text(step.title)
+                                        .font(CookTheme.text(17, weight: .semibold, relativeTo: .headline))
+                                }
+                                Text(step.instruction)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .textSelection(.enabled)
                             }
                         }
+
+                        let linkedIngredients = recipe.ingredients.filter { step.linkedIngredientIDs.contains($0.id) }
+                        if !linkedIngredients.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Label("For this step", systemImage: "carrot")
+                                    .font(CookTheme.text(13, weight: .semibold, relativeTo: .footnote))
+                                    .foregroundStyle(CookTheme.accentForeground)
+                                ForEach(linkedIngredients) { ingredient in
+                                    HStack(alignment: .firstTextBaseline) {
+                                        Text(ingredient.name)
+                                        Spacer(minLength: 8)
+                                        Text(ingredient.displayAmount(servings: servings, originalServings: recipe.servings))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .font(CookTheme.text(14, relativeTo: .subheadline))
+                                }
+                            }
+                            .padding(12)
+                            .background(CookTheme.accent.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
+                        }
+
+                        if step.temperature != nil || !step.timers.isEmpty {
+                            ViewThatFits(in: .horizontal) {
+                                HStack(spacing: 10) { stepSignals(step) }
+                                VStack(alignment: .leading, spacing: 8) { stepSignals(step) }
+                            }
+                        }
+
+                        Button {
+                            cookingStartStepID = step.id
+                            isCooking = true
+                        } label: {
+                            Label("Cook from Step \(index + 1)", systemImage: "play")
+                                .frame(minHeight: 44)
+                        }
+                        .buttonStyle(.bordered)
+                        .accessibilityIdentifier("cookFromStep.\(index + 1)")
                     }
-                    .accessibilityElement(children: .combine)
+                    .padding(16)
+                    .background(CookTheme.card, in: RoundedRectangle(cornerRadius: 20))
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func stepSignals(_ step: RecipeStep) -> some View {
+        if let temperature = step.temperature, !temperature.text.isEmpty {
+            Label(temperature.text, systemImage: "thermometer.medium")
+                .font(CookTheme.text(13, weight: .semibold, relativeTo: .footnote))
+                .foregroundStyle(CookTheme.accentForeground)
+        }
+        ForEach(step.timers) { timer in
+            let duration = timerDurationLabel(timer.durationSeconds)
+            Label(
+                timer.label.isEmpty ? duration : "\(timer.label) · \(duration)",
+                systemImage: "timer"
+            )
+            .font(CookTheme.text(13, weight: .semibold, relativeTo: .footnote))
+            .foregroundStyle(CookTheme.accentForeground)
         }
     }
 

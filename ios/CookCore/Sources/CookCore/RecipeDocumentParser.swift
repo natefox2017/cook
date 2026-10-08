@@ -37,12 +37,13 @@ public enum RecipeDocumentParser {
             if ["notes", "tips", "备注"].contains(heading) { section = "notes"; continue }
             switch section {
             case "ingredients": result.ingredients.append(ingredient(line))
-            case "steps": result.steps.append(RecipeStep(instruction: removingBullet(line)))
+            case "steps": result.steps.append(structuredStep(title: "", instruction: removingBullet(line)))
             case "notes": result.notes += (result.notes.isEmpty ? "" : "\n") + line
             default:
                 if result.title == "Imported recipe", line.count < 120 { result.title = line }
             }
         }
+        result.steps = enrichSteps(result.steps, ingredients: result.ingredients)
         return result
     }
 
@@ -99,7 +100,8 @@ public enum RecipeDocumentParser {
         let name = clean(json["name"] as? String ?? "")
         guard !name.isEmpty else { return nil }
         let rawIngredients = (json["recipeIngredient"] as? [String]) ?? []
-        let steps = stepList(json["recipeInstructions"], depth: 0)
+        let ingredients = rawIngredients.prefix(250).map(ingredient)
+        let steps = enrichSteps(Array(stepList(json["recipeInstructions"], depth: 0).prefix(250)), ingredients: ingredients)
         let author = (json["author"] as? String)
             ?? (json["author"] as? [String: Any])?["name"] as? String
             ?? (json["author"] as? [[String: Any]])?.first?["name"] as? String
@@ -108,8 +110,8 @@ public enum RecipeDocumentParser {
             servings: servings(json["recipeYield"]),
             prepMinutes: minutes(json["prepTime"] as? String),
             cookMinutes: minutes(json["cookTime"] as? String),
-            ingredients: rawIngredients.prefix(250).map(ingredient),
-            steps: Array(steps.prefix(250)), sourceURL: sourceURL.absoluteString,
+            ingredients: ingredients,
+            steps: steps, sourceURL: sourceURL.absoluteString,
             sourceText: "Ingredients\n" + rawIngredients.joined(separator: "\n") + "\nInstructions\n" + steps.map(\.instruction).joined(separator: "\n"),
             sourceName: clean(author ?? sourceURL.host() ?? "Recipe website")
         )
@@ -125,14 +127,177 @@ public enum RecipeDocumentParser {
     private static func stepList(_ value: Any?, depth: Int) -> [RecipeStep] {
         guard depth < 24 else { return [] }
         if let text = value as? String {
-            return text.components(separatedBy: .newlines).map(clean).filter { !$0.isEmpty }.map { RecipeStep(instruction: removingBullet($0)) }
+            return text.components(separatedBy: .newlines).map(clean).filter { !$0.isEmpty }.map { structuredStep(title: "", instruction: removingBullet($0)) }
         }
         if let values = value as? [Any] { return values.flatMap { stepList($0, depth: depth + 1) } }
         guard let object = value as? [String: Any] else { return [] }
         if let children = object["itemListElement"] { return stepList(children, depth: depth + 1) }
         let text = clean(object["text"] as? String ?? object["name"] as? String ?? "")
         guard !text.isEmpty else { return [] }
-        return [RecipeStep(title: clean(object["name"] as? String ?? ""), instruction: text)]
+        return [structuredStep(title: clean(object["name"] as? String ?? ""), instruction: text)]
+    }
+
+
+    private static func structuredStep(title: String, instruction: String) -> RecipeStep {
+        let cleanedTitle = clean(title)
+        let cleanedInstruction = clean(instruction)
+        return RecipeStep(
+            title: cleanedTitle,
+            instruction: cleanedInstruction,
+            temperature: temperature(in: cleanedInstruction),
+            timers: timerCandidates(in: cleanedInstruction, stepTitle: cleanedTitle)
+        )
+    }
+
+    private static func enrichSteps(_ steps: [RecipeStep], ingredients: [RecipeIngredient]) -> [RecipeStep] {
+        steps.map { step in
+            var updated = step
+            let haystack = normalizedWords(step.instruction)
+            updated.linkedIngredientIDs = ingredients.compactMap { ingredient in
+                let needle = normalizedWords(ingredient.name)
+                let meaningfulLength = needle.trimmingCharacters(in: .whitespacesAndNewlines).count
+                guard meaningfulLength >= 3, haystack.contains(needle) else { return nil }
+                return ingredient.id
+            }
+            return updated
+        }
+    }
+
+    private static func normalizedWords(_ text: String) -> String {
+        " " + text
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .lowercased()
+            .replacingOccurrences(of: #"[^\p{L}\p{N}]+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines) + " "
+    }
+
+    private static func timerCandidates(in text: String, stepTitle: String) -> [RecipeStepTimer] {
+        struct Candidate {
+            let range: NSRange
+            let timer: RecipeStepTimer
+        }
+
+        let combinedPattern = #"\b(\d{1,2})\s*(hours?|hrs?)\s*(?:and\s*)?(\d{1,3})\s*(minutes?|mins?)\b"#
+        let singlePattern = #"\b(\d{1,3})\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)\b"#
+
+        guard let singleRegex = try? NSRegularExpression(pattern: singlePattern, options: .caseInsensitive) else {
+            return []
+        }
+
+        let fullTextRange = NSRange(text.startIndex..., in: text)
+        let base = stepTitle.isEmpty ? "Step timer" : stepTitle
+        var candidates: [Candidate] = []
+        var consumedRanges: [NSRange] = []
+
+        if let combinedRegex = try? NSRegularExpression(pattern: combinedPattern, options: .caseInsensitive) {
+            for match in combinedRegex.matches(in: text, range: fullTextRange) {
+                let matchRange = match.range(at: 0)
+                consumedRanges.append(matchRange)
+
+                guard let fullRange = Range(matchRange, in: text),
+                      let hoursRange = Range(match.range(at: 1), in: text),
+                      let minutesRange = Range(match.range(at: 3), in: text),
+                      let hours = Int(text[hoursRange]),
+                      let minutes = Int(text[minutesRange]) else { continue }
+
+                if isAmbiguousTimeMatch(in: text, range: fullRange) { continue }
+
+                let seconds = hours * 3_600 + minutes * 60
+                guard seconds > 0, seconds <= 43_200 else { continue }
+
+                let sourceLabel = String(text[fullRange])
+                candidates.append(
+                    Candidate(
+                        range: matchRange,
+                        timer: RecipeStepTimer(
+                            label: "\(base) · \(sourceLabel)",
+                            durationSeconds: seconds
+                        )
+                    )
+                )
+            }
+        }
+
+        for match in singleRegex.matches(in: text, range: fullTextRange) {
+            let matchRange = match.range(at: 0)
+            if consumedRanges.contains(where: { NSIntersectionRange($0, matchRange).length > 0 }) {
+                continue
+            }
+
+            guard let fullRange = Range(matchRange, in: text),
+                  let valueRange = Range(match.range(at: 1), in: text),
+                  let unitRange = Range(match.range(at: 2), in: text),
+                  let value = Int(text[valueRange]) else { continue }
+
+            if isAmbiguousTimeMatch(in: text, range: fullRange) { continue }
+
+            let unit = text[unitRange].lowercased()
+            let seconds: Int
+            if unit.hasPrefix("hour") || unit.hasPrefix("hr") {
+                seconds = value * 3_600
+            } else if unit.hasPrefix("second") || unit.hasPrefix("sec") {
+                seconds = value
+            } else {
+                seconds = value * 60
+            }
+            guard seconds > 0, seconds <= 43_200 else { continue }
+
+            let sourceLabel = String(text[fullRange])
+            candidates.append(
+                Candidate(
+                    range: matchRange,
+                    timer: RecipeStepTimer(
+                        label: "\(base) · \(sourceLabel)",
+                        durationSeconds: seconds
+                    )
+                )
+            )
+        }
+
+        let ordered = candidates
+            .sorted { lhs, rhs in
+                if lhs.range.location == rhs.range.location {
+                    return lhs.range.length > rhs.range.length
+                }
+                return lhs.range.location < rhs.range.location
+            }
+            .prefix(12)
+
+        let orderedCandidates = Array(ordered)
+        if orderedCandidates.count == 1 {
+            var only = orderedCandidates[0].timer
+            only.label = base
+            return [only]
+        }
+        return orderedCandidates.map(\.timer)
+    }
+
+    private static func isAmbiguousTimeMatch(in text: String, range: Range<String.Index>) -> Bool {
+        let prefixStart = text.index(range.lowerBound, offsetBy: -min(24, text.distance(from: text.startIndex, to: range.lowerBound)))
+        let suffixEnd = text.index(range.upperBound, offsetBy: min(24, text.distance(from: range.upperBound, to: text.endIndex)))
+        let prefix = String(text[prefixStart..<range.lowerBound]).lowercased()
+        let suffix = String(text[range.upperBound..<suffixEnd]).lowercased()
+
+        let ambiguousPrefix = #"(?:about|approximately|approx\.?|around|roughly|up to|at least|at most|more than|less than|no more than|no less than|minimum of|maximum of|(?:between\s+)?\d+\s*(?:(?:seconds?|secs?|minutes?|mins?|hours?|hrs?)\s*)?(?:-|–|—|to|and|or))\s*$"#
+        let ambiguousSuffix = #"^(?:[\s\p{P}]*(?:(?:or\s+)?until\b|(?:or\s+)?(?:longer|more|less)\b|(?:minimum|maximum)\b|(?:at\s+(?:least|most)|no\s+(?:more|less)\s+than|more\s+than|less\s+than)\b)|\s*(?:-|–|—|to|and|or)\s*\d+)"#
+
+        if prefix.range(of: ambiguousPrefix, options: .regularExpression) != nil { return true }
+        if suffix.range(of: ambiguousSuffix, options: .regularExpression) != nil { return true }
+        return false
+    }
+
+    private static func temperature(in text: String) -> CookingTemperature? {
+        let patterns = [
+            #"\b\d{2,3}\s*°?\s*[CF]\b"#,
+            #"\b(?:low|medium-low|medium|medium-high|high)\s+heat\b"#
+        ]
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+                  let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+                  let range = Range(match.range(at: 0), in: text) else { continue }
+            return CookingTemperature(text: String(text[range]))
+        }
+        return nil
     }
 
     private static func ingredient(_ raw: String) -> RecipeIngredient {
