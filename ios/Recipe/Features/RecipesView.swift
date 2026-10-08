@@ -264,7 +264,7 @@ struct RecipesView: View {
 
     private var emptyScopeMessage: String {
         if selectedCollectionID != nil {
-            return "Add recipes from a recipe page or from Collections."
+            return String(localized: "Add recipes to this collection.")
         }
         return filter.emptyMessage
     }
