@@ -8,12 +8,21 @@ struct MealPlanView: View {
     @State private var mealToDelete: MealPlanEntry?
     @State private var errorMessage: String?
 
-    private let calendar = Calendar.current
+    private var calendar: Calendar {
+        store.settings.mealPlanWeekStart.applying(to: .autoupdatingCurrent)
+    }
+
+    private var weekStartDate: Date {
+        let day = calendar.startOfDay(for: selectedDate)
+        let weekday = calendar.component(.weekday, from: day)
+        let offset = (weekday - calendar.firstWeekday + 7) % 7
+        return calendar.date(byAdding: .day, value: -offset, to: day) ?? day
+    }
 
     private var weekDates: [Date] {
-        let start = calendar.dateInterval(of: .weekOfYear, for: selectedDate)?.start
-            ?? calendar.startOfDay(for: selectedDate)
-        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
+        (0..<7).compactMap {
+            calendar.date(byAdding: .day, value: $0, to: weekStartDate)
+        }
     }
 
     private var weekDescription: String {
@@ -22,8 +31,13 @@ struct MealPlanView: View {
     }
 
     private var weeklyMealCount: Int {
-        guard let interval = calendar.dateInterval(of: .weekOfYear, for: selectedDate) else { return 0 }
-        return store.mealPlan.filter { $0.date >= interval.start && $0.date < interval.end }.count
+        let start = weekStartDate
+        guard let end = calendar.date(byAdding: .day, value: 7, to: start) else {
+            return 0
+        }
+        return store.mealPlan.filter { entry in
+            entry.date >= start && entry.date < end
+        }.count
     }
 
     var body: some View {
@@ -195,7 +209,11 @@ struct MealPlanView: View {
     }
 
     private func moveWeek(by count: Int) {
-        if let date = calendar.date(byAdding: .weekOfYear, value: count, to: selectedDate) {
+        if let date = calendar.date(
+            byAdding: .day,
+            value: count * 7,
+            to: selectedDate
+        ) {
             selectedDate = date
         }
     }
