@@ -44,6 +44,16 @@ enum CloudSyncCoordinatorState: Equatable, Sendable {
     case initialChoice(local: CloudLibraryCounts, cloud: CloudLibraryCounts?)
     case conflicts([LibraryMergeConflict])
     case error(String)
+
+    /// An incomplete cloud read never authorizes a write under a new account.
+    var permitsUpload: Bool {
+        switch self {
+        case .localOnly, .synced:
+            true
+        case .syncing, .initialChoice, .conflicts, .error:
+            false
+        }
+    }
 }
 
 enum InitialCloudSyncChoice: Sendable {
@@ -452,12 +462,7 @@ final class CloudSyncCoordinator {
         guard accountID == requestedAccountID else { return }
         // A failed download is not permission to overwrite unknown server data.
         // Do not bypass a first-sync consent screen or unresolved conflicts.
-        switch state {
-        case .initialChoice, .conflicts, .error, .syncing:
-            return
-        case .localOnly, .synced:
-            break
-        }
+        guard state.permitsUpload else { return }
         await uploadLocalSnapshot(forceFollowUp: true)
     }
 
@@ -694,12 +699,7 @@ final class CloudSyncCoordinator {
         // loadAccountSnapshot() awaits the server while displaying .syncing.
         // Concurrent edits must not upload another account's local library
         // before its owner and the first-sync decision have been resolved.
-        switch state {
-        case .initialChoice, .conflicts, .error, .syncing:
-            return
-        case .localOnly, .synced:
-            break
-        }
+        guard state.permitsUpload else { return }
         await uploadLocalSnapshot()
     }
 
