@@ -14,7 +14,13 @@ final class RecipeShareInboxCoordinator {
         do {
             let inbox = try RecipeShareInbox.shared()
             try migrateLegacyInbox(into: inbox)
-            pendingReceipts = try inbox.pendingReceipts()
+            let ownerID: UUID?
+            if case .signedIn(let id, _) = RecipeAuthService.shared.state {
+                ownerID = id
+            } else {
+                ownerID = nil
+            }
+            pendingReceipts = try inbox.pendingReceipts(for: ownerID)
             failureMessage = nil
         } catch {
             // Never clear the UI or underlying records when an App Group read
