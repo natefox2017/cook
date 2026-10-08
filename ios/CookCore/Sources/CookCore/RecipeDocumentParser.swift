@@ -172,7 +172,12 @@ public enum RecipeDocumentParser {
     }
 
     private static func timerCandidates(in text: String, stepTitle: String) -> [RecipeStepTimer] {
-        let combinedPattern = #"\b(\d{1,2})\s*(hours?|hrs?)\s*(?:and\s*)?(\d{1,2})\s*(minutes?|mins?)\b"#
+        struct Candidate {
+            let range: NSRange
+            let timer: RecipeStepTimer
+        }
+
+        let combinedPattern = #"\b(\d{1,2})\s*(hours?|hrs?)\s*(?:and\s*)?(\d{1,3})\s*(minutes?|mins?)\b"#
         let singlePattern = #"\b(\d{1,3})\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)\b"#
 
         guard let singleRegex = try? NSRegularExpression(pattern: singlePattern, options: .caseInsensitive) else {
@@ -180,44 +185,46 @@ public enum RecipeDocumentParser {
         }
 
         let fullTextRange = NSRange(text.startIndex..., in: text)
-        var timers: [RecipeStepTimer] = []
+        let base = stepTitle.isEmpty ? "Step timer" : stepTitle
+        var candidates: [Candidate] = []
         var consumedRanges: [NSRange] = []
 
         if let combinedRegex = try? NSRegularExpression(pattern: combinedPattern, options: .caseInsensitive) {
             for match in combinedRegex.matches(in: text, range: fullTextRange) {
-                guard let fullRange = Range(match.range(at: 0), in: text),
+                let matchRange = match.range(at: 0)
+                consumedRanges.append(matchRange)
+
+                guard let fullRange = Range(matchRange, in: text),
                       let hoursRange = Range(match.range(at: 1), in: text),
                       let minutesRange = Range(match.range(at: 3), in: text),
                       let hours = Int(text[hoursRange]),
                       let minutes = Int(text[minutesRange]) else { continue }
 
-                // Treat the compound expression as one semantic unit even when it
-                // is ambiguous, so its inner "1 hour" / "30 minutes" matches
-                // cannot leak through as fake precise timers.
-                consumedRanges.append(match.range(at: 0))
                 if isAmbiguousTimeMatch(in: text, range: fullRange) { continue }
 
                 let seconds = hours * 3_600 + minutes * 60
                 guard seconds > 0, seconds <= 43_200 else { continue }
 
-                let base = stepTitle.isEmpty ? "Step timer" : stepTitle
-                timers.append(
-                    RecipeStepTimer(
-                        label: base,
-                        durationSeconds: seconds
+                let sourceLabel = String(text[fullRange])
+                candidates.append(
+                    Candidate(
+                        range: matchRange,
+                        timer: RecipeStepTimer(
+                            label: "\(base) · \(sourceLabel)",
+                            durationSeconds: seconds
+                        )
                     )
                 )
-                if timers.count >= 12 { break }
             }
         }
 
-        let singleMatches = singleRegex.matches(in: text, range: fullTextRange)
-        for match in singleMatches {
-            if consumedRanges.contains(where: { NSIntersectionRange($0, match.range(at: 0)).length > 0 }) {
+        for match in singleRegex.matches(in: text, range: fullTextRange) {
+            let matchRange = match.range(at: 0)
+            if consumedRanges.contains(where: { NSIntersectionRange($0, matchRange).length > 0 }) {
                 continue
             }
 
-            guard let fullRange = Range(match.range(at: 0), in: text),
+            guard let fullRange = Range(matchRange, in: text),
                   let valueRange = Range(match.range(at: 1), in: text),
                   let unitRange = Range(match.range(at: 2), in: text),
                   let value = Int(text[valueRange]) else { continue }
@@ -236,16 +243,33 @@ public enum RecipeDocumentParser {
             guard seconds > 0, seconds <= 43_200 else { continue }
 
             let sourceLabel = String(text[fullRange])
-            let base = stepTitle.isEmpty ? "Step timer" : stepTitle
-            let label = singleMatches.count - consumedRanges.count > 1
-                ? "\(base) · \(sourceLabel)"
-                : base
-
-            timers.append(RecipeStepTimer(label: label, durationSeconds: seconds))
-            if timers.count >= 12 { break }
+            candidates.append(
+                Candidate(
+                    range: matchRange,
+                    timer: RecipeStepTimer(
+                        label: "\(base) · \(sourceLabel)",
+                        durationSeconds: seconds
+                    )
+                )
+            )
         }
 
-        return timers
+        let ordered = candidates
+            .sorted { lhs, rhs in
+                if lhs.range.location == rhs.range.location {
+                    return lhs.range.length > rhs.range.length
+                }
+                return lhs.range.location < rhs.range.location
+            }
+            .prefix(12)
+
+        let orderedCandidates = Array(ordered)
+        if orderedCandidates.count == 1 {
+            var only = orderedCandidates[0].timer
+            only.label = base
+            return [only]
+        }
+        return orderedCandidates.map(\.timer)
     }
 
     private static func isAmbiguousTimeMatch(in text: String, range: Range<String.Index>) -> Bool {
@@ -255,7 +279,7 @@ public enum RecipeDocumentParser {
         let suffix = String(text[range.upperBound..<suffixEnd]).lowercased()
 
         let ambiguousPrefix = #"(?:about|approximately|approx\.?|around|roughly|up to|at least|at most|more than|less than|no more than|no less than|minimum of|maximum of|(?:between\s+)?\d+\s*(?:(?:seconds?|secs?|minutes?|mins?|hours?|hrs?)\s*)?(?:-|–|—|to|and|or))\s*$"#
-        let ambiguousSuffix = #"^\s*(?:(?:-|–|—|to|and|or)\s*\d+|[,;:]?\s*(?:or\s+)?until\b|(?:or\s+)?(?:longer|more|less)\b|(?:minimum|maximum)\b)"#
+        let ambiguousSuffix = #"^(?:(?:\s|\p{P})*(?:or\s+)?until\b|\s*(?:-|–|—|to|and|or)\s*\d+|\s*(?:or\s+)?(?:longer|more|less)\b|\s*(?:minimum|maximum)\b)"#
 
         if prefix.range(of: ambiguousPrefix, options: .regularExpression) != nil { return true }
         if suffix.range(of: ambiguousSuffix, options: .regularExpression) != nil { return true }
