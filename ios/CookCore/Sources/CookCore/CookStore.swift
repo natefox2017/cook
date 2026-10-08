@@ -287,11 +287,14 @@ public final class CookStore {
             let item = try groceryItem(from: ingredient, recipeID: recipeID,
                                        originalServings: originalServings,
                                        requestedServings: requestedServings)
-            if let index = next.groceries.firstIndex(where: {
-                !$0.isChecked && $0.quantity != nil && item.quantity != nil
-                    && normalized($0.name) == normalized(item.name)
-                    && unitKey($0.unit) == unitKey(item.unit)
-            }), var existing = next.groceries[index].quantity, var added = item.quantity {
+            if next.settings.consolidateCompatibleGroceries,
+               let index = next.groceries.firstIndex(where: {
+                   !$0.isChecked && $0.quantity != nil && item.quantity != nil
+                       && normalized($0.name) == normalized(item.name)
+                       && unitKey($0.unit) == unitKey(item.unit)
+               }),
+               var existing = next.groceries[index].quantity,
+               var added = item.quantity {
                 var total = Decimal()
                 guard NSDecimalAdd(&total, &existing, &added, .plain) == .noError else {
                     throw IngredientAmount.ValidationError.arithmeticFailure
