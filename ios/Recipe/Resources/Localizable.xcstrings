@@ -13817,6 +13817,98 @@
           }
         }
       }
+    },
+    "iOS permission": {
+      "comment": "Localized concise user-facing label.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS 权限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS 權限"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS の許可"
+          }
+        }
+      }
+    },
+    "Cooking timer reminders": {
+      "comment": "Localized concise user-facing label.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹饪计时提醒"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹飪計時提醒"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理タイマーの通知"
+          }
+        }
+      }
+    },
+    "Received %@": {
+      "comment": "Localized concise user-facing label.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接收于 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接收於 %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "受信日時：%@"
+          }
+        }
+      }
+    },
+    "Auto-renews until canceled in the App Store.": {
+      "comment": "Localized concise user-facing label.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动续订，可在 App Store 取消。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動續訂，可在 App Store 取消。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動更新されます。App Store で解約できます。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
