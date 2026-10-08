@@ -85,6 +85,41 @@ func receiptIdentifiersStayStableForHistoricalURLAndImageSources() throws {
     #expect(try inbox.source(for: receipt) == text)
 }
 
+@Test
+func newSharedTextKeepsWhitespaceWithoutChangingDeduplication() throws {
+    let container = try temporaryShareContainer()
+    defer { try? FileManager.default.removeItem(at: container) }
+
+    let inbox = try RecipeShareInbox(containerURL: container)
+    let original = "\n  Ingredients\n    盐适量\n  Instructions\n    Gently stir.\n\n"
+    let receipt = try inbox.receive(original, as: .text)
+    let duplicate = try inbox.receive(
+        original.trimmingCharacters(in: .whitespacesAndNewlines),
+        as: .text
+    )
+
+    #expect(receipt.id == duplicate.id)
+    #expect(try inbox.source(for: receipt) == original)
+    #expect(try inbox.pendingReceipts().count == 1)
+
+    // Reopening must preserve the first immutable text, not recompute it.
+    let reopened = try RecipeShareInbox(containerURL: container)
+    #expect(try reopened.source(for: duplicate) == original)
+}
+
+@Test
+func shareTextEnforcesSizeLimitOnUntrimmedInput() throws {
+    let container = try temporaryShareContainer()
+    defer { try? FileManager.default.removeItem(at: container) }
+
+    let inbox = try RecipeShareInbox(containerURL: container)
+    let tooLarge = String(repeating: " ", count: 100_001) + "Recipe"
+    #expect(throws: RecipeShareInboxError.self) {
+        try inbox.receive(tooLarge, as: .text)
+    }
+    #expect(try inbox.pendingReceipts().isEmpty)
+}
+
 @Test func sharedReceiptRefusesInvalidInputsWithoutAcknowledgement() throws {
     let container = try temporaryShareContainer()
     defer { try? FileManager.default.removeItem(at: container) }
