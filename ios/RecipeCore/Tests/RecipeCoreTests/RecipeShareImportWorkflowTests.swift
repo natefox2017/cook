@@ -470,3 +470,37 @@ func completedURLResultIsReportedAndNeverSavedAsARecipe() async throws {
     #expect(fixture.store.recipes.isEmpty)
     #expect(try fixture.inbox.acknowledgedJobID(for: receipt, ownerID: ownerID) == jobID)
 }
+
+@Test @MainActor
+func cancelledSubmissionLeavesReceiptForRetryWithoutFalseFailure() async throws {
+    let fixture = try ShareWorkflowFixture()
+    defer { fixture.removeFiles() }
+    let receipt = try fixture.inbox.receive(
+        "https://example.org/cancelled", as: .url
+    )
+    let ownerID = UUID()
+    let client = StubRecipeImportJobClient(
+        submitResponse: jobResponse(
+            receipt: receipt,
+            jobID: UUID(),
+            status: .queued,
+            queueConfirmedAt: "2026-10-08T00:00:00Z"
+        )
+    )
+    client.onSubmit = { throw CancellationError() }
+
+    let report = await RecipeShareImportWorkflow.synchronize(
+        inbox: fixture.inbox,
+        store: fixture.store,
+        client: client,
+        ownerID: ownerID,
+        currentOwnerID: { ownerID },
+        maxPollRounds: 1,
+        pollInterval: .zero
+    )
+
+    #expect(report.failureMessage == nil)
+    #expect(report.jobStatuses.isEmpty)
+    #expect(try fixture.inbox.pendingReceipts(for: ownerID).map(\.id) == [receipt.id])
+    #expect(fixture.store.recipes.isEmpty)
+}
