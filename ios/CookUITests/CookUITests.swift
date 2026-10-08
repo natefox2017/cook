@@ -152,7 +152,7 @@ final class CookUITests: XCTestCase {
         defer { app.terminate() }
 
         let recipe = app.buttons["recipe.C0010000-0000-4000-8000-000000000005"]
-        waitUntilReady(recipe)
+        reveal(recipe, in: app, maximumSwipes: 4)
         recipe.tap()
 
         let cookFromStep = app.buttons["cookFromStep.4"]
