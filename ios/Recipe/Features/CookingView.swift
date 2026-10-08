@@ -144,7 +144,7 @@ struct CookingView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 22))
                 }
 
-                Text(recipe.title.isEmpty ? String(localized: "Untitled Recipe") : recipe.title)
+                Text(recipe.title.isEmpty ? String(localized: LocalizedStringResource("Untitled Recipe", locale: RecipeLanguage.active)) : recipe.title)
                     .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
                     .foregroundStyle(.secondary)
 
@@ -152,7 +152,7 @@ struct CookingView: View {
 
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(step.title.isEmpty ? String(localized: "Step \(index + 1)") : step.title)
+                        Text(step.title.isEmpty ? String(localized: LocalizedStringResource("Step \(index + 1)", locale: RecipeLanguage.active)) : step.title)
                             .font(RecipeTheme.title(32))
                             .accessibilityAddTraits(.isHeader)
                         Spacer()
@@ -391,7 +391,7 @@ struct CookingView: View {
                                     Text(
                                         remaining == 0
                                             ? "Time’s up"
-                                            : String(localized: "\(clockText(remaining)) remaining")
+                                            : String(localized: LocalizedStringResource("\(clockText(remaining)) remaining", locale: RecipeLanguage.active))
                                     )
                                     .font(RecipeTheme.text(12, relativeTo: .caption))
                                     .monospacedDigit()
@@ -631,7 +631,7 @@ struct CookingView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(active.label)
                             .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
-                        Text(remaining == 0 ? String(localized: "Time’s up") : clockText(remaining))
+                        Text(remaining == 0 ? String(localized: LocalizedStringResource("Time’s up", locale: RecipeLanguage.active)) : clockText(remaining))
                             .font(RecipeTheme.text(20, weight: .semibold, relativeTo: .title3))
                             .monospacedDigit()
                     }
@@ -1374,7 +1374,7 @@ private struct CookingStepTimerPanel: View {
     }
 
     private func spokenDuration(_ seconds: Int) -> String {
-        if seconds == 0 { return String(localized: "Time’s up", locale: locale) }
+        if seconds == 0 { return String(localized: LocalizedStringResource("Time’s up", locale: locale)) }
         return Duration.seconds(seconds).formatted(
             .units(width: .wide, maximumUnitCount: 3).locale(locale)
         )

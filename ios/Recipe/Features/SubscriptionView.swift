@@ -233,22 +233,22 @@ struct PremiumPaywallContent: View {
     private var activeStatusTitle: String {
         switch subscriptions.state {
         case .trial:
-            String(localized: "Free trial active")
+            String(localized: LocalizedStringResource("Free trial active", locale: RecipeLanguage.active))
         case .gracePeriod:
-            String(localized: "Subscription in billing grace period")
+            String(localized: LocalizedStringResource("Subscription in billing grace period", locale: RecipeLanguage.active))
         default:
-            String(localized: "Subscription active")
+            String(localized: LocalizedStringResource("Subscription active", locale: RecipeLanguage.active))
         }
     }
 
     private var statusMessage: String? {
         switch subscriptions.state {
         case .billingRetry:
-            String(localized: "Payment issue. Premium is inactive.")
+            String(localized: LocalizedStringResource("Payment issue. Premium is inactive.", locale: RecipeLanguage.active))
         case .expired:
-            String(localized: "Subscription expired.")
+            String(localized: LocalizedStringResource("Subscription expired.", locale: RecipeLanguage.active))
         case .revoked:
-            String(localized: "Subscription revoked by App Store.")
+            String(localized: LocalizedStringResource("Subscription revoked by App Store.", locale: RecipeLanguage.active))
         case .unavailable(let reason):
             reason
         default:
@@ -267,7 +267,7 @@ struct PremiumPaywallContent: View {
         case .year:
             return String(localized: LocalizedStringResource("\(count) year", locale: locale))
         @unknown default:
-            return String(localized: "Subscription period")
+            return String(localized: LocalizedStringResource("Subscription period", locale: RecipeLanguage.active))
         }
     }
 
@@ -282,7 +282,7 @@ struct PremiumPaywallContent: View {
         case .year:
             String(localized: LocalizedStringResource("\(period.value) year", locale: locale))
         @unknown default:
-            String(localized: "Subscription period")
+            String(localized: LocalizedStringResource("Subscription period", locale: RecipeLanguage.active))
         }
     }
 }

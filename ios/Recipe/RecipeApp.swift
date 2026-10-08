@@ -71,19 +71,7 @@ struct RecipeApp: App {
     }
 
     private var appLocale: Locale {
-        guard isUITesting else { return .autoupdatingCurrent }
-
-        // Regression launches stay in English unless a localization test
-        // explicitly chooses one of the supported target languages.
-        let arguments = ProcessInfo.processInfo.arguments
-        if let index = arguments.firstIndex(of: "--uitesting-locale"),
-           arguments.indices.contains(index + 1) {
-            let identifier = arguments[index + 1]
-            if ["en", "zh-Hans", "zh-Hant", "ja"].contains(identifier) {
-                return Locale(identifier: identifier)
-            }
-        }
-        return Locale(identifier: "en")
+        RecipeLanguage.active
     }
 
     private var colorScheme: ColorScheme? {
@@ -339,4 +327,21 @@ private enum RecipeTab: String, Identifiable {
         case .profile: "person.crop.circle"
         }
     }
+}
+
+/// UI language policy for the English-only development build.
+/// Dedicated locale smoke tests may opt in to additional languages.
+enum RecipeLanguage {
+    static let active: Locale = {
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("--uitesting"),
+           let index = args.firstIndex(of: "--uitesting-locale"),
+           args.indices.contains(index + 1) {
+            let code = args[index + 1]
+            if ["en", "zh-Hans", "zh-Hant", "ja"].contains(code) {
+                return Locale(identifier: code)
+            }
+        }
+        return Locale(identifier: "en")
+    }()
 }

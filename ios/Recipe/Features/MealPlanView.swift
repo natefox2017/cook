@@ -226,17 +226,17 @@ struct MealPlanView: View {
         let isAdding = entries(for: slot).isEmpty
         switch (slot, isAdding) {
         case (.breakfast, true):
-            return String(localized: "Add breakfast")
+            return String(localized: LocalizedStringResource("Add breakfast", locale: RecipeLanguage.active))
         case (.lunch, true):
-            return String(localized: "Add lunch")
+            return String(localized: LocalizedStringResource("Add lunch", locale: RecipeLanguage.active))
         case (.dinner, true):
-            return String(localized: "Add dinner")
+            return String(localized: LocalizedStringResource("Add dinner", locale: RecipeLanguage.active))
         case (.breakfast, false):
-            return String(localized: "Change breakfast")
+            return String(localized: LocalizedStringResource("Change breakfast", locale: RecipeLanguage.active))
         case (.lunch, false):
-            return String(localized: "Change lunch")
+            return String(localized: LocalizedStringResource("Change lunch", locale: RecipeLanguage.active))
         case (.dinner, false):
-            return String(localized: "Change dinner")
+            return String(localized: LocalizedStringResource("Change dinner", locale: RecipeLanguage.active))
         }
     }
 
@@ -413,9 +413,9 @@ private struct MealPlanRecipePicker: View {
 
     private func localizedMealSlot(_ slot: MealSlot) -> String {
         return switch slot {
-        case .breakfast: String(localized: "Breakfast", locale: locale)
-        case .lunch: String(localized: "Lunch", locale: locale)
-        case .dinner: String(localized: "Dinner", locale: locale)
+        case .breakfast: String(localized: LocalizedStringResource("Breakfast", locale: locale))
+        case .lunch: String(localized: LocalizedStringResource("Lunch", locale: locale))
+        case .dinner: String(localized: LocalizedStringResource("Dinner", locale: locale))
         }
     }
 

@@ -307,7 +307,7 @@ struct AddRecipeView: View {
     private func perform(_ message: String, action: @escaping @MainActor () async throws -> Void) {
         guard !isWorking else { return }
         isWorking = true
-        status = String(localized: String.LocalizationValue(message))
+        status = message
         errorMessage = nil
         savedID = nil
         failedURL = nil
