@@ -14,7 +14,9 @@ struct ProfileView: View {
     @State private var confirmsReset = false
     @State private var isDeletingLocalData = false
     @State private var exportsData = false
-    @State private var exportDocument = RecipeExportDocument(data: Data())
+    @State private var choosingExport = false
+    @State private var exportChoice: RecipeExportChoice = .allLocalJSON
+    @State private var exportDocument = RecipeExportFileDocument(data: Data())
     @State private var errorMessage: String?
 
     private var displayName: String {
@@ -136,11 +138,25 @@ struct ProfileView: View {
             .listRowBackground(RecipeTheme.card)
 
             Section {
-                Button(action: prepareExport) {
-                    ProfileRowLabel(title: "Export All Data", systemImage: "square.and.arrow.up")
+                Button {
+                    choosingExport = true
+                } label: {
+                    ProfileRowLabel(title: "Export Recipes & Data", systemImage: "square.and.arrow.up")
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("profile.export")
+                .confirmationDialog(
+                    "Choose export format",
+                    isPresented: $choosingExport,
+                    titleVisibility: .visible
+                ) {
+                    ForEach(RecipeExportChoice.allCases) { choice in
+                        Button(choice.rawValue) { prepareExport(choice) }
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("Choose full local JSON or a recipe-only JSON/HTML file. None of these exports are an in-app restore backup.")
+                }
                 Button(role: .destructive) { confirmsReset = true } label: {
                     Label("Delete All Local Data", systemImage: "trash")
                         .frame(minHeight: 44)
@@ -161,10 +177,17 @@ struct ProfileView: View {
         .fileExporter(
             isPresented: $exportsData,
             document: exportDocument,
-            contentType: .json,
-            defaultFilename: "RecipePouch-Backup-\(Date().formatted(.iso8601.year().month().day().dateSeparator(.dash)))"
+            contentType: exportChoice.contentType,
+            defaultFilename: exportChoice.filename
         ) { result in
-            if case let .failure(error) = result { errorMessage = error.localizedDescription }
+            switch result {
+            case .success:
+                errorMessage = "Export saved to Files. This is not an in-app restore backup."
+            case .failure(let error):
+                if (error as NSError).code != NSUserCancelledError {
+                    errorMessage = error.localizedDescription
+                }
+            }
         }
         .confirmationDialog("Delete all local data?", isPresented: $confirmsReset, titleVisibility: .visible) {
             Button("Delete All RecipePouch Data", role: .destructive) {
@@ -177,7 +200,7 @@ struct ProfileView: View {
                             store: store,
                             cloudSync: cloudSync
                         )
-                        exportDocument = RecipeExportDocument(data: Data())
+                        exportDocument = RecipeExportFileDocument(data: Data())
                     } catch {
                         errorMessage = error.localizedDescription
                     }
@@ -187,7 +210,7 @@ struct ProfileView: View {
         } message: {
             Text("This deletes only data on this iPhone. Sign out first; cloud data and your App Store subscription remain intact. Signing in again may restore cloud recipes. Export local data first if needed.")
         }
-        .alert("Couldn’t update your data", isPresented: Binding(
+        .alert("RecipePouch Data", isPresented: Binding(
             get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
         )) {
             Button("OK", role: .cancel) { errorMessage = nil }
@@ -213,11 +236,15 @@ struct ProfileView: View {
         catch { errorMessage = error.localizedDescription }
     }
 
-    private func prepareExport() {
+    private func prepareExport(_ choice: RecipeExportChoice) {
         do {
-            exportDocument = RecipeExportDocument(data: try store.exportData())
+            let data = try choice.exportData(from: store)
+            exportChoice = choice
+            exportDocument = RecipeExportFileDocument(data: data)
             exportsData = true
-        } catch { errorMessage = error.localizedDescription }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
 
@@ -507,7 +534,7 @@ private struct RecipeHelpView: View {
                 Text("Open Meal Plan from Profile, choose a day and meal, then select a saved recipe. Swipe a planned meal to remove it. Your saved recipe stays in your library.")
             }
             Section("Keep a copy") {
-                Text("Export All Data in Profile saves a JSON copy of your library and local preferences. Keep the exported file somewhere you trust. This version does not offer an in-app backup restore flow.")
+                Text("Export full local data as JSON, or recipes only as JSON or HTML. Recipe-only HTML excludes photos and app preferences. This version does not offer an in-app backup restore flow.")
             }
         }
         .listStyle(.insetGrouped)
@@ -553,20 +580,3 @@ enum RecipeVersion {
     }
 }
 
-private struct RecipeExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.json] }
-    var data: Data
-
-    init(data: Data) { self.data = data }
-
-    init(configuration: ReadConfiguration) throws {
-        guard let contents = configuration.file.regularFileContents else {
-            throw CocoaError(.fileReadCorruptFile)
-        }
-        data = contents
-    }
-
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        FileWrapper(regularFileWithContents: data)
-    }
-}
