@@ -202,10 +202,11 @@ final class CloudSyncCoordinator {
 
     @ObservationIgnored private let service: any RecipeCloudSyncing
     @ObservationIgnored private let pathMonitor = NWPathMonitor()
-    @ObservationIgnored private let pathQueue = DispatchQueue(label: "com.modelhub.cook.cloud-sync-path")
+    @ObservationIgnored private let pathQueue = DispatchQueue(label: "com.modelhub.recipe.cloud-sync-path")
     @ObservationIgnored private var store: RecipeStore?
     @ObservationIgnored private var accountID: UUID?
     @ObservationIgnored private var remoteSnapshot: CloudSnapshotEnvelope?
+    @ObservationIgnored private var mergeBaseSnapshot: RecipeLibrarySnapshot?
     @ObservationIgnored private var expectedRevision: Int64 = 0
     @ObservationIgnored private var lastExportedToken: UInt64 = 0
     @ObservationIgnored private var automaticSyncPaused = false
@@ -214,7 +215,11 @@ final class CloudSyncCoordinator {
 
     init(service: any RecipeCloudSyncing = SupabaseCloudSync()) {
         self.service = service
-        mode = CloudSyncMode(rawValue: UserDefaults.standard.string(forKey: "recipe.sync.mode") ?? "Automatic") ?? .automatic
+        let defaults = UserDefaults.standard
+        let storedMode = defaults.string(forKey: "recipe.sync.mode")
+            ?? defaults.string(forKey: "cook.sync.mode")
+            ?? CloudSyncMode.automatic.rawValue
+        mode = CloudSyncMode(rawValue: storedMode) ?? .automatic
         pathMonitor.pathUpdateHandler = { [weak self] path in
             let isOnWiFi = path.usesInterfaceType(.wifi)
             Task { @MainActor [weak self] in
@@ -234,15 +239,20 @@ final class CloudSyncCoordinator {
     func authenticationChanged(_ authState: RecipeAuthState) async {
         switch authState {
         case .signedIn(let userID, _):
-            guard accountID != userID else { return }
+            if accountID == userID {
+                await refreshFromCloudIfAllowed()
+                return
+            }
             accountID = userID
             remoteSnapshot = nil
+            mergeBaseSnapshot = nil
             expectedRevision = 0
             automaticSyncPaused = false
             await loadAccountSnapshot(userID: userID)
         case .signedOut:
             accountID = nil
             remoteSnapshot = nil
+            mergeBaseSnapshot = nil
             expectedRevision = 0
             automaticSyncPaused = false
             state = .localOnly
@@ -256,7 +266,12 @@ final class CloudSyncCoordinator {
     func setMode(_ mode: CloudSyncMode) {
         self.mode = mode
         UserDefaults.standard.set(mode.rawValue, forKey: "recipe.sync.mode")
-        if mode != .manual { Task { await syncLocalChangesIfAllowed() } }
+        if mode != .manual {
+            Task {
+                await refreshFromCloudIfAllowed()
+                await syncLocalChangesIfAllowed()
+            }
+        }
     }
 
     func localStoreChanged(token: UInt64) async {
@@ -274,7 +289,10 @@ final class CloudSyncCoordinator {
             automaticSyncPaused = false
             do {
                 if let remoteSnapshot {
-                    let conflicts = try store.mergeCloudLibrary(with: remoteSnapshot.payload)
+                    mergeBaseSnapshot = nil
+                    let conflicts = try store.mergeCloudLibrary(
+                        with: remoteSnapshot.payload
+                    )
                     lastExportedToken = store.changeToken
                     guard conflicts.isEmpty else {
                         state = .conflicts(conflicts)
@@ -291,12 +309,17 @@ final class CloudSyncCoordinator {
     func resolveConflicts(with choices: [LibraryMergeChoice]) async {
         guard let store, let remoteSnapshot else { return }
         do {
-            let conflicts = try store.mergeCloudLibrary(with: remoteSnapshot.payload, choices: choices)
+            let conflicts = try store.mergeCloudLibrary(
+                with: remoteSnapshot.payload,
+                base: mergeBaseSnapshot,
+                choices: choices
+            )
             lastExportedToken = store.changeToken
             guard conflicts.isEmpty else {
                 state = .conflicts(conflicts)
                 return
             }
+            mergeBaseSnapshot = nil
             await uploadLocalSnapshot()
         } catch {
             state = .error(error.localizedDescription)
@@ -304,17 +327,29 @@ final class CloudSyncCoordinator {
     }
 
     func syncNow() async {
-        guard accountID != nil else { state = .localOnly; return }
+        guard accountID != nil else {
+            state = .localOnly
+            return
+        }
         automaticSyncPaused = false
         if case .initialChoice = state { return }
         if case .conflicts = state { return }
+
+        await refreshFromCloudIfAllowed(force: true)
+        if case .conflicts = state { return }
         await uploadLocalSnapshot()
+    }
+
+    func appBecameActive() async {
+        await refreshFromCloudIfAllowed()
+        await syncLocalChangesIfAllowed()
     }
 
     func deleteAccountAndCloudData() async throws {
         try await service.deleteAccountAndCloudData()
         accountID = nil
         remoteSnapshot = nil
+        mergeBaseSnapshot = nil
         expectedRevision = 0
         automaticSyncPaused = false
         state = .localOnly
@@ -344,6 +379,69 @@ final class CloudSyncCoordinator {
                 state = .localOnly
             }
         } catch {
+            state = .error(error.localizedDescription)
+        }
+    }
+
+    private func refreshFromCloudIfAllowed(force: Bool = false) async {
+        guard let store, let accountID else { return }
+        guard !isSyncing else { return }
+        guard force || (!automaticSyncPaused && canSyncAutomatically) else {
+            return
+        }
+        if case .initialChoice = state { return }
+        if case .conflicts = state { return }
+
+        isSyncing = true
+        state = .syncing
+        defer { isSyncing = false }
+
+        do {
+            let latest = try await service.download(for: accountID)
+            guard self.accountID == accountID else { return }
+
+            guard let latest else {
+                if expectedRevision > 0 {
+                    state = .error(
+                        "The cloud library is no longer available. Sync again before uploading."
+                    )
+                } else {
+                    state = .localOnly
+                }
+                return
+            }
+
+            guard latest.revision != expectedRevision else {
+                remoteSnapshot = latest
+                markSynced(latest.serverUpdatedAt)
+                return
+            }
+
+            let base = remoteSnapshot?.payload
+            let localWasDirty = store.changeToken != lastExportedToken
+            let conflicts = try store.mergeCloudLibrary(
+                with: latest.payload,
+                base: base
+            )
+            guard self.accountID == accountID else { return }
+
+            mergeBaseSnapshot = base
+            remoteSnapshot = latest
+            expectedRevision = latest.revision
+
+            if conflicts.isEmpty {
+                mergeBaseSnapshot = nil
+                if localWasDirty {
+                    state = .localOnly
+                } else {
+                    lastExportedToken = store.changeToken
+                    markSynced(latest.serverUpdatedAt)
+                }
+            } else {
+                state = .conflicts(conflicts)
+            }
+        } catch {
+            guard self.accountID == accountID else { return }
             state = .error(error.localizedDescription)
         }
     }
@@ -395,27 +493,40 @@ final class CloudSyncCoordinator {
                 let saved = try await service.upload(pending, expectedRevision: expectedRevision, for: accountID)
                 guard self.accountID == accountID else { return }
                 remoteSnapshot = saved
+                mergeBaseSnapshot = nil
                 expectedRevision = saved.revision
                 lastExportedToken = submittedToken
                 markSynced(saved.serverUpdatedAt)
                 followUpSyncNeeded = store.changeToken != submittedToken
             } catch RecipeCloudSyncError.revisionConflict {
                 guard self.accountID == accountID else { return }
+                let base = remoteSnapshot?.payload
                 let latest = try await service.download(for: accountID)
                 guard self.accountID == accountID else { return }
+
+                guard let latest else {
+                    state = .error(
+                        "Cloud sync changed while this device was saving. Try again."
+                    )
+                    return
+                }
+
+                let conflicts = try store.mergeCloudLibrary(
+                    with: latest.payload,
+                    base: base
+                )
+                guard self.accountID == accountID else { return }
+
+                mergeBaseSnapshot = base
                 remoteSnapshot = latest
-                expectedRevision = latest?.revision ?? 0
-                if let latest {
-                    let conflicts = try store.mergeCloudLibrary(with: latest.payload)
-                    lastExportedToken = submittedToken
-                    if conflicts.isEmpty {
-                        state = .localOnly
-                        followUpSyncNeeded = true
-                    } else {
-                        state = .conflicts(conflicts)
-                    }
+                expectedRevision = latest.revision
+
+                if conflicts.isEmpty {
+                    mergeBaseSnapshot = nil
+                    state = .localOnly
+                    followUpSyncNeeded = true
                 } else {
-                    state = .error("Cloud sync changed while this device was saving. Try again.")
+                    state = .conflicts(conflicts)
                 }
             }
         } catch {
