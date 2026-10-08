@@ -123,7 +123,11 @@ func ambiguousTimesDoNotBecomeFakePreciseTimers(_ instruction: String) throws {
     let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Soup\",\"recipeIngredient\":[\"1 l water\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
     let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/soup")!))
     #expect(recipe.steps[0].timers.isEmpty)
-    #expect(recipe.steps[0].temperature?.text.lowercased() == "medium heat")
+    if instruction.lowercased().contains("medium heat") {
+        #expect(recipe.steps[0].temperature?.text.lowercased() == "medium heat")
+    } else {
+        #expect(recipe.steps[0].temperature == nil)
+    }
 }
 
 @Test func legacySingleTimerStepDecodesIntoTimerCollection() throws {
