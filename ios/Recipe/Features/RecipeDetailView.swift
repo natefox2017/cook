@@ -529,7 +529,7 @@ private struct RecipeCollectionMembershipSheet: View {
                     }
                 }
 
-                Section("Collections") {
+                Section {
                     if store.collections.isEmpty {
                         Text("Create a collection to organize this recipe.")
                             .foregroundStyle(.secondary)
@@ -573,6 +573,8 @@ private struct RecipeCollectionMembershipSheet: View {
                             )
                         }
                     }
+                } header: {
+                    Text("Collections")
                 } footer: {
                     Text("A recipe can belong to more than one collection.")
                 }
