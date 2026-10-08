@@ -11,19 +11,24 @@ public enum RecipeDocumentParser {
     // Compile fixed patterns lazily and only once. Each recipe may contain
     // dozens of ingredients and steps, so per-field compilation is avoidable.
     private static let jsonLDExpression = try? NSRegularExpression(
-        pattern: #"<script\b[^>]*\btype\s*=\s*[\"']application/ld\+json[\"'][^>]*>([\s\S]*?)</script\s*>"#, options: .caseInsensitive
+        pattern: #"<script\b[^>]*\btype\s*=\s*[\"']application/ld\+json[\"'][^>]*>([\s\S]*?)</script\s*>"#,
+        options: .caseInsensitive
     )
     private static let combinedTimerExpression = try? NSRegularExpression(
-        pattern: #"(?<![\d./])(\d{1,2})(?![\d./])\s*(hours?|hrs?)\s*(?:and\s*)?(\d{1,3})(?![\d./])\s*(minutes?|mins?)\b"#, options: .caseInsensitive
+        pattern: #"(?<![\d./])(\d{1,2})(?![\d./])\s*(hours?|hrs?)\s*(?:and\s*)?(\d{1,3})(?![\d./])\s*(minutes?|mins?)\b"#,
+        options: .caseInsensitive
     )
     private static let singleTimerExpression = try? NSRegularExpression(
-        pattern: #"(?<![\d./])(\d{1,3})(?![\d./])\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)\b"#, options: .caseInsensitive
+        pattern: #"(?<![\d./])(\d{1,3})(?![\d./])\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)\b"#,
+        options: .caseInsensitive
     )
     private static let explicitIngredientExpression = try? NSRegularExpression(
-        pattern: #"^((?:(?:\d+\s+)?\d+/\d+|\d+(?:\.\d+)?|[¼½¾⅛⅜⅝⅞]))\s+(g|kg|mg|ml|l|oz|lb|lbs|cups?|tbsp|tsp|tablespoons?|teaspoons?|cloves?)\s+(.+)$"#, options: .caseInsensitive
+        pattern: #"^((?:(?:\d+\s+)?\d+/\d+|\d+(?:\.\d+)?|[¼½¾⅛⅜⅝⅞]))\s+(g|kg|mg|ml|l|oz|lb|lbs|cups?|tbsp|tsp|tablespoons?|teaspoons?|cloves?)\s+(.+)$"#,
+        options: .caseInsensitive
     )
     private static let servingsExpression = try? NSRegularExpression(
-        pattern: #"^\s*(\d{1,3})\s*(?:servings?|portions?|people)?\s*$"#, options: .caseInsensitive
+        pattern: #"^\s*(\d{1,3})\s*(?:servings?|portions?|people)?\s*$"#,
+        options: .caseInsensitive
     )
     private static let isoDurationExpression = try? NSRegularExpression(
         pattern: #"^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$"#
