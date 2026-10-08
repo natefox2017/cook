@@ -290,8 +290,7 @@ struct CloudSyncSettingsView: View {
         case .initialChoice:
             return "Waiting for your choice"
         case .conflicts(let conflicts):
-            return "\(conflicts.count) conflict"
-                + (conflicts.count == 1 ? "" : "s")
+            return String(localized: "\(conflicts.count) conflicts")
         case .error:
             return "Needs attention"
         }
