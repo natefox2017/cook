@@ -517,11 +517,15 @@ public final class RecipeStore {
     }
 
     /// Erase this device's library without creating cloud deletion tombstones.
-    /// Use only after the cloud coordinator has confirmed there is no active
-    /// account or in-flight sync. Cloud deletion uses a separate explicit flow.
+    /// The caller must invalidate the previous cloud lineage before invoking
+    /// this mutation, so an I/O failure cannot cause an empty-library upload.
     public func clearLocalLibraryOnly() throws {
         try commit(LibrarySnapshot())
+    }
 
+    /// Remove a legacy file only after the canonical empty snapshot is saved.
+    /// Failure here must never retain a usable cloud baseline for re-upload.
+    public func removeLegacyLibraryCopyAfterLocalErase() throws {
         let support = URL.applicationSupportDirectory
         let canonical = support
             .appendingPathComponent("Recipe", isDirectory: true)
@@ -530,8 +534,8 @@ public final class RecipeStore {
             .appendingPathComponent("Cook", isDirectory: true)
             .appendingPathComponent("library.json")
 
-        // The rename may have left the original file as a safety copy. Once
-        // the canonical empty snapshot was saved, remove that personal data too.
+        // If the app still uses the legacy path as its active storage because
+        // migration failed, do not remove that newly emptied active file.
         guard fileURL?.standardizedFileURL == canonical.standardizedFileURL,
               FileManager.default.fileExists(atPath: legacy.path) else {
             return

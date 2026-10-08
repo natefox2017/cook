@@ -196,6 +196,7 @@ struct SupabaseCloudSync: RecipeCloudSyncing {
 enum RecipeLocalResetError: LocalizedError {
     case requiresSignOut
     case syncInProgress
+    case markerPersistenceFailed
 
     var errorDescription: String? {
         switch self {
@@ -203,6 +204,8 @@ enum RecipeLocalResetError: LocalizedError {
             "Sign out of your RecipePouch account before deleting only this iPhone's data. Your cloud library will stay intact."
         case .syncInProgress:
             "A cloud sync operation is still finishing. Try deleting local data again after it stops."
+        case .markerPersistenceFailed:
+            "Could not securely persist the local erase barrier. Your library was not deleted. Check device storage and try again."
         }
     }
 }
@@ -247,9 +250,8 @@ final class CloudSyncCoordinator {
         pathMonitor.start(queue: pathQueue)
     }
 
-    /// Reject local-only deletion while a cloud account or write is active.
-    /// `RecipeStore.resetLibrary()` produces tombstones and must not be used
-    /// for this operation.
+    /// Local-only erasure is allowed only after sign-out and after all
+    /// pending network operations have completed.
     func verifyLocalOnlyResetAllowed() throws {
         guard accountID == nil else {
             throw RecipeLocalResetError.requiresSignOut
@@ -259,27 +261,18 @@ final class CloudSyncCoordinator {
         }
     }
 
-    /// Forget only cached local sync history after the empty local snapshot
-    /// has been committed. Remote snapshots and server accounts are untouched.
-    func forgetLocalSyncHistoryAfterReset() throws {
+    /// Invalidate local sync identity BEFORE clearing the on-device library.
+    /// The durable marker also prevents an old sync file that cannot be removed
+    /// from being used as an upload base after relaunch.
+    func prepareForLocalOnlyReset() throws {
         try verifyLocalOnlyResetAllowed()
 
-        // The old project name may also have retained local sync caches.
-        for directoryName in ["Recipe", "Cook"] {
-            let syncDirectory = URL.applicationSupportDirectory
-                .appendingPathComponent(directoryName, isDirectory: true)
-                .appendingPathComponent("Sync", isDirectory: true)
-            if FileManager.default.fileExists(atPath: syncDirectory.path) {
-                try FileManager.default.removeItem(at: syncDirectory)
-            }
-        }
+        // This marker is an independently atomic file outside the Sync cache.
+        // If persisting it fails, never touch the library contents.
+        try RecipeLocalEraseMarker.persist(at: localEraseMarkerURL)
 
         let defaults = UserDefaults.standard
-        for key in defaults.dictionaryRepresentation().keys
-        where key.hasPrefix("recipe.sync.lastAt.")
-            || key.hasPrefix("cook.sync.lastAt.") {
-            defaults.removeObject(forKey: key)
-        }
+        defaults.set(true, forKey: "recipe.sync.localErasePending")
         for key in [
             "recipe.sync.localAccountID",
             "cook.sync.localAccountID",
@@ -287,6 +280,18 @@ final class CloudSyncCoordinator {
             "cook.sync.mode"
         ] {
             defaults.removeObject(forKey: key)
+        }
+        for key in defaults.dictionaryRepresentation().keys
+        where key.hasPrefix("recipe.sync.lastAt.")
+            || key.hasPrefix("cook.sync.lastAt.") {
+            defaults.removeObject(forKey: key)
+        }
+
+        // Persist the invalidation before committing an empty library. If the
+        // process stops after the following write, the next launch must not
+        // reinterpret the empty snapshot as an offline cloud deletion.
+        guard defaults.synchronize() else {
+            throw RecipeLocalResetError.markerPersistenceFailed
         }
 
         mode = .automatic
@@ -298,6 +303,21 @@ final class CloudSyncCoordinator {
         automaticSyncPaused = false
         deferredInitialChoice = nil
         state = .localOnly
+    }
+
+    /// Best-effort filesystem cleanup performed AFTER sync lineage invalidation.
+    /// An I/O error must be surfaced, but cannot restore the old sync identity.
+    func removeLocalSyncCacheFilesAfterReset() throws {
+        try verifyLocalOnlyResetAllowed()
+
+        for directoryName in ["Recipe", "Cook"] {
+            let syncDirectory = URL.applicationSupportDirectory
+                .appendingPathComponent(directoryName, isDirectory: true)
+                .appendingPathComponent("Sync", isDirectory: true)
+            if FileManager.default.fileExists(atPath: syncDirectory.path) {
+                try FileManager.default.removeItem(at: syncDirectory)
+            }
+        }
     }
 
     func bind(store: RecipeStore, authState: RecipeAuthState) async {
@@ -447,7 +467,7 @@ final class CloudSyncCoordinator {
 
         try? removePersistedBase(for: deletingAccountID)
         if localLibraryAccountID == deletingAccountID {
-            linkLocalLibrary(to: nil)
+            try linkLocalLibrary(to: nil)
         }
 
         guard accountID == deletingAccountID else { return }
@@ -513,7 +533,7 @@ final class CloudSyncCoordinator {
                     remoteSnapshot = remote
                     if local == persistedBase.payload {
                         try persistBase(remote, for: userID)
-                        linkLocalLibrary(to: userID)
+                        try linkLocalLibrary(to: userID)
                         lastExportedToken = store.changeToken
                         markSynced(remote.serverUpdatedAt)
                     } else {
@@ -541,7 +561,7 @@ final class CloudSyncCoordinator {
                         state = .localOnly
                     } else {
                         try persistBase(remote, for: userID)
-                        linkLocalLibrary(to: userID)
+                        try linkLocalLibrary(to: userID)
                         lastExportedToken = store.changeToken
                         markSynced(remote.serverUpdatedAt)
                     }
@@ -563,7 +583,7 @@ final class CloudSyncCoordinator {
                 } else {
                     try store.replaceLibrary(with: remote.payload)
                     try persistBase(remote, for: userID)
-                    linkLocalLibrary(to: userID)
+                    try linkLocalLibrary(to: userID)
                     lastExportedToken = store.changeToken
                     markSynced(remote.serverUpdatedAt)
                 }
@@ -615,7 +635,7 @@ final class CloudSyncCoordinator {
                 remoteSnapshot = latest
                 if store.changeToken == lastExportedToken {
                     try persistBase(latest, for: accountID)
-                    linkLocalLibrary(to: accountID)
+                    try linkLocalLibrary(to: accountID)
                     markSynced(latest.serverUpdatedAt)
                 } else {
                     state = .localOnly
@@ -641,7 +661,7 @@ final class CloudSyncCoordinator {
                     state = .localOnly
                 } else {
                     try persistBase(latest, for: accountID)
-                    linkLocalLibrary(to: accountID)
+                    try linkLocalLibrary(to: accountID)
                     lastExportedToken = store.changeToken
                     markSynced(latest.serverUpdatedAt)
                 }
@@ -710,7 +730,7 @@ final class CloudSyncCoordinator {
                 mergeBaseSnapshot = nil
                 expectedRevision = saved.revision
                 try persistBase(saved, for: accountID)
-                linkLocalLibrary(to: accountID)
+                try linkLocalLibrary(to: accountID)
                 lastExportedToken = submittedToken
                 markSynced(saved.serverUpdatedAt)
                 followUpSyncNeeded = store.changeToken != submittedToken
@@ -760,13 +780,26 @@ final class CloudSyncCoordinator {
         return UUID(uuidString: raw)
     }
 
-    private func linkLocalLibrary(to userID: UUID?) {
+    private var localEraseMarkerURL: URL {
+        URL.applicationSupportDirectory
+            .appendingPathComponent("Recipe", isDirectory: true)
+            .appendingPathComponent(".localErasePending")
+    }
+
+    private func linkLocalLibrary(to userID: UUID?) throws {
         let defaults = UserDefaults.standard
         if let userID {
+            // Persist the newly linked account first; clear the durable erase
+            // barrier only AFTER a confirmed cloud read/save and local base.
             defaults.set(
                 userID.uuidString,
                 forKey: "recipe.sync.localAccountID"
             )
+            guard defaults.synchronize() else {
+                throw RecipeLocalResetError.markerPersistenceFailed
+            }
+            try RecipeLocalEraseMarker.clear(at: localEraseMarkerURL)
+            defaults.removeObject(forKey: "recipe.sync.localErasePending")
         } else {
             defaults.removeObject(
                 forKey: "recipe.sync.localAccountID"
@@ -790,6 +823,15 @@ final class CloudSyncCoordinator {
     private func loadPersistedBase(
         for userID: UUID
     ) -> CloudSnapshotEnvelope? {
+        // A previous local-only erase invalidates ALL cached server baselines,
+        // including files left behind by an interrupted cleanup.
+        guard !RecipeLocalEraseMarker.isPresent(at: localEraseMarkerURL),
+              !UserDefaults.standard.bool(
+                forKey: "recipe.sync.localErasePending"
+              ) else {
+            return nil
+        }
+
         let url = syncBaseURL(for: userID)
         guard let data = try? Data(contentsOf: url) else {
             return nil
