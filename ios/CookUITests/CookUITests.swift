@@ -307,6 +307,23 @@ final class CookUITests: XCTestCase {
     }
 
     @MainActor
+    func testProfileLayoutAndPrimaryActionsAreVisible() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let editProfile = app.buttons["profile.edit"]
+        waitUntilReady(editProfile)
+        XCTAssertTrue(app.buttons["Settings"].exists)
+        XCTAssertTrue(app.staticTexts["Account & subscription"].exists)
+        XCTAssertTrue(app.staticTexts["Your kitchen"].exists)
+        attachScreenshot("Profile spacing", app: app)
+    }
+
+    @MainActor
     func testCookingIngredientCheckoffPersistsInSession() {
         let app = launchSeededApp()
         defer { app.terminate() }
