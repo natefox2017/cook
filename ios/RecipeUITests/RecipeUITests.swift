@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Tests RecipeUITests behavior.
+
 import XCTest
 
 final class RecipeUITests: XCTestCase {
@@ -56,18 +59,15 @@ final class RecipeUITests: XCTestCase {
         waitUntilReady(name)
         name.tap()
         name.typeText(recipeTitle)
-        name.typeText("\n")
 
         let ingredient = app.textFields["ingredientName"].firstMatch
         revealFormField(ingredient, in: app)
         ingredient.tap()
         ingredient.typeText("Tomato")
-        ingredient.typeText("\n")
         let amount = app.textFields["ingredientAmount"].firstMatch
         revealFormField(amount, in: app)
         amount.tap()
         amount.typeText("2")
-        amount.typeText("\n")
 
         let instruction = app.descendants(matching: .any).matching(identifier: "stepInstruction").firstMatch
         revealFormField(instruction, in: app)
@@ -253,6 +253,80 @@ final class RecipeUITests: XCTestCase {
 
 
     @MainActor
+    func testRecipeCanBelongToLocalCollection() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let collections = app.buttons["profile.collections"]
+        waitUntilReady(collections)
+        collections.tap()
+
+        let name = app.textFields["New collection"]
+        waitUntilReady(name)
+        name.tap()
+        name.typeText("Weeknight")
+        let add = app.buttons["Add"]
+        waitUntilReady(add)
+        add.tap()
+        XCTAssertTrue(app.staticTexts["Weeknight"].waitForExistence(timeout: 8))
+
+        let recipesTab = app.tabBars.buttons["Recipes"]
+        waitUntilReady(recipesTab)
+        recipesTab.tap()
+        openSamplePasta(in: app)
+
+        let options = app.buttons["Recipe Options"]
+        waitUntilReady(options)
+        options.tap()
+        let manageCollections = app.buttons["Collections"]
+        waitUntilReady(manageCollections)
+        manageCollections.tap()
+
+        let weeknightMembership = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "Weeknight")
+        ).firstMatch
+        waitUntilReady(weeknightMembership)
+        weeknightMembership.tap()
+        XCTAssertTrue((weeknightMembership.value as? String) != "Not in collection")
+        app.navigationBars.buttons["Done"].tap()
+
+        profile.tap()
+        waitUntilReady(app.buttons["profile.collections"])
+        app.buttons["profile.collections"].tap()
+
+        let weeknight = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "Weeknight")
+        ).firstMatch
+        waitUntilReady(weeknight)
+        weeknight.tap()
+
+        XCTAssertTrue(
+            app.staticTexts["Garlic Butter Shrimp Pasta"].waitForExistence(timeout: 8)
+        )
+    }
+
+    @MainActor
+    func testProfileLayoutAndPrimaryActionsAreVisible() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let editProfile = app.buttons["profile.edit"]
+        waitUntilReady(editProfile)
+        XCTAssertTrue(app.buttons["Settings"].exists)
+        XCTAssertTrue(app.staticTexts["Account & subscription"].exists)
+        XCTAssertTrue(app.staticTexts["Your kitchen"].exists)
+        attachScreenshot("Profile spacing", app: app)
+    }
+
+    @MainActor
     func testCookingIngredientCheckoffPersistsInSession() {
         let app = launchSeededApp()
         defer { app.terminate() }
@@ -277,17 +351,7 @@ final class RecipeUITests: XCTestCase {
         app.launchArguments = ["--uitesting"]
         app.launch()
         waitUntilReady(app.buttons["addRecipeButton"])
-        let firstRecipe = app.buttons["recipe.C0010000-0000-4000-8000-000000000001"]
-        if !firstRecipe.exists {
-            let loadSamples = app.buttons["loadSampleRecipes"]
-            if loadSamples.waitForExistence(timeout: 2) { loadSamples.tap() }
-        }
-        reveal(
-            firstRecipe,
-            in: app,
-            scrollView: app.scrollViews["recipeLibraryScroll"],
-            maximumSwipes: 4
-        )
+        waitUntilReady(app.buttons["recipe.C0010000-0000-4000-8000-000000000001"])
         return app
     }
 
@@ -364,12 +428,7 @@ final class RecipeUITests: XCTestCase {
         for _ in 0..<maximumSwipes {
             if element.exists && element.isHittable { break }
             if let scrollView, scrollView.exists {
-                if element.exists, element.frame.height > 0,
-                   element.frame.maxY <= scrollView.frame.minY + 12 {
-                    scrollView.swipeDown()
-                } else {
-                    scrollView.swipeUp()
-                }
+                scrollView.swipeUp()
             } else if app.collectionViews.firstMatch.exists {
                 app.collectionViews.firstMatch.swipeUp()
             } else {
