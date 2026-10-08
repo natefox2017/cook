@@ -16,7 +16,17 @@ type RecipeField = {
   user_confirmed: boolean;
 };
 
-Deno.test("completed import preserves original source, linked evidence, review gaps and user edit", () => {
+type RecipeResultFixture = {
+  fields: Record<string, RecipeField>;
+  review_fields: string[];
+  source: { original_url: string; canonical_url: string };
+  evidence: Evidence[];
+};
+
+function loadCompletedResultFixture(): {
+  submittedInput: { input_type: string; url: string };
+  result: RecipeResultFixture;
+} {
   const fixtures = JSON.parse(
     Deno.readTextFileSync(new URL("./contract-examples.json", import.meta.url)),
   ) as { cases: Array<Record<string, unknown>> };
@@ -32,19 +42,30 @@ Deno.test("completed import preserves original source, linked evidence, review g
     url: string;
   };
   const response = fixture.data as {
-    result: {
-      fields: Record<string, RecipeField>;
-      review_fields: string[];
-      source: { original_url: string; canonical_url: string };
-      evidence: Evidence[];
-    };
+    result: RecipeResultFixture;
   };
-  const result = response.result;
-  const evidenceById = new Map(result.evidence.map((item) => [item.id, item]));
+  return { submittedInput, result: response.result };
+}
 
+function assertEvidenceLinks(result: RecipeResultFixture): void {
+  const evidenceById = new Map(result.evidence.map((item) => [item.id, item]));
   if (evidenceById.size !== result.evidence.length) {
     throw new Error("Evidence IDs must be unique within one recipe result");
   }
+  for (const [path, field] of Object.entries(result.fields)) {
+    for (const evidenceId of field.evidence_ids) {
+      if (!evidenceById.has(evidenceId)) {
+        throw new Error(`${path} refers to missing evidence ${evidenceId}`);
+      }
+    }
+  }
+}
+
+Deno.test("completed webpage import preserves source, evidence, review gaps and user edit", () => {
+  const { submittedInput, result } = loadCompletedResultFixture();
+  const evidenceById = new Map(result.evidence.map((item) => [item.id, item]));
+  assertEvidenceLinks(result);
+
   if (
     submittedInput.input_type !== "url" ||
     result.source.original_url !== submittedInput.url ||
@@ -55,20 +76,13 @@ Deno.test("completed import preserves original source, linked evidence, review g
     );
   }
 
-  for (const [path, field] of Object.entries(result.fields)) {
-    for (const evidenceId of field.evidence_ids) {
-      if (!evidenceById.has(evidenceId)) {
-        throw new Error(`${path} refers to missing evidence ${evidenceId}`);
-      }
-    }
-  }
-
   const amount = result.fields["ingredients[0].amount"];
   const amountEvidence = evidenceById.get(amount.evidence_ids[0]);
   if (
     amount.raw_value !== "盐适量" || amount.normalized_value !== null ||
     amount.confidence !== 0.42 ||
     amountEvidence?.excerpt !== amount.raw_value ||
+    amountEvidence?.source_type !== "article_body" ||
     !result.review_fields.includes("ingredients[0].amount")
   ) {
     throw new Error(
@@ -100,4 +114,20 @@ Deno.test("completed import preserves original source, linked evidence, review g
       "User edit must be separately traceable from the extracted source value",
     );
   }
+});
+
+Deno.test("malformed field evidence links are rejected", () => {
+  const { result } = loadCompletedResultFixture();
+  const malformed = structuredClone(result);
+  malformed.fields.title.evidence_ids = [
+    "99999999-9999-4999-8999-999999999999",
+  ];
+
+  let rejected = false;
+  try {
+    assertEvidenceLinks(malformed);
+  } catch {
+    rejected = true;
+  }
+  if (!rejected) throw new Error("A dangling evidence reference was accepted");
 });
