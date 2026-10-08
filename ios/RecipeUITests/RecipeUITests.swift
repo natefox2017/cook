@@ -327,6 +327,68 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testRootTabBottomContentRemainsReachableAboveTabBar() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        openSamplePasta(in: app)
+        let addIngredients = app.buttons["addToGroceries"]
+        reveal(
+            addIngredients,
+            in: app,
+            scrollView: app.scrollViews["recipeDetailScroll"],
+            maximumSwipes: 3
+        )
+        addIngredients.tap()
+
+        let confirm = app.buttons["confirmAddIngredientsButton"]
+        waitUntilReady(confirm)
+        confirm.tap()
+        let confirmation = app.alerts["Recipe"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 8))
+        confirmation.buttons["OK"].tap()
+        app.navigationBars.buttons.firstMatch.tap()
+
+        let groceriesTab = app.tabBars.buttons["Groceries"]
+        waitUntilReady(groceriesTab)
+        groceriesTab.tap()
+        let groceryItems = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "grocery.check.")
+        )
+        waitUntilReady(groceryItems.firstMatch)
+        let lastGrocery = groceryItems.element(boundBy: groceryItems.count - 1)
+        reveal(lastGrocery, in: app, maximumSwipes: 6)
+        XCTAssertTrue(lastGrocery.isHittable)
+
+        let recipesTab = app.tabBars.buttons["Recipes"]
+        waitUntilReady(recipesTab)
+        recipesTab.tap()
+        let lastRecipe = app.buttons["recipe.C0010000-0000-4000-8000-000000000005"]
+        reveal(
+            lastRecipe,
+            in: app,
+            scrollView: app.scrollViews["recipeLibraryScroll"],
+            maximumSwipes: 6
+        )
+        XCTAssertTrue(lastRecipe.isHittable)
+
+        let planTab = app.tabBars.buttons["Plan"]
+        waitUntilReady(planTab)
+        planTab.tap()
+        let addDinner = app.buttons["mealplan.add.dinner"]
+        reveal(addDinner, in: app, maximumSwipes: 6)
+        XCTAssertTrue(addDinner.isHittable)
+
+        let profileTab = app.tabBars.buttons["Profile"]
+        waitUntilReady(profileTab)
+        profileTab.tap()
+        let deleteLocalData = app.buttons["profile.delete-data"]
+        reveal(deleteLocalData, in: app, maximumSwipes: 8)
+        XCTAssertTrue(deleteLocalData.isHittable)
+        XCTAssertTrue(app.tabBars.firstMatch.isHittable)
+    }
+
+    @MainActor
     func testCookingIngredientCheckoffPersistsInSession() {
         let app = launchSeededApp()
         defer { app.terminate() }
