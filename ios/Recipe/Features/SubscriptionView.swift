@@ -67,17 +67,17 @@ struct PremiumPaywallContent: View {
                 ProgressView("Checking App Store plans…")
                     .frame(minHeight: 72)
 
-            case .active:
+            case .trial, .active, .gracePeriod:
                 activeSubscription
 
-            case .free, .unavailable:
+            case .free, .billingRetry, .expired, .revoked, .unavailable:
                 availablePlans
             }
 
             legalFooter
 
             if context == .onboarding {
-                Button(subscriptions.state == .active ? "Continue" : "Continue with Free") {
+                Button(subscriptions.state.hasEntitlement ? "Continue" : "Continue with Free") {
                     onContinue?()
                 }
                 .frame(minHeight: 50)
@@ -126,7 +126,7 @@ struct PremiumPaywallContent: View {
     @ViewBuilder
     private var activeSubscription: some View {
         VStack(spacing: 14) {
-            Label("Subscription active", systemImage: "checkmark.seal.fill")
+            Label(activeStatusTitle, systemImage: "checkmark.seal.fill")
                 .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
                 .foregroundStyle(RecipeTheme.accentForeground)
 
@@ -144,6 +144,14 @@ struct PremiumPaywallContent: View {
     @ViewBuilder
     private var availablePlans: some View {
         VStack(spacing: 12) {
+            if let statusMessage {
+                Text(statusMessage)
+                    .font(RecipeTheme.text(15, relativeTo: .subheadline))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 4)
+            }
+
             if subscriptions.products.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "storefront")
@@ -186,6 +194,16 @@ struct PremiumPaywallContent: View {
                                     .font(RecipeTheme.text(14, relativeTo: .subheadline))
                                     .foregroundStyle(.secondary)
                                     .multilineTextAlignment(.leading)
+                            }
+
+                            if subscriptions.isTrialEligible(for: product),
+                               let offer = product.subscription?.introductoryOffer {
+                                Text(
+                                    "Start \(periodLabel(offer.period, count: offer.periodCount)) free, "
+                                        + "then \(priceLine(for: product))."
+                                )
+                                    .font(RecipeTheme.text(14, weight: .semibold, relativeTo: .subheadline))
+                                    .foregroundStyle(RecipeTheme.accentForeground)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -263,6 +281,49 @@ struct PremiumPaywallContent: View {
             return product.displayPrice
         }
         return "\(product.displayPrice) / \(periodLabel(period))"
+    }
+
+    private var activeStatusTitle: String {
+        switch subscriptions.state {
+        case .trial:
+            "Free trial active"
+        case .gracePeriod:
+            "Subscription in billing grace period"
+        default:
+            "Subscription active"
+        }
+    }
+
+    private var statusMessage: String? {
+        switch subscriptions.state {
+        case .billingRetry:
+            "There is a billing issue with your previous subscription. Premium access is not currently active."
+        case .expired:
+            "Your previous subscription has expired. Your saved recipes remain available."
+        case .revoked:
+            "The App Store revoked your previous subscription. Your saved recipes remain available."
+        case .unavailable(let reason):
+            reason
+        default:
+            nil
+        }
+    }
+
+    private func periodLabel(_ period: Product.SubscriptionPeriod, count: Int) -> String {
+        let unit: String
+        switch period.unit {
+        case .day:
+            unit = count == 1 ? "day" : "days"
+        case .week:
+            unit = count == 1 ? "week" : "weeks"
+        case .month:
+            unit = count == 1 ? "month" : "months"
+        case .year:
+            unit = count == 1 ? "year" : "years"
+        @unknown default:
+            unit = "periods"
+        }
+        return "\(count) \(unit)"
     }
 
     private func periodLabel(_ period: Product.SubscriptionPeriod) -> String {

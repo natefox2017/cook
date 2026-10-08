@@ -1,6 +1,8 @@
 // Developer: gengyun
 // Purpose: Tests RecipeUITests behavior.
 
+import StoreKit
+import StoreKitTest
 import XCTest
 
 final class RecipeUITests: XCTestCase {
@@ -466,6 +468,114 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testLocalStoreKitPurchaseAndRestoreWithoutAppStoreAccount() async throws {
+        let session = try makeStoreKitTestSession()
+        defer { reset(session) }
+
+        let app = launchSeededApp(storeKitTestProductID: Self.localStoreKitProductID)
+        defer { app.terminate() }
+        openSubscription(in: app)
+
+        let restore = app.buttons["subscription.restore"]
+        waitUntilReady(restore)
+        restore.tap()
+
+        let restoreMessage = app.alerts["Subscription"]
+        XCTAssertTrue(restoreMessage.waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            restoreMessage.staticTexts[
+                "No active RecipePouch subscription was found for this App Store account."
+            ].exists
+        )
+        restoreMessage.buttons["OK"].tap()
+
+        let localProduct = app.buttons["subscription.plan.\(Self.localStoreKitProductID)"]
+        waitUntilReady(localProduct)
+        localProduct.tap()
+
+        XCTAssertTrue(app.staticTexts["Subscription active"].waitForExistence(timeout: 8))
+        XCTAssertEqual(session.allTransactions().count, 1)
+    }
+
+    @MainActor
+    func testLocalStoreKitLoadFailureKeepsRetryAndRestoreAvailable() async throws {
+        let session = try makeStoreKitTestSession()
+        defer { reset(session) }
+        try await session.setSimulatedError(
+            .generic(.networkError(URLError(.notConnectedToInternet))),
+            forAPI: .loadProducts
+        )
+
+        let app = launchSeededApp(storeKitTestProductID: Self.localStoreKitProductID)
+        defer { app.terminate() }
+        openSubscription(in: app)
+
+        XCTAssertTrue(
+            app.staticTexts["Premium plans aren’t available right now."].waitForExistence(timeout: 8)
+        )
+        let restore = app.buttons["subscription.restore"]
+        waitUntilReady(restore)
+        restore.tap()
+
+        let restoreMessage = app.alerts["Subscription"]
+        XCTAssertTrue(restoreMessage.waitForExistence(timeout: 8))
+        XCTAssertFalse(
+            restoreMessage.staticTexts[
+                "No active RecipePouch subscription was found for this App Store account."
+            ].exists
+        )
+        restoreMessage.buttons["OK"].tap()
+
+        try await session.setSimulatedError(nil, forAPI: .loadProducts)
+        let retry = app.buttons["subscription.retry"]
+        waitUntilReady(retry)
+        retry.tap()
+        waitUntilReady(app.buttons["subscription.plan.\(Self.localStoreKitProductID)"])
+    }
+
+    @MainActor
+    func testLocalStoreKitLoadFailurePreservesVerifiedEntitlement() async throws {
+        let session = try makeStoreKitTestSession()
+        defer { reset(session) }
+        _ = try await session.buyProduct(identifier: Self.localStoreKitProductID)
+        try await session.setSimulatedError(
+            .generic(.networkError(URLError(.notConnectedToInternet))),
+            forAPI: .loadProducts
+        )
+
+        let app = launchSeededApp(storeKitTestProductID: Self.localStoreKitProductID)
+        defer { app.terminate() }
+        openSubscription(in: app)
+
+        XCTAssertTrue(app.staticTexts["Subscription active"].waitForExistence(timeout: 8))
+        XCTAssertFalse(app.buttons["subscription.retry"].exists)
+    }
+
+    @MainActor
+    func testRestoreExplainsWhenSubscriptionProductsAreUnconfigured() {
+        let app = launchSeededApp(storeKitTestProductID: "")
+        defer { app.terminate() }
+        openSubscription(in: app)
+
+        let restore = app.buttons["subscription.restore"]
+        waitUntilReady(restore)
+        restore.tap()
+
+        let restoreMessage = app.alerts["Subscription"]
+        XCTAssertTrue(restoreMessage.waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            restoreMessage.staticTexts[
+                "Subscription products have not been configured in App Store Connect."
+            ].exists
+        )
+        XCTAssertFalse(
+            restoreMessage.staticTexts[
+                "No active RecipePouch subscription was found for this App Store account."
+            ].exists
+        )
+    }
+
+    @MainActor
     func testFourLocaleTabLabelsUseStringCatalog() {
         // Each launch uses --uitesting fixtures, but only explicit locale
         // smoke cases override the usual deterministic English UI policy.
@@ -582,13 +692,48 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
-    private func launchSeededApp() -> XCUIApplication {
+    private func launchSeededApp(storeKitTestProductID: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        if let storeKitTestProductID {
+            app.launchEnvironment["RECIPE_STOREKIT_TEST_PRODUCT_IDS"] = storeKitTestProductID
+        }
         app.launch()
         waitUntilReady(app.buttons["addRecipeButton"])
         waitUntilReady(app.buttons["recipe.C0010000-0000-4000-8000-000000000001"])
         return app
+    }
+
+    private static let localStoreKitProductID = "com.recipepouch.localtest.premium.monthly"
+
+    private func makeStoreKitTestSession() throws -> SKTestSession {
+        let configurationURL = try XCTUnwrap(
+            Bundle(for: Self.self).url(
+                forResource: "RecipeSubscriptionTests",
+                withExtension: "storekit"
+            )
+        )
+        let session = try SKTestSession(contentsOf: configurationURL)
+        session.disableDialogs = true
+        session.clearTransactions()
+        return session
+    }
+
+    private func reset(_ session: SKTestSession) {
+        session.clearTransactions()
+        session.resetToDefaultState()
+    }
+
+    @MainActor
+    private func openSubscription(in app: XCUIApplication) {
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let premium = app.buttons["RecipePouch Premium"]
+        reveal(premium, in: app, maximumSwipes: 4)
+        premium.tap()
+        XCTAssertTrue(app.staticTexts["RecipePouch Premium"].waitForExistence(timeout: 8))
     }
 
     @MainActor

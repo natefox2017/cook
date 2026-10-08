@@ -8,13 +8,31 @@ import StoreKit
 enum SubscriptionState: Equatable {
     case loading
     case free
+    case trial
     case active
+    case gracePeriod
+    case billingRetry
+    case expired
+    case revoked
     case unavailable(String)
+
+    var hasEntitlement: Bool {
+        switch self {
+        case .trial, .active, .gracePeriod:
+            true
+        case .loading, .free, .billingRetry, .expired, .revoked, .unavailable:
+            false
+        }
+    }
 }
 
 @MainActor @Observable
 final class SubscriptionStore {
+    private static let unconfiguredProductsMessage =
+        "Subscription products have not been configured in App Store Connect."
+
     private(set) var products: [Product] = []
+    private(set) var trialEligibleProductIDs = Set<String>()
     private(set) var state: SubscriptionState = .loading
     private(set) var isWorking = false
     private(set) var hasLoaded = false
@@ -48,28 +66,35 @@ final class SubscriptionStore {
             let ids = Self.productIDs
             guard !ids.isEmpty else {
                 products = []
-                state = .unavailable("Subscription products have not been configured in App Store Connect.")
+                state = .unavailable(Self.unconfiguredProductsMessage)
                 hasLoaded = true
                 return
             }
 
-            let loadedProducts = try await Product.products(for: ids).sorted { $0.price < $1.price }
+            // Preserve any locally verifiable access if product metadata cannot load.
+            await refreshEntitlements()
+            let loadedProducts = try await Product.products(for: ids)
+                .filter { $0.type == .autoRenewable }
+                .sorted { $0.price < $1.price }
             guard !loadedProducts.isEmpty else {
                 products = []
                 await refreshEntitlements()
-                if state != .active {
-                    state = .unavailable("No App Store subscription products are available for this storefront right now.")
+                if !state.hasEntitlement {
+                    state = .unavailable(
+                        "No App Store subscription products are available for this storefront right now."
+                    )
                 }
                 // Product availability can be transient; keep load retryable.
                 return
             }
 
             products = loadedProducts
+            trialEligibleProductIDs = await eligibleIntroductoryTrialProductIDs(in: loadedProducts)
             await refreshEntitlements()
             hasLoaded = true
         } catch {
             // A storefront/network error must not erase a verified entitlement.
-            if state != .active {
+            if !state.hasEntitlement {
                 state = .unavailable(error.localizedDescription)
             }
             // Do not cache transient StoreKit failures.
@@ -109,14 +134,22 @@ final class SubscriptionStore {
 
     func restore() async {
         guard !isWorking else { return }
+        guard !Self.productIDs.isEmpty else {
+            state = .unavailable(Self.unconfiguredProductsMessage)
+            message = Self.unconfiguredProductsMessage
+            return
+        }
+
         isWorking = true
         defer { isWorking = false }
 
         do {
             try await AppStore.sync()
             await refreshEntitlements()
-            if state == .active {
+            if state.hasEntitlement {
                 message = "Your active RecipePouch subscription has been restored."
+            } else if case .unavailable(let reason) = state {
+                message = reason
             } else {
                 message = "No active RecipePouch subscription was found for this App Store account."
             }
@@ -142,7 +175,8 @@ final class SubscriptionStore {
         let entitledIDs = await refreshEntitlements()
         guard entitledIDs.contains(transaction.productID) else {
             if reportUnavailable {
-                message = "The App Store verified your purchase, but the entitlement is not yet available. Check your subscription status or try Restore Purchases."
+                message = "The App Store verified your purchase, but the entitlement is not yet available. "
+                    + "Check your subscription status or try Restore Purchases."
             }
             return
         }
@@ -150,13 +184,13 @@ final class SubscriptionStore {
         await transaction.finish()
     }
 
-    /// The App Store's active entitlement sequence includes subscriptions
-    /// in billing grace periods. Never unlock from an unverified transaction.
+    /// Only verified current entitlements grant access; status data refines the
+    /// displayed lifecycle state without granting access on its own.
     @discardableResult
     func refreshEntitlements() async -> Set<String> {
         let configuredProductIDs = Set(Self.productIDs)
         guard !configuredProductIDs.isEmpty else {
-            state = .unavailable("Subscription products have not been configured.")
+            state = .unavailable(Self.unconfiguredProductsMessage)
             return []
         }
 
@@ -168,14 +202,92 @@ final class SubscriptionStore {
             entitledProductIDs.insert(transaction.productID)
         }
 
-        state = entitledProductIDs.isEmpty ? .free : .active
+        var renewalStates: [Product.SubscriptionInfo.RenewalState] = []
+        let groupIDs = Set(products.compactMap { $0.subscription?.subscriptionGroupID })
+        var statusLookupFailed = false
+        for groupID in groupIDs {
+            guard let statuses = try? await Product.SubscriptionInfo.status(for: groupID) else {
+                statusLookupFailed = true
+                continue
+            }
+            for status in statuses {
+                guard case .verified(let transaction) = status.transaction,
+                      case .verified = status.renewalInfo,
+                      Self.productIDs.contains(transaction.productID) else {
+                    continue
+                }
+                renewalStates.append(status.state)
+            }
+        }
+
+        if !entitledProductIDs.isEmpty {
+            if renewalStates.contains(.inGracePeriod) {
+                state = .gracePeriod
+            } else if renewalStates.contains(.subscribed),
+                      await hasCurrentFreeTrial(in: entitledProductIDs) {
+                state = .trial
+            } else {
+                state = .active
+            }
+        } else if statusLookupFailed || groupIDs.isEmpty {
+            state = .unavailable(
+                "The App Store subscription status could not be checked. Try again when you are online."
+            )
+        } else if renewalStates.contains(.revoked) {
+            state = .revoked
+        } else if renewalStates.contains(.expired) {
+            state = .expired
+        } else if renewalStates.contains(.inBillingRetryPeriod) {
+            state = .billingRetry
+        } else {
+            state = .free
+        }
         return entitledProductIDs
     }
 
+    func isTrialEligible(for product: Product) -> Bool {
+        trialEligibleProductIDs.contains(product.id)
+    }
+
+    private func eligibleIntroductoryTrialProductIDs(in products: [Product]) async -> Set<String> {
+        var eligibleIDs = Set<String>()
+        for product in products {
+            guard let subscription = product.subscription,
+                  let offer = subscription.introductoryOffer,
+                  offer.paymentMode == .freeTrial,
+                  await subscription.isEligibleForIntroOffer else {
+                continue
+            }
+            eligibleIDs.insert(product.id)
+        }
+        return eligibleIDs
+    }
+
+    private func hasCurrentFreeTrial(in productIDs: Set<String>) async -> Bool {
+        for await entitlement in Transaction.currentEntitlements {
+            guard case .verified(let transaction) = entitlement,
+                  productIDs.contains(transaction.productID),
+                  transaction.offer?.type == .introductory,
+                  transaction.offer?.paymentMode == .freeTrial else {
+                continue
+            }
+            return true
+        }
+        return false
+    }
+
     static var productIDs: [String] {
+        #if DEBUG
+        let processInfo = ProcessInfo.processInfo
+        if processInfo.arguments.contains("--uitesting"),
+           let testProductIDs = processInfo.environment["RECIPE_STOREKIT_TEST_PRODUCT_IDS"] {
+            return parseProductIDs(testProductIDs)
+        }
+        #endif
+
         let keys = [
             "RecipeSubscriptionProductIDs",
-            "LegacyCookSubscriptionProductIDs"
+            "LegacyCookSubscriptionProductIDs",
         ]
 
         for key in keys {
@@ -183,10 +295,7 @@ final class SubscriptionStore {
                 continue
             }
 
-            let ids = raw
-                .split(separator: ",")
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty && !$0.hasPrefix("$(") }
+            let ids = parseProductIDs(raw)
 
             if !ids.isEmpty {
                 return ids
@@ -194,5 +303,12 @@ final class SubscriptionStore {
         }
 
         return []
+    }
+
+    private static func parseProductIDs(_ raw: String) -> [String] {
+        raw
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty && !$0.hasPrefix("$(") }
     }
 }
