@@ -26,7 +26,7 @@ func libraryStartsEmptyAndSamplesAreExplicitAndIdempotent() throws {
     #expect(store.recipes.isEmpty)
     try store.loadSampleRecipes()
     let ids = store.recipes.map(\.id)
-    #expect(ids.count == 4)
+    #expect(ids.count == 5)
     #expect(store.recipes.allSatisfy { $0.sourceName == "Sample recipe" && !$0.needsReview })
     try store.toggleFavorite(id: ids[0])
     try store.loadSampleRecipes()
@@ -199,4 +199,137 @@ func invalidRecipeDoesNotChangeOrPersistLibrary() throws {
     recipe.ingredients[0].quantity = .nan
     #expect(throws: IngredientAmount.ValidationError.invalidValue) { try store.upsert(recipe) }
     #expect(store.recipes.isEmpty)
+}
+
+
+@Test @MainActor
+func collectionsRoundTripAndRemainIndependentFromFavorites() throws {
+    let url = try libraryURL()
+    defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+    let store = CookStore(fileURL: url)
+    let first = exampleRecipe()
+    let second = Recipe(
+        title: "Second recipe",
+        ingredients: [.from(name: "Rice", amountText: "100 g")],
+        steps: [RecipeStep(instruction: "Cook rice.")]
+    )
+
+    try store.upsert(first)
+    try store.upsert(second)
+    try store.toggleFavorite(id: first.id)
+
+    let quick = try store.createCollection(name: "Quick Meals")
+    let weekend = try store.createCollection(name: "Weekend")
+    try store.setRecipe(first.id, inCollection: quick.id, isMember: true)
+    try store.setRecipe(first.id, inCollection: weekend.id, isMember: true)
+    try store.setRecipe(second.id, inCollection: weekend.id, isMember: true)
+
+    #expect(store.collectionIDs(forRecipe: first.id) == [quick.id, weekend.id])
+    #expect(store.recipes(inCollection: quick.id).map(\.id) == [first.id])
+    #expect(Set(store.recipes(inCollection: weekend.id).map(\.id)) == [first.id, second.id])
+    #expect(store.recipe(id: first.id)?.isFavorite == true)
+
+    try store.renameCollection(id: quick.id, name: "Fast")
+    #expect(store.collection(id: quick.id)?.name == "Fast")
+
+    let restored = CookStore(fileURL: url)
+    #expect(restored.loadError == nil)
+    #expect(restored.collectionIDs(forRecipe: first.id) == [quick.id, weekend.id])
+    #expect(restored.recipe(id: first.id)?.isFavorite == true)
+
+    try restored.deleteCollection(id: quick.id)
+    #expect(restored.recipe(id: first.id) != nil)
+    #expect(restored.recipe(id: first.id)?.isFavorite == true)
+    #expect(restored.collection(id: quick.id) == nil)
+    #expect(restored.collectionIDs(forRecipe: first.id) == [weekend.id])
+
+    try restored.deleteRecipe(id: first.id)
+    #expect(restored.collectionIDs(forRecipe: first.id).isEmpty)
+    #expect(restored.recipes(inCollection: weekend.id).map(\.id) == [second.id])
+}
+
+@Test @MainActor
+func collectionNamesRejectDuplicatesAndLegacyNamesMigrateSafely() throws {
+    let store = CookStore()
+    _ = try store.createCollection(name: "Weeknight")
+    #expect(throws: CookStoreError.self) {
+        try store.createCollection(name: "  weeknight  ")
+    }
+    #expect(throws: CookStoreError.self) {
+        try store.createCollection(name: "Favorites")
+    }
+
+    let added = try store.importLegacyCollectionNames([
+        "Favorites",
+        "Weeknight",
+        "Family",
+        " family ",
+        ""
+    ])
+    #expect(added == 1)
+    #expect(store.collections.map(\.name).sorted() == ["Family", "Weeknight"])
+}
+
+@Test @MainActor
+func versionOneLibraryLoadsAndUpgradesWithoutInventingMemberships() throws {
+    let url = try libraryURL()
+    defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+    let store = CookStore(fileURL: url)
+    let recipe = exampleRecipe()
+    try store.upsert(recipe)
+
+    let currentData = try store.exportData()
+    var object = try #require(
+        JSONSerialization.jsonObject(with: currentData) as? [String: Any]
+    )
+    object["version"] = 1
+    object.removeValue(forKey: "collections")
+    object.removeValue(forKey: "collectionMemberships")
+    let versionOneData = try JSONSerialization.data(
+        withJSONObject: object,
+        options: [.prettyPrinted, .sortedKeys]
+    )
+    try versionOneData.write(to: url, options: .atomic)
+
+    let restored = CookStore(fileURL: url)
+    #expect(restored.loadError == nil)
+    #expect(restored.recipes.map(\.id) == [recipe.id])
+    #expect(restored.collections.isEmpty)
+    #expect(restored.collectionMemberships.isEmpty)
+
+    let collection = try restored.createCollection(name: "Migrated")
+    try restored.setRecipe(recipe.id, inCollection: collection.id, isMember: true)
+
+    let exported = try restored.exportData()
+    let upgraded = try #require(
+        JSONSerialization.jsonObject(with: exported) as? [String: Any]
+    )
+    #expect(upgraded["version"] as? Int == 2)
+    #expect((upgraded["collections"] as? [[String: Any]])?.count == 1)
+    #expect((upgraded["collectionMemberships"] as? [[String: Any]])?.count == 1)
+}
+
+@Test @MainActor
+func collectionExportContainsStableIDsAndRelationships() throws {
+    let store = CookStore()
+    let recipe = exampleRecipe()
+    try store.upsert(recipe)
+    let collection = try store.createCollection(name: "Dinner")
+    try store.setRecipe(recipe.id, inCollection: collection.id, isMember: true)
+
+    let data = try store.exportData()
+    let object = try #require(
+        JSONSerialization.jsonObject(with: data) as? [String: Any]
+    )
+    let collections = try #require(object["collections"] as? [[String: Any]])
+    let memberships = try #require(
+        object["collectionMemberships"] as? [[String: Any]]
+    )
+
+    #expect(collections.first?["id"] as? String == collection.id.uuidString)
+    #expect(collections.first?["name"] as? String == "Dinner")
+    #expect(memberships.first?["recipeID"] as? String == recipe.id.uuidString)
+    #expect(memberships.first?["collectionID"] as? String == collection.id.uuidString)
 }

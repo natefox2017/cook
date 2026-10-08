@@ -250,6 +250,63 @@ final class CookUITests: XCTestCase {
 
 
     @MainActor
+    func testRecipeCanBelongToLocalCollection() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let collections = app.buttons["profile.collections"]
+        waitUntilReady(collections)
+        collections.tap()
+
+        let name = app.textFields["New collection"]
+        waitUntilReady(name)
+        name.tap()
+        name.typeText("Weeknight")
+        let add = app.buttons["Add"]
+        waitUntilReady(add)
+        add.tap()
+        XCTAssertTrue(app.staticTexts["Weeknight"].waitForExistence(timeout: 8))
+
+        let recipesTab = app.tabBars.buttons["Recipes"]
+        waitUntilReady(recipesTab)
+        recipesTab.tap()
+        openSamplePasta(in: app)
+
+        let options = app.buttons["Recipe Options"]
+        waitUntilReady(options)
+        options.tap()
+        let manageCollections = app.buttons["Collections"]
+        waitUntilReady(manageCollections)
+        manageCollections.tap()
+
+        let weeknightMembership = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "Weeknight")
+        ).firstMatch
+        waitUntilReady(weeknightMembership)
+        weeknightMembership.tap()
+        XCTAssertTrue((weeknightMembership.value as? String) != "Not in collection")
+        app.navigationBars.buttons["Done"].tap()
+
+        profile.tap()
+        waitUntilReady(app.buttons["profile.collections"])
+        app.buttons["profile.collections"].tap()
+
+        let weeknight = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "Weeknight")
+        ).firstMatch
+        waitUntilReady(weeknight)
+        weeknight.tap()
+
+        XCTAssertTrue(
+            app.staticTexts["Garlic Butter Shrimp Pasta"].waitForExistence(timeout: 8)
+        )
+    }
+
+    @MainActor
     func testCookingIngredientCheckoffPersistsInSession() {
         let app = launchSeededApp()
         defer { app.terminate() }

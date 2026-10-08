@@ -27,11 +27,11 @@ This document is the UI completeness checklist for the current codebase. Product
 - Data & Privacy — implemented: export, local delete, cloud delete entry, stored-data explanation, privacy summary.
 - Help & Support — implemented: import, cooking, meal/shop, subscription, sync and import-review troubleshooting.
 - About — implemented: version, licenses, acknowledgements, EULA.
-- Collections — implemented secondary page shell + Favorites; cloud collection membership deferred.
+- Collections — implemented locally: create/rename/delete, multi-membership, Favorites kept separate, real counts, collection detail/search, recipe membership management and recipe-library filtering; cloud sync remains deferred to #29.
 
 ## Recipes
 
-- Library/search/filter/sort/empty/no-result — implemented.
+- Library/search/filter/sort/empty/no-result — implemented, including custom Collection filters.
 - Add recipe menu — implemented.
 - URL/text/PDF/photo/camera/manual intake — implemented locally.
 - Import error/partial-review state — implemented.

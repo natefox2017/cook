@@ -126,3 +126,24 @@
 - servings?
 
 V1 为简单计划，不引入复杂营养/家庭协作模型。
+
+## 11. RecipeCollection
+- id
+- owner_id
+- name
+- created_at
+- updated_at
+
+Collection 是用户自定义的平级食谱册。Favorites 仍由 Recipe.isFavorite 独立表示，不作为可删除 Collection。
+
+## 12. RecipeCollectionMembership
+- recipe_id
+- collection_id
+
+一个 Recipe 可属于多个 Collection；同一 recipe_id + collection_id 组合唯一。删除 Collection 只删除 membership，不删除 Recipe；删除 Recipe 清理对应 membership。
+
+### 本地 snapshot 兼容
+- snapshot v2 增加 collections[] 与 collectionMemberships[]。
+- v1 文件缺少这两个字段时按空数组读取，不伪造历史 membership。
+- 下一次成功保存或导出使用 v2。
+- 旧 `cook.collections` 仅迁移 Collection 名称；没有证据的 recipe membership 不推断。
