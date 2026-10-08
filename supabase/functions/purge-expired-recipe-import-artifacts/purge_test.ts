@@ -2,6 +2,7 @@
 // Purpose: Isolated cleanup regression tests; no Supabase credentials or network calls.
 
 import {
+  ARTIFACT_CLEANUP_CONCURRENCY,
   ARTIFACT_CLEANUP_MAX_ROWS,
   ARTIFACT_CLEANUP_PAGE_SIZE,
   isPurgeableArtifact,
@@ -121,6 +122,29 @@ Deno.test("concurrent state update is reported rather than silently committed", 
   fake.failMarkIDs.add(fake.records[0].id);
   const report = await purgeExpiredArtifacts(fake, CUTOFF);
   assert(report.expired === 0 && report.failed === 1, "Lost CAS conflict was treated as success");
+});
+
+Deno.test("cleanup limits concurrent Storage calls to eight", async () => {
+  let inFlight = 0;
+  let peak = 0;
+  class SlowStorage extends FakePurgeSource {
+    override async remove(path: string): Promise<void> {
+      inFlight++;
+      peak = Math.max(peak, inFlight);
+      try {
+        // Yield to another cleanup worker while the Storage request is open.
+        await Promise.resolve();
+        await super.remove(path);
+      } finally {
+        inFlight--;
+      }
+    }
+  }
+  const fake = new SlowStorage(makeRows(40));
+  const report = await purgeExpiredArtifacts(fake, CUTOFF);
+  assert(report.expired === 40 && report.failed === 0, "Parallel purge lost rows");
+  assert(peak > 1 && peak <= ARTIFACT_CLEANUP_CONCURRENCY,
+    "Cleanup exceeded its parallel request limit");
 });
 
 Deno.test("cleanup secret and timestamp validators fail closed", () => {
