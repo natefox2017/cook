@@ -171,7 +171,7 @@ struct RecipesView: View {
                         selectedCollectionID = nil
                         filter = item
                     } label: {
-                        Text(item.title)
+                        Text(LocalizedStringKey(item.title))
                             .font(RecipeTheme.text(
                                 15,
                                 weight: isSelected ? .semibold : .regular,
@@ -240,7 +240,7 @@ struct RecipesView: View {
             Spacer()
             Menu {
                 Picker("Sort recipes", selection: $sort) {
-                    ForEach(RecipeLibrarySort.allCases) { item in Text(item.rawValue).tag(item) }
+                    ForEach(RecipeLibrarySort.allCases) { item in Text(LocalizedStringKey(item.rawValue)).tag(item) }
                 }
             } label: {
                 Label("Sort", systemImage: "arrow.up.arrow.down")
@@ -284,7 +284,7 @@ private struct RecipeLibraryCard: View {
                         if let minutes = recipe.totalMinutes {
                             Label("\(minutes) min", systemImage: "clock")
                         } else {
-                            Text(recipe.category.rawValue)
+                            Text(LocalizedStringKey(recipe.category.rawValue))
                         }
                     }
                     .font(RecipeTheme.text(12, weight: .regular, relativeTo: .caption))
