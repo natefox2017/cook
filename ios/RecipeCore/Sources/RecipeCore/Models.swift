@@ -178,8 +178,6 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
         }
     }
 
-    /// A deliberately narrow amount-field parser, not an ingredient sentence parser.
-    /// Ranges, approximate quantities and nonterminating fractions stay as source text.
     // Immutable Foundation regex can be safely shared between import passes.
     // A failed pattern compilation must leave the original user text intact.
     private static let amountRegex: NSRegularExpression? = try? NSRegularExpression(
@@ -192,6 +190,8 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
         "heaping", "scant", "optional", "or", "to", "taste"
     ]
 
+    /// Parse only explicit amounts; ambiguous quantities remain the original text.
+    /// Ranges, approximate quantities and nonterminating fractions are not guessed.
     public static func from(
         name: String,
         amountText: String,
