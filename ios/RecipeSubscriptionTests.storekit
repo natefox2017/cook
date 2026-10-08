@@ -1,0 +1,40 @@
+{
+  "identifier" : "A189AC34",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {},
+  "subscriptionGroups" : [
+    {
+      "id" : "B074D1A9",
+      "localizations" : [],
+      "name" : "RecipePouch Premium Local Tests",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "A45A1001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Local-only StoreKit test subscription.",
+              "displayName" : "RecipePouch Premium Monthly Test",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.recipepouch.localtest.premium.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "RecipePouch Premium Monthly Local Test",
+          "subscriptionGroupID" : "B074D1A9",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 2,
+    "minor" : 0
+  }
+}
