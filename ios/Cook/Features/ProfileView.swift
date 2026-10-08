@@ -153,11 +153,13 @@ struct ProfileView: View {
         }
         .confirmationDialog("Delete all local data?", isPresented: $confirmsReset, titleVisibility: .visible) {
             Button("Delete All Local Data", role: .destructive) {
-                do {
-                    try CookLocalDataCleanup.reset(store: store)
-                    exportDocument = CookExportDocument(data: Data())
-                } catch {
-                    errorMessage = error.localizedDescription
+                Task { @MainActor in
+                    do {
+                        try await CookLocalDataCleanup.reset(store: store)
+                        exportDocument = CookExportDocument(data: Data())
+                    } catch {
+                        errorMessage = error.localizedDescription
+                    }
                 }
             }
         } message: {
@@ -379,7 +381,7 @@ struct NotificationPreferencesView: View {
 
 @MainActor
 enum CookLocalDataCleanup {
-    static func reset(store: CookStore) throws {
+    static func reset(store: CookStore) async throws {
         // Commit the destructive library reset first. If persistence fails,
         // keep sessions/preferences intact so the user can retry safely.
         try store.resetLibrary()
@@ -402,9 +404,7 @@ enum CookLocalDataCleanup {
             defaults.removeObject(forKey: key)
         }
 
-        Task {
-            await CookNotificationCleanup.removeTimerReminders()
-        }
+        await CookNotificationCleanup.removeTimerReminders()
     }
 }
 
