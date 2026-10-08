@@ -35,16 +35,37 @@ def validate_openapi_references(api: dict, definitions: set[str]) -> None:
         if isinstance(value, dict):
             if "$ref" in value:
                 reference = value["$ref"]
-                prefix = "./import-v1.schema.json#/$defs/"
-                assert reference.startswith(prefix), f"Unexpected reference: {reference}"
-                assert reference[len(prefix):] in definitions, f"Missing definition: {reference}"
+                assert isinstance(reference, str), f"Non-string $ref: {reference!r}"
+
+                external_prefix = "./import-v1.schema.json#/$defs/"
+                if reference.startswith(external_prefix):
+                    name = reference[len(external_prefix):]
+                    assert name in definitions, f"Missing external definition: {reference}"
+                elif reference.startswith("#/"):
+                    # OpenAPI's local references use escaped JSON Pointer tokens.
+                    target: object = api
+                    for token in reference[2:].split("/"):
+                        key = token.replace("~1", "/").replace("~0", "~")
+                        if isinstance(target, dict) and key in target:
+                            target = target[key]
+                        elif (
+                            isinstance(target, list) and key.isdecimal()
+                            and int(key) < len(target)
+                        ):
+                            target = target[int(key)]
+                        else:
+                            raise AssertionError(f"Missing local definition: {reference}")
+                else:
+                    raise AssertionError(f"Unexpected reference: {reference}")
+
             for child in value.values():
                 inspect(child)
         elif isinstance(value, list):
             for child in value:
                 inspect(child)
 
-    inspect(api["paths"])
+    # Checking paths alone misses broken references inside components/schemas.
+    inspect(api)
 
 
 def has_well_formed_import_source(case: dict) -> bool:
