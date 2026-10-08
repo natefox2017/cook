@@ -406,13 +406,22 @@ private struct RecipeHelpView: View {
                 }
             }
             Section("Save a recipe") {
-                Text("From a recipe or social app, use Share and choose RecipePouch. The share extension receives it quickly and you can return to the source app. If sharing is unavailable, use Add Recipe to paste a link, add text or an image, or create a recipe manually.")
+                Text(
+                    "From a recipe or social app, use Share and choose RecipePouch. "
+                        + "The share extension receives it quickly so you can return "
+                        + "to the source app. If sharing is unavailable, use Add Recipe "
+                        + "to paste a link, add text or an image, or create a recipe manually."
+                )
             }
             Section("Make it yours") {
                 Text("Open any recipe to edit its ingredients, instructions and notes. The original source stays with the recipe so you can return to it.")
             }
             Section("Shop for a meal") {
-                Text("Use Add to Groceries in a recipe, choose the servings and ingredients, then add them to your list. In Groceries, tap a circle to mark an item bought, tap its name to edit, or swipe for more actions.")
+                Text(
+                    "Use Add to Groceries in a recipe, choose the servings and ingredients, "
+                        + "then add them to your list. In Groceries, tap a circle to mark "
+                        + "an item bought, tap its name to edit, or swipe for more actions."
+                )
             }
             Section("Cook step by step") {
                 Text("Start Cooking opens one step at a time. You can move between steps and use timers where a duration is available. Keep Screen Awake in Profile controls whether your screen stays on during cooking.")
