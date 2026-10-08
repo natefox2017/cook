@@ -59,6 +59,7 @@ public enum RecipeShareImportWorkflow {
 
         do {
             for _ in 0..<max(1, maxPollRounds) {
+                try Task.checkCancellation()
                 guard currentOwnerID() == ownerID else { break }
 
                 var hasActiveJobs = false
@@ -97,6 +98,8 @@ public enum RecipeShareImportWorkflow {
                         jobStatuses[receipt.id] = response
                         hasActiveJobs = hasActiveJobs || response.isActive
                     } catch {
+                        // A cancelled import is not a failed recipe source.
+                        if error is CancellationError { throw error }
                         firstFailure = firstFailure ?? error.localizedDescription
                         hasActiveJobs = true
                     }
@@ -135,6 +138,8 @@ public enum RecipeShareImportWorkflow {
                         jobStatuses[receipt.id] = response
                         hasActiveJobs = hasActiveJobs || response.isActive
                     } catch {
+                        // A cancelled import is not a failed recipe source.
+                        if error is CancellationError { throw error }
                         firstFailure = firstFailure ?? error.localizedDescription
                         hasActiveJobs = true
                     }
@@ -211,6 +216,7 @@ public enum RecipeShareImportWorkflow {
 
                         hasActiveJobs = hasActiveJobs || response.isActive
                     } catch {
+                        if error is CancellationError { throw error }
                         firstFailure = firstFailure ?? error.localizedDescription
                         hasActiveJobs = hasActiveJobs || !fetchedTerminalStatus
                     }
@@ -223,6 +229,9 @@ public enum RecipeShareImportWorkflow {
                     try await Task.sleep(for: pollInterval)
                 }
             }
+        } catch is CancellationError {
+            // Dismissing or replacing a view must not surface a false failure.
+            // Durable receipts remain available for the next synchronization.
         } catch {
             firstFailure = firstFailure ?? error.localizedDescription
         }
