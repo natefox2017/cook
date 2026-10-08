@@ -44,9 +44,13 @@ struct ProfileView: View {
                         .accessibilityIdentifier("profile.edit")
                     }
                 }
-                .padding(.vertical, 12)
+                .padding(.top, CookSpacing.xSmall)
+                .padding(.bottom, 0)
             }
             .listRowBackground(Color.clear)
+            .listRowInsets(
+                EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
+            )
 
             Section {
                 NavigationLink { SettingsHubView() } label: { ProfileRowLabel(title: "Settings", systemImage: "gearshape") }
@@ -137,7 +141,7 @@ struct ProfileView: View {
             .listRowBackground(CookTheme.card)
         }
         .listStyle(.insetGrouped)
-        .listSectionSpacing(CookSpacing.medium)
+        .listSectionSpacing(CookSpacing.xSmall)
         .scrollContentBackground(.hidden)
         .background(CookTheme.canvas)
         .navigationTitle("Profile").navigationBarTitleDisplayMode(.large)
