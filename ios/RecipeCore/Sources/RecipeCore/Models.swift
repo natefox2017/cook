@@ -178,39 +178,57 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
         }
     }
 
-    /// A deliberately narrow amount-field parser, not an ingredient sentence parser.
-    /// Ranges, approximate quantities and nonterminating fractions stay as source text.
-    public static func from(name: String, amountText: String,
-                            category: GroceryCategory = .other) -> RecipeIngredient {
+    // Immutable Foundation regex can be safely shared between import passes.
+    // A failed pattern compilation must leave the original user text intact.
+    private static let amountRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^((?:[0-9]+\s+)?[0-9]+/[0-9]+|[0-9]+(?:\.[0-9]+)?|\.[0-9]+)\s*([\p{L}µμ]+\.?(?:\s+(?:oz|ounces?))?)?$"#,
+        options: .caseInsensitive
+    )
+
+    private static let vagueAmountUnits: Set<String> = [
+        "about", "approximately", "approx", "roughly", "heaped",
+        "heaping", "scant", "optional", "or", "to", "taste"
+    ]
+
+    /// Parse only explicit amounts; ambiguous quantities remain the original text.
+    /// Ranges, approximate quantities and nonterminating fractions are not guessed.
+    public static func from(
+        name: String,
+        amountText: String,
+        category: GroceryCategory = .other
+    ) -> RecipeIngredient {
         var result = RecipeIngredient(name: name, amountText: amountText, category: category)
         var text = amountText.trimmingCharacters(in: .whitespacesAndNewlines)
+
         for (symbol, fraction) in [
             ("¼", "1/4"), ("½", "1/2"), ("¾", "3/4"), ("⅛", "1/8"),
             ("⅜", "3/8"), ("⅝", "5/8"), ("⅞", "7/8")
         ] {
             text = text.replacingOccurrences(of: symbol, with: " " + fraction)
         }
+
         text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let pattern = #"^((?:[0-9]+\s+)?[0-9]+/[0-9]+|[0-9]+(?:\.[0-9]+)?|\.[0-9]+)\s*([\p{L}µμ]+\.?(?:\s+(?:oz|ounces?))?)?$"#
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            let fullRange = NSRange(text.startIndex..., in: text)
-            guard let match = regex.firstMatch(in: text, range: fullRange),
-                  let numberRange = Range(match.range(at: 1), in: text),
-                  let value = exactNumber(String(text[numberRange])) else { return result }
-            if let unitRange = Range(match.range(at: 2), in: text) {
-                let unit = String(text[unitRange])
-                let vague = ["about", "approximately", "approx", "roughly", "heaped",
-                             "heaping", "scant", "optional", "or", "to", "taste"]
-                guard !vague.contains(unit.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))) else {
-                    return result
-                }
-                result.unit = unit
-            }
-            result.quantity = value
-        } catch {
-            // An unsupported amount remains editable verbatim.
+        guard let regex = Self.amountRegex else { return result }
+
+        let fullRange = NSRange(text.startIndex..., in: text)
+        guard let match = regex.firstMatch(in: text, range: fullRange),
+              let numberRange = Range(match.range(at: 1), in: text),
+              let value = exactNumber(String(text[numberRange])) else {
+            return result
         }
+
+        if let unitRange = Range(match.range(at: 2), in: text) {
+            let unit = String(text[unitRange])
+            let normalizedUnit = unit.lowercased().trimmingCharacters(
+                in: CharacterSet(charactersIn: ".")
+            )
+            guard !Self.vagueAmountUnits.contains(normalizedUnit) else {
+                return result
+            }
+            result.unit = unit
+        }
+
+        result.quantity = value
         return result
     }
 

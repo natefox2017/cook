@@ -100,6 +100,11 @@ public enum RecipePortableExport {
             let collectionsByID = Dictionary(
                 uniqueKeysWithValues: snapshot.collections.map { ($0.id, $0.name) }
             )
+            // Reuse one membership index for every exported recipe instead
+            // of repeatedly filtering the complete collection membership list.
+            let collectionIndex = RecipeCollectionIndex(
+                memberships: snapshot.collectionMemberships
+            )
             for (index, recipe) in recipes.enumerated() {
                 lines.append("<article id=\"recipe-\(index + 1)\">")
                 lines.append("<h2>\(escape(recipe.title))</h2>")
@@ -123,9 +128,7 @@ public enum RecipePortableExport {
                 }
                 lines.append("<p class=\"muted\">\(escape(facts.joined(separator: " · ")))</p>")
 
-                let associatedIDs = snapshot.collectionMemberships
-                    .filter { $0.recipeID == recipe.id }
-                    .map(\.collectionID)
+                let associatedIDs = collectionIndex.collectionIDs(forRecipe: recipe.id)
                 let associatedNames = associatedIDs.compactMap { collectionsByID[$0] }
                     .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
                 if !associatedNames.isEmpty {
