@@ -4,7 +4,7 @@
 
 The user requested: “你帮我把 ui 界面功能写好提交上去”. This authorizes implementing and submitting this UI work. It does not retrospectively approve every historical design frame or authorize merging unrelated pending PRs.
 
-The current implementation uses the `Recipe` technical project/module naming and the RecipePouch product brand, with Recipes / Plan / Groceries / Profile navigation. It reuses PR #10's IngredientAmount implementation and tests. The five-entry recommendation home is not added to the three-tab baseline.
+The current implementation uses the `Recipe` technical project/module naming and the RecipePouch product brand, with Recipes / Plan / Groceries / Profile navigation. It reuses PR #10's IngredientAmount implementation and tests. The historical three-tab proposal was superseded by the four-tab native navigation; the extra recommendation home was not added.
 
 Historical PENDING rows remain unchanged. This PR provides the concrete implementation for review; future visual changes continue to use the existing design process.
 
@@ -29,13 +29,14 @@ RecipeStore owns one versioned Codable snapshot in Application Support. Existing
 
 Original sources and unknown amounts remain intact. Explicit quantities use Decimal and the existing safe amount helper. Ranges and “to taste” remain textual; inexact ratios are expressed rather than fabricated as long decimals. Unit spellings are not silently converted. Recipe deletion cleans plan entries and grocery source references but retains grocery tasks.
 
-Data is local to this installation. JSON export is user-driven; cloud backup and JSON restoration are not claimed.
+The local library remains authoritative offline. Supabase snapshot synchronization is implemented at the client service boundary but awaits real two-account/device acceptance (#29/#34). Portable JSON + offline HTML recipe export and a full local snapshot JSON option are available; none is a user-restorable in-app backup.
 
 ## Design and accessibility
 
 - SwiftUI navigation and tab bars retain tab history and platform safe areas. iOS 26 uses system Liquid Glass; iOS 18 uses the older native appearance.
 - Warm cream surfaces, green actions and rounded food photos; glass is reserved for navigation and small controls.
-- Source Sans 3 is bundled with its OFL license. Larger accessibility text switches the grid to one column. Controls have meaningful labels and practical touch areas.
+- **Current font implementation uses Lora** (`Lora-Regular` for titles, body, controls, UIKit navigation and tabs; `Lora-Variable.ttf` is registered in Info.plist). Older Source Sans 3 documentation predates later typography changes. Do not restore Source Sans 3 without the user's explicit direction or a current approved reference.
+- Larger accessibility text switches the grid to one column. Controls have meaningful labels and practical touch areas. Four-language text/typography acceptance is still pending #26/#33.
 - Clearly labeled sample recipes reuse existing design photography. User imports never receive invented sample imagery.
 - Native screenshots, animation, signing and VoiceOver acceptance require an actual Xcode run; static inspection cannot prove them.
 
