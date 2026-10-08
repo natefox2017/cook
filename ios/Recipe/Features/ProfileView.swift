@@ -24,7 +24,7 @@ struct ProfileView: View {
 
     private var displayName: String {
         let name = store.settings.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return name.isEmpty ? "Your kitchen" : name
+        return name.isEmpty ? String(localized: "Your kitchen") : name
     }
 
     var body: some View {
@@ -70,11 +70,11 @@ struct ProfileView: View {
             Section("Account & subscription") {
                 NavigationLink(value: ProfileRoute.account) {
                     ProfileRowLabel(
-                        title: "RecipePouch Account",
+                        title: "Account",
                         systemImage: "person.badge.key"
                     )
                 }
-                NavigationLink { SubscriptionView() } label: { ProfileRowLabel(title: "RecipePouch Premium", systemImage: "sparkles") }
+                NavigationLink { SubscriptionView() } label: { ProfileRowLabel(title: "Premium", systemImage: "sparkles") }
             }
             .listRowBackground(RecipeTheme.card)
 
@@ -115,7 +115,7 @@ struct ProfileView: View {
                 }
                 Picker(selection: appearanceBinding) {
                     ForEach(AppAppearance.allCases) { appearance in
-                        Text(appearance.rawValue).tag(appearance)
+                        Text(LocalizedStringKey(appearance.rawValue)).tag(appearance)
                     }
                 } label: {
                     ProfileRowLabel(title: "Appearance", systemImage: "circle.lefthalf.filled")
@@ -244,7 +244,7 @@ struct ProfileView: View {
             exportDocument = try format.makeDocument(from: store)
             exportsData = true
         } catch {
-            errorMessage = "Export failed: \(error.localizedDescription)"
+            errorMessage = String(localized: "Export failed: \(error.localizedDescription)")
         }
     }
 }
@@ -261,7 +261,7 @@ private struct ProfileRowLabel: View {
                 .frame(width: 24)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(RecipeTheme.text(17, weight: .regular, relativeTo: .body)).foregroundStyle(.primary)
+                Text(LocalizedStringKey(title)).font(RecipeTheme.text(17, weight: .regular, relativeTo: .body)).foregroundStyle(.primary)
             }
         }
         .frame(minHeight: 44)
@@ -342,14 +342,14 @@ struct NotificationPreferencesView: View {
     }
 
     private var permissionDescription: String {
-        guard hasLoaded else { return "Checking…" }
+        guard hasLoaded else { return String(localized: "Checking…") }
         switch authorization {
-        case .notDetermined: return "Not requested"
-        case .denied: return "Off in iOS Settings"
-        case .authorized: return "Allowed"
-        case .provisional: return "Quiet delivery"
-        case .ephemeral: return "Temporarily allowed"
-        @unknown default: return "Check iOS Settings"
+        case .notDetermined: return String(localized: "Not requested")
+        case .denied: return String(localized: "Off in iOS Settings")
+        case .authorized: return String(localized: "Allowed")
+        case .provisional: return String(localized: "Quiet delivery")
+        case .ephemeral: return String(localized: "Temporarily allowed")
+        @unknown default: return String(localized: "Check iOS Settings")
         }
     }
 
