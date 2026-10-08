@@ -41,7 +41,7 @@ struct AccountView: View {
             }
         }
         .background(RecipeTheme.canvas)
-        .navigationTitle("RecipePouch Account")
+        .navigationTitle("Account")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
         .onChange(of: auth.state) { _, state in
@@ -60,7 +60,7 @@ struct AccountView: View {
             }
         }
         .alert(
-            "RecipePouch Account",
+            "Account",
             isPresented: Binding(
                 get: { localMessage != nil },
                 set: { if !$0 { localMessage = nil } }
@@ -77,7 +77,7 @@ struct AccountView: View {
             Section {
                 Picker("Account action", selection: $mode) {
                     ForEach(Mode.allCases) { item in
-                        Text(item.rawValue).tag(item)
+                        Text(LocalizedStringKey(item.rawValue)).tag(item)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -91,8 +91,10 @@ struct AccountView: View {
                 SecureField("Password", text: $password)
                     .textContentType(mode == .signIn ? .password : .newPassword)
 
-                Button(mode.rawValue) {
+                Button {
                     performEmailAction()
+                } label: {
+                    Text(LocalizedStringKey(mode.rawValue))
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(!canSubmitEmail || isAuthenticating)
@@ -105,10 +107,6 @@ struct AccountView: View {
                 }
             } header: {
                 Text("Account")
-            } footer: {
-                Text(mode == .signIn
-                     ? "Sign in to reconnect the same RecipePouch account on another device."
-                     : "Create one RecipePouch account for future cloud sync. App Store purchases remain a separate Apple account entitlement.")
             }
 
             if mode == .signIn {
@@ -133,8 +131,6 @@ struct AccountView: View {
                 .frame(height: 50)
                 .disabled(isAuthenticating)
                 .accessibilityIdentifier("account.apple")
-            } footer: {
-                Text("Apple sign-in uses the native Apple authorization sheet, then exchanges the verified identity token with RecipePouch’s Supabase Auth project.")
             }
 
             if let statusMessage {
@@ -158,12 +154,7 @@ struct AccountView: View {
                     LabeledContent("Email", value: email)
                 }
             } header: {
-                Text("RecipePouch Account")
-            }
-
-            Section {
-                Text("Your RecipePouch account identifies future private cloud data. It is separate from the Apple ID that owns an App Store subscription.")
-                    .foregroundStyle(.secondary)
+                Text("Account")
             }
 
             Section {
@@ -194,7 +185,7 @@ struct AccountView: View {
                 Button("Update Password") {
                     guard !isUpdatingPassword else { return }
                     guard newPassword == confirmPassword else {
-                        localMessage = "The passwords do not match."
+                        localMessage = String(localized: "The passwords do not match.")
                         return
                     }
                     isUpdatingPassword = true
@@ -244,9 +235,9 @@ struct AccountView: View {
     private var statusMessage: String? {
         switch auth.state {
         case .needsEmailVerification(let address):
-            return "Check \(address) to verify your account, then return to RecipePouch."
+            return String(localized: "Check \(address) to verify your account, then return to RecipePouch.")
         case .passwordResetSent(let address):
-            return "If an account exists for \(address), check its inbox for a password reset link."
+            return String(localized: "If an account exists for \(address), check its inbox for a password reset link.")
         case .error(let message):
             return message
         default:
@@ -302,7 +293,7 @@ struct AccountView: View {
                   let tokenData = credential.identityToken,
                   let identityToken = String(data: tokenData, encoding: .utf8),
                   let rawNonce = pendingNonce else {
-                localMessage = "Apple sign-in did not return a usable identity token."
+                localMessage = String(localized: "Apple sign-in did not return a usable identity token.")
                 return
             }
 
