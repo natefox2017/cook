@@ -91,14 +91,28 @@ public enum LibraryMergeEntity: String, Codable, Sendable {
     case grocery
     case meal
     case collection
+    case membership
     case settings
 }
 
 public struct LibraryMergeConflict: Hashable, Sendable, Identifiable {
     public let entity: LibraryMergeEntity
     public let entityID: UUID?
+    public let scopeID: String?
 
-    public var id: String { "\(entity.rawValue):\(entityID?.uuidString ?? "settings")" }
+    public init(
+        entity: LibraryMergeEntity,
+        entityID: UUID?,
+        scopeID: String? = nil
+    ) {
+        self.entity = entity
+        self.entityID = entityID
+        self.scopeID = scopeID
+    }
+
+    public var id: String {
+        scopeID ?? "\(entity.rawValue):\(entityID?.uuidString ?? "settings")"
+    }
 }
 
 public enum LibraryMergeSource: Sendable, Equatable {
@@ -114,6 +128,12 @@ public struct LibraryMergeChoice: Sendable {
         self.conflict = conflict
         self.source = source
     }
+}
+
+private enum LibraryMergeState<Value: Hashable>: Equatable {
+    case absent
+    case value(Value)
+    case deleted
 }
 
 @Observable @MainActor
@@ -504,7 +524,12 @@ public final class RecipeStore {
     public func loadSampleRecipes() throws {
         var next = snapshot
         let existingIDs = Set(next.recipes.map(\.id))
-        next.recipes.append(contentsOf: SampleRecipes.recipes.filter { !existingIDs.contains($0.id) })
+        let samplesToAdd = SampleRecipes.recipes.filter { !existingIDs.contains($0.id) }
+
+        for recipe in samplesToAdd {
+            next.deletedEntities?.remove(Self.deletionKey(.recipe, recipe.id))
+        }
+        next.recipes.append(contentsOf: samplesToAdd)
         try commit(next)
     }
 
@@ -534,128 +559,438 @@ public final class RecipeStore {
     @discardableResult
     public func mergeCloudLibrary(
         with data: Data,
+        base: RecipeLibrarySnapshot? = nil,
         choices: [LibraryMergeChoice] = []
     ) throws -> [LibraryMergeConflict] {
         let cloud = try JSONDecoder().decode(LibrarySnapshot.self, from: data)
-        return try mergeCloudLibrary(with: cloud, choices: choices)
+        return try mergeCloudLibrary(
+            with: cloud,
+            base: base,
+            choices: choices
+        )
     }
 
     @discardableResult
     public func mergeCloudLibrary(
         with cloud: RecipeLibrarySnapshot,
+        base: RecipeLibrarySnapshot? = nil,
         choices: [LibraryMergeChoice] = []
     ) throws -> [LibraryMergeConflict] {
-        if let loadError { throw RecipeStoreError.unreadableLibrary(loadError) }
+        if let loadError {
+            throw RecipeStoreError.unreadableLibrary(loadError)
+        }
+
         try validate(cloud)
+        let ancestor = base ?? LibrarySnapshot()
+        try validate(ancestor)
 
         let local = snapshot
-        let choicesByID = Dictionary(uniqueKeysWithValues: choices.map { ($0.conflict.id, $0.source) })
         let localDeleted = local.deletedEntities ?? []
         let cloudDeleted = cloud.deletedEntities ?? []
-        var mergedDeleted = localDeleted.union(cloudDeleted)
-        var conflicts: [LibraryMergeConflict] = []
+        let baseDeleted = ancestor.deletedEntities ?? []
+        var mergedDeleted = localDeleted.union(cloudDeleted).union(baseDeleted)
 
-        func merge<T: Identifiable & Hashable>(
-            _ localItems: [T], _ cloudItems: [T], entity: LibraryMergeEntity
+        var choicesByID: [String: LibraryMergeSource] = [:]
+        for choice in choices {
+            choicesByID[choice.conflict.id] = choice.source
+        }
+
+        var conflictsByID: [String: LibraryMergeConflict] = [:]
+
+        func record(_ conflict: LibraryMergeConflict) {
+            conflictsByID[conflict.id] = conflict
+        }
+
+        func itemState<T: Hashable>(
+            id: UUID,
+            values: [UUID: T],
+            deleted: Set<String>,
+            entity: LibraryMergeEntity
+        ) -> LibraryMergeState<T> {
+            if deleted.contains(Self.deletionKey(entity, id)) {
+                return .deleted
+            }
+            if let value = values[id] {
+                return .value(value)
+            }
+            return .absent
+        }
+
+        func selectedState<T: Hashable>(
+            local: LibraryMergeState<T>,
+            cloud: LibraryMergeState<T>,
+            base: LibraryMergeState<T>,
+            conflict: LibraryMergeConflict
+        ) -> LibraryMergeState<T> {
+            if local == cloud {
+                return local
+            }
+            if local == base {
+                return cloud
+            }
+            if cloud == base {
+                return local
+            }
+            if let source = choicesByID[conflict.id] {
+                return source == .local ? local : cloud
+            }
+
+            record(conflict)
+            return local
+        }
+
+        func mergeItems<T: Identifiable & Hashable>(
+            local localItems: [T],
+            cloud cloudItems: [T],
+            base baseItems: [T],
+            entity: LibraryMergeEntity
         ) -> [T] where T.ID == UUID {
-            let localByID = Dictionary(uniqueKeysWithValues: localItems.map { ($0.id, $0) })
-            let cloudByID = Dictionary(uniqueKeysWithValues: cloudItems.map { ($0.id, $0) })
-            let ids = Set(localByID.keys).union(cloudByID.keys)
-                .union(localDeleted.compactMap { Self.deletedID($0, entity: entity) })
-                .union(cloudDeleted.compactMap { Self.deletedID($0, entity: entity) })
+            let localByID = Dictionary(
+                uniqueKeysWithValues: localItems.map { ($0.id, $0) }
+            )
+            let cloudByID = Dictionary(
+                uniqueKeysWithValues: cloudItems.map { ($0.id, $0) }
+            )
+            let baseByID = Dictionary(
+                uniqueKeysWithValues: baseItems.map { ($0.id, $0) }
+            )
+
+            let ids = Set(localByID.keys)
+                .union(cloudByID.keys)
+                .union(baseByID.keys)
+                .union(localDeleted.compactMap {
+                    Self.deletedID($0, entity: entity)
+                })
+                .union(cloudDeleted.compactMap {
+                    Self.deletedID($0, entity: entity)
+                })
+                .union(baseDeleted.compactMap {
+                    Self.deletedID($0, entity: entity)
+                })
+
             var result: [T] = []
 
             for id in ids {
-                let localValue = localByID[id]
-                let cloudValue = cloudByID[id]
-                let localHasDeletion = localDeleted.contains(Self.deletionKey(entity, id))
-                let cloudHasDeletion = cloudDeleted.contains(Self.deletionKey(entity, id))
-                var source: LibraryMergeSource?
+                let localState = itemState(
+                    id: id,
+                    values: localByID,
+                    deleted: localDeleted,
+                    entity: entity
+                )
+                let cloudState = itemState(
+                    id: id,
+                    values: cloudByID,
+                    deleted: cloudDeleted,
+                    entity: entity
+                )
+                let baseState = itemState(
+                    id: id,
+                    values: baseByID,
+                    deleted: baseDeleted,
+                    entity: entity
+                )
+                let conflict = LibraryMergeConflict(
+                    entity: entity,
+                    entityID: id
+                )
+                let selected = selectedState(
+                    local: localState,
+                    cloud: cloudState,
+                    base: baseState,
+                    conflict: conflict
+                )
+                let deletionKey = Self.deletionKey(entity, id)
 
-                if localHasDeletion != cloudHasDeletion,
-                   localValue != nil || cloudValue != nil {
-                    let conflict = LibraryMergeConflict(entity: entity, entityID: id)
-                    source = choicesByID[conflict.id]
-                    if source == nil { conflicts.append(conflict) }
-                } else if let localValue, let cloudValue, localValue != cloudValue {
-                    let conflict = LibraryMergeConflict(entity: entity, entityID: id)
-                    source = choicesByID[conflict.id]
-                    if source == nil { conflicts.append(conflict) }
-                }
-
-                let selected: T?
-                if let source {
-                    selected = source == .local ? localValue : cloudValue
-                    if source == .local ? localHasDeletion : cloudHasDeletion { continue }
-                } else if localHasDeletion || cloudHasDeletion {
-                    continue
-                } else {
-                    selected = localValue ?? cloudValue
-                }
-                if let selected {
-                    mergedDeleted.remove(Self.deletionKey(entity, id))
-                    result.append(selected)
+                switch selected {
+                case .value(let value):
+                    mergedDeleted.remove(deletionKey)
+                    result.append(value)
+                case .deleted:
+                    mergedDeleted.insert(deletionKey)
+                case .absent:
+                    mergedDeleted.remove(deletionKey)
                 }
             }
+
             return result
         }
 
-        var memberships: Set<RecipeCollectionMembership> = []
+        func membershipState(
+            _ membership: RecipeCollectionMembership,
+            values: Set<RecipeCollectionMembership>,
+            deleted: Set<String>
+        ) -> LibraryMergeState<RecipeCollectionMembership> {
+            if deleted.contains(Self.membershipDeletionKey(membership)) {
+                return .deleted
+            }
+            if values.contains(membership) {
+                return .value(membership)
+            }
+            return .absent
+        }
+
         let localMemberships = Set(local.collectionMemberships)
         let cloudMemberships = Set(cloud.collectionMemberships)
-        let allMemberships = localMemberships.union(cloudMemberships)
+        let baseMemberships = Set(ancestor.collectionMemberships)
+        var allMemberships = localMemberships
+            .union(cloudMemberships)
+            .union(baseMemberships)
+
+        for key in localDeleted.union(cloudDeleted).union(baseDeleted) {
+            if let membership = Self.membershipFromDeletionKey(key) {
+                allMemberships.insert(membership)
+            }
+        }
+
+        var memberships: Set<RecipeCollectionMembership> = []
         for membership in allMemberships {
             let key = Self.membershipDeletionKey(membership)
-            let localHasDeletion = localDeleted.contains(key)
-            let cloudHasDeletion = cloudDeleted.contains(key)
-            let existsLocally = localMemberships.contains(membership)
-            let existsInCloud = cloudMemberships.contains(membership)
-            if localHasDeletion != cloudHasDeletion,
-               existsLocally || existsInCloud {
-                let conflict = LibraryMergeConflict(entity: .collection, entityID: membership.collectionID)
-                guard let source = choicesByID[conflict.id] else {
-                    conflicts.append(conflict)
-                    continue
-                }
-                if source == .local ? existsLocally : existsInCloud {
-                    memberships.insert(membership)
-                    mergedDeleted.remove(key)
-                }
-            } else if !localHasDeletion && !cloudHasDeletion {
+            let conflict = LibraryMergeConflict(
+                entity: .membership,
+                entityID: membership.collectionID,
+                scopeID: key
+            )
+            let selected = selectedState(
+                local: membershipState(
+                    membership,
+                    values: localMemberships,
+                    deleted: localDeleted
+                ),
+                cloud: membershipState(
+                    membership,
+                    values: cloudMemberships,
+                    deleted: cloudDeleted
+                ),
+                base: membershipState(
+                    membership,
+                    values: baseMemberships,
+                    deleted: baseDeleted
+                ),
+                conflict: conflict
+            )
+
+            switch selected {
+            case .value:
+                mergedDeleted.remove(key)
                 memberships.insert(membership)
+            case .deleted:
+                mergedDeleted.insert(key)
+            case .absent:
+                mergedDeleted.remove(key)
             }
         }
 
         var merged = LibrarySnapshot(
-            recipes: merge(local.recipes, cloud.recipes, entity: .recipe),
-            groceries: merge(local.groceries, cloud.groceries, entity: .grocery),
-            mealPlan: merge(local.mealPlan, cloud.mealPlan, entity: .meal),
-            collections: merge(local.collections, cloud.collections, entity: .collection),
+            recipes: mergeItems(
+                local: local.recipes,
+                cloud: cloud.recipes,
+                base: ancestor.recipes,
+                entity: .recipe
+            ),
+            groceries: mergeItems(
+                local: local.groceries,
+                cloud: cloud.groceries,
+                base: ancestor.groceries,
+                entity: .grocery
+            ),
+            mealPlan: mergeItems(
+                local: local.mealPlan,
+                cloud: cloud.mealPlan,
+                base: ancestor.mealPlan,
+                entity: .meal
+            ),
+            collections: mergeItems(
+                local: local.collections,
+                cloud: cloud.collections,
+                base: ancestor.collections,
+                entity: .collection
+            ),
             collectionMemberships: Array(memberships),
             settings: local.settings,
             deletedEntities: mergedDeleted
         )
-        if local.settings != cloud.settings {
-            let conflict = LibraryMergeConflict(entity: .settings, entityID: nil)
-            if let source = choicesByID[conflict.id] {
-                merged.settings = source == .local ? local.settings : cloud.settings
-            } else {
-                conflicts.append(conflict)
-            }
+
+        let settingsConflict = LibraryMergeConflict(
+            entity: .settings,
+            entityID: nil
+        )
+        if local.settings == cloud.settings {
+            merged.settings = local.settings
+        } else if local.settings == ancestor.settings {
+            merged.settings = cloud.settings
+        } else if cloud.settings == ancestor.settings {
+            merged.settings = local.settings
+        } else if let source = choicesByID[settingsConflict.id] {
+            merged.settings = source == .local
+                ? local.settings
+                : cloud.settings
+        } else {
+            record(settingsConflict)
         }
-        guard conflicts.isEmpty else { return conflicts.sorted { $0.id < $1.id } }
+
+        resolveCollectionNameCollisions(
+            in: &merged,
+            local: local,
+            cloud: cloud,
+            choicesByID: choicesByID,
+            conflictsByID: &conflictsByID
+        )
+        resolveMealSlotCollisions(
+            in: &merged,
+            local: local,
+            cloud: cloud,
+            choicesByID: choicesByID,
+            conflictsByID: &conflictsByID
+        )
+
+        let conflicts = conflictsByID.values.sorted { $0.id < $1.id }
+        guard conflicts.isEmpty else {
+            return conflicts
+        }
 
         let recipeIDs = Set(merged.recipes.map(\.id))
         let collectionIDs = Set(merged.collections.map(\.id))
+
+        for membership in merged.collectionMemberships
+        where !recipeIDs.contains(membership.recipeID)
+            || !collectionIDs.contains(membership.collectionID) {
+            merged.deletedEntities?.insert(
+                Self.membershipDeletionKey(membership)
+            )
+        }
         merged.collectionMemberships.removeAll {
-            !recipeIDs.contains($0.recipeID) || !collectionIDs.contains($0.collectionID)
+            !recipeIDs.contains($0.recipeID)
+                || !collectionIDs.contains($0.collectionID)
         }
-        merged.mealPlan.removeAll { !recipeIDs.contains($0.recipeID) }
+
+        for entry in merged.mealPlan
+        where !recipeIDs.contains(entry.recipeID) {
+            merged.deletedEntities?.insert(
+                Self.deletionKey(.meal, entry.id)
+            )
+        }
+        merged.mealPlan.removeAll {
+            !recipeIDs.contains($0.recipeID)
+        }
+
         for index in merged.groceries.indices {
-            merged.groceries[index].recipeIDs.removeAll { !recipeIDs.contains($0) }
+            merged.groceries[index].recipeIDs.removeAll {
+                !recipeIDs.contains($0)
+            }
         }
+
         try commit(merged)
         return []
+    }
+
+    private func resolveCollectionNameCollisions(
+        in merged: inout LibrarySnapshot,
+        local: LibrarySnapshot,
+        cloud: LibrarySnapshot,
+        choicesByID: [String: LibraryMergeSource],
+        conflictsByID: inout [String: LibraryMergeConflict]
+    ) {
+        let groups = Dictionary(
+            grouping: merged.collections,
+            by: { normalized($0.name) }
+        )
+
+        for (nameKey, values) in groups where values.count > 1 {
+            let conflict = LibraryMergeConflict(
+                entity: .collection,
+                entityID: nil,
+                scopeID: "collection-name:\(nameKey)"
+            )
+            guard let source = choicesByID[conflict.id] else {
+                conflictsByID[conflict.id] = conflict
+                continue
+            }
+
+            let sourceCollections = source == .local
+                ? local.collections
+                : cloud.collections
+            guard let winner = sourceCollections.first(where: {
+                normalized($0.name) == nameKey
+            }) else {
+                conflictsByID[conflict.id] = conflict
+                continue
+            }
+
+            let losingIDs = Set(
+                values.map(\.id).filter { $0 != winner.id }
+            )
+            for losingID in losingIDs {
+                merged.deletedEntities?.insert(
+                    Self.deletionKey(.collection, losingID)
+                )
+            }
+            for membership in merged.collectionMemberships
+            where losingIDs.contains(membership.collectionID) {
+                merged.deletedEntities?.insert(
+                    Self.membershipDeletionKey(membership)
+                )
+            }
+            merged.collectionMemberships.removeAll {
+                losingIDs.contains($0.collectionID)
+            }
+            merged.collections.removeAll {
+                losingIDs.contains($0.id)
+            }
+        }
+    }
+
+    private func resolveMealSlotCollisions(
+        in merged: inout LibrarySnapshot,
+        local: LibrarySnapshot,
+        cloud: LibrarySnapshot,
+        choicesByID: [String: LibraryMergeSource],
+        conflictsByID: inout [String: LibraryMergeConflict]
+    ) {
+        let groups = Dictionary(
+            grouping: merged.mealPlan,
+            by: mealSlotKey
+        )
+
+        for (slotKey, values) in groups where values.count > 1 {
+            let conflict = LibraryMergeConflict(
+                entity: .meal,
+                entityID: nil,
+                scopeID: "meal-slot:\(slotKey)"
+            )
+            guard let source = choicesByID[conflict.id] else {
+                conflictsByID[conflict.id] = conflict
+                continue
+            }
+
+            let sourceMeals = source == .local
+                ? local.mealPlan
+                : cloud.mealPlan
+            guard let winner = sourceMeals.first(where: {
+                mealSlotKey($0) == slotKey
+            }) else {
+                conflictsByID[conflict.id] = conflict
+                continue
+            }
+
+            let losingIDs = Set(
+                values.map(\.id).filter { $0 != winner.id }
+            )
+            for losingID in losingIDs {
+                merged.deletedEntities?.insert(
+                    Self.deletionKey(.meal, losingID)
+                )
+            }
+            merged.mealPlan.removeAll {
+                losingIDs.contains($0.id)
+            }
+        }
+    }
+
+    private func mealSlotKey(_ entry: MealPlanEntry) -> String {
+        let day = Calendar.current
+            .startOfDay(for: entry.date)
+            .timeIntervalSinceReferenceDate
+        return "\(day):\(entry.slot.rawValue)"
     }
 
     private var snapshot: LibrarySnapshot {
@@ -820,8 +1155,26 @@ public final class RecipeStore {
         return UUID(uuidString: String(key.dropFirst(entity.rawValue.count + 1)))
     }
 
-    private static func membershipDeletionKey(_ membership: RecipeCollectionMembership) -> String {
+    private static func membershipDeletionKey(
+        _ membership: RecipeCollectionMembership
+    ) -> String {
         "membership:\(membership.collectionID.uuidString):\(membership.recipeID.uuidString)"
+    }
+
+    private static func membershipFromDeletionKey(
+        _ key: String
+    ) -> RecipeCollectionMembership? {
+        let parts = key.split(separator: ":")
+        guard parts.count == 3,
+              parts[0] == "membership",
+              let collectionID = UUID(uuidString: String(parts[1])),
+              let recipeID = UUID(uuidString: String(parts[2])) else {
+            return nil
+        }
+        return RecipeCollectionMembership(
+            recipeID: recipeID,
+            collectionID: collectionID
+        )
     }
 
     private func normalized(_ text: String) -> String {
