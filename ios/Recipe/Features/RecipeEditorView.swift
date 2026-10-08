@@ -40,7 +40,11 @@ struct RecipeEditorView: View {
                     RecipeImage(recipe: draft, height: 180).clipShape(RoundedRectangle(cornerRadius: 18))
                         .listRowInsets(EdgeInsets())
                     PhotosPicker(selection: $photo, matching: .images) {
-                        Label(photoLabel, systemImage: "photo")
+                        Label {
+                            Text(LocalizedStringKey(photoLabel))
+                        } icon: {
+                            Image(systemName: "photo")
+                        }
                     }.disabled(isLoadingPhoto)
                     if isLoadingPhoto { ProgressView("Preparing photo…") }
                 }
