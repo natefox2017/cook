@@ -37,8 +37,13 @@ private func temporaryShareContainer() throws -> URL {
 
     // Merely reopening is not a server ACK.
     #expect(try reopened.pendingReceipts().count == 1)
-    try reopened.acknowledge(first, jobID: UUID())
-    #expect(try reopened.pendingReceipts().isEmpty)
+    let ownerID = UUID()
+    let jobID = UUID()
+    try reopened.acknowledge(first, jobID: jobID, ownerID: ownerID)
+    #expect(try reopened.pendingReceipts(for: ownerID).isEmpty)
+    #expect(try reopened.acknowledgedJobID(for: first, ownerID: ownerID) == jobID)
+    // No authenticated owner must never be treated as cloud-acknowledged.
+    #expect(try reopened.pendingReceipts(for: nil) == [first])
 }
 
 @Test func sharedReceiptKeepsAmbiguousAndUnicodeText() throws {
@@ -126,9 +131,10 @@ private func temporaryShareContainer() throws -> URL {
     let inbox = try RecipeShareInbox(containerURL: container)
     let pending = try inbox.receive("https://example.org/private-recipe", as: .url)
     let acknowledged = try inbox.receive("Salt to taste", as: .text)
-    try inbox.acknowledge(acknowledged, jobID: UUID())
+    let ownerID = UUID()
+    try inbox.acknowledge(acknowledged, jobID: UUID(), ownerID: ownerID)
 
-    #expect(try inbox.pendingReceipts().map(\.id) == [pending.id])
+    #expect(try inbox.pendingReceipts(for: ownerID).map(\.id) == [pending.id])
     try inbox.eraseAllLocalReceipts()
 
     #expect(try inbox.pendingReceipts().isEmpty)
@@ -138,4 +144,24 @@ private func temporaryShareContainer() throws -> URL {
     #expect(throws: (any Error).self) {
         try inbox.source(for: acknowledged)
     }
+}
+
+@Test func acknowledgementBelongsToAccountNotSourceAlone() throws {
+    let container = try temporaryShareContainer()
+    defer { try? FileManager.default.removeItem(at: container) }
+
+    let inbox = try RecipeShareInbox(containerURL: container)
+    let receipt = try inbox.receive("https://example.org/shared", as: .url)
+    let accountA = UUID()
+    let accountB = UUID()
+    let jobID = UUID()
+
+    try inbox.acknowledge(receipt, jobID: jobID, ownerID: accountA)
+    #expect(try inbox.pendingReceipts(for: accountA).isEmpty)
+    #expect(try inbox.acknowledgedJobID(for: receipt, ownerID: accountA) == jobID)
+
+    // Another signed-in account must not inherit A's queue acknowledgement.
+    #expect(try inbox.acknowledgedJobID(for: receipt, ownerID: accountB) == nil)
+    #expect(try inbox.pendingReceipts(for: accountB).map(\.id) == [receipt.id])
+    #expect(try inbox.source(for: receipt) == "https://example.org/shared")
 }
