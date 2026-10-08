@@ -234,8 +234,10 @@ private struct CollectionDetailView: View {
     var body: some View {
         Group {
             if let collection {
+                // Reuse one filtered/sorted result for both the empty state and rows.
+                let recipes = visibleRecipes
                 List {
-                    if visibleRecipes.isEmpty {
+                    if recipes.isEmpty {
                         ContentUnavailableView(
                             searchText.isEmpty ? "No recipes yet" : "No recipes found",
                             systemImage: "folder",
@@ -246,7 +248,7 @@ private struct CollectionDetailView: View {
                             )
                         )
                     } else {
-                        ForEach(visibleRecipes) { recipe in
+                        ForEach(recipes) { recipe in
                             NavigationLink {
                                 RecipeDetailView(recipeID: recipe.id)
                             } label: {
