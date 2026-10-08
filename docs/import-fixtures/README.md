@@ -26,6 +26,10 @@ contract.
 
 The validator uses JSON Schema Draft 2020-12, checks external OpenAPI references, and checks all positive/negative fixtures. The contract and validator require an HTTPS hostname, reject credentials or nonstandard ports, and reject empty or whitespace-only text. The extra URL pattern is needed because generic JSON Schema `uri` format alone accepts hostless HTTPS URIs. These local checks are not a production URL fetcher or SSRF defense. A schema check is not an iOS build, deployed API check or real source import.
 
+For the full manual Worker/shared-function regression command, results and
+remaining SQL/Apple limits, see [Issue #134 execution](../DEVELOPMENT/validation/ISSUE_134.md).
+This command uses the worker import map and frozen lockfile; it does not enable CI.
+
 ## Evidence acquisition
 
 `contract-examples.json` contains synthetic requests, receipts, progress states, errors and evidence-backed partial recipes; `example.org` is an inert example hostname, not a verified source. `observations.json` records public help/documentation observations with explicit null HTTP status; it does **not** claim extraction, a downloaded TikTok clip or a working backend.
