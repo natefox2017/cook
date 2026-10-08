@@ -249,11 +249,25 @@ struct MealPlanView: View {
 
 // Date templates are resolved for the active SwiftUI locale, including the
 // English UI-test override and the iPhone's preferred language in production.
+/// Render date fields using value-type formatting rather than allocating a
+/// DateFormatter for each of the week-strip cells on every SwiftUI update.
 private func localizedMealDate(_ date: Date, template: String, locale: Locale) -> String {
-    let formatter = DateFormatter()
-    formatter.locale = locale
-    formatter.setLocalizedDateFormatFromTemplate(template)
-    return formatter.string(from: date)
+    let style: Date.FormatStyle
+    switch template {
+    case "EEE":
+        style = Date.FormatStyle().weekday(.abbreviated)
+    case "d":
+        style = Date.FormatStyle().day()
+    case "MMM d":
+        style = Date.FormatStyle().month(.abbreviated).day()
+    case "MMM d, yyyy":
+        style = Date.FormatStyle().month(.abbreviated).day().year()
+    case "EEEE, MMMM d, yyyy":
+        style = Date.FormatStyle().weekday(.wide).month(.wide).day().year()
+    default:
+        style = Date.FormatStyle(date: .abbreviated, time: .omitted)
+    }
+    return date.formatted(style.locale(locale))
 }
 
 private struct MealPlanPickerPresentation: Identifiable {

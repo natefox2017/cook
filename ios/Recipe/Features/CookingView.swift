@@ -3,6 +3,21 @@
 
 import RecipeCore
 import SwiftUI
+
+/// Shared numeric timer clock; spoken durations remain locale-aware in their views.
+private enum CookingClockText {
+    static func format(_ seconds: Int) -> String {
+        if seconds >= 3_600 {
+            return String(
+                format: "%d:%02d:%02d",
+                seconds / 3_600,
+                seconds / 60 % 60,
+                seconds % 60
+            )
+        }
+        return String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+}
 import UIKit
 import UserNotifications
 
@@ -391,7 +406,7 @@ struct CookingView: View {
                                     Text(
                                         remaining == 0
                                             ? "Time’s up"
-                                            : String(localized: LocalizedStringResource("\(clockText(remaining)) remaining", locale: RecipeLanguage.active))
+                                            : String(localized: LocalizedStringResource("\(CookingClockText.format(remaining)) remaining", locale: RecipeLanguage.active))
                                     )
                                     .font(RecipeTheme.text(12, relativeTo: .caption))
                                     .monospacedDigit()
@@ -631,7 +646,7 @@ struct CookingView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(active.label)
                             .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
-                        Text(remaining == 0 ? String(localized: LocalizedStringResource("Time’s up", locale: RecipeLanguage.active)) : clockText(remaining))
+                        Text(remaining == 0 ? String(localized: LocalizedStringResource("Time’s up", locale: RecipeLanguage.active)) : CookingClockText.format(remaining))
                             .font(RecipeTheme.text(20, weight: .semibold, relativeTo: .title3))
                             .monospacedDigit()
                     }
@@ -1150,17 +1165,6 @@ struct CookingView: View {
         }
     }
 
-    private func clockText(_ seconds: Int) -> String {
-        if seconds >= 3_600 {
-            return String(
-                format: "%d:%02d:%02d",
-                seconds / 3_600,
-                seconds / 60 % 60,
-                seconds % 60
-            )
-        }
-        return String(format: "%02d:%02d", seconds / 60, seconds % 60)
-    }
 }
 
 private struct PersistedActiveTimer: Identifiable, Codable {
@@ -1275,7 +1279,7 @@ private struct CookingStepTimerPanel: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Text(clockText(remaining))
+                Text(CookingClockText.format(remaining))
                     .font(RecipeTheme.title(48))
                     .monospacedDigit()
                     .contentTransition(.numericText(countsDown: true))
@@ -1346,17 +1350,6 @@ private struct CookingStepTimerPanel: View {
         }
     }
 
-    private func clockText(_ seconds: Int) -> String {
-        if seconds >= 3_600 {
-            return String(
-                format: "%d:%02d:%02d",
-                seconds / 3_600,
-                seconds / 60 % 60,
-                seconds % 60
-            )
-        }
-        return String(format: "%02d:%02d", seconds / 60, seconds % 60)
-    }
 
     private func durationText(_ seconds: Int) -> String {
         return Duration.seconds(seconds).formatted(
