@@ -17,7 +17,7 @@ This document is the UI completeness checklist for the current codebase. Product
 - Edit local profile — implemented.
 - Settings hub — implemented.
 - RecipePouch Account — implemented UI + Supabase Auth actions: sign in/sign up/forgot password/password recovery/Sign in with Apple/sign out; provider delivery still requires production verification.
-- Subscription — implemented UI + StoreKit 2 service: products/purchase/status/restore/manage; real App Store products deferred.
+- Subscription — implemented UI + StoreKit 2 service: configured auto-renewable products, purchase, verified trial/active/grace/expired/revoked status, explicit restore and Apple management; real App Store products and Sandbox acceptance remain deferred.
 - Cloud Sync — implemented settings/status/mode page; production Supabase connection deferred.
 - Notifications — implemented.
 - Appearance — implemented.

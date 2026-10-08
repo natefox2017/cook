@@ -181,7 +181,7 @@ Implemented in branch `codex/v1-production-integrations`:
 External configuration still blocks production-complete status:
 - Supabase project `cookapp` is ACTIVE_HEALTHY. Owner-scoped snapshot/RLS/revision migrations are applied; client two-account/two-device acceptance is still pending.
 - Apple Developer Sign in with Apple capability/provider settings are not available in this environment.
-- App Store Connect subscription product IDs/offers are not available; the app reads them from `RECIPE_SUBSCRIPTION_PRODUCT_IDS` (retained build setting) and never invents price/trial terms.
+- App Store Connect subscription product IDs/offers are not available; the app reads them from `RECIPE_SUBSCRIPTION_PRODUCT_IDS` (retained build setting) and never invents price/trial terms. The client now distinguishes verified trial, active, grace, billing retry, expired, revoked, and unavailable states, but production purchase/restore remains unverified until real IDs and a Sandbox account are supplied.
 - The Share Extension source exists, but its Xcode extension target/App Group entitlement/provisioning must be created with the Apple team before host-app testing.
 - Social-video AI backend worker/provider credentials remain undeployed.
 

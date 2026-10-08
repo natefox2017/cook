@@ -191,9 +191,9 @@ private struct RecipeRootView: View {
             }
         }
         .task {
-            // Recover verified StoreKit entitlements even when the user never
-            // opens the subscription screen in this process.
-            await subscriptions.refreshEntitlements()
+            // Load StoreKit product metadata so lifecycle status is available
+            // even when the user never opens the subscription screen.
+            await subscriptions.load()
         }
         .onChange(of: auth.state) { _, state in
             // An ACK from the previous account must not hide a receipt from
@@ -232,7 +232,11 @@ private struct RecipeRootView: View {
                 }
             }
             Task {
-                await subscriptions.refreshEntitlements()
+                if subscriptions.products.isEmpty {
+                    await subscriptions.load(force: true)
+                } else {
+                    await subscriptions.refreshEntitlements()
+                }
             }
         }
     }
