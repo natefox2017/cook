@@ -279,7 +279,7 @@ public enum RecipeDocumentParser {
         let suffix = String(text[range.upperBound..<suffixEnd]).lowercased()
 
         let ambiguousPrefix = #"(?:about|approximately|approx\.?|around|roughly|up to|at least|at most|more than|less than|no more than|no less than|minimum of|maximum of|(?:between\s+)?\d+\s*(?:(?:seconds?|secs?|minutes?|mins?|hours?|hrs?)\s*)?(?:-|–|—|to|and|or))\s*$"#
-        let ambiguousSuffix = #"^(?:(?:\s|\p{P})*(?:or\s+)?until\b|\s*(?:-|–|—|to|and|or)\s*\d+|\s*(?:or\s+)?(?:longer|more|less)\b|\s*(?:minimum|maximum)\b)"#
+        let ambiguousSuffix = #"^(?:(?:\s|\p{P})*(?:or\s+)?until\b|\s*(?:-|–|—|to|and|or)\s*\d+|\s*(?:or\s+)?(?:longer|more|less)\b|\s*(?:minimum|maximum)\b|\s*(?:at\s+(?:least|most)|no\s+(?:more|less)\s+than|more\s+than|less\s+than)\b)"#
 
         if prefix.range(of: ambiguousPrefix, options: .regularExpression) != nil { return true }
         if suffix.range(of: ambiguousSuffix, options: .regularExpression) != nil { return true }
