@@ -118,11 +118,11 @@ struct RecipeRemoteImportService {
 
         // Keep the original text unchanged; the server expects a source field
         // named exactly "url" or "text".
-        let body: [String: String] = [
+        var body = [
             "client_request_id": clientRequestID.uuidString,
-            "input_type": inputType,
-            inputType: originalSource
+            "input_type": inputType
         ]
+        body[inputType] = originalSource
         let data = try JSONEncoder().encode(body)
         return try await send(
             method: "POST",
