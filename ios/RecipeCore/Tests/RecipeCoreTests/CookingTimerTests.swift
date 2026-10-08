@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Tests cooking timer start, pause, reset, and deadline behavior.
+
 import Foundation
 import Testing
 @testable import RecipeCore
