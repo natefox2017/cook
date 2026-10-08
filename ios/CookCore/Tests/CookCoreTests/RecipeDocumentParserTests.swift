@@ -242,3 +242,16 @@ func trailingApproximationPhrasesDoNotBecomePreciseTimers(_ instruction: String)
     let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/approx-phrase")!))
     #expect(recipe.steps[0].timers.isEmpty)
 }
+
+
+@Test(arguments: [
+    "Bake for 10 minutes. About halfway through, rotate the pan.",
+    "Bake for 10 minutes! Around halfway through, check the color.",
+    "Bake for 10 minutes? Roughly halfway through, rotate the tray."
+])
+func approximationInNextSentenceDoesNotInvalidateExactTimer(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Exact timer\",\"recipeIngredient\":[\"1 cup flour\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/exact-timer")!))
+    #expect(recipe.steps[0].timers.map(\.durationSeconds) == [600])
+}
