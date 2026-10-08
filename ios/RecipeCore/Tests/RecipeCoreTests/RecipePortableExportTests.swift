@@ -98,3 +98,30 @@ import Testing
     #expect(html.contains("RecipePouch Recipes"))
     #expect(!html.contains("<article"))
 }
+
+@Test
+func offlineHTMLAssociatesCollectionsOnlyWithTheirRecipes() throws {
+    let first = Recipe(title: "Apple pie")
+    let second = Recipe(title: "Banana bread")
+    let alpha = RecipeCollection(name: "Alpha")
+    let zeta = RecipeCollection(name: "Zeta")
+
+    let snapshot = RecipeLibrarySnapshot(
+        recipes: [first, second],
+        collections: [zeta, alpha],
+        collectionMemberships: [
+            RecipeCollectionMembership(recipeID: first.id, collectionID: zeta.id),
+            RecipeCollectionMembership(recipeID: first.id, collectionID: alpha.id)
+        ]
+    )
+
+    let html = try #require(
+        String(data: RecipePortableExport.html(snapshot: snapshot), encoding: .utf8)
+    )
+    let secondArticle = try #require(html.range(of: "<article id=\\"recipe-2\\">"))
+    let appleArticle = html[..<secondArticle.lowerBound]
+    let bananaArticle = html[secondArticle.lowerBound...]
+
+    #expect(appleArticle.contains("<strong>Collections:</strong> Alpha, Zeta"))
+    #expect(!bananaArticle.contains("<strong>Collections:</strong>"))
+}
