@@ -523,22 +523,62 @@ final class RecipeUITests: XCTestCase {
 
     @MainActor
     func testSettingsRemainReachableAtAccessibilityDynamicType() {
-        let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--uitesting-locale", "en"]
-        app.launchEnvironment["UIPreferredContentSizeCategoryName"] =
-            "UICTContentSizeCategoryAccessibilityXXXL"
-        app.launch()
+        let locales: [(String, String, String, String, String, String, String)] = [
+            (
+                "en", "en_US", "Profile", "Settings", "RecipePouch Account", "Subscription",
+                "Cloud Sync"
+            ),
+            (
+                "ja", "ja_JP", "マイページ", "設定", "RecipePouch アカウント", "サブスクリプション",
+                "クラウド同期"
+            ),
+        ]
 
-        XCTAssertTrue(app.buttons["Profile"].waitForExistence(timeout: 10))
-        app.buttons["Profile"].tap()
-        XCTAssertTrue(app.buttons["Settings"].waitForExistence(timeout: 8))
-        app.buttons["Settings"].tap()
+        for (
+            language, region, profileLabel, settingsTitle, accountLabel, subscriptionLabel,
+            cloudSyncLabel
+        ) in locales {
+            let app = XCUIApplication()
+            app.launchArguments = [
+                "--uitesting",
+                "--uitesting-locale", language,
+                "-AppleLanguages", "(\(language))",
+                "-AppleLocale", region,
+            ]
+            app.launchEnvironment["UIPreferredContentSizeCategoryName"] =
+                "UICTContentSizeCategoryAccessibilityXXXL"
+            app.launch()
 
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["RecipePouch Account"].exists)
-        XCTAssertTrue(app.buttons["Subscription"].exists)
-        XCTAssertTrue(app.buttons["Cloud Sync"].exists)
-        attachScreenshot("Settings accessibility text size", app: app)
+            let profileTab = app.tabBars.buttons[profileLabel]
+            XCTAssertTrue(profileTab.waitForExistence(timeout: 10))
+            profileTab.tap()
+
+            let settingsLink = app.buttons[settingsTitle]
+            XCTAssertTrue(settingsLink.waitForExistence(timeout: 8))
+            settingsLink.tap()
+
+            XCTAssertTrue(app.navigationBars[settingsTitle].waitForExistence(timeout: 8))
+
+            let accountRow = app.buttons[accountLabel]
+            XCTAssertTrue(accountRow.waitForExistence(timeout: 8))
+            XCTAssertLessThanOrEqual(
+                accountRow.frame.height,
+                110,
+                "The \(language) account row should stay on one line at Accessibility XXXL"
+            )
+
+            let subscriptionRow = app.buttons[subscriptionLabel]
+            XCTAssertTrue(subscriptionRow.waitForExistence(timeout: 8))
+            XCTAssertLessThanOrEqual(
+                subscriptionRow.frame.height,
+                110,
+                "The \(language) subscription row should stay on one line at Accessibility XXXL"
+            )
+
+            XCTAssertTrue(app.buttons[cloudSyncLabel].exists)
+            attachScreenshot("Settings Accessibility XXXL \(language)", app: app)
+            app.terminate()
+        }
     }
 
     @MainActor

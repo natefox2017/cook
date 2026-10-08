@@ -104,6 +104,8 @@ private struct SettingsRow: View {
             // These labels are static product copy routed through a shared
             // String helper, not user-authored settings values.
             Text(LocalizedStringKey(title))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
         }
         .frame(minHeight: 50)
     }
