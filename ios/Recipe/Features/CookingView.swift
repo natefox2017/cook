@@ -477,10 +477,15 @@ struct CookingView: View {
             } label: {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     let runningCount = session.runningTimerCount(at: context.date)
-                    Label(
-                        runningCount > 0 ? "Timers \(runningCount)" : "Timers",
-                        systemImage: "timer"
-                    )
+                    Label {
+                        if runningCount > 0 {
+                            Text("\(runningCount) timer")
+                        } else {
+                            Text("Timers")
+                        }
+                    } icon: {
+                        Image(systemName: "timer")
+                    }
                 }
             }
             .disabled(recipe == nil)
@@ -685,7 +690,7 @@ struct CookingView: View {
                 Section("Timer") {
                     TextField("Name", text: $manualTimerLabel)
                     Stepper(
-                        "\(manualTimerMinutes) \(manualTimerMinutes == 1 ? "minute" : "minutes")",
+                        "\(manualTimerMinutes) minute",
                         value: $manualTimerMinutes,
                         in: 1...720
                     )

@@ -163,7 +163,14 @@ struct RecipeDetailView: View {
 
     @ViewBuilder
     private func recipeMetadata(_ recipe: Recipe) -> some View {
-        if let minutes = recipe.totalMinutes { Label("\(minutes) min", systemImage: "clock") }
+        if let minutes = recipe.totalMinutes {
+            Label(
+                Duration.seconds(minutes * 60).formatted(
+                    .units(width: .abbreviated, maximumUnitCount: 1).locale(locale)
+                ),
+                systemImage: "clock"
+            )
+        }
         if let originalServings = recipe.servings, originalServings > 0 {
             Label("\(originalServings) servings", systemImage: "person.2")
         }
@@ -444,7 +451,11 @@ private struct RecipeIngredientsSelectionView: View {
         List {
             Section {
                 if let original = recipe.servings, original > 0 {
-                    Stepper("\(servings) \(servings == 1 ? "serving" : "servings")", value: $servings, in: 1...max(100, max(original, initialServings)))
+                    Stepper(
+                        "\(servings) servings",
+                        value: $servings,
+                        in: 1...max(100, max(original, initialServings))
+                    )
                 } else {
                     Text("Original amounts · servings not specified").foregroundStyle(.secondary)
                 }
