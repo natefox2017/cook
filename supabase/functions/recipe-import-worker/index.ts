@@ -21,7 +21,7 @@ interface Job {
   updated_at: string;
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const now = () => new Date().toISOString();
 
 function secureEqual(left: string, right: string): boolean {
@@ -63,7 +63,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data: messages, error: readError } = await admin.rpc(
-    "recipe_import_queue_read",
+    "recipe_import_v1_queue_read",
     { p_vt: 120, p_qty: 5 },
   );
   if (readError) {
@@ -216,10 +216,12 @@ Deno.serve(async (request: Request): Promise<Response> => {
   return Response.json({ completed, failed, deferred });
 
   async function archive(messageID: number): Promise<void> {
-    const { error } = await admin.rpc(
-      "recipe_import_queue_archive",
+    const { data, error } = await admin.rpc(
+      "recipe_import_v1_queue_archive",
       { p_msg_id: messageID },
     );
-    if (error) throw error;
+    if (error || data !== true) {
+      throw error ?? new Error("Queue message was not archived");
+    }
   }
 });

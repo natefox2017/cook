@@ -1,8 +1,22 @@
 -- Developer: gengyun
 -- Purpose: Create owner-scoped, versioned import jobs with transactional PGMQ admission.
 
--- The existing durable pgmq.q_recipe_import queue is reused. All three
--- operations below are one Postgres transaction per RPC request, so an
+-- V1 owns a dedicated queue so legacy producers and consumers can continue
+-- using recipe_import without ever seeing this contract's messages.
+create extension if not exists pgmq;
+
+do $$
+begin
+    if not exists (
+        select 1 from pgmq.list_queues()
+        where queue_name = 'recipe_import_v1'
+    ) then
+        perform pgmq.create('recipe_import_v1');
+    end if;
+end;
+$$;
+
+-- All operations below are one Postgres transaction per RPC request, so an
 -- unsuccessful enqueue cannot leave a job falsely marked queued.
 create table if not exists public.recipe_import_jobs (
     id uuid primary key default gen_random_uuid(),
@@ -158,7 +172,7 @@ begin
     -- pgmq uses a logged queue. Message send and job status commit together.
     select s.send into v_message_id
     from pgmq.send(
-        'recipe_import'::text,
+        'recipe_import_v1'::text,
         pg_catalog.jsonb_build_object(
             'contract_version', 1,
             'job_id', v_job.id,
@@ -224,7 +238,7 @@ begin
 
     select s.send into v_message_id
     from pgmq.send(
-        'recipe_import'::text,
+        'recipe_import_v1'::text,
         pg_catalog.jsonb_build_object(
             'contract_version', 1,
             'job_id', v_job.id,
@@ -321,4 +335,55 @@ $$;
 revoke all on function public.claim_recipe_import_job(uuid, bigint)
     from public, anon, authenticated;
 grant execute on function public.claim_recipe_import_job(uuid, bigint)
+    to service_role;
+
+-- These wrappers expose only the V1 queue to its service-only worker. The
+-- legacy recipe_import_queue_* RPCs remain bound to the legacy recipe_import
+-- queue and are not called by this worker.
+create or replace function public.recipe_import_v1_queue_read(
+    p_vt integer,
+    p_qty integer
+)
+returns table (
+    msg_id bigint,
+    read_ct bigint,
+    enqueued_at timestamptz,
+    vt timestamptz,
+    message jsonb
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    if p_vt is null or p_vt < 1 or p_vt > 600
+       or p_qty is null or p_qty < 1 or p_qty > 20 then
+        raise exception 'INVALID_QUEUE_READ' using errcode = '22023';
+    end if;
+
+    return query
+    select m.msg_id, m.read_ct::bigint, m.enqueued_at, m.vt, m.message
+    from pgmq.read('recipe_import_v1', p_vt, p_qty) as m;
+end;
+$$;
+
+revoke all on function public.recipe_import_v1_queue_read(integer, integer)
+    from public, anon, authenticated;
+grant execute on function public.recipe_import_v1_queue_read(integer, integer)
+    to service_role;
+
+create or replace function public.recipe_import_v1_queue_archive(
+    p_msg_id bigint
+)
+returns boolean
+language sql
+security definer
+set search_path = ''
+as $$
+    select pgmq.archive('recipe_import_v1', p_msg_id);
+$$;
+
+revoke all on function public.recipe_import_v1_queue_archive(bigint)
+    from public, anon, authenticated;
+grant execute on function public.recipe_import_v1_queue_archive(bigint)
     to service_role;
