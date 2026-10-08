@@ -1,6 +1,169 @@
+// Developer: gengyun
+// Purpose: Provides the legacy RecipeApp recipe detail screen and actions.
+
 import SwiftUI
-struct RecipeDetailView:View{
- @Environment(AppStore.self)private var store;let recipeID:UUID;@State private var edit=false;@State private var cooking=false;@State private var servings=2
- var recipe:Recipe?{store.recipes.first(where:{$0.id==recipeID})}
- var body:some View{Group{if let r=recipe{ScrollView{VStack(alignment:.leading,spacing:22){RoundedRectangle(cornerRadius:26).fill(.green.opacity(0.12)).frame(height:250).overlay(Image(systemName:"fork.knife").font(.system(size:64)).foregroundStyle(RecipeTheme.green));Text(r.title).font(RecipeTheme.title());HStack{Label(r.minutes>0 ? "\(r.minutes) min":"Time unknown",systemImage:"clock");Spacer();Stepper("\(servings) servings",value:$servings,in:1...12)}.font(.subheadline);if r.needsReview{Label("This import needs a quick review.",systemImage:"exclamationmark.circle").foregroundStyle(.orange)};if let s=r.sourceURL,let u=URL(string:s){Link("Open original source",destination:u)};Text("Ingredients").font(.title2.bold());ForEach(r.ingredients){x in HStack{Text(x.name);Spacer();Text(x.amount).foregroundStyle(.secondary)}};Text("Steps").font(.title2.bold());ForEach(Array(r.steps.enumerated()),id:\.element.id){i,s in HStack(alignment:.top){Text("\(i+1)").font(.headline).frame(width:28,height:28).background(.green.opacity(0.12),in:Circle());Text(s.text)}};Button("Start Cooking"){cooking=true}.buttonStyle(PrimaryButtonStyle()).disabled(r.steps.isEmpty);Button("Add ingredients to groceries"){store.addGroceries(from:r,servings:servings)}.buttonStyle(.bordered).frame(maxWidth:.infinity).disabled(r.ingredients.isEmpty)}.padding()}.background(RecipeTheme.paper).navigationTitle("Recipe").navigationBarTitleDisplayMode(.inline).toolbar{Button{store.toggleFavorite(r.id)}label:{Image(systemName:r.isFavorite ? "heart.fill":"heart")};Button("Edit"){edit=true}}.sheet(isPresented:$edit){NavigationStack{RecipeEditorView(recipe:r)}}.fullScreenCover(isPresented:$cooking){CookingModeView(recipe:r)}.onAppear{servings=max(r.servings,1)}}else{ContentUnavailableView("Recipe unavailable",systemImage:"exclamationmark.triangle")}}}
+
+struct RecipeDetailView: View {
+    @Environment(AppStore.self) private var store
+
+    let recipeID: UUID
+
+    @State private var isEditing = false
+    @State private var isCooking = false
+    @State private var servings = 2
+
+    private var recipe: Recipe? {
+        store.recipes.first { $0.id == recipeID }
+    }
+
+    var body: some View {
+        Group {
+            if let recipe {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 22) {
+                        hero
+                        Text(recipe.title)
+                            .font(RecipeTheme.title())
+
+                        HStack {
+                            Label(
+                                recipe.minutes > 0
+                                    ? "(recipe.minutes) min"
+                                    : "Time unknown",
+                                systemImage: "clock"
+                            )
+                            Spacer()
+                            Stepper(
+                                "(servings) servings",
+                                value: $servings,
+                                in: 1...12
+                            )
+                        }
+                        .font(.subheadline)
+
+                        if recipe.needsReview {
+                            Label(
+                                "This import needs a quick review.",
+                                systemImage: "exclamationmark.circle"
+                            )
+                            .foregroundStyle(.orange)
+                        }
+
+                        sourceLink(recipe)
+                        ingredients(recipe)
+                        steps(recipe)
+
+                        Button("Start Cooking") {
+                            isCooking = true
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .disabled(recipe.steps.isEmpty)
+
+                        Button("Add ingredients to groceries") {
+                            store.addGroceries(
+                                from: recipe,
+                                servings: servings
+                            )
+                        }
+                        .buttonStyle(.bordered)
+                        .frame(maxWidth: .infinity)
+                        .disabled(recipe.ingredients.isEmpty)
+                    }
+                    .padding()
+                }
+                .background(RecipeTheme.paper)
+                .navigationTitle("Recipe")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    Button {
+                        store.toggleFavorite(recipe.id)
+                    } label: {
+                        Image(
+                            systemName: recipe.isFavorite
+                                ? "heart.fill"
+                                : "heart"
+                        )
+                    }
+
+                    Button("Edit") {
+                        isEditing = true
+                    }
+                }
+                .sheet(isPresented: $isEditing) {
+                    NavigationStack {
+                        RecipeEditorView(recipe: recipe)
+                    }
+                }
+                .fullScreenCover(isPresented: $isCooking) {
+                    CookingModeView(recipe: recipe)
+                }
+                .onAppear {
+                    servings = max(recipe.servings, 1)
+                }
+            } else {
+                ContentUnavailableView(
+                    "Recipe unavailable",
+                    systemImage: "exclamationmark.triangle"
+                )
+            }
+        }
+    }
+
+    private var hero: some View {
+        RoundedRectangle(cornerRadius: 26)
+            .fill(.green.opacity(0.12))
+            .frame(height: 250)
+            .overlay {
+                Image(systemName: "fork.knife")
+                    .font(.system(size: 64))
+                    .foregroundStyle(RecipeTheme.green)
+            }
+    }
+
+    @ViewBuilder
+    private func sourceLink(_ recipe: Recipe) -> some View {
+        if
+            let sourceURL = recipe.sourceURL,
+            let url = URL(string: sourceURL)
+        {
+            Link("Open original source", destination: url)
+        }
+    }
+
+    private func ingredients(_ recipe: Recipe) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Ingredients")
+                .font(.title2.bold())
+
+            ForEach(recipe.ingredients) { ingredient in
+                HStack {
+                    Text(ingredient.name)
+                    Spacer()
+                    Text(ingredient.amount)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private func steps(_ recipe: Recipe) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Steps")
+                .font(.title2.bold())
+
+            ForEach(Array(recipe.steps.enumerated()), id: .element.id) { index, step in
+                HStack(alignment: .top) {
+                    Text("(index + 1)")
+                        .font(.headline)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            .green.opacity(0.12),
+                            in: Circle()
+                        )
+
+                    Text(step.text)
+                }
+            }
+        }
+    }
 }
