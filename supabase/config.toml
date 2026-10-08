@@ -1,0 +1,11 @@
+# Developer: gengyun
+# Purpose: Keep import API user-authenticated and cron worker secret-authenticated.
+# This is a focused function configuration; no API/provider secrets live here.
+
+[functions.recipe-imports]
+verify_jwt = true
+
+[functions.recipe-import-worker]
+# Worker authenticates an explicit high-entropy server-side secret itself.
+# Do not expose the secret to iOS or any public client.
+verify_jwt = false

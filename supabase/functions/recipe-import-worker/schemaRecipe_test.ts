@@ -1,0 +1,91 @@
+// Developer: gengyun
+// Purpose: Verify conservative Schema.org Recipe JSON-LD extraction and review outcomes.
+
+import { assertEquals, assertStringIncludes } from "jsr:@std/assert@1.0.14";
+import { parseSchemaOrgRecipePage } from "./schemaRecipe.ts";
+
+const fixture = async (name: string): Promise<string> =>
+  await Deno.readTextFile(new URL(`./fixtures/${name}`, import.meta.url));
+
+const source = {
+  originalURL: "https://recipes.example/shared",
+  canonicalURL: "https://recipes.example/canonical",
+  platformHint: "example",
+};
+
+Deno.test("extracts only explicit Schema.org Recipe fields from @graph", async () => {
+  const result = parseSchemaOrgRecipePage({
+    id: "123e4567-e89b-12d3-a456-426614174000",
+    html: await fixture("complete-recipe.html"),
+    source,
+  });
+
+  assertEquals(result.status, "ready");
+  assertEquals(result.fields.title.raw_value, "Weeknight soup");
+  assertEquals(
+    result.fields["ingredients[1].raw_text"].raw_value,
+    "salt to taste",
+  );
+  assertEquals(result.fields["ingredients[1].amount"].normalized_value, null);
+  assertEquals(
+    result.fields["steps[1].instruction"].raw_value,
+    "Add salt to taste.",
+  );
+  assertEquals(result.source.original_url, source.originalURL);
+  assertEquals(result.source.canonical_url, source.canonicalURL);
+  assertEquals(result.source.platform, "example");
+  assertEquals(result.source.author_name, "Mina Cook");
+  assertEquals(result.source.source_title, "Original page title");
+  assertEquals(result.evidence[0].source_type, "webpage_structured_data");
+  assertStringIncludes(String(result.evidence[0].excerpt), "Weeknight soup");
+});
+
+Deno.test("keeps missing fields and exposes review paths", async () => {
+  const result = parseSchemaOrgRecipePage({
+    id: "123e4567-e89b-12d3-a456-426614174001",
+    html: await fixture("incomplete-recipe.html"),
+    source,
+  });
+
+  assertEquals(result.status, "needs_review");
+  assertEquals(result.review_fields, ["ingredients", "steps"]);
+  assertEquals(result.fields.title.raw_value, "Name only recipe");
+});
+
+Deno.test("does not choose between multiple Recipe entities", async () => {
+  const result = parseSchemaOrgRecipePage({
+    id: "123e4567-e89b-12d3-a456-426614174002",
+    html: await fixture("multiple-recipes.html"),
+    source,
+  });
+
+  assertEquals(result.status, "needs_review");
+  assertEquals(result.fields, {});
+  assertEquals(result.review_fields, [
+    "recipe_selection",
+    "title",
+    "ingredients",
+    "steps",
+  ]);
+  assertStringIncludes(
+    String(result.evidence[0].excerpt),
+    "First recipe; Second recipe",
+  );
+});
+
+Deno.test("reports malformed JSON-LD instead of inventing recipe fields", async () => {
+  const result = parseSchemaOrgRecipePage({
+    id: "123e4567-e89b-12d3-a456-426614174003",
+    html: await fixture("malformed-recipe-jsonld.html"),
+    source,
+  });
+
+  assertEquals(result.status, "needs_review");
+  assertEquals(result.fields, {});
+  assertEquals(result.review_fields, [
+    "title",
+    "ingredients",
+    "steps",
+    "structured_data",
+  ]);
+});
