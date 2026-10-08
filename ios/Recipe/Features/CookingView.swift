@@ -184,7 +184,11 @@ struct CookingView: View {
 
                 if !step.timers.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(step.timers.count == 1 ? "Timer" : "Timers for this step")
+                        Text(
+                            step.timers.count == 1
+                                ? LocalizedStringKey("Timer")
+                                : LocalizedStringKey("Timers for this step")
+                        )
                             .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                         ForEach(step.timers) { definition in
                             CookingStepTimerPanel(
@@ -234,7 +238,11 @@ struct CookingView: View {
             ProgressView(value: Double(completed), total: Double(max(1, count)))
                 .tint(RecipeTheme.accent)
                 .accessibilityLabel("Cooking progress")
-                .accessibilityValue("\(completed) of \(count) steps completed")
+                .accessibilityValue(
+                    count == 1
+                        ? LocalizedStringKey("\(completed) of \(count) step completed")
+                        : LocalizedStringKey("\(completed) of \(count) steps completed")
+                )
         }
     }
 
@@ -288,7 +296,9 @@ struct CookingView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(
-                        "\(ingredient.name), \(session.usedIngredientIDs.contains(ingredient.id) ? "used" : "not used")"
+                        session.usedIngredientIDs.contains(ingredient.id)
+                            ? LocalizedStringKey("\(ingredient.name), used")
+                            : LocalizedStringKey("\(ingredient.name), not used")
                     )
                 }
             }
@@ -536,7 +546,9 @@ struct CookingView: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel(
-                                "\(ingredient.name), \(session.usedIngredientIDs.contains(ingredient.id) ? "used" : "not used")"
+                                session.usedIngredientIDs.contains(ingredient.id)
+                                    ? LocalizedStringKey("\(ingredient.name), used")
+                                    : LocalizedStringKey("\(ingredient.name), not used")
                             )
                         }
                     } header: {
@@ -1243,6 +1255,7 @@ private struct CookingStepTimerPanel: View {
     let onReset: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.locale) private var locale
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -1250,10 +1263,15 @@ private struct CookingStepTimerPanel: View {
 
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Label(
-                        remaining == 0 ? "Time’s up" : label,
-                        systemImage: remaining == 0 ? "bell.badge" : "timer"
-                    )
+                    Label {
+                        if remaining == 0 {
+                            Text("Time’s up")
+                        } else {
+                            Text(label)
+                        }
+                    } icon: {
+                        Image(systemName: remaining == 0 ? "bell.badge" : "timer")
+                    }
                     .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                     .foregroundStyle(RecipeTheme.accentForeground)
                     Spacer()
@@ -1276,7 +1294,7 @@ private struct CookingStepTimerPanel: View {
 
                 Text(
                     remaining == 0
-                        ? "Continue when you’re ready. The next step is still up to you."
+                        ? LocalizedStringKey("Continue when you’re ready. The next step is still up to you.")
                         : notificationMessage
                 )
                 .font(RecipeTheme.text(12, relativeTo: .caption))
@@ -1289,7 +1307,7 @@ private struct CookingStepTimerPanel: View {
         }
     }
 
-    private var notificationMessage: String {
+    private var notificationMessage: LocalizedStringKey {
         notificationsEnabled
             ? "Your timer keeps time when you leave this screen."
             : "Your timer progress is saved. Keep RecipePouch open to see when time is up."
@@ -1297,6 +1315,16 @@ private struct CookingStepTimerPanel: View {
 
     private func timerControls(remaining: Int) -> some View {
         let running = timer.isRunning && remaining > 0
+        let title: LocalizedStringKey
+        if running {
+            title = "Pause"
+        } else if remaining == 0 {
+            title = "Start Again"
+        } else if remaining < timer.durationSeconds {
+            title = "Resume"
+        } else {
+            title = "Start Timer"
+        }
         let layout =
             dynamicTypeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(spacing: 8))
@@ -1305,11 +1333,7 @@ private struct CookingStepTimerPanel: View {
         return layout {
             Button(action: running ? onPause : onStart) {
                 Label(
-                    running
-                        ? "Pause"
-                        : (remaining == 0
-                                ? "Start Again"
-                            : (remaining < timer.durationSeconds ? "Resume" : "Start Timer")),
+                    title,
                     systemImage: running ? "pause.fill" : "play.fill"
                 )
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -1340,20 +1364,15 @@ private struct CookingStepTimerPanel: View {
     }
 
     private func durationText(_ seconds: Int) -> String {
-        if seconds % 3_600 == 0 {
-            return "\(seconds / 3_600) hr"
-        }
-        if seconds % 60 == 0 {
-            return "\(seconds / 60) min"
-        }
-        return "\(seconds / 60)m \(seconds % 60)s"
+        return Duration.seconds(seconds).formatted(
+            .units(width: .abbreviated, maximumUnitCount: 2).locale(locale)
+        )
     }
 
     private func spokenDuration(_ seconds: Int) -> String {
-        if seconds == 0 { return "Time’s up" }
-        if seconds >= 3_600 {
-            return "\(seconds / 3_600) hours, \(seconds / 60 % 60) minutes, \(seconds % 60) seconds"
-        }
-        return "\(seconds / 60) minutes, \(seconds % 60) seconds"
+        if seconds == 0 { return String(localized: "Time’s up", locale: locale) }
+        return Duration.seconds(seconds).formatted(
+            .units(width: .wide, maximumUnitCount: 3).locale(locale)
+        )
     }
 }

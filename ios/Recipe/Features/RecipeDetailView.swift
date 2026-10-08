@@ -8,6 +8,7 @@ struct RecipeDetailView: View {
     let recipeID: UUID
     @Environment(RecipeStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.locale) private var locale
     @State private var servings = 1
     @State private var didLoadServings = false
     @State private var didAdjustServings = false
@@ -368,7 +369,12 @@ struct RecipeDetailView: View {
     }
 
     private func timerDurationLabel(_ seconds: Int) -> String {
-        seconds % 60 == 0 ? "\(seconds / 60) min timer" : "\(seconds / 60)m \(seconds % 60)s timer"
+        let duration = Duration.seconds(seconds).formatted(
+            .units(width: .abbreviated, maximumUnitCount: 2).locale(locale)
+        )
+        return String(
+            localized: LocalizedStringResource("\(duration) timer", locale: locale)
+        )
     }
 }
 
@@ -458,8 +464,16 @@ private struct RecipeIngredientsSelectionView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("\(ingredient.name), \(ingredient.displayAmount(servings: servings, originalServings: recipe.servings))")
-                    .accessibilityValue(selection.contains(ingredient.id) ? "Selected" : "Not selected")
+                    .accessibilityLabel(
+                        LocalizedStringKey(
+                            "\(ingredient.name), \(ingredient.displayAmount(servings: servings, originalServings: recipe.servings))"
+                        )
+                    )
+                    .accessibilityValue(
+                        selection.contains(ingredient.id)
+                            ? LocalizedStringKey("Selected")
+                            : LocalizedStringKey("Not selected")
+                    )
                     .accessibilityHint("Double-tap to change selection")
                 }
             } header: { Text("Choose ingredients") } footer: {
@@ -473,7 +487,7 @@ private struct RecipeIngredientsSelectionView: View {
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .safeAreaInset(edge: .bottom) {
-            Button("Add \(selection.count) \(selection.count == 1 ? "Ingredient" : "Ingredients")") { add(recipe) }
+            Button("Add \(selection.count) ingredient") { add(recipe) }
                 .buttonStyle(PrimaryButtonStyle())
                 .frame(maxWidth: .infinity)
                 .disabled(selection.isEmpty)
@@ -569,7 +583,9 @@ private struct RecipeCollectionMembershipSheet: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityValue(
-                                isMember ? "In collection" : "Not in collection"
+                                isMember
+                                    ? LocalizedStringKey("In collection")
+                                    : LocalizedStringKey("Not in collection")
                             )
                         }
                     }
