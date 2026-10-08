@@ -19,6 +19,7 @@ struct AccountView: View {
     @State private var password = ""
     @State private var newPassword = ""
     @State private var confirmPassword = ""
+    @State private var isUpdatingPassword = false
     @State private var appleNonce: String?
     @State private var localMessage: String?
 
@@ -191,11 +192,14 @@ struct AccountView: View {
                     .textContentType(.newPassword)
 
                 Button("Update Password") {
+                    guard !isUpdatingPassword else { return }
                     guard newPassword == confirmPassword else {
                         localMessage = "The passwords do not match."
                         return
                     }
+                    isUpdatingPassword = true
                     Task {
+                        defer { isUpdatingPassword = false }
                         do {
                             try await auth.setRecoveredPassword(newPassword)
                             newPassword = ""
@@ -206,7 +210,12 @@ struct AccountView: View {
                     }
                 }
                 .buttonStyle(PrimaryButtonStyle())
-                .disabled(newPassword.count < 8 || confirmPassword.isEmpty || isAuthenticating)
+                .disabled(
+                    newPassword.count < 8
+                        || confirmPassword.isEmpty
+                        || isAuthenticating
+                        || isUpdatingPassword
+                )
             } header: {
                 Text("Choose a new password")
             } footer: {

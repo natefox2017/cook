@@ -26,8 +26,9 @@ its Xcode target, ensure the provisioning profile carries that capability, and
 configure the corresponding Apple provider in Supabase Auth. Keep any Apple
 private key and provider secrets in provider configuration; never add them to
 the app.
-The native account screen remains disabled until its UI design is approved and
-the provider configuration is verified.
+The native account screen is wired to the Auth service. A visible Apple button
+does not mean the provider is enabled; the live project state below currently
+blocks Apple sign-in.
 
 ## Client integration status
 
@@ -38,3 +39,19 @@ the provider configuration is verified.
   exchange, session refresh, callback handling, and sign-out.
 - Production sign-up, email delivery, Apple sign-in, and password-recovery flows
   still require end-to-end verification against the configured providers.
+
+## Live provider check
+
+Checked 2026-10-08 against project `cookapp` (`semsjyrqjnumpvanibip`): the
+project reports `ACTIVE_HEALTHY`. Its public Auth settings report email
+authentication enabled, email auto-confirm disabled, and the Apple provider
+disabled. New email accounts therefore require confirmation, but successful
+message delivery has not been tested. The settings endpoint returned a null
+redirect allowlist, so the exact `cook://auth/callback` allowlist entry is not
+verified. No Apple provider secret or email credential is stored in the iOS
+client; the target contains the Sign in with Apple entitlement, while the
+Apple Developer capability and provisioning profile have not been checked.
+
+This is configuration evidence only. No test account was created and no email,
+Apple credential, recovery link, or password was submitted. Real provider flows,
+Keychain restore, and cold/warm callback handling remain unverified.

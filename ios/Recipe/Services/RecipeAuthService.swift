@@ -83,11 +83,14 @@ final class RecipeAuthService {
     }
 
     func setRecoveredPassword(_ password: String) async throws {
+        let recoveryState = state
         do {
             let user = try await client.auth.update(user: UserAttributes(password: password))
             state = .signedIn(userID: user.id, email: user.email)
         } catch {
-            state = .error(error.localizedDescription)
+            // Keep the recovery form available so the user can correct or retry
+            // without reopening the email link after a recoverable failure.
+            state = recoveryState
             throw error
         }
     }
