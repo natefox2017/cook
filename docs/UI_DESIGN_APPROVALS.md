@@ -19,6 +19,7 @@
 | UI-014 | 全部页面间距与菜单图标统一 | [当前页面截图与间距修正提案](DESIGN/proposals/2026-10-07/spacing-normalization/README.md) | APPROVED | 统一页面标题、分组标题和卡片间距；菜单图标取消圆形底；保留全部模块与功能 |
 | UI-015 | 首次启动/Premium 计划 | `DESIGN_SYSTEM.md` + IMG-007 个人中心视觉基线 | APPROVED | 2026-10-08 用户明确要求补齐；StoreKit 实时产品信息，保留 Continue Free、Restore、Terms/Privacy |
 | UI-016 | 周日期条与底部 Liquid Glass 导航 | [2026-10-08 设计提案](DESIGN/proposals/2026-10-08/navigation-and-week-strip/README.md) + 用户提供的 Recipe / Meal Plan / Tab 截图 | APPROVED | 2026-10-08 用户明确要求直接修改；压低周日期卡并改用系统原生四 Tab 与安全区 |
+| UI-017 | Cloud Sync 状态、首次同步选择与冲突处理 | `DESIGN/proposals/2026-10-08/cloud-sync/README.md` | PENDING | 只作为提案；云端/本地合并、冲突解决与真实同步状态需用户确认后才能进入正式 UI |
 
 ## 状态定义
 - PENDING：尚无明确 UI 决策记录

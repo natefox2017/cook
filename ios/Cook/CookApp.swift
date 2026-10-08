@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Configure Cook's application lifecycle, local library, and shared services.
+
 import StoreKit
 import SwiftUI
 import CookCore
@@ -7,6 +10,7 @@ import CookCore
 struct CookApp: App {
     @State private var store: CookStore
     @State private var subscriptions = SubscriptionStore()
+    @State private var cloudSync = CloudSyncCoordinator()
     private let isUITesting: Bool
 
     init() {
@@ -47,6 +51,7 @@ struct CookApp: App {
             CookRootView(bypassOnboarding: isUITesting)
                 .environment(store)
                 .environment(subscriptions)
+                .environment(cloudSync)
                 .onOpenURL { CookAuthService.shared.handleAuthCallback($0) }
                 .tint(CookTheme.accent)
                 .font(CookTheme.body())
@@ -70,67 +75,77 @@ struct CookApp: App {
 
 private struct CookRootView: View {
     @Environment(CookStore.self) private var store
+    @Environment(CloudSyncCoordinator.self) private var cloudSync
     @AppStorage(FirstLaunchFlowView.completionKey) private var hasCompletedOnboarding = false
     @State private var selectedTab: CookTab = .recipes
 
     let bypassOnboarding: Bool
 
     var body: some View {
-        if let message = store.loadError {
-            NavigationStack {
-                EmptyStateView(
-                    title: "Your saved library needs attention",
-                    message: "Cook couldn't read your saved library. The file has been left unchanged.\n\n\(message)",
-                    systemImage: "externaldrive.badge.exclamationmark",
-                    actionTitle: "Try again",
-                    action: { store.reload() }
-                )
-                .padding()
-                .navigationTitle("Cook")
-                .background(CookTheme.canvas)
-            }
-        } else if !hasCompletedOnboarding && !bypassOnboarding {
-            FirstLaunchGateView {
-                hasCompletedOnboarding = true
-            }
-        } else {
-            TabView(selection: $selectedTab) {
+        Group {
+            if let message = store.loadError {
                 NavigationStack {
-                    RecipesView()
+                    EmptyStateView(
+                        title: "Your saved library needs attention",
+                        message: "Cook couldn't read your saved library. The file has been left unchanged.\n\n\(message)",
+                        systemImage: "externaldrive.badge.exclamationmark",
+                        actionTitle: "Try again",
+                        action: { store.reload() }
+                    )
+                    .padding()
+                    .navigationTitle("Cook")
+                    .background(CookTheme.canvas)
                 }
-                .tabItem {
-                    Label(CookTab.recipes.title, systemImage: CookTab.recipes.symbol)
-                        .accessibilityIdentifier("tab.\(CookTab.recipes.rawValue)")
+            } else if !hasCompletedOnboarding && !bypassOnboarding {
+                FirstLaunchGateView {
+                    hasCompletedOnboarding = true
                 }
-                .tag(CookTab.recipes)
+            } else {
+                TabView(selection: $selectedTab) {
+                    NavigationStack {
+                        RecipesView()
+                    }
+                    .tabItem {
+                        Label(CookTab.recipes.title, systemImage: CookTab.recipes.symbol)
+                            .accessibilityIdentifier("tab.\(CookTab.recipes.rawValue)")
+                    }
+                    .tag(CookTab.recipes)
 
-                NavigationStack {
-                    MealPlanView()
-                }
-                .tabItem {
-                    Label(CookTab.plan.title, systemImage: CookTab.plan.symbol)
-                        .accessibilityIdentifier("tab.\(CookTab.plan.rawValue)")
-                }
-                .tag(CookTab.plan)
+                    NavigationStack {
+                        MealPlanView()
+                    }
+                    .tabItem {
+                        Label(CookTab.plan.title, systemImage: CookTab.plan.symbol)
+                            .accessibilityIdentifier("tab.\(CookTab.plan.rawValue)")
+                    }
+                    .tag(CookTab.plan)
 
-                NavigationStack {
-                    GroceriesView()
-                }
-                .tabItem {
-                    Label(CookTab.groceries.title, systemImage: CookTab.groceries.symbol)
-                        .accessibilityIdentifier("tab.\(CookTab.groceries.rawValue)")
-                }
-                .tag(CookTab.groceries)
+                    NavigationStack {
+                        GroceriesView()
+                    }
+                    .tabItem {
+                        Label(CookTab.groceries.title, systemImage: CookTab.groceries.symbol)
+                            .accessibilityIdentifier("tab.\(CookTab.groceries.rawValue)")
+                    }
+                    .tag(CookTab.groceries)
 
-                NavigationStack {
-                    ProfileView()
+                    NavigationStack {
+                        ProfileView()
+                    }
+                    .tabItem {
+                        Label(CookTab.profile.title, systemImage: CookTab.profile.symbol)
+                            .accessibilityIdentifier("tab.\(CookTab.profile.rawValue)")
+                    }
+                    .tag(CookTab.profile)
                 }
-                .tabItem {
-                    Label(CookTab.profile.title, systemImage: CookTab.profile.symbol)
-                        .accessibilityIdentifier("tab.\(CookTab.profile.rawValue)")
-                }
-                .tag(CookTab.profile)
             }
+        }
+        .task { await cloudSync.bind(store: store, authState: CookAuthService.shared.state) }
+        .onChange(of: CookAuthService.shared.state) { _, state in
+            Task { await cloudSync.authenticationChanged(state) }
+        }
+        .onChange(of: store.changeToken) { _, token in
+            Task { await cloudSync.localStoreChanged(token: token) }
         }
     }
 }

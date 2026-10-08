@@ -1,4 +1,6 @@
--- Cook V1 private sync schema. Apply only after restoring the cookapp Supabase project.
+-- Developer: gengyun
+-- Purpose: Create Cook's owner-scoped JSON snapshot table with row-level access control.
+-- Cook V1 private sync schema; the matching migration is already present on cookapp.
 create table if not exists public.user_snapshots (
   user_id uuid primary key references auth.users(id) on delete cascade,
   schema_version integer not null default 1 check (schema_version > 0),

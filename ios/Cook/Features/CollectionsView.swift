@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Browse and manage recipe collections and their memberships.
+
 import CookCore
 import SwiftUI
 
@@ -23,7 +26,7 @@ struct CollectionsView: View {
                 }
             }
 
-            Section("Collections") {
+            Section {
                 NavigationLink {
                     FavoriteRecipesView()
                 } label: {
@@ -62,6 +65,8 @@ struct CollectionsView: View {
                         }
                     }
                 }
+            } header: {
+                Text("Collections")
             } footer: {
                 Text("A recipe can belong to more than one collection. Favorites stays separate.")
             }

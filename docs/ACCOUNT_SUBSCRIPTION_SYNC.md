@@ -1,6 +1,6 @@
 # Account, Sync & Subscription Contract
 
-Updated: 2026-10-07
+Updated: 2026-10-08
 
 ## Account model
 
@@ -37,6 +37,15 @@ Required account actions:
 - refresh session;
 - delete account + owned server data;
 - sync status and retry.
+
+### Snapshot sync implementation status
+
+- Applied migrations `20261008024843`, `20261008024927`, and `20261008030120` to the active `cookapp` project. Writes now use server-managed revisions, compare-and-swap, and an explicit target-account match against the authenticated JWT.
+- The signed-in client reads the owner-scoped `user_snapshots` row and saves through `save_own_user_snapshot`; a server-managed revision and compare-and-swap prevent stale clients from replacing newer data.
+- The snapshot remains a JSON object in `jsonb`. The client validates the full local library before any atomic replacement.
+- Stable item IDs and deletion tombstones support merging independent copies. Same-item edits and delete-versus-edit cases return explicit conflicts; they are not silently resolved from device timestamps.
+- The client coordinator is implemented; the sync UI is pending UI-017 approval, and the two-account/device acceptance runs remain outstanding. The migration/service code alone does not mean the in-app sync flow has passed.
+- Account deletion uses the existing authenticated `delete-account` Edge Function, which removes owned storage objects before deleting the Auth user; local-library removal remains a separate user choice.
 
 ## Subscription model
 
