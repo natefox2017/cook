@@ -159,9 +159,9 @@ private struct RecipeRootView: View {
             )
         }
         .task {
-            // Recover verified StoreKit entitlements even when the user never
-            // opens the subscription screen in this process.
-            await subscriptions.refreshEntitlements()
+            // Load StoreKit product metadata so lifecycle status is available
+            // even when the user never opens the subscription screen.
+            await subscriptions.load()
         }
         .onChange(of: RecipeAuthService.shared.state) { _, state in
             Task {
@@ -179,7 +179,11 @@ private struct RecipeRootView: View {
                 await cloudSync.appBecameActive()
             }
             Task {
-                await subscriptions.refreshEntitlements()
+                if subscriptions.products.isEmpty {
+                    await subscriptions.load(force: true)
+                } else {
+                    await subscriptions.refreshEntitlements()
+                }
             }
         }
     }
