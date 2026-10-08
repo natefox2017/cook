@@ -16,6 +16,11 @@ import {
 import { extractPublicPageText } from "./pageContent.ts";
 import { parseLocalText } from "./textEvidence.ts";
 import {
+  OCRArtifactError,
+  parsePrivateOCRArtifact,
+} from "./artifactOCR.ts";
+import { configuredOCRProvider } from "./approvedOCRProvider.ts";
+import {
   ArtifactTextError,
   decodePlainTextArtifact,
   isOwnerScopedAvailableArtifact,
@@ -289,6 +294,52 @@ Deno.serve(async (request: Request): Promise<Response> => {
               suggested_action: "Edit the saved source as text or share a valid UTF-8 text file.",
               request_id: crypto.randomUUID(),
             };
+          }
+        } else if (
+          claimed.input_type === "image" ||
+          (claimed.input_type === "file" &&
+            artifact!.mime_type === "application/pdf")
+        ) {
+          // Private bytes never leave Supabase unless the owner explicitly
+          // enables an approved, server-configured OCR destination.
+          const provider = configuredOCRProvider();
+          if (provider) {
+            const { data: file, error: downloadError } = await admin.storage
+              .from(artifact!.storage_bucket)
+              .download(artifact!.storage_path);
+            if (downloadError || !file) {
+              throw downloadError ??
+                new Error("Private OCR source download failed");
+            }
+            try {
+              const bytes = new Uint8Array(await file.arrayBuffer());
+              if (bytes.length !== artifact!.size_bytes) {
+                throw new OCRArtifactError(
+                  "OCR_INVALID_SOURCE",
+                  "The private source size changed after upload.",
+                );
+              }
+              result = await parsePrivateOCRArtifact({
+                recipeID: claimed.id,
+                artifactID: artifact!.id,
+                inputType: claimed.input_type,
+                mimeType: artifact!.mime_type,
+                bytes,
+                platformHint: claimed.platform_hint,
+                originalSourceURL: claimed.original_source_url,
+                provider,
+              });
+            } catch (error) {
+              if (!(error instanceof OCRArtifactError)) throw error;
+              completionError = {
+                code: error.code,
+                message: error.message,
+                recoverable: error.code === "OCR_UNAVAILABLE",
+                suggested_action:
+                  "Keep the original source and add the missing recipe details manually.",
+                request_id: crypto.randomUUID(),
+              };
+            }
           }
         }
       }
