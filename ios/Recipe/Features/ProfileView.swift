@@ -451,12 +451,26 @@ enum RecipeLocalDataDeletion {
         guard case .signedOut = RecipeAuthService.shared.state else {
             throw RecipeLocalResetError.requiresSignOut
         }
-        try cloudSync.verifyLocalOnlyResetAllowed()
+        // A failed disk cleanup must never allow an empty local snapshot to
+        // be uploaded as offline edits. Invalidate cloud lineage first, even
+        // if the following local write fails or the process is interrupted.
+        try cloudSync.prepareForLocalOnlyReset()
 
-        // Persist an empty local snapshot with no deletion tombstones before
-        // removing any preferences, so a failed write preserves existing data.
+        // This atomic write has no cloud deletion tombstones.
         try store.clearLocalLibraryOnly()
-        try cloudSync.forgetLocalSyncHistoryAfterReset()
+
+        var cleanupError: Error?
+        do {
+            try store.removeLegacyLibraryCopyAfterLocalErase()
+        } catch {
+            cleanupError = error
+        }
+
+        do {
+            try cloudSync.removeLocalSyncCacheFilesAfterReset()
+        } catch {
+            cleanupError = cleanupError ?? error
+        }
 
         let defaults = UserDefaults.standard
         let prefixes = [
@@ -489,7 +503,22 @@ enum RecipeLocalDataDeletion {
             shareDefaults.removeObject(forKey: "cook.shareInbox")
         }
 
+        // Newly file-backed Share Extension receipts live outside both
+        // RecipeStore and UserDefaults. Erase their original source bytes as
+        // part of the same user-confirmed on-device deletion.
+        do {
+            try RecipeShareInbox.shared().eraseAllLocalReceipts()
+        } catch {
+            cleanupError = cleanupError ?? error
+        }
+
         await RecipeNotificationCleanup.removeTimerReminders()
+
+        // Clear independently stored personal data even if legacy file deletion
+        // failed. The old sync lineage was invalidated before the library write.
+        if let cleanupError {
+            throw cleanupError
+        }
     }
 }
 
