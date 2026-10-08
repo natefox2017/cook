@@ -251,9 +251,13 @@ struct RecipeDetailView: View {
                 .foregroundStyle(CookTheme.accentForeground)
         }
         ForEach(step.timers) { timer in
-            Label(timerDurationLabel(timer.durationSeconds), systemImage: "timer")
-                .font(CookTheme.text(13, weight: .semibold, relativeTo: .footnote))
-                .foregroundStyle(CookTheme.accentForeground)
+            let duration = timerDurationLabel(timer.durationSeconds)
+            Label(
+                timer.label.isEmpty ? duration : "\(timer.label) · \(duration)",
+                systemImage: "timer"
+            )
+            .font(CookTheme.text(13, weight: .semibold, relativeTo: .footnote))
+            .foregroundStyle(CookTheme.accentForeground)
         }
     }
 
