@@ -140,6 +140,13 @@ private enum LibraryMergeState<Value: Hashable>: Equatable {
     case deleted
 }
 
+/// Exact grocery compatibility key. Keep name/unit normalization identical to
+/// the previous first-match scan; categories are intentionally not part of it.
+private struct GroceryMergeKey: Hashable {
+    let name: String
+    let unit: String
+}
+
 @Observable @MainActor
 public final class RecipeStore {
     public private(set) var recipes: [Recipe] = []
@@ -402,21 +409,48 @@ public final class RecipeStore {
         }
 
         var next = snapshot
+
+        // A lookup per selected ingredient previously scanned the entire list.
+        // Index only the first eligible row so existing row order and the
+        // non-retroactive consolidation contract remain unchanged.
+        var firstMergeIndex: [GroceryMergeKey: Int] = [:]
+        if consolidateCompatibleIngredients {
+            for (index, existing) in next.groceries.enumerated()
+            where !existing.isChecked && existing.quantity != nil {
+                let key = GroceryMergeKey(
+                    name: normalized(existing.name),
+                    unit: unitKey(existing.unit)
+                )
+                if firstMergeIndex[key] == nil {
+                    firstMergeIndex[key] = index
+                }
+            }
+        }
+
         for ingredient in recipe.ingredients where ingredientIDs.contains(ingredient.id) {
             guard !normalized(ingredient.name).isEmpty else {
                 throw RecipeStoreError.invalidValue(
                     "Give each selected ingredient a name before adding it.")
             }
             let item = try groceryItem(
-                from: ingredient, recipeID: recipeID,
-                                       originalServings: originalServings,
-                                       requestedServings: requestedServings)
-            if consolidateCompatibleIngredients,
-               let index = next.groceries.firstIndex(where: {
-                !$0.isChecked && $0.quantity != nil && item.quantity != nil
-                    && normalized($0.name) == normalized(item.name)
-                    && unitKey($0.unit) == unitKey(item.unit)
-                }), var existing = next.groceries[index].quantity, var added = item.quantity
+                from: ingredient,
+                recipeID: recipeID,
+                originalServings: originalServings,
+                requestedServings: requestedServings
+            )
+
+            let key: GroceryMergeKey? =
+                consolidateCompatibleIngredients && item.quantity != nil
+                ? GroceryMergeKey(
+                    name: normalized(item.name),
+                    unit: unitKey(item.unit)
+                )
+                : nil
+
+            if let key,
+               let index = firstMergeIndex[key],
+               var existing = next.groceries[index].quantity,
+               var added = item.quantity
             {
                 var total = Decimal()
                 guard NSDecimalAdd(&total, &existing, &added, .plain) == .noError else {
@@ -424,13 +458,19 @@ public final class RecipeStore {
                 }
                 next.groceries[index].quantity = total
                 next.groceries[index].amountText = RecipeIngredient.formatted(
-                    total, unit: next.groceries[index].unit
+                    total,
+                    unit: next.groceries[index].unit
                 )
                 if !next.groceries[index].recipeIDs.contains(recipeID) {
                     next.groceries[index].recipeIDs.append(recipeID)
                 }
             } else {
                 next.groceries.append(item)
+                if let key, firstMergeIndex[key] == nil {
+                    // Newly appended numeric rows can absorb a later ingredient
+                    // in the same batch. Checked or inexact rows never can.
+                    firstMergeIndex[key] = next.groceries.count - 1
+                }
             }
         }
         try commit(next)

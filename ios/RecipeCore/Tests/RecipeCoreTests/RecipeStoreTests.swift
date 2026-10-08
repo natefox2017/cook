@@ -683,6 +683,45 @@ func sameOfflineMealSlotReturnsResolvableConflict() throws {
 
 
 @Test @MainActor
+func groceryMergeIndexPreservesBatchAndCheckedRowSemantics() throws {
+    let ingredients = (0..<12).map { _ in
+        RecipeIngredient.from(
+            name: " Fresh Herbs ",
+            amountText: "1 g",
+            category: .pantry
+        )
+    }
+    let recipe = exampleRecipe(ingredients: ingredients)
+    let store = RecipeStore()
+    try store.upsert(recipe)
+
+    // Equal numeric items in one batch merge into the earliest eligible row.
+    try store.addToGroceries(
+        recipeID: recipe.id,
+        servings: nil,
+        ingredientIDs: Set(ingredients.map(\.id))
+    )
+    #expect(store.groceries.count == 1)
+    #expect(store.groceries[0].quantity == 12)
+    #expect(store.groceries[0].recipeIDs == [recipe.id])
+
+    let checkedID = store.groceries[0].id
+    try store.toggleGrocery(id: checkedID)
+
+    // Completed rows stay immutable. A new batch creates a new eligible row.
+    try store.addToGroceries(
+        recipeID: recipe.id,
+        servings: nil,
+        ingredientIDs: Set(ingredients.prefix(3).map(\.id))
+    )
+    #expect(store.groceries.count == 2)
+    #expect(store.groceries[0].id == checkedID)
+    #expect(store.groceries[0].quantity == 12)
+    #expect(store.groceries[0].isChecked)
+    #expect(store.groceries[1].quantity == 3)
+}
+
+@Test @MainActor
 func groceryConsolidationPreferenceIsNonRetroactive() throws {
     let first = RecipeIngredient.from(
         name: "Tomatoes",
