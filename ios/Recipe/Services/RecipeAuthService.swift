@@ -1,6 +1,7 @@
 // Developer: gengyun
-// Purpose: Implements Supabase authentication state, email flows, and Sign in with Apple.
+// Purpose: Implements Supabase email, Apple, and Google authentication flows.
 
+import AuthenticationServices
 import CryptoKit
 import Foundation
 import Observation
@@ -10,6 +11,7 @@ enum RecipeAuthState: Equatable, Sendable {
     case loading
     case signedOut
     case authenticating
+    case emailCodeSent(String)
     case needsEmailVerification(String)
     case signedIn(userID: UUID, email: String?)
     case passwordResetSent(String)
@@ -21,7 +23,8 @@ enum RecipeAuthState: Equatable, Sendable {
 final class RecipeAuthService {
     static let shared = RecipeAuthService()
     private static let pendingPasswordRecoveryKey = "recipe.auth.pending_password_recovery"
-    private static let pendingPasswordRecoveryEmailKey = "recipe.auth.pending_password_recovery_email_hash"
+    private static let pendingPasswordRecoveryEmailKey =
+        "recipe.auth.pending_password_recovery_email_hash"
 
     private(set) var state: RecipeAuthState = .loading
     private(set) var nonblockingNotice: String?
@@ -38,12 +41,15 @@ final class RecipeAuthService {
         self.defaults = defaults
         Task { [weak self, client] in
             for await (event, session) in client.auth.authStateChanges {
-                guard let self else { return }
+                guard let self else {
+                    return
+                }
                 if event == .passwordRecovery, let session {
                     self.state = .passwordRecovery(userID: session.user.id)
                 } else if let session {
                     if case .passwordRecovery(let recoveryUserID) = self.state,
-                       recoveryUserID == session.user.id {
+                        recoveryUserID == session.user.id
+                    {
                         continue
                     }
                     self.state = .signedIn(userID: session.user.id, email: session.user.email)
@@ -84,6 +90,58 @@ final class RecipeAuthService {
         }
     }
 
+    func sendEmailCode(to email: String) async throws {
+        state = .authenticating
+        do {
+            try await client.auth.signInWithOTP(
+                email: email,
+                shouldCreateUser: true
+            )
+            state = .emailCodeSent(email)
+        } catch {
+            state = .error(error.localizedDescription)
+            throw error
+        }
+    }
+
+    func verifyEmailCode(_ code: String, for email: String) async throws {
+        state = .authenticating
+        do {
+            let response = try await client.auth.verifyOTP(
+                email: email,
+                token: code,
+                type: .email
+            )
+            guard let session = response.session else {
+                throw AuthFlowError.missingSession
+            }
+            state = .signedIn(userID: session.user.id, email: session.user.email)
+        } catch {
+            state = .error(error.localizedDescription)
+            throw error
+        }
+    }
+
+    func signInWithGoogle() async throws {
+        state = .authenticating
+        do {
+            let session = try await client.auth.signInWithOAuth(
+                provider: .google,
+                redirectTo: RecipeSupabase.redirectURL
+            )
+            state = .signedIn(userID: session.user.id, email: session.user.email)
+        } catch {
+            if let sessionError = error as? ASWebAuthenticationSessionError,
+                sessionError.code == .canceledLogin
+            {
+                state = .signedOut
+                return
+            }
+            state = .error(error.localizedDescription)
+            throw error
+        }
+    }
+
     func sendPasswordReset(to email: String) async throws {
         state = .authenticating
         do {
@@ -117,7 +175,9 @@ final class RecipeAuthService {
         }
     }
 
-    func signInWithApple(identityToken: String, rawNonce: String, fullName: String? = nil) async throws {
+    func signInWithApple(identityToken: String, rawNonce: String, fullName: String? = nil)
+        async throws
+    {
         state = .authenticating
         do {
             let session = try await client.auth.signInWithIdToken(
@@ -137,7 +197,8 @@ final class RecipeAuthService {
                         user: UserAttributes(data: ["full_name": .string(fullName)])
                     )
                 } catch {
-                    nonblockingNotice = "Signed in successfully, but your name couldn't be saved. You can update your profile later."
+                    nonblockingNotice =
+                        "Signed in successfully, but your name couldn't be saved. You can update your profile later."
                 }
             }
         } catch {
@@ -172,9 +233,16 @@ final class RecipeAuthService {
     }
 
     func handleAuthCallback(_ url: URL) {
-        guard url.scheme == RecipeSupabase.redirectURL.scheme,
-              url.host == RecipeSupabase.redirectURL.host,
-              url.path == RecipeSupabase.redirectURL.path else { return }
+        let acceptedSchemes = [
+            RecipeSupabase.redirectURL.scheme,
+            RecipeSupabase.legacyRedirectURL.scheme,
+        ]
+        guard acceptedSchemes.contains(url.scheme ?? ""),
+            url.host == RecipeSupabase.redirectURL.host,
+            url.path == RecipeSupabase.redirectURL.path
+        else {
+            return
+        }
 
         let isExplicitRecoveryCallback = callbackType(in: url) == "recovery"
         Task {
@@ -183,10 +251,12 @@ final class RecipeAuthService {
                 let pendingRecoveryEmailHash = defaults.string(
                     forKey: Self.pendingPasswordRecoveryEmailKey
                 )
-                let callbackEmailMatchesPendingReset = session.user.email.map {
-                    passwordRecoveryEmailHash(for: $0) == pendingRecoveryEmailHash
-                } ?? false
-                let isPasswordRecovery = isExplicitRecoveryCallback
+                let callbackEmailMatchesPendingReset =
+                    session.user.email.map {
+                        passwordRecoveryEmailHash(for: $0) == pendingRecoveryEmailHash
+                    } ?? false
+                let isPasswordRecovery =
+                    isExplicitRecoveryCallback
                     || (defaults.bool(forKey: Self.pendingPasswordRecoveryKey)
                         && callbackEmailMatchesPendingReset)
 
@@ -209,32 +279,57 @@ final class RecipeAuthService {
             return nil
         }
         let queryItems = components.queryItems ?? []
-        if let type = queryItems.first(where: { $0.name == "type" })?.value {
+        if let type = queryItems.first(where: {
+            $0.name == "type"
+        })?.value {
             return type
         }
-        if let flow = queryItems.first(where: { $0.name == "flow" })?.value {
+        if let flow = queryItems.first(where: {
+            $0.name == "flow"
+        })?.value {
             return flow
         }
         guard let fragment = components.fragment,
-              let fragmentComponents = URLComponents(string: "?\(fragment)") else {
+            let fragmentComponents = URLComponents(string: "?\(fragment)")
+        else {
             return nil
         }
         let fragmentItems = fragmentComponents.queryItems ?? []
-        return fragmentItems.first(where: { $0.name == "type" })?.value
-            ?? fragmentItems.first(where: { $0.name == "flow" })?.value
+        return fragmentItems.first(where: {
+            $0.name == "type"
+        })?.value
+            ?? fragmentItems.first(where: {
+                $0.name == "flow"
+            })?.value
     }
 
     private func passwordRecoveryEmailHash(for email: String) -> String {
-        let normalizedEmail = email
+        let normalizedEmail =
+            email
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
         let digest = SHA256.hash(data: Data(normalizedEmail.utf8))
-        return digest.map { String(format: "%02x", $0) }.joined()
+        return digest.map {
+            String(format: "%02x", $0)
+        }.joined()
     }
 
     static func makeAppleNonce() -> (raw: String, hashed: String) {
         let raw = UUID().uuidString.replacingOccurrences(of: "-", with: "")
         let digest = SHA256.hash(data: Data(raw.utf8))
-        return (raw, digest.map { String(format: "%02x", $0) }.joined())
+        return (
+            raw,
+            digest.map {
+                String(format: "%02x", $0)
+            }.joined()
+        )
+    }
+}
+
+private enum AuthFlowError: LocalizedError {
+    case missingSession
+
+    var errorDescription: String? {
+        "Email verification completed without an authenticated session."
     }
 }

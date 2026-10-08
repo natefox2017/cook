@@ -1,9 +1,9 @@
 // Developer: gengyun
 // Purpose: Creates the Recipe iOS app, shared services, compatibility migrations, and primary navigation.
 
+import RecipeCore
 import StoreKit
 import SwiftUI
-import RecipeCore
 
 @main
 @MainActor
@@ -12,9 +12,30 @@ struct RecipeApp: App {
     @State private var subscriptions = SubscriptionStore()
     @State private var cloudSync = CloudSyncCoordinator()
     private let isUITesting: Bool
+    private let appLanguage: String
 
     init() {
         let defaults = UserDefaults.standard
+        let arguments = ProcessInfo.processInfo.arguments
+        let isUITesting = arguments.contains("--uitesting")
+        self.isUITesting = isUITesting
+
+        // Seed the application's language independently of the device language.
+        // A language chosen explicitly in iOS Settings remains authoritative.
+        let domain = Bundle.main.bundleIdentifier.flatMap {
+            defaults.persistentDomain(forName: $0)
+        }
+        let savedLanguages = domain?["AppleLanguages"] as? [String]
+        let supportedLanguages = ["zh-Hans", "zh-Hant", "ja", "en"]
+        let savedLanguage = savedLanguages?.first
+        appLanguage =
+            supportedLanguages.first { language in
+                savedLanguage == language || savedLanguage?.hasPrefix(language + "-") == true
+            } ?? "zh-Hans"
+        if !isUITesting && savedLanguages == nil {
+            defaults.set(["zh-Hans"], forKey: "AppleLanguages")
+        }
+
         for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("cook.") {
             let recipeKey = "recipe." + key.dropFirst("cook.".count)
             if defaults.object(forKey: recipeKey) == nil, let value = defaults.object(forKey: key) {
@@ -24,16 +45,13 @@ struct RecipeApp: App {
 
         RecipeTheme.installUIKitTypography()
 
-        let arguments = ProcessInfo.processInfo.arguments
-        let isUITesting = arguments.contains("--uitesting")
-        self.isUITesting = isUITesting
-
         _ = RecipeAuthService.shared
 
         let libraryURL = RecipeStore.defaultFileURL()
         if !isUITesting,
-           FileManager.default.fileExists(atPath: libraryURL.path),
-           UserDefaults.standard.object(forKey: FirstLaunchFlowView.completionKey) == nil {
+            FileManager.default.fileExists(atPath: libraryURL.path),
+            UserDefaults.standard.object(forKey: FirstLaunchFlowView.completionKey) == nil
+        {
             // Existing installs with a persisted library should not be mistaken for new users
             // when this onboarding key is introduced for the first time.
             UserDefaults.standard.set(true, forKey: FirstLaunchFlowView.completionKey)
@@ -43,7 +61,8 @@ struct RecipeApp: App {
         if isUITesting {
             for key in UserDefaults.standard.dictionaryRepresentation().keys
             where key.hasPrefix("recipe.cookingSession.")
-                || key.hasPrefix("cook.cookingSession.") {
+                || key.hasPrefix("cook.cookingSession.")
+            {
                 UserDefaults.standard.removeObject(forKey: key)
             }
             do {
@@ -62,7 +81,9 @@ struct RecipeApp: App {
                 .environment(store)
                 .environment(subscriptions)
                 .environment(cloudSync)
-                .onOpenURL { RecipeAuthService.shared.handleAuthCallback($0) }
+                .onOpenURL {
+                    RecipeAuthService.shared.handleAuthCallback($0)
+                }
                 .tint(RecipeTheme.accent)
                 .font(RecipeTheme.body())
                 .preferredColorScheme(colorScheme)
@@ -71,13 +92,16 @@ struct RecipeApp: App {
     }
 
     private var appLocale: Locale {
-        guard isUITesting else { return .autoupdatingCurrent }
+        guard isUITesting else {
+            return Locale(identifier: appLanguage)
+        }
 
         // Regression launches stay in English unless a localization test
         // explicitly chooses one of the supported target languages.
         let arguments = ProcessInfo.processInfo.arguments
         if let index = arguments.firstIndex(of: "--uitesting-locale"),
-           arguments.indices.contains(index + 1) {
+            arguments.indices.contains(index + 1)
+        {
             let identifier = arguments[index + 1]
             if ["en", "zh-Hans", "zh-Hant", "ja"].contains(identifier) {
                 return Locale(identifier: identifier)
@@ -88,9 +112,12 @@ struct RecipeApp: App {
 
     private var colorScheme: ColorScheme? {
         switch store.settings.appearance {
-        case .system: nil
-        case .light: .light
-        case .dark: .dark
+        case .system:
+            nil
+        case .light:
+            .light
+        case .dark:
+            .dark
         }
     }
 }
@@ -111,67 +138,70 @@ private struct RecipeRootView: View {
     var body: some View {
         Group {
             if let message = store.loadError {
-            NavigationStack {
-                EmptyStateView(
-                    title: "Your saved library needs attention",
-                    message: "RecipePouch couldn't read your saved library. The file has been left unchanged.\n\n\(message)",
-                    systemImage: "externaldrive.badge.exclamationmark",
-                    actionTitle: "Try again",
-                    action: { store.reload() }
-                )
-                .padding()
-                .navigationTitle("RecipePouch")
-                .background(RecipeTheme.canvas)
-            }
-        } else if !hasCompletedOnboarding && !bypassOnboarding {
-            FirstLaunchGateView {
-                hasCompletedOnboarding = true
-            }
-        } else {
-            TabView(selection: $selectedTab) {
                 NavigationStack {
-                    RecipesView()
-                }
-                .tabItem {
-                    Label(RecipeTab.recipes.title, systemImage: RecipeTab.recipes.symbol)
-                        .accessibilityIdentifier("tab.\(RecipeTab.recipes.rawValue)")
-                }
-                .tag(RecipeTab.recipes)
-
-                NavigationStack {
-                    MealPlanView()
-                }
-                .tabItem {
-                    Label(RecipeTab.plan.title, systemImage: RecipeTab.plan.symbol)
-                        .accessibilityIdentifier("tab.\(RecipeTab.plan.rawValue)")
-                }
-                .tag(RecipeTab.plan)
-
-                NavigationStack {
-                    GroceriesView()
-                }
-                .tabItem {
-                    Label(RecipeTab.groceries.title, systemImage: RecipeTab.groceries.symbol)
-                        .accessibilityIdentifier("tab.\(RecipeTab.groceries.rawValue)")
-                }
-                .tag(RecipeTab.groceries)
-
-                NavigationStack(path: $profilePath) {
-                    ProfileView()
-                        .navigationDestination(for: ProfileRoute.self) { route in
-                            switch route {
-                            case .account:
-                                AccountView()
-                            }
+                    EmptyStateView(
+                        title: "Your saved library needs attention",
+                        message:
+                            "RecipePouch couldn't read your saved library. The file has been left unchanged.\n\n\(message)",
+                        systemImage: "externaldrive.badge.exclamationmark",
+                        actionTitle: "Try again",
+                        action: {
+                            store.reload()
                         }
+                    )
+                    .padding()
+                    .navigationTitle("RecipePouch")
+                    .background(RecipeTheme.canvas)
                 }
-                .tabItem {
-                    Label(RecipeTab.profile.title, systemImage: RecipeTab.profile.symbol)
-                        .accessibilityIdentifier("tab.\(RecipeTab.profile.rawValue)")
+            } else if !hasCompletedOnboarding && !bypassOnboarding {
+                FirstLaunchGateView {
+                    hasCompletedOnboarding = true
                 }
-                .tag(RecipeTab.profile)
+            } else {
+                TabView(selection: $selectedTab) {
+                    NavigationStack {
+                        RecipesView()
+                    }
+                    .tabItem {
+                        Label(RecipeTab.recipes.title, systemImage: RecipeTab.recipes.symbol)
+                            .accessibilityIdentifier("tab.\(RecipeTab.recipes.rawValue)")
+                    }
+                    .tag(RecipeTab.recipes)
+
+                    NavigationStack {
+                        MealPlanView()
+                    }
+                    .tabItem {
+                        Label(RecipeTab.plan.title, systemImage: RecipeTab.plan.symbol)
+                            .accessibilityIdentifier("tab.\(RecipeTab.plan.rawValue)")
+                    }
+                    .tag(RecipeTab.plan)
+
+                    NavigationStack {
+                        GroceriesView()
+                    }
+                    .tabItem {
+                        Label(RecipeTab.groceries.title, systemImage: RecipeTab.groceries.symbol)
+                            .accessibilityIdentifier("tab.\(RecipeTab.groceries.rawValue)")
+                    }
+                    .tag(RecipeTab.groceries)
+
+                    NavigationStack(path: $profilePath) {
+                        ProfileView()
+                            .navigationDestination(for: ProfileRoute.self) { route in
+                                switch route {
+                                case .account:
+                                    AccountView()
+                                }
+                            }
+                    }
+                    .tabItem {
+                        Label(RecipeTab.profile.title, systemImage: RecipeTab.profile.symbol)
+                            .accessibilityIdentifier("tab.\(RecipeTab.profile.rawValue)")
+                    }
+                    .tag(RecipeTab.profile)
+                }
             }
-        }
         }
         .environment(shareInbox)
         .task {
@@ -219,7 +249,9 @@ private struct RecipeRootView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
-            guard phase == .active else { return }
+            guard phase == .active else {
+                return
+            }
             if !bypassOnboarding {
                 shareInbox.refresh()
             }
@@ -268,7 +300,9 @@ private struct FirstLaunchGateView: View {
                 ProgressView("Preparing RecipePouch…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(RecipeTheme.canvas)
-                    .task { await resolveExistingInstall() }
+                    .task {
+                        await resolveExistingInstall()
+                    }
 
             case .show:
                 FirstLaunchFlowView(onComplete: onComplete)
@@ -287,7 +321,8 @@ private struct FirstLaunchGateView: View {
             // appVersionID is nil for local/sandbox transactions. Apply the release
             // cutoff only to verified production App Store history.
             if appTransaction.appVersionID != nil,
-               appTransaction.originalPurchaseDate < Self.onboardingReleaseCutoff {
+                appTransaction.originalPurchaseDate < Self.onboardingReleaseCutoff
+            {
                 onComplete()
                 return
             }
@@ -306,23 +341,33 @@ private enum RecipeTab: String, Identifiable {
     case groceries
     case profile
 
-    var id: Self { self }
+    var id: Self {
+        self
+    }
 
     var title: LocalizedStringKey {
         switch self {
-        case .recipes: "Recipes"
-        case .plan: "Plan"
-        case .groceries: "Groceries"
-        case .profile: "Profile"
+        case .recipes:
+            "Recipes"
+        case .plan:
+            "Plan"
+        case .groceries:
+            "Groceries"
+        case .profile:
+            "Profile"
         }
     }
 
     var symbol: String {
         switch self {
-        case .recipes: "book.closed"
-        case .plan: "calendar"
-        case .groceries: "basket"
-        case .profile: "person.crop.circle"
+        case .recipes:
+            "book.closed"
+        case .plan:
+            "calendar"
+        case .groceries:
+            "basket"
+        case .profile:
+            "person.crop.circle"
         }
     }
 }

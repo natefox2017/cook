@@ -337,9 +337,11 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
-    func testAccountScreenShowsAvailableSignInOptions() {
+    func testAccountScreenKeepsEmailCodePasswordAppleAndGoogleInOneFlow() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
 
         let profile = app.tabBars.buttons["Profile"]
         waitUntilReady(profile)
@@ -349,16 +351,20 @@ final class RecipeUITests: XCTestCase {
         waitUntilReady(account)
         account.tap()
 
-        XCTAssertTrue(app.buttons["account.submit"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.textFields["Email"].exists)
-        XCTAssertTrue(app.secureTextFields["Password"].exists)
-        XCTAssertTrue(
-            app.buttons.matching(
-                NSPredicate(format: "label CONTAINS[c] %@", "Apple")
-            ).firstMatch.exists
-        )
-        XCTAssertTrue(app.buttons["Forgot Password?"].exists)
+        XCTAssertTrue(app.buttons["account.next"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.textFields["account.email"].exists)
+        XCTAssertTrue(app.buttons["account.google"].exists)
+        XCTAssertTrue(app.buttons["account.apple"].exists)
         attachScreenshot("Account sign in options", app: app)
+
+        let emailField = app.textFields["account.email"]
+        emailField.tap()
+        emailField.typeText("tester@example.com")
+        app.buttons["account.next"].tap()
+        XCTAssertTrue(app.buttons["account.sendCode"].waitForExistence(timeout: 5))
+        app.buttons["Use Password Instead"].tap()
+        XCTAssertTrue(app.secureTextFields["Password"].exists)
+        XCTAssertTrue(app.buttons["Forgot Password?"].exists)
     }
 
     @MainActor

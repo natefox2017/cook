@@ -120,7 +120,7 @@ final class RecipeAuthServiceTests: XCTestCase {
         XCTAssertEqual(service.state, .needsEmailVerification(email))
 
         service.handleAuthCallback(
-            URL(string: "cook://auth/callback?code=local-confirmation-code")!
+            URL(string: "recipe_app://auth/callback?code=local-confirmation-code")!
         )
         await waitUntil {
             service.state == .signedIn(userID: userID, email: email)

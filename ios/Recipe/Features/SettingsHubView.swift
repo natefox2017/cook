@@ -9,12 +9,6 @@ struct SettingsHubView: View {
         List {
             Section("Account") {
                 NavigationLink {
-                    AccountView()
-                } label: {
-                    SettingsRow("RecipePouch Account", "person.crop.circle")
-                }
-
-                NavigationLink {
                     SubscriptionView()
                 } label: {
                     SettingsRow("Subscription", "sparkles")
