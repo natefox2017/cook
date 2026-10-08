@@ -152,15 +152,13 @@ struct ProfileView: View {
             if case let .failure(error) = result { errorMessage = error.localizedDescription }
         }
         .confirmationDialog("Delete all local data?", isPresented: $confirmsReset, titleVisibility: .visible) {
-            Button("Delete All Cook Data", role: .destructive) {
+            Button("Delete All Local Data", role: .destructive) {
                 do {
-                    try store.resetLibrary()
-                    for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("cook.cookingSession.") {
-                        UserDefaults.standard.removeObject(forKey: key)
-                    }
+                    try CookLocalDataCleanup.reset(store: store)
                     exportDocument = CookExportDocument(data: Data())
-                    Task { await CookNotificationCleanup.removeTimerReminders() }
-                } catch { errorMessage = error.localizedDescription }
+                } catch {
+                    errorMessage = error.localizedDescription
+                }
             }
         } message: {
             Text("This permanently deletes your recipes, grocery list, meal plan, local profile and preferences from this iPhone. Export a copy first if you want to keep them.")
@@ -380,7 +378,38 @@ struct NotificationPreferencesView: View {
 }
 
 @MainActor
-private enum CookNotificationCleanup {
+enum CookLocalDataCleanup {
+    static func reset(store: CookStore) throws {
+        // Commit the destructive library reset first. If persistence fails,
+        // keep sessions/preferences intact so the user can retry safely.
+        try store.resetLibrary()
+
+        let defaults = UserDefaults.standard
+        for key in defaults.dictionaryRepresentation().keys
+            where key.hasPrefix("cook.cookingSession.") {
+            defaults.removeObject(forKey: key)
+        }
+
+        // Remove legacy or still-UserDefaults-backed local preferences owned by
+        // this app. Account credentials and App Store purchases are separate.
+        for key in [
+            "cook.collections",
+            "cook.grocery.consolidate",
+            "cook.grocery.sources",
+            "cook.meal.weekStart",
+            "cook.sync.mode"
+        ] {
+            defaults.removeObject(forKey: key)
+        }
+
+        Task {
+            await CookNotificationCleanup.removeTimerReminders()
+        }
+    }
+}
+
+@MainActor
+enum CookNotificationCleanup {
     static func removeTimerReminders() async {
         let center = UNUserNotificationCenter.current()
         let pending = await center.pendingNotificationRequests()
