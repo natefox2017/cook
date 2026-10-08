@@ -30,9 +30,10 @@ struct ShareRootView: View {
                     .foregroundStyle(.green)
                 Text("Saved on this iPhone")
                     .font(.headline)
-                Text("Your recipe will be processed when RecipePouch can connect.")
+                Text("Import pending.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
 
             case .failed(let message):
                 Image(systemName: "exclamationmark.triangle")
@@ -41,6 +42,7 @@ struct ShareRootView: View {
                 Text("Couldn’t save your source")
                     .font(.headline)
                 Text(message)
+                    .lineLimit(1)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
