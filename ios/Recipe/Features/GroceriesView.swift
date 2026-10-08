@@ -218,7 +218,7 @@ struct GroceriesView: View {
                             Text(sourceNames)
                                 .font(RecipeTheme.text(12, weight: .regular, relativeTo: .caption))
                                 .foregroundStyle(.secondary)
-                                .lineLimit(2)
+                                .lineLimit(1)
                         }
                     }
                     Spacer(minLength: 4)
@@ -314,11 +314,6 @@ private struct GroceryItemEditorView: View {
                         }
                     }
                     Toggle("Bought", isOn: $draft.isChecked)
-                }
-                Section {
-                    Text("Amounts can be numbers, ranges or words such as “to taste”. Keep the amount that works for your shop.")
-                        .font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote))
-                        .foregroundStyle(.secondary)
                 }
                 if !draft.recipeIDs.isEmpty {
                     Section("From your recipes") {
