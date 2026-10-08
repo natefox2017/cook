@@ -86,11 +86,11 @@ Deno.test("duplicated and out-of-range page numbers are rejected", () => {
 });
 
 
-function syntheticTextPDF(): Uint8Array {
+function syntheticTextPDF(includeText = true): Uint8Array {
   // A valid single-page PDF 1.4 built with byte-accurate xref offsets.
   // Keeps regression fixtures self-contained without binary test artifacts.
   const encoder = new TextEncoder();
-  const stream = [
+  const stream = includeText ? [
     "BT",
     "/F1 12 Tf",
     "50 760 Td",
@@ -104,7 +104,7 @@ function syntheticTextPDF(): Uint8Array {
     "0 -20 Td",
     "(1. Simmer gently) Tj",
     "ET",
-  ].join("\n");
+  ].join("\n") : "";
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
@@ -137,9 +137,47 @@ Deno.test("bundled serverless PDF.js reads a real selectable-text fixture", asyn
     platformHint: null,
     originalSourceURL: null,
   });
+  expect(result.status === "ready", "Complete PDF did not produce a ready recipe");
+  expect(result.fields["ingredients[0].amount"].normalized_value === null, "PDF invented a quantity");
   expect(result.recipe_id === ID, "Unstable recipe identifier");
   expect(result.source.source_artifact_id === ARTIFACT, "Private document lost");
   expect(result.evidence.some((item) =>
     String(item.excerpt).includes("Tomato soup")
   ), "Selectable PDF text was not extracted");
+});
+
+Deno.test("real PDF without a text layer requests OCR or review without fabricating text", async () => {
+  const bytes = syntheticTextPDF(false);
+  let noText = false;
+  try {
+    await extractSelectablePDFArtifact({
+      recipeID: ID,
+      artifactID: ARTIFACT,
+      bytes,
+      expectedBytes: bytes.length,
+      platformHint: null,
+      originalSourceURL: null,
+    });
+  } catch (error) {
+    noText = error instanceof PDFArtifactError &&
+      error.code === "PDF_NO_SELECTABLE_TEXT";
+  }
+  expect(noText, "Blank PDF fabricated selectable text or hid the OCR fallback signal");
+});
+
+Deno.test("sequential real PDF parses preserve stable identity and source", async () => {
+  for (let count = 0; count < 10; count++) {
+    const bytes = syntheticTextPDF();
+    const result = await extractSelectablePDFArtifact({
+      recipeID: ID,
+      artifactID: ARTIFACT,
+      bytes,
+      expectedBytes: bytes.length,
+      platformHint: "files",
+      originalSourceURL: "https://example.com/recipe",
+    });
+    expect(result.status === "ready", "Repeated parsing lost complete recipe fields");
+    expect(result.source.original_url === "https://example.com/recipe", "Source URL lost");
+    expect(result.source.source_artifact_id === ARTIFACT, "Artifact identity lost");
+  }
 });

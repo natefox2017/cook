@@ -151,7 +151,7 @@ export async function extractSelectablePDFArtifact(input: {
     // bound image decoding and walk pages sequentially (no fan-out).
     pdf = await getDocumentProxy(input.bytes, {
       maxImageSize: MAX_IMAGE_PIXELS,
-      isEvalSupported: false,
+      // Bundled PDF.js removed its eval path and the isEvalSupported option.
       disableFontFace: true,
     });
     if (pdf.numPages < 1 || pdf.numPages > MAX_PAGES) {
@@ -192,7 +192,7 @@ export async function extractSelectablePDFArtifact(input: {
   } finally {
     // A cleanup failure must not mask an actionable parse/no-text error.
     try {
-      await pdf?.destroy();
+      await pdf?.loadingTask.destroy();
     } catch {
       // The parser has no persistent state; Edge runtime releases the isolate.
     }
