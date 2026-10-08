@@ -56,6 +56,16 @@
               }
             }
           },
+          "413": {
+            "description": "Request body exceeds the accepted size limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./import-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Session required",
             "content": {
