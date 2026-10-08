@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Implements the focused cooking workspace, session persistence, ingredients, and timers.
+
 import RecipeCore
 import SwiftUI
 import UIKit
