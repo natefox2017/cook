@@ -320,6 +320,72 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testRootTabsUseNativeTitlesAndSecondaryPagesHideTabBar() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        // Test the hierarchy, not hard-coded pixel coordinates. The native
+        // navigation bar owns its title and safe-area placement on each iOS.
+        let rootScreens: [(tab: String, title: String)] = [
+            ("Recipes", "My Recipes"),
+            ("Plan", "Meal Plan"),
+            ("Groceries", "Groceries"),
+            ("Profile", "Profile"),
+        ]
+        for screen in rootScreens {
+            let tab = app.tabBars.buttons[screen.tab]
+            waitUntilReady(tab)
+            tab.tap()
+            XCTAssertTrue(
+                app.navigationBars[screen.title].waitForExistence(timeout: 8),
+                "Missing native title for \(screen.tab)"
+            )
+        }
+
+        let settings = app.buttons["Settings"]
+        waitUntilReady(settings)
+        settings.tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 8))
+        waitUntilNotHittable(app.tabBars.firstMatch)
+        attachScreenshot("Settings navigation without root tab bar", app: app)
+
+        let settingsBack = app.navigationBars["Settings"].buttons["Profile"]
+        waitUntilReady(settingsBack)
+        settingsBack.tap()
+        waitUntilReady(app.tabBars.buttons["Profile"])
+
+        let savedRecipes = app.buttons["Saved Recipes"]
+        reveal(savedRecipes, in: app, maximumSwipes: 4)
+        savedRecipes.tap()
+        XCTAssertTrue(app.navigationBars["My Recipes"].waitForExistence(timeout: 8))
+        waitUntilNotHittable(app.tabBars.firstMatch)
+        attachScreenshot("Saved Recipes uses secondary native title", app: app)
+
+        let recipesBack = app.navigationBars["My Recipes"].buttons["Profile"]
+        waitUntilReady(recipesBack)
+        recipesBack.tap()
+        waitUntilReady(app.tabBars.buttons["Profile"])
+    }
+
+    @MainActor
+    func testAddRecipeSheetUsesSingleNativeTitleWithoutTagline() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        app.buttons["addRecipeButton"].tap()
+        XCTAssertTrue(app.navigationBars["Add Recipe"].waitForExistence(timeout: 8))
+        XCTAssertFalse(app.staticTexts["Good food, kept in one place."].exists)
+        XCTAssertFalse(app.staticTexts["Add a recipe"].exists)
+        XCTAssertTrue(app.textFields["importURL"].waitForExistence(timeout: 8))
+        attachScreenshot("Add Recipe native title and compact copy", app: app)
+
+        let done = app.navigationBars["Add Recipe"].buttons["Done"]
+        waitUntilReady(done)
+        done.tap()
+        waitUntilReady(app.buttons["addRecipeButton"])
+    }
+
+    @MainActor
     func testProfileLayoutAndPrimaryActionsAreVisible() {
         let app = launchSeededApp()
         defer { app.terminate() }
