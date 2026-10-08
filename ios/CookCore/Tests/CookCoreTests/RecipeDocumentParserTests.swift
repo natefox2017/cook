@@ -98,6 +98,8 @@ func invalidDurationComponentDoesNotBecomeAPartialTime(_ duration: String) throw
 @Test(arguments: [
     "Simmer for 10-15 minutes over medium heat.",
     "Simmer for 10 to 15 minutes over medium heat.",
+    "Simmer 10 minutes to 15 minutes over medium heat.",
+    "Simmer between 10 minutes and 15 minutes over medium heat.",
     "Simmer for about 10 minutes over medium heat.",
     "Simmer for roughly 10 minutes over medium heat.",
     "Simmer for up to 10 minutes over medium heat."
