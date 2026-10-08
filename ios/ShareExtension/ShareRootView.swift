@@ -1,50 +1,59 @@
 // Developer: gengyun
-// Purpose: Receives shared source content and records it for the RecipePouch host app.
+// Purpose: Shows the short-lived native share receipt confirmation or a retryable error.
 
 import SwiftUI
-import UniformTypeIdentifiers
 
-/// Share Extension UI: receive a URL/text payload, persist it to the App Group
-/// inbox, then finish immediately. Parsing/AI belongs to the main app/backend.
-struct ShareRootView: View {
-    let payload: String
-    let complete: () -> Void
-    @State private var status = "Saving…"
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "checkmark.circle").font(.system(size: 44))
-            Text(status).font(.headline)
-        }
-        .padding()
-        .task {
-            do {
-                try ShareInbox.save(payload)
-                status = "Saved to RecipePouch"
-                try? await Task.sleep(for: .milliseconds(350))
-                complete()
-            } catch {
-                status = "Couldn’t save to RecipePouch"
-            }
-        }
-    }
+enum SharePresentationState {
+    case receiving
+    case saved
+    case failed(String)
 }
 
-enum ShareInbox {
-    static let suite = "group.com.modelhub.cook"
-    private static let inboxKey = "recipe.shareInbox"
-    private static let legacyInboxKey = "cook.shareInbox"
+/// The Share host closes immediately after its durable receipt is saved.
+/// Parsing/AI and cloud acknowledgements belong to the main app/backend.
+struct ShareRootView: View {
+    let state: SharePresentationState
+    let retry: () -> Void
+    let cancel: () -> Void
 
-    static func save(_ payload: String) throws {
-        guard let defaults = UserDefaults(suiteName: suite) else { throw CocoaError(.fileNoSuchFile) }
-        var inbox = defaults.stringArray(forKey: inboxKey) ?? []
-        inbox.append(contentsOf: defaults.stringArray(forKey: legacyInboxKey) ?? [])
-        var seen = Set<String>()
-        inbox = inbox.filter { seen.insert($0).inserted }
-        if !inbox.contains(payload) { inbox.append(payload) }
-        // Keep the deployed App Group and legacy key synchronized until the
-        // host app migration in #30 is complete.
-        defaults.set(inbox, forKey: inboxKey)
-        defaults.set(inbox, forKey: legacyInboxKey)
+    var body: some View {
+        VStack(spacing: 18) {
+            switch state {
+            case .receiving:
+                ProgressView()
+                Text("Saving source…")
+                    .font(.headline)
+
+            case .saved:
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 42))
+                    .foregroundStyle(.green)
+                Text("Saved on this iPhone")
+                    .font(.headline)
+                Text("Your recipe will be processed when RecipePouch can connect.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+            case .failed(let message):
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 36))
+                    .foregroundStyle(.orange)
+                Text("Couldn’t save your source")
+                    .font(.headline)
+                Text(message)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                HStack(spacing: 14) {
+                    Button("Cancel", role: .cancel, action: cancel)
+                        .buttonStyle(.bordered)
+                    Button("Try Again", action: retry)
+                        .buttonStyle(.borderedProminent)
+                }
+            }
+        }
+        .padding(28)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
     }
 }
