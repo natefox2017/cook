@@ -65,7 +65,9 @@ struct RecipeEditorView: View {
                 }
                 Section("Steps") {
                     ForEach($draft.steps) { $step in
-                        StepEditorRow(step: $step) { draft.steps.removeAll { $0.id == step.id } }
+                        StepEditorRow(step: $step, ingredients: draft.ingredients) {
+                            draft.steps.removeAll { $0.id == step.id }
+                        }
                     }
                     Button { draft.steps.append(RecipeStep(instruction: "")) } label: {
                         Label("Add step", systemImage: "plus.circle")
@@ -157,7 +159,9 @@ struct RecipeEditorView: View {
     private func hasStepContent(_ step: RecipeStep) -> Bool {
         !step.instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || !step.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            || step.durationSeconds != nil
+            || step.temperature != nil
+            || !step.timers.isEmpty
+            || !step.linkedIngredientIDs.isEmpty
     }
 
     private func numberField(_ title: String, placeholder: String, text: Binding<String>) -> some View {
@@ -193,7 +197,16 @@ struct RecipeEditorView: View {
                 item.id = ingredient.id
                 return item
             }
-            recipe.steps = draft.steps.filter(hasStepContent)
+            let validIngredientIDs = Set(recipe.ingredients.map(\.id))
+            recipe.steps = draft.steps.filter(hasStepContent).map { step in
+                var cleaned = step
+                cleaned.linkedIngredientIDs = cleaned.linkedIngredientIDs.filter(validIngredientIDs.contains)
+                cleaned.timers = cleaned.timers.filter { $0.durationSeconds > 0 }
+                if cleaned.temperature?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
+                    cleaned.temperature = nil
+                }
+                return cleaned
+            }
             if original.sourceURL == nil {
                 let value = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard value.isEmpty || RecipeDocumentParser.validatedSourceURL(value) != nil else { throw RecipeImportError.invalidLink }
@@ -238,27 +251,133 @@ private struct IngredientEditorRow: View {
 
 private struct StepEditorRow: View {
     @Binding var step: RecipeStep
+    let ingredients: [RecipeIngredient]
     let remove: () -> Void
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 TextField("Step title (optional)", text: $step.title)
-                Button(role: .destructive, action: remove) { Image(systemName: "minus.circle") }
-                    .buttonStyle(.borderless).frame(minWidth: 44, minHeight: 44)
-                    .accessibilityLabel("Remove step")
+                Button(role: .destructive, action: remove) {
+                    Image(systemName: "minus.circle")
+                }
+                .buttonStyle(.borderless)
+                .frame(minWidth: 44, minHeight: 44)
+                .accessibilityLabel("Remove step")
             }
+
             TextField("What should the cook do?", text: $step.instruction, axis: .vertical)
-                .lineLimit(3...8).accessibilityIdentifier("stepInstruction")
-            Stepper(value: Binding(get: { step.durationSeconds ?? 0 }, set: { step.durationSeconds = $0 == 0 ? nil : $0 }), in: 0...43_200, step: 60) {
-                Text(step.durationSeconds.map { seconds in
-                    let minutes = seconds / 60
-                    let remainder = seconds % 60
-                    return remainder == 0 ? "Timer: \(minutes) min" : "Timer: \(minutes) min \(remainder) sec"
-                } ?? "Timer: none")
-                    .font(CookTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
+                .lineLimit(3...8)
+                .accessibilityIdentifier("stepInstruction")
+
+            TextField("Temperature or heat, e.g. 200°C or medium heat", text: temperatureText)
+                .font(CookTheme.text(15, relativeTo: .subheadline))
+
+            if !availableIngredients.isEmpty {
+                DisclosureGroup("Ingredients used in this step") {
+                    ForEach(availableIngredients) { ingredient in
+                        Button {
+                            toggleIngredient(ingredient.id)
+                        } label: {
+                            HStack {
+                                Image(
+                                    systemName: step.linkedIngredientIDs.contains(ingredient.id)
+                                        ? "checkmark.circle.fill"
+                                        : "circle"
+                                )
+                                .foregroundStyle(
+                                    step.linkedIngredientIDs.contains(ingredient.id)
+                                        ? CookTheme.accentForeground
+                                        : Color.secondary
+                                )
+                                Text(ingredient.name)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                            }
+                            .frame(minHeight: 44)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach($step.timers) { $timer in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            TextField("Timer label", text: $timer.label)
+                            Button(role: .destructive) {
+                                step.timers.removeAll { $0.id == timer.id }
+                            } label: {
+                                Image(systemName: "minus.circle")
+                            }
+                            .buttonStyle(.borderless)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .accessibilityLabel("Remove timer")
+                        }
+
+                        Stepper(
+                            value: $timer.durationSeconds,
+                            in: 60...43_200,
+                            step: 60
+                        ) {
+                            Text("Timer: \(durationLabel(timer.durationSeconds))")
+                                .font(CookTheme.text(15, relativeTo: .subheadline))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(10)
+                    .background(CookTheme.accent.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+                }
+
+                Button {
+                    step.timers.append(
+                        RecipeStepTimer(
+                            label: step.title.isEmpty ? "Step timer" : step.title,
+                            durationSeconds: 300
+                        )
+                    )
+                } label: {
+                    Label("Add timer", systemImage: "timer")
+                }
+                .frame(minHeight: 44)
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private var availableIngredients: [RecipeIngredient] {
+        ingredients.filter {
+            !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+    }
+
+    private var temperatureText: Binding<String> {
+        Binding(
+            get: { step.temperature?.text ?? "" },
+            set: { value in
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                step.temperature = trimmed.isEmpty ? nil : CookingTemperature(text: value)
+            }
+        )
+    }
+
+    private func toggleIngredient(_ id: UUID) {
+        if step.linkedIngredientIDs.contains(id) {
+            step.linkedIngredientIDs.removeAll { $0 == id }
+        } else {
+            step.linkedIngredientIDs.append(id)
+        }
+    }
+
+    private func durationLabel(_ seconds: Int) -> String {
+        if seconds % 3_600 == 0 {
+            return "\(seconds / 3_600) hr"
+        }
+        if seconds % 60 == 0 {
+            return "\(seconds / 60) min"
+        }
+        return "\(seconds / 60)m \(seconds % 60)s"
     }
 }
 
