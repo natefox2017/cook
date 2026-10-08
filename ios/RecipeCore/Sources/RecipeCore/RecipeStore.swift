@@ -14,21 +14,15 @@ public enum RecipeStoreError: LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .unreadableLibrary(let reason):
-            String(
-                localized:
-                    "Your library could not be read. Its original file has been preserved."
-            ) + " \(reason)"
+            "Your library could not be read. Its original file has been preserved." + " \(reason)"
         case .missingRecipe:
-            String(localized: "This recipe is no longer in your library.")
+            "This recipe is no longer in your library."
         case .missingItem:
-            String(localized: "This item is no longer available. Please reopen the recipe or list.")
+            "This item is no longer available. Please reopen the recipe or list."
         case .invalidValue(let message):
-            String(localized: String.LocalizationValue(message))
+            message
         case .unsupportedVersion:
-            String(
-                localized:
             "This library was saved in an unsupported format. Its original file has been preserved."
-            )
         }
     }
 }

@@ -57,5 +57,7 @@ struct ShareRootView: View {
         .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .contain)
+        // The share extension runs in its own process; pin its view locale too.
+        .environment(\.locale, Locale(identifier: "en"))
     }
 }

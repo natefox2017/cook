@@ -50,7 +50,7 @@ final class ShareViewController: UIViewController {
         display(.receiving)
 
         guard let items = extensionContext?.inputItems as? [NSExtensionItem] else {
-            display(.failed(String(localized: "The source app did not provide a readable link or text.")))
+            display(.failed(String(localized: LocalizedStringResource("The source app did not provide a readable link or text.", locale: Locale(identifier: "en")))))
             return
         }
 
@@ -93,7 +93,7 @@ final class ShareViewController: UIViewController {
             save(content, as: .text)
         } else {
             display(.failed(
-                String(localized: "Share a public recipe link, readable text, image, or PDF.")
+                String(localized: LocalizedStringResource("Share a public recipe link, readable text, image, or PDF.", locale: Locale(identifier: "en")))
             ))
         }
     }
@@ -117,7 +117,7 @@ final class ShareViewController: UIViewController {
                 guard let data, let mimeType else {
                     self.display(.failed(
                         error?.localizedDescription
-                            ?? String(localized: "This attachment type is not supported.")
+                            ?? String(localized: LocalizedStringResource("This attachment type is not supported.", locale: Locale(identifier: "en")))
                     ))
                     return
                 }
@@ -156,7 +156,7 @@ final class ShareViewController: UIViewController {
                     self.save(source, as: type)
                 } else {
                     self.display(.failed(
-                        failure ?? String(localized: "The shared item could not be read. Try copying the link or text.")
+                        failure ?? String(localized: LocalizedStringResource("The shared item could not be read. Try copying the link or text.", locale: Locale(identifier: "en")))
                     ))
                 }
             }
@@ -202,7 +202,7 @@ final class ShareViewController: UIViewController {
             withError: NSError(
                 domain: "RecipePouch.ShareExtension",
                 code: NSUserCancelledError,
-                userInfo: [NSLocalizedDescriptionKey: String(localized: "Share cancelled.")]
+                userInfo: [NSLocalizedDescriptionKey: String(localized: LocalizedStringResource("Share cancelled.", locale: Locale(identifier: "en")))]
             )
         )
     }
