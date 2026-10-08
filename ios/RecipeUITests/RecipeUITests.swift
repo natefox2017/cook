@@ -393,6 +393,7 @@ final class RecipeUITests: XCTestCase {
         reveal(premium, in: app, maximumSwipes: 4)
         premium.tap()
         XCTAssertTrue(app.staticTexts["RecipePouch Premium"].waitForExistence(timeout: 8))
+        assertUnavailableSubscriptionStorefront(in: app)
         XCTAssertTrue(app.buttons["Restore Purchases"].exists)
         attachScreenshot("Subscription from Profile", app: app)
 
@@ -406,8 +407,37 @@ final class RecipeUITests: XCTestCase {
         subscription.tap()
 
         XCTAssertTrue(app.staticTexts["RecipePouch Premium"].waitForExistence(timeout: 8))
+        assertUnavailableSubscriptionStorefront(in: app)
         XCTAssertTrue(app.buttons["Restore Purchases"].exists)
         attachScreenshot("Subscription from Settings", app: app)
+    }
+
+    @MainActor
+    private func assertUnavailableSubscriptionStorefront(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertTrue(
+            app.staticTexts["Premium plans aren’t available right now."].waitForExistence(timeout: 8),
+            file: file,
+            line: line
+        )
+        XCTAssertTrue(
+            app.staticTexts["Subscription products have not been configured in App Store Connect."]
+                .exists,
+            file: file,
+            line: line
+        )
+        XCTAssertTrue(app.buttons["subscription.retry"].exists, file: file, line: line)
+        XCTAssertEqual(
+            app.buttons.matching(
+                NSPredicate(format: "identifier BEGINSWITH %@", "subscription.plan.")
+            ).count,
+            0,
+            file: file,
+            line: line
+        )
     }
 
     @MainActor
