@@ -22,6 +22,7 @@ final class RecipeAuthService {
     static let shared = RecipeAuthService()
 
     private(set) var state: RecipeAuthState = .loading
+    private(set) var nonblockingNotice: String?
     private let client: SupabaseClient
 
     init(client: SupabaseClient = RecipeSupabase.client) {
@@ -101,16 +102,27 @@ final class RecipeAuthService {
                     nonce: rawNonce
                 )
             )
-            if let fullName, !fullName.isEmpty {
-                try await client.auth.update(
-                    user: UserAttributes(data: ["full_name": .string(fullName)])
-                )
-            }
+            // The verified session is the success boundary. Apple only
+            // provides a person's name on first consent, and an optional
+            // profile update must not turn a valid login into an auth error.
             state = .signedIn(userID: session.user.id, email: session.user.email)
+            if let fullName, !fullName.isEmpty {
+                do {
+                    try await client.auth.update(
+                        user: UserAttributes(data: ["full_name": .string(fullName)])
+                    )
+                } catch {
+                    nonblockingNotice = "Signed in successfully, but your name couldn't be saved. You can update your profile later."
+                }
+            }
         } catch {
             state = .error(error.localizedDescription)
             throw error
         }
+    }
+
+    func dismissNotice() {
+        nonblockingNotice = nil
     }
 
     func signOut() async throws {
