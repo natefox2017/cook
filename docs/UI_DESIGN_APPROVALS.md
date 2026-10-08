@@ -25,6 +25,8 @@
 
 | UI-019 | 登录 UI 与底部弹窗 | 现有 Profile / RecipeTheme / AccountView | APPROVED | 2026-10-08 用户要求直接修改登录页及弹出方式；Profile 账户入口改为底部 sheet，Apple 登录优先，邮箱按需展开，成功后关闭，回调可展开恢复密码；不改 Supabase Auth 契约 |
 
+| UI-020 | Google 与 Apple 登录一致性 | Google 官方品牌规范 + Apple HIG + 现有 Account Sheet | APPROVED | 2026-10-08 用户明确要求补齐 Google 登录、统一 Apple/Google 按钮外观并符合各自官方规范；共用 50pt 高度及 14pt 圆角，保留 Google G 品牌四色与 Apple 系统按钮；生产 OAuth 配置与真实设备测试仍需验收 |
+
 ## 状态定义
 - PENDING：尚无明确 UI 决策记录
 - APPROVED：用户已明确同意或直接要求执行对应方向
