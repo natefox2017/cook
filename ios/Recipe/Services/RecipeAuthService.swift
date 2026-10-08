@@ -21,6 +21,7 @@ enum RecipeAuthState: Equatable, Sendable {
 final class RecipeAuthService {
     static let shared = RecipeAuthService()
     private static let pendingPasswordRecoveryKey = "recipe.auth.pending_password_recovery"
+    private static let pendingPasswordRecoveryEmailKey = "recipe.auth.pending_password_recovery_email_hash"
 
     private(set) var state: RecipeAuthState = .loading
     private(set) var nonblockingNotice: String?
@@ -91,6 +92,10 @@ final class RecipeAuthService {
                 redirectTo: RecipeSupabase.redirectURL
             )
             // PKCE callbacks are generic sign-ins, so retain the reset intent across app restarts.
+            defaults.set(
+                passwordRecoveryEmailHash(for: email),
+                forKey: Self.pendingPasswordRecoveryEmailKey
+            )
             defaults.set(true, forKey: Self.pendingPasswordRecoveryKey)
             state = .passwordResetSent(email)
         } catch {
@@ -171,13 +176,23 @@ final class RecipeAuthService {
               url.host == RecipeSupabase.redirectURL.host,
               url.path == RecipeSupabase.redirectURL.path else { return }
 
-        let isPasswordRecovery = callbackType(in: url) == "recovery"
-            || defaults.bool(forKey: Self.pendingPasswordRecoveryKey)
+        let isExplicitRecoveryCallback = callbackType(in: url) == "recovery"
         Task {
             do {
                 let session = try await client.auth.session(from: url)
+                let pendingRecoveryEmailHash = defaults.string(
+                    forKey: Self.pendingPasswordRecoveryEmailKey
+                )
+                let callbackEmailMatchesPendingReset = session.user.email.map {
+                    passwordRecoveryEmailHash(for: $0) == pendingRecoveryEmailHash
+                } ?? false
+                let isPasswordRecovery = isExplicitRecoveryCallback
+                    || (defaults.bool(forKey: Self.pendingPasswordRecoveryKey)
+                        && callbackEmailMatchesPendingReset)
+
                 // Consume the marker only after the PKCE code has been exchanged successfully.
                 defaults.removeObject(forKey: Self.pendingPasswordRecoveryKey)
+                defaults.removeObject(forKey: Self.pendingPasswordRecoveryEmailKey)
                 authCallbackGeneration += 1
                 if isPasswordRecovery {
                     state = .passwordRecovery(userID: session.user.id)
@@ -207,6 +222,14 @@ final class RecipeAuthService {
         let fragmentItems = fragmentComponents.queryItems ?? []
         return fragmentItems.first(where: { $0.name == "type" })?.value
             ?? fragmentItems.first(where: { $0.name == "flow" })?.value
+    }
+
+    private func passwordRecoveryEmailHash(for email: String) -> String {
+        let normalizedEmail = email
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        let digest = SHA256.hash(data: Data(normalizedEmail.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
     }
 
     static func makeAppleNonce() -> (raw: String, hashed: String) {
