@@ -401,6 +401,69 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testRecipeJSONAndHTMLCanBeSavedAndOpenedInFilesWithoutChangingLibrary() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+        let initialCount = app.staticTexts["recipeCount"].label
+        let firstRecipe = "recipe.C0010000-0000-4000-8000-000000000001"
+
+        for (format, fileExtension) in [
+            ("Recipes (JSON)", "json"),
+            ("Recipes (HTML)", "html")
+        ] {
+            let profile = app.tabBars.buttons["Profile"]
+            waitUntilReady(profile)
+            profile.tap()
+
+            let export = app.buttons["profile.export"]
+            reveal(export, in: app, maximumSwipes: 5)
+            export.tap()
+            waitUntilReady(app.buttons[format])
+            app.buttons[format].tap()
+
+            saveExportFromFiles(in: app, fileExtension: fileExtension)
+            openRecentlySavedExport(in: app, fileExtension: fileExtension)
+
+            let recipes = app.tabBars.buttons["Recipes"]
+            waitUntilReady(recipes)
+            recipes.tap()
+            let recipeCount = app.staticTexts["recipeCount"]
+            waitUntilReady(recipeCount)
+            XCTAssertEqual(recipeCount.label, initialCount)
+            XCTAssertTrue(app.buttons[firstRecipe].exists)
+        }
+    }
+
+    @MainActor
+    func testUnreadableLocalLibraryShowsExportFailureFeedback() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--uitesting-export-failure"]
+        app.launch()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+        let export = app.buttons["profile.export"]
+        reveal(export, in: app, maximumSwipes: 5)
+        for format in ["Recipes (JSON)", "Recipes (HTML)"] {
+            export.tap()
+            waitUntilReady(app.buttons[format])
+            app.buttons[format].tap()
+
+            let failure = app.alerts["RecipePouch"]
+            XCTAssertTrue(failure.waitForExistence(timeout: 8), app.debugDescription)
+            XCTAssertTrue(
+                failure.staticTexts.matching(
+                    NSPredicate(format: "label CONTAINS %@", "Export failed:")
+                ).firstMatch.exists
+            )
+            attachScreenshot("\(format) local export failure feedback", app: app)
+            failure.buttons["OK"].tap()
+        }
+    }
+
+    @MainActor
     func testSubscriptionOpensFromProfileAndSettings() {
         let app = launchSeededApp()
         defer { app.terminate() }
@@ -445,6 +508,62 @@ final class RecipeUITests: XCTestCase {
         app.descendants(matching: .any)
             .matching(NSPredicate(format: "label IN %@", ["Cancel", "取消"]))
             .firstMatch
+    }
+
+    @MainActor
+    private func saveExportFromFiles(in app: XCUIApplication, fileExtension: String) {
+        let save = app.buttons["Save"]
+        if !save.waitForExistence(timeout: 3) {
+            let onMyIPhone = app.descendants(matching: .any)
+                .matching(NSPredicate(format: "label == %@", "On My iPhone"))
+                .firstMatch
+            XCTAssertTrue(onMyIPhone.waitForExistence(timeout: 8), app.debugDescription)
+            onMyIPhone.tap()
+        }
+        waitUntilReady(save)
+        save.tap()
+
+        let replace = app.alerts.buttons["Replace"]
+        if replace.waitForExistence(timeout: 2) {
+            replace.tap()
+        }
+
+        let savedAlert = app.alerts["RecipePouch"]
+        XCTAssertTrue(savedAlert.waitForExistence(timeout: 12), app.debugDescription)
+        let success = savedAlert.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", "Export saved as")
+        ).firstMatch
+        XCTAssertTrue(success.exists, savedAlert.debugDescription)
+        XCTAssertTrue(success.label.contains(".\(fileExtension)"), success.label)
+        attachScreenshot("Saved \(fileExtension.uppercased()) export", app: app)
+        savedAlert.buttons["OK"].tap()
+    }
+
+    @MainActor
+    private func openRecentlySavedExport(in app: XCUIApplication, fileExtension: String) {
+        let files = XCUIApplication(bundleIdentifier: "com.apple.DocumentsApp")
+        files.activate()
+
+        let recents = files.buttons["Recents"]
+        if recents.waitForExistence(timeout: 5) {
+            recents.tap()
+        }
+        let file = files.descendants(matching: .any).matching(
+            NSPredicate(
+                format: "label CONTAINS %@ AND label CONTAINS %@",
+                "RecipePouch-Recipes-",
+                ".\(fileExtension)"
+            )
+        ).firstMatch
+        XCTAssertTrue(file.waitForExistence(timeout: 12), files.debugDescription)
+        file.tap()
+
+        let recipeTitle = files.descendants(matching: .any).matching(
+            NSPredicate(format: "label CONTAINS %@", "Garlic Butter Shrimp Pasta")
+        ).firstMatch
+        XCTAssertTrue(recipeTitle.waitForExistence(timeout: 12), files.debugDescription)
+        attachScreenshot("Opened \(fileExtension.uppercased()) export in Files", app: files)
+        app.activate()
     }
 
     @MainActor

@@ -98,3 +98,39 @@ import Testing
     #expect(html.contains("RecipePouch Recipes"))
     #expect(!html.contains("<article"))
 }
+
+@Test @MainActor
+func portableJSONAndHTMLExportsDoNotMutateRecipeStore() throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent(
+            "RecipePortableExportTests-" + UUID().uuidString,
+            isDirectory: true
+        )
+    try FileManager.default.createDirectory(
+        at: directory,
+        withIntermediateDirectories: true
+    )
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    let store = RecipeStore(fileURL: directory.appendingPathComponent("library.json"))
+    let recipe = Recipe(
+        title: "Export fixture",
+        ingredients: [.from(name: "Salt", amountText: "to taste")],
+        steps: [RecipeStep(instruction: "Season to taste.")],
+        sourceURL: "https://example.com/recipe",
+        sourceText: "Original recipe text."
+    )
+    try store.upsert(recipe)
+    let collection = try store.createCollection(name: "Export fixtures")
+    try store.setRecipe(recipe.id, inCollection: collection.id, isMember: true)
+
+    let initialCount = store.recipes.count
+    let initialData = try store.exportData()
+    let initialSnapshot = try store.exportCloudSnapshot()
+    _ = try RecipePortableExport.json(snapshot: initialSnapshot)
+    _ = RecipePortableExport.html(snapshot: initialSnapshot)
+
+    #expect(store.recipes.count == initialCount)
+    #expect(try store.exportData() == initialData)
+    #expect(try store.exportCloudSnapshot() == initialSnapshot)
+}
