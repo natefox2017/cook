@@ -171,7 +171,7 @@ struct AddRecipeView: View {
                     Text("Include Ingredients and Instructions headings when available. The original text is always kept.")
                 }
             }
-            .navigationTitle("Paste recipe text")
+            .navigationTitle("Paste recipe text").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { showText = false } }
                 ToolbarItem(placement: .confirmationAction) {

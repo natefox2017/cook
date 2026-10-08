@@ -92,10 +92,10 @@ struct MealPlanView: View {
             .listRowBackground(Color.clear)
         }
         .listStyle(.insetGrouped)
+        .listSectionSpacing(CookSpacing.medium)
         .scrollContentBackground(.hidden)
         .background(CookTheme.canvas)
-        .navigationTitle("Meal Plan")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Meal Plan").navigationBarTitleDisplayMode(.large)
         .tint(CookTheme.accent)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -293,8 +293,7 @@ private struct MealPlanRecipePicker: View {
                 }
             }
             .background(CookTheme.canvas)
-            .navigationTitle("Choose a Recipe")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Choose a Recipe").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             }

@@ -124,6 +124,7 @@ struct AccountView: View {
                 }
             }
         }
+        .listSectionSpacing(CookSpacing.medium)
         .scrollContentBackground(.hidden)
     }
 
@@ -158,6 +159,7 @@ struct AccountView: View {
                 .disabled(isAuthenticating)
             }
         }
+        .listSectionSpacing(CookSpacing.medium)
         .scrollContentBackground(.hidden)
     }
 
@@ -192,6 +194,7 @@ struct AccountView: View {
                 Text("Use at least 8 characters.")
             }
         }
+        .listSectionSpacing(CookSpacing.medium)
         .scrollContentBackground(.hidden)
     }
 

@@ -111,9 +111,10 @@ struct GroceriesView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .listSectionSpacing(CookSpacing.medium)
         .scrollContentBackground(.hidden)
         .background(CookTheme.canvas)
-        .navigationTitle("Groceries")
+        .navigationTitle("Groceries").navigationBarTitleDisplayMode(.large)
         .tint(CookTheme.accent)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -295,8 +296,7 @@ private struct GroceryItemEditorView: View {
             }
             .scrollContentBackground(.hidden)
             .background(CookTheme.canvas)
-            .navigationTitle(originalItem == nil ? "Add Grocery Item" : "Edit Grocery Item")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(originalItem == nil ? "Add Grocery Item" : "Edit Grocery Item").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
