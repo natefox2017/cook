@@ -1,13 +1,18 @@
 // Developer: gengyun
-// Purpose: Processes owner-scoped import jobs and safely extracts public recipe webpages.
+// Purpose: Processes owner-scoped imports and extracts evidenced public recipe page content.
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { parseSchemaOrgRecipePage } from "./schemaRecipe.ts";
+import {
+  attachPageTextEvidence,
+  incompleteWebRecipe,
+  parseSchemaOrgRecipePage,
+} from "./schemaRecipe.ts";
 import {
   fetchPublicHTML,
   SafeFetchError,
   type SafeHTMLPage,
 } from "./safeURLFetch.ts";
+import { extractPublicPageText } from "./pageContent.ts";
 import { parseLocalText } from "./textEvidence.ts";
 
 interface QueueMessage {
@@ -156,9 +161,14 @@ Deno.serve(async (request: Request): Promise<Response> => {
         | ReturnType<typeof parseLocalText>
         | ReturnType<
           typeof parseSchemaOrgRecipePage
-        >;
+        > = incompleteWebRecipe({
+          id: claimed.id,
+          originalURL: claimed.original_source_url ?? claimed.source_value,
+          platformHint: claimed.platform_hint,
+        });
+      let completionError: Record<string, unknown> | null = null;
       if (claimed.input_type === "url") {
-        let page: SafeHTMLPage;
+        let page: SafeHTMLPage | null = null;
         try {
           page = await fetchPublicHTML(claimed.source_value);
         } catch (error) {
@@ -169,42 +179,36 @@ Deno.serve(async (request: Request): Promise<Response> => {
               "The source webpage could not be fetched safely.",
               true,
             );
-          const { data: stored, error: saveError } = await admin.from(
-            "recipe_import_jobs",
-          ).update({
-            status: "failed",
-            stage: "done",
-            error: {
-              code: sourceError.code,
-              message: sourceError.message,
-              recoverable: sourceError.recoverable,
-              suggested_action: sourceError.recoverable
-                ? "Keep the source URL and retry later."
-                : "Paste the recipe text or use another public recipe page.",
-              request_id: crypto.randomUUID(),
-            },
-            completed_at: now(),
-            updated_at: now(),
-          }).eq("id", jobID).eq("queue_message_id", queueID)
-            .eq("status", "extracting").eq("attempt_count", claimedAttempt)
-            .select("id")
-            .maybeSingle();
-          if (saveError || !stored) {
-            throw saveError ?? new Error("Import state changed before save");
-          }
-          await archive(queueID);
-          failed++;
-          continue;
-        }
-        result = parseSchemaOrgRecipePage({
-          id: claimed.id,
-          html: page.html,
-          source: {
+          result = incompleteWebRecipe({
+            id: claimed.id,
             originalURL: claimed.original_source_url ?? claimed.source_value,
-            canonicalURL: page.canonicalURL,
             platformHint: claimed.platform_hint,
-          },
-        });
+          });
+          completionError = {
+            code: sourceError.code,
+            message: sourceError.message,
+            recoverable: sourceError.recoverable,
+            suggested_action:
+              "Keep this source and try a public recipe page or paste the recipe text.",
+            request_id: crypto.randomUUID(),
+          };
+        }
+        if (page) {
+          const parsed = parseSchemaOrgRecipePage({
+            id: claimed.id,
+            html: page.html,
+            source: {
+              originalURL: claimed.original_source_url ?? claimed.source_value,
+              canonicalURL: page.canonicalURL,
+              platformHint: claimed.platform_hint,
+            },
+          });
+          const pageEvidence = await extractPublicPageText(
+            page.html,
+            page.canonicalURL,
+          );
+          result = attachPageTextEvidence(parsed, pageEvidence);
+        }
       } else {
         result = parseLocalText({
           id: claimed.id,
@@ -223,7 +227,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
         recipe_status: result.status,
         review_count: result.review_fields.length,
         result,
-        error: null,
+        error: completionError,
         completed_at: now(),
         updated_at: now(),
       }).eq("id", jobID).eq("queue_message_id", queueID)

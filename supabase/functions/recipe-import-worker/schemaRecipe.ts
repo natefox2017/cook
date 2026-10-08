@@ -2,6 +2,7 @@
 // Purpose: Extract only evidenced Schema.org Recipe JSON-LD fields from public HTML.
 
 import { load } from "cheerio";
+import type { PageTextEvidence } from "./pageContent.ts";
 
 interface EvidenceField {
   raw_value: string | null;
@@ -33,7 +34,7 @@ export interface ParsedWebRecipe {
   source: {
     input_type: "url";
     original_url: string;
-    canonical_url: string;
+    canonical_url: string | null;
     platform: string | null;
     author_name: string | null;
     source_title: string | null;
@@ -253,4 +254,149 @@ export function parseSchemaOrgRecipePage(input: {
     evidence,
     review_fields: [...reviewFields],
   };
+}
+
+export function incompleteWebRecipe(input: {
+  id: string;
+  originalURL: string;
+  platformHint: string | null;
+}): ParsedWebRecipe {
+  return {
+    recipe_id: input.id,
+    status: "needs_review",
+    source: {
+      input_type: "url",
+      original_url: input.originalURL,
+      canonical_url: null,
+      platform: input.platformHint,
+      author_name: null,
+      source_title: null,
+    },
+    fields: {},
+    evidence: [],
+    review_fields: ["title", "ingredients", "steps"],
+  };
+}
+
+export function attachPageTextEvidence(
+  recipe: ParsedWebRecipe,
+  pageEvidence: PageTextEvidence[],
+): ParsedWebRecipe {
+  if (pageEvidence.length === 0) return recipe;
+
+  const fields = { ...recipe.fields };
+  const reviewFields = new Set(recipe.review_fields);
+  const evidence = [
+    ...recipe.evidence,
+    ...pageEvidence.map((item) => ({
+      id: item.id,
+      source_type: item.sourceType,
+      origin: "extracted",
+      excerpt: item.excerpt,
+      confidence: null,
+      captured_at: item.capturedAt,
+    })),
+  ];
+
+  // Multiple structured recipes are ambiguous; never pick one from nearby copy.
+  if (!reviewFields.has("recipe_selection")) {
+    for (const item of pageEvidence) {
+      const sections = sectionValues(item.text);
+      if (
+        !fields.title && item.sourceType === "article_body" && item.title &&
+        item.text.includes(item.title)
+      ) {
+        fields.title = pageField(item, item.title);
+        reviewFields.delete("title");
+      }
+      if (
+        !hasFieldPrefix(fields, "ingredients") && sections.ingredients.length
+      ) {
+        sections.ingredients.forEach((value, index) => {
+          fields[`ingredients[${index}].raw_text`] = pageField(item, value);
+          fields[`ingredients[${index}].amount`] = pageField(item, value);
+        });
+        reviewFields.delete("ingredients");
+      }
+      if (!hasFieldPrefix(fields, "steps") && sections.steps.length) {
+        sections.steps.forEach((value, index) => {
+          fields[`steps[${index}].instruction`] = pageField(item, value);
+        });
+        reviewFields.delete("steps");
+      }
+    }
+  }
+
+  const nextReviewFields = [...reviewFields];
+  return {
+    ...recipe,
+    status: nextReviewFields.length ? "needs_review" : "ready",
+    fields,
+    evidence,
+    review_fields: nextReviewFields,
+  };
+}
+
+function pageField(
+  source: PageTextEvidence,
+  rawValue: string,
+): EvidenceField {
+  return {
+    raw_value: rawValue,
+    normalized_value: null,
+    evidence_ids: [source.id],
+    confidence: null,
+    user_confirmed: false,
+    origin: "extracted",
+    updated_at: source.capturedAt,
+  };
+}
+
+function hasFieldPrefix(
+  fields: Record<string, EvidenceField>,
+  prefix: string,
+): boolean {
+  return Object.keys(fields).some((path) => path.startsWith(`${prefix}[`));
+}
+
+function sectionValues(text: string): { ingredients: string[]; steps: string[] } {
+  const ingredients: string[] = [];
+  const steps: string[] = [];
+  const ingredientHeading =
+    /^(?:ingredients?|ingredient list|食材|材料|原料|材料一覧)\s*[:：]?$/i;
+  const stepHeading =
+    /^(?:steps?|instructions?|directions?|preparations?|method|做法|步骤|步骤说明|作り方|手順)\s*[:：]?$/i;
+  const otherHeading =
+    /^(?:notes?|tips?|variations?|nutrition|equipment|storage|comments?|nutrition facts|description|about|备注|提示|小贴士|营养信息|简介)\s*[:：]?$/i;
+  let section: "none" | "ingredients" | "steps" = "none";
+
+  for (const line of text.split(/\r?\n/)) {
+    const value = line.trim();
+    if (!value) continue;
+    if (ingredientHeading.test(value)) {
+      section = "ingredients";
+      continue;
+    }
+    if (stepHeading.test(value)) {
+      section = "steps";
+      continue;
+    }
+    if (otherHeading.test(value)) {
+      section = "none";
+      continue;
+    }
+    if (section !== "none" && value.length <= 60 && /[:：]$/.test(value)) {
+      section = "none";
+      continue;
+    }
+
+    const raw = value.replace(/^(?:[-*•]\s*|\d+[).、]\s*)/, "");
+    if (section === "ingredients" && ingredients.length < 100) {
+      ingredients.push(raw);
+    } else if (section === "steps" && steps.length < 80) {
+      steps.push(raw);
+    }
+  }
+
+  return { ingredients, steps };
 }
