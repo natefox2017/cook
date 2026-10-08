@@ -51,6 +51,29 @@ private func temporaryShareContainer() throws -> URL {
     #expect(try reopened.pendingReceipts(for: nil) == [first])
 }
 
+@Test
+func receiptIdentifiersStayStableForHistoricalURLAndImageSources() throws {
+    let container = try temporaryShareContainer()
+    defer { try? FileManager.default.removeItem(at: container) }
+    let inbox = try RecipeShareInbox(containerURL: container)
+
+    // Pin existing SHA-256-derived UUIDs so retries keep the same identity.
+    let url = try inbox.receive(
+        "https://example.org/recipe?source=notes", as: .url
+    )
+    #expect(url.id == UUID(uuidString: "600ae847-e76b-52ed-bb97-e83c3185df35"))
+
+    let imageBytes = Data([0xFF, 0xD8, 0xFF, 0x01])
+    let image = try inbox.receiveFile(imageBytes, as: .image, mimeType: "image/jpeg")
+    let repeated = try inbox.receiveFile(imageBytes, as: .image, mimeType: "image/jpeg")
+
+    #expect(image.id == UUID(uuidString: "ead1d6a6-5bcc-528b-bca7-ce166781fc64"))
+    #expect(image.id == image.clientRequestID)
+    #expect(repeated == image)
+    #expect(try inbox.fileData(for: image) == imageBytes)
+    #expect(try inbox.pendingReceipts().count == 2)
+}
+
 @Test func sharedReceiptKeepsAmbiguousAndUnicodeText() throws {
     let container = try temporaryShareContainer()
     defer { try? FileManager.default.removeItem(at: container) }

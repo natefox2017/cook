@@ -132,18 +132,7 @@ public struct RecipeShareInbox: Sendable {
             (type.rawValue + "\n" + original).utf8
         )))
         let hex = fingerprint.map { String(format: "%02x", $0) }.joined()
-        var uuidBytes = Array(fingerprint.prefix(16))
-        uuidBytes[6] = (uuidBytes[6] & 0x0F) | 0x50
-        uuidBytes[8] = (uuidBytes[8] & 0x3F) | 0x80
-        let idHex = uuidBytes.map { String(format: "%02x", $0) }.joined()
-        let idString = String(idHex.prefix(8)) + "-"
-            + String(idHex.dropFirst(8).prefix(4)) + "-"
-            + String(idHex.dropFirst(12).prefix(4)) + "-"
-            + String(idHex.dropFirst(16).prefix(4)) + "-"
-            + String(idHex.dropFirst(20))
-        guard let identifier = UUID(uuidString: idString) else {
-            throw RecipeShareInboxError.invalidInput
-        }
+        let identifier = try Self.stableReceiptID(from: fingerprint)
 
         let sourceRef = "sources/" + hex + ".txt"
         try writeOnce(
@@ -187,18 +176,7 @@ public struct RecipeShareInbox: Sendable {
         identity.append(data)
         let fingerprint = Array(SHA256.hash(data: identity))
         let hex = fingerprint.map { String(format: "%02x", $0) }.joined()
-        var uuidBytes = Array(fingerprint.prefix(16))
-        uuidBytes[6] = (uuidBytes[6] & 0x0F) | 0x50
-        uuidBytes[8] = (uuidBytes[8] & 0x3F) | 0x80
-        let idHex = uuidBytes.map { String(format: "%02x", $0) }.joined()
-        let idString = String(idHex.prefix(8)) + "-"
-            + String(idHex.dropFirst(8).prefix(4)) + "-"
-            + String(idHex.dropFirst(12).prefix(4)) + "-"
-            + String(idHex.dropFirst(16).prefix(4)) + "-"
-            + String(idHex.dropFirst(20))
-        guard let identifier = UUID(uuidString: idString) else {
-            throw RecipeShareInboxError.invalidInput
-        }
+        let identifier = try Self.stableReceiptID(from: fingerprint)
 
         let sourceRef = "sources/" + hex + "." + fileExtension(for: mimeType)
         try writeOnce(data, to: root.appendingPathComponent(sourceRef))
@@ -474,6 +452,27 @@ public struct RecipeShareInbox: Sendable {
             return false
         }
         return record.ownerID == ownerID && record.queueConfirmedAt != nil
+    }
+
+    /// Preserve the digest-derived receipt UUID mapping across input types.
+    /// Changing this mapping would break historical retry deduplication.
+    private static func stableReceiptID(from fingerprint: [UInt8]) throws -> UUID {
+        guard fingerprint.count >= 16 else {
+            throw RecipeShareInboxError.invalidInput
+        }
+        var uuidBytes = Array(fingerprint.prefix(16))
+        uuidBytes[6] = (uuidBytes[6] & 0x0F) | 0x50
+        uuidBytes[8] = (uuidBytes[8] & 0x3F) | 0x80
+        let idHex = uuidBytes.map { String(format: "%02x", $0) }.joined()
+        let idString = String(idHex.prefix(8)) + "-"
+            + String(idHex.dropFirst(8).prefix(4)) + "-"
+            + String(idHex.dropFirst(12).prefix(4)) + "-"
+            + String(idHex.dropFirst(16).prefix(4)) + "-"
+            + String(idHex.dropFirst(20))
+        guard let identifier = UUID(uuidString: idString) else {
+            throw RecipeShareInboxError.invalidInput
+        }
+        return identifier
     }
 
     private func validSourceName(_ name: String) -> Bool {
