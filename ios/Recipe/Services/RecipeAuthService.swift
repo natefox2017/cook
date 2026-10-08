@@ -1,6 +1,7 @@
 // Developer: gengyun
 // Purpose: Implements Supabase authentication state, email flows, and Sign in with Apple.
 
+import AuthenticationServices
 import CryptoKit
 import Foundation
 import Observation
@@ -82,6 +83,35 @@ final class RecipeAuthService {
             state = .error(error.localizedDescription)
             throw error
         }
+    }
+
+    /// Returns false for user cancellation, which is not an authentication error.
+    /// Supabase handles the Google OAuth callback and persists its session in Keychain.
+    @discardableResult
+    func signInWithGoogle() async throws -> Bool {
+        state = .authenticating
+
+        do {
+            let session = try await client.auth.signInWithOAuth(
+                provider: .google,
+                redirectTo: RecipeSupabase.redirectURL
+            )
+            state = .signedIn(userID: session.user.id, email: session.user.email)
+            return true
+        } catch {
+            if Self.isGoogleSignInCancellation(error) {
+                state = .signedOut
+                return false
+            }
+            state = .error(error.localizedDescription)
+            throw error
+        }
+    }
+
+    static func isGoogleSignInCancellation(_ error: Error) -> Bool {
+        let nativeError = error as NSError
+        return nativeError.domain == ASWebAuthenticationSessionErrorDomain
+            && nativeError.code == ASWebAuthenticationSessionError.canceledLogin.rawValue
     }
 
     func sendPasswordReset(to email: String) async throws {

@@ -352,13 +352,14 @@ final class RecipeUITests: XCTestCase {
         let emailEntry = app.buttons["account.email"]
         XCTAssertTrue(emailEntry.waitForExistence(timeout: 8))
         XCTAssertTrue(app.staticTexts["Welcome to RecipePouch"].exists)
-        XCTAssertTrue(
-            app.buttons.matching(
-                NSPredicate(format: "label CONTAINS[c] %@", "Apple")
-            ).firstMatch.exists
-        )
+        let appleButton = app.buttons["account.apple"]
+        let googleButton = app.buttons["account.google"]
+        XCTAssertTrue(appleButton.waitForExistence(timeout: 8))
+        XCTAssertTrue(googleButton.waitForExistence(timeout: 8))
+        XCTAssertEqual(googleButton.frame.height, appleButton.frame.height, accuracy: 2)
+        XCTAssertEqual(googleButton.frame.width, appleButton.frame.width, accuracy: 2)
 
-        // The initial bottom sheet is Apple-first; email entry expands it.
+        // Both providers and the email entry are shown without extra navigation.
         XCTAssertFalse(app.textFields["Email"].exists)
         emailEntry.tap()
         XCTAssertTrue(app.buttons["account.submit"].waitForExistence(timeout: 8))
