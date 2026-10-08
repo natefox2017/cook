@@ -1,6 +1,7 @@
 // Developer: gengyun
 // Purpose: Verifies Recipe Auth email, session, and password recovery behavior with a local HTTP stub.
 
+import AuthenticationServices
 import Foundation
 import Supabase
 import XCTest
@@ -16,6 +17,17 @@ final class RecipeAuthServiceTests: XCTestCase {
             UserDefaults.standard.removePersistentDomain(forName: defaultsSuiteName)
         }
         super.tearDown()
+    }
+
+    func testGoogleOAuthCancellationIsNotAnAuthenticationError() {
+        let cancellation = NSError(
+            domain: ASWebAuthenticationSessionErrorDomain,
+            code: ASWebAuthenticationSessionError.canceledLogin.rawValue
+        )
+        XCTAssertTrue(RecipeAuthService.isGoogleSignInCancellation(cancellation))
+
+        let unrelated = NSError(domain: NSURLErrorDomain, code: NSURLErrorNotConnectedToInternet)
+        XCTAssertFalse(RecipeAuthService.isGoogleSignInCancellation(unrelated))
     }
 
     func testEmailSignupWrongPasswordAndPasswordResetStates() async throws {

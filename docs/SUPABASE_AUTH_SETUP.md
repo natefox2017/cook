@@ -40,13 +40,47 @@ The native account screen is wired to the Auth service. A visible Apple button
 does not mean the provider is enabled; the live project state below currently
 blocks Apple sign-in.
 
+## Sign in with Google
+
+The account sheet now offers Google beside Apple's native sign-in. The Google
+button calls `client.auth.signInWithOAuth(provider: .google,
+redirectTo: RecipeSupabase.redirectURL)` through the existing Supabase Swift
+client and the system's `ASWebAuthenticationSession`. Supabase exchanges the
+OAuth callback and stores the resulting app session in the same Keychain-backed
+client as email/Apple login. Canceling the Google browser sheet is not an error.
+No new Google SDK, on-device Google secret, or extra account store is required.
+
+**Required deployment configuration (not verified in production):**
+1. In Google Cloud, register a Web OAuth client and allow
+   `https://semsjyrqjnumpvanibip.supabase.co/auth/v1/callback` as its
+   authorized redirect URI. Configure the consent screen brand/audience and
+   minimum `openid`, email, profile scopes.
+2. Under Supabase `cookapp` → Authentication → Providers → Google, enable the
+   provider and configure that Web Client ID and Client Secret.
+3. Supabase Auth redirect URLs must allow `cook://auth/callback` in addition
+   to Google Cloud's *HTTPS* callback. These are two different redirect steps.
+4. Verify successful login, user cancellation, restart/session restoration and
+   returning from the OAuth browser on a signed iPhone. Do not call the provider
+   available until these actions succeed.
+
+Apple retains its official `SignInWithAppleButton`; the Google logo is a
+multicolor vector asset using the standard G geometry/colors. Both controls use
+50pt height and 14pt corner radius. Google uses its standard outlined/dark
+colors, while Apple uses the supported white-outlined (light) or white (dark)
+variant. Provider-specific branding takes precedence over an identical fill.
+This follows:
+- https://developers.google.com/identity/branding-guidelines
+- https://developer.apple.com/design/human-interface-guidelines/sign-in-with-apple/
+- https://supabase.com/docs/reference/swift/auth-signinwithoauth
+
 ## Client integration status
 
 - Auth client is pinned to `supabase-swift` 2.55.3.
 - Sessions are stored in Keychain and Supabase refreshes an expired stored
   session before emitting the initial auth state.
 - The service supports email sign-up/sign-in, password reset/update, Apple token
-  exchange, session refresh, callback handling, and sign-out.
+  exchange, Google OAuth via system authentication session, session refresh,
+  callback handling, and sign-out.
 - Local HTTP-stub regression coverage is present for email/session and password
   recovery behavior; simulator XCTest is pending the shared-device queue.
 - Production sign-up, email delivery, Apple sign-in, and password-recovery flows
