@@ -18,13 +18,13 @@
 
 原始媒体不是永久资产。
 
-上线前必须为不同 artifact 定义：
+不同 artifact 的保留策略：
 - retention duration
 - delete-on-success?
 - delete-on-account-delete
 - troubleshooting retention
 
-默认倾向：解析成功后尽快删除非必要原始大文件，只保留用户食谱所需的派生产物/封面和证据摘要。
+Recipe import 原始附件在上传未完成时保留最多 2 小时；确认上传后保留 7 天，到期由受 secret 保护的清理函数经 Storage API 删除对象并保留最小 `expired` 元数据。附件 API 提供 owner-scoped 删除操作，但当前 App 没有单个附件的删除入口；删除账户时会清理 `recipe-import-artifacts` bucket。图片/PDF 分享导入只保留私有原件并返回 `needs_review`，当前不做 OCR/ASR/视频解析，也不声称已解析附件。
 
 ## 3. 权限
 

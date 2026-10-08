@@ -4,6 +4,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import {
   attachPageTextEvidence,
+  incompleteArtifactRecipe,
   incompleteWebRecipe,
   parseSchemaOrgRecipePage,
 } from "./schemaRecipe.ts";
@@ -24,8 +25,9 @@ interface QueueMessage {
 interface Job {
   id: string;
   owner_id: string;
-  input_type: "url" | "text";
+  input_type: "url" | "text" | "image" | "file";
   source_value: string;
+  artifact_id: string | null;
   original_source_url: string | null;
   platform_hint: string | null;
   status: string;
@@ -209,13 +211,39 @@ Deno.serve(async (request: Request): Promise<Response> => {
           );
           result = attachPageTextEvidence(parsed, pageEvidence);
         }
-      } else {
+      } else if (claimed.input_type === "text") {
         result = parseLocalText({
           id: claimed.id,
           source_value: claimed.source_value,
           original_source_url: claimed.original_source_url,
           platform_hint: claimed.platform_hint,
         });
+      } else {
+        const { data: artifact, error: artifactError } = await admin.from(
+          "recipe_import_artifacts",
+        ).select("id,mime_type,state,expires_at")
+          .eq("id", claimed.artifact_id ?? "")
+          .eq("owner_id", claimed.owner_id)
+          .maybeSingle();
+        if (artifactError) throw artifactError;
+        const available = artifact?.state === "available" &&
+          Date.parse(artifact.expires_at) > Date.now();
+        result = incompleteArtifactRecipe({
+          id: claimed.id,
+          inputType: claimed.input_type,
+          artifactID: claimed.artifact_id ?? "",
+          platformHint: claimed.platform_hint,
+          mimeType: available ? artifact.mime_type : null,
+        });
+        if (!available) {
+          completionError = {
+            code: "ARTIFACT_NOT_READY",
+            message: "The private source file expired before it could be reviewed.",
+            recoverable: false,
+            suggested_action: "Share the source again or add the recipe details manually.",
+            request_id: crypto.randomUUID(),
+          };
+        }
       }
 
       const { data: saved, error: saveError } = await admin.from(

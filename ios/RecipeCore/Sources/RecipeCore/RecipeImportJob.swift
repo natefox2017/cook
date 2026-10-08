@@ -90,6 +90,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         public let inputType: String
         public let originalURL: String?
         public let canonicalURL: String?
+        public let sourceArtifactID: UUID?
         public let platform: String?
         public let authorName: String?
         public let sourceTitle: String?
@@ -99,6 +100,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
             case inputType = "input_type"
             case originalURL = "original_url"
             case canonicalURL = "canonical_url"
+            case sourceArtifactID = "source_artifact_id"
             case platform
             case authorName = "author_name"
             case sourceTitle = "source_title"
@@ -109,6 +111,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
             inputType: String,
             originalURL: String? = nil,
             canonicalURL: String? = nil,
+            sourceArtifactID: UUID? = nil,
             platform: String? = nil,
             authorName: String? = nil,
             sourceTitle: String? = nil,
@@ -117,6 +120,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
             self.inputType = inputType
             self.originalURL = originalURL
             self.canonicalURL = canonicalURL
+            self.sourceArtifactID = sourceArtifactID
             self.platform = platform
             self.authorName = authorName
             self.sourceTitle = sourceTitle

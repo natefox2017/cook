@@ -11,19 +11,26 @@ struct RecipeImportJobService: RecipeImportJobClient {
         let inputType: RecipeShareInputType
         let url: String?
         let text: String?
+        let artifactID: UUID?
 
         private enum CodingKeys: String, CodingKey {
             case clientRequestID = "client_request_id"
             case inputType = "input_type"
             case url
             case text
+            case artifactID = "artifact_id"
         }
 
-        init(receipt: RecipeShareReceipt, source: String) {
+        init(
+            receipt: RecipeShareReceipt,
+            source: String,
+            artifactID: UUID?
+        ) {
             clientRequestID = receipt.clientRequestID
             inputType = receipt.inputType
             url = receipt.inputType == .url ? source : nil
             text = receipt.inputType == .text ? source : nil
+            self.artifactID = artifactID
         }
     }
 
@@ -33,11 +40,24 @@ struct RecipeImportJobService: RecipeImportJobClient {
         ownerID: UUID
     ) async throws -> RecipeImportJobResponse {
         try await verifySession(ownerID: ownerID)
+        let artifactID: UUID?
+        if receipt.inputType == .image || receipt.inputType == .file {
+            artifactID = try await RecipeImportArtifactService().upload(
+                receipt: receipt,
+                ownerID: ownerID
+            )
+        } else {
+            artifactID = nil
+        }
         return try await RecipeSupabase.client.functions.invoke(
             "recipe-imports",
             options: FunctionInvokeOptions(
                 method: .post,
-                body: Submission(receipt: receipt, source: source)
+                body: Submission(
+                    receipt: receipt,
+                    source: source,
+                    artifactID: artifactID
+                )
             )
         )
     }

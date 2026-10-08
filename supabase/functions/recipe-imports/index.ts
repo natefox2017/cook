@@ -30,6 +30,7 @@ interface ImportJob {
   review_count: number;
   error: Record<string, unknown> | null;
   result: Record<string, unknown> | null;
+  artifact_id: string | null;
 }
 
 const MAX_BODY_BYTES = 500_000;
@@ -226,6 +227,17 @@ function sqlFailure(
       headers,
     );
   }
+  if (message.includes("ARTIFACT_NOT_READY")) {
+    return failure(
+      "ARTIFACT_NOT_READY",
+      "The private file is missing, expired, or not owned by this account.",
+      422,
+      false,
+      requestID,
+      "Upload the file again and retry.",
+      headers,
+    );
+  }
   if (message.includes("QUEUE_UNAVAILABLE")) {
     return failure(
       "SERVICE_UNAVAILABLE",
@@ -375,15 +387,53 @@ Deno.serve(async (request: Request): Promise<Response> => {
       );
     }
     if (type === "image" || type === "file") {
-      return failure(
-        "ARTIFACT_NOT_READY",
-        "Private media upload is not enabled yet.",
-        422,
-        true,
-        requestID,
-        "Add text or a link.",
-        headers,
+      const artifactID = params.artifact_id;
+      const platform = params.platform_hint;
+      const originalSourceURL = params.original_source_url;
+      if (
+        typeof artifactID !== "string" || !UUID.test(artifactID) ||
+        (platform != null &&
+          (typeof platform !== "string" || platform.length > 80)) ||
+        (originalSourceURL != null &&
+          (typeof originalSourceURL !== "string" ||
+            !isPublicCandidateURL(originalSourceURL)))
+      ) {
+        return failure(
+          "INVALID_INPUT",
+          "A valid available artifact is required.",
+          400,
+          false,
+          requestID,
+          null,
+          headers,
+        );
+      }
+      const { data, error } = await client.rpc(
+        "submit_own_recipe_artifact_import",
+        {
+          p_client_request_id: id,
+          p_input_type: type,
+          p_artifact_id: artifactID,
+          p_platform_hint: platform ?? null,
+          p_original_source_url: originalSourceURL ?? null,
+        },
       );
+      if (error) return sqlFailure(error, headers, requestID);
+      const row = (Array.isArray(data) ? data[0] : data) as
+        | ImportJob
+        | undefined;
+      if (!row) {
+        return failure(
+          "SERVICE_UNAVAILABLE",
+          "No durable job was created.",
+          503,
+          true,
+          requestID,
+          null,
+          headers,
+        );
+      }
+      return json(toResponse(row), 202, headers);
     }
 
     const value = type === "url" ? params.url : params.text;

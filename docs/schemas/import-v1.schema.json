@@ -509,6 +509,13 @@
                 }
               ]
             },
+            "source_artifact_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            },
             "platform": {
               "type": [
                 "string",

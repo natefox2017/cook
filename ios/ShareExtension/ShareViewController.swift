@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Receives URL/text from third-party Share hosts and durably stores a local receipt.
+// Purpose: Receives recipe links, text, images, and PDFs from Share hosts.
 
 import RecipeCore
 import UIKit
@@ -73,12 +73,56 @@ final class ShareViewController: UIViewController {
             return
         }
 
+        if let imageProvider = providers.first(where: {
+            $0.hasItemConformingToTypeIdentifier(UTType.image.identifier)
+        }) {
+            readAttachment(imageProvider, type: .image)
+            return
+        }
+
+        if let pdfProvider = providers.first(where: {
+            $0.hasItemConformingToTypeIdentifier(UTType.pdf.identifier)
+        }) {
+            readAttachment(pdfProvider, type: .file)
+            return
+        }
+
         // Some host apps supply an attributed text item without a provider.
         if let content = items.compactMap({ $0.attributedContentText?.string })
             .first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
             save(content, as: .text)
         } else {
-            display(.failed("Only public recipe links and readable text are supported right now."))
+            display(.failed(
+                String(localized: "Share a public recipe link, readable text, image, or PDF.")
+            ))
+        }
+    }
+
+    private func readAttachment(
+        _ provider: NSItemProvider,
+        type: RecipeShareInputType
+    ) {
+        let identifier = type == .image ? UTType.image.identifier : UTType.pdf.identifier
+        provider.loadDataRepresentation(forTypeIdentifier: identifier) {
+            [weak self] data, error in
+            let mimeType = provider.registeredTypeIdentifiers
+                .compactMap { UTType($0)?.preferredMIMEType }
+                .first { value in
+                    type == .image
+                        ? value.hasPrefix("image/")
+                        : value == "application/pdf"
+                }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                guard let data, let mimeType else {
+                    self.display(.failed(
+                        error?.localizedDescription
+                            ?? "This attachment type is not supported."
+                    ))
+                    return
+                }
+                self.save(data, as: type, mimeType: mimeType)
+            }
         }
     }
 
@@ -126,6 +170,24 @@ final class ShareViewController: UIViewController {
             display(.saved)
             // Local storage was committed. Do not claim backend queue or
             // parsed-recipe success. Return promptly to Safari/Notes/etc.
+            extensionContext?.completeRequest(
+                returningItems: [],
+                completionHandler: nil
+            )
+        } catch {
+            display(.failed(error.localizedDescription))
+        }
+    }
+
+    private func save(
+        _ data: Data,
+        as type: RecipeShareInputType,
+        mimeType: String
+    ) {
+        do {
+            let inbox = try RecipeShareInbox.shared()
+            try inbox.receiveFile(data, as: type, mimeType: mimeType)
+            display(.saved)
             extensionContext?.completeRequest(
                 returningItems: [],
                 completionHandler: nil

@@ -32,9 +32,10 @@ export interface ParsedWebRecipe {
   recipe_id: string;
   status: "ready" | "needs_review";
   source: {
-    input_type: "url";
-    original_url: string;
+    input_type: "url" | "text" | "image" | "file";
+    original_url: string | null;
     canonical_url: string | null;
+    source_artifact_id?: string | null;
     platform: string | null;
     author_name: string | null;
     source_title: string | null;
@@ -246,6 +247,7 @@ export function parseSchemaOrgRecipePage(input: {
       input_type: "url",
       original_url: input.source.originalURL,
       canonical_url: input.source.canonicalURL,
+      source_artifact_id: null,
       platform: input.source.platformHint,
       author_name: authorName,
       source_title: pageName,
@@ -268,6 +270,7 @@ export function incompleteWebRecipe(input: {
       input_type: "url",
       original_url: input.originalURL,
       canonical_url: null,
+      source_artifact_id: null,
       platform: input.platformHint,
       author_name: null,
       source_title: null,
@@ -275,6 +278,42 @@ export function incompleteWebRecipe(input: {
     fields: {},
     evidence: [],
     review_fields: ["title", "ingredients", "steps"],
+  };
+}
+
+export function incompleteArtifactRecipe(input: {
+  id: string;
+  inputType: "image" | "file";
+  artifactID: string;
+  platformHint: string | null;
+  mimeType: string | null;
+}): ParsedWebRecipe {
+  const capturedAt = new Date().toISOString();
+  const evidenceID = crypto.randomUUID();
+  const kind = input.inputType === "image" ? "image" : "file";
+  return {
+    recipe_id: input.id,
+    status: "needs_review",
+    source: {
+      input_type: input.inputType,
+      original_url: null,
+      canonical_url: null,
+      source_artifact_id: input.artifactID,
+      platform: input.platformHint,
+      author_name: null,
+      source_title: null,
+    },
+    fields: {},
+    evidence: [{
+      id: evidenceID,
+      source_type: "user",
+      source_artifact_id: input.artifactID,
+      origin: "user",
+      excerpt: `User-provided ${kind} source retained privately (${input.mimeType ?? "unknown file type"}). Text extraction is unavailable for this cloud import.`,
+      confidence: null,
+      captured_at: capturedAt,
+    }],
+    review_fields: ["title", "ingredients", "steps", "artifact_text"],
   };
 }
 

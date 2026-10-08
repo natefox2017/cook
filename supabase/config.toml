@@ -5,7 +5,14 @@
 [functions.recipe-imports]
 verify_jwt = true
 
+[functions.recipe-import-artifacts]
+verify_jwt = true
+
 [functions.recipe-import-worker]
 # Worker authenticates an explicit high-entropy server-side secret itself.
 # Do not expose the secret to iOS or any public client.
+verify_jwt = false
+
+[functions.purge-expired-recipe-import-artifacts]
+# Uses its own high-entropy bearer secret; never put it in the iOS app.
 verify_jwt = false
