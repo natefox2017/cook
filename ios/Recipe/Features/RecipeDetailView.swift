@@ -416,8 +416,8 @@ struct RecipeDetailView: View {
 
     @MainActor
     private func deleteSourceArtifact() async {
-        guard let artifactID = store.recipe(id: recipeID)?
-            .importRecord?.result.source.sourceArtifactID,
+        guard let artifactID = store.recipe(id: recipeID)?.importRecord?
+            .result.source.sourceArtifactID,
             case .signedIn(let ownerID, _) = RecipeAuthService.shared.state
         else {
             feedbackMessage = String(localized: LocalizedStringResource(
