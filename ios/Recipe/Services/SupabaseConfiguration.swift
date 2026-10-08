@@ -5,7 +5,8 @@ import Foundation
 import Supabase
 
 enum RecipeSupabase {
-    static let redirectURL = URL(string: "cook://auth/callback")!
+    static let redirectURL = URL(string: "recipe_app://auth/callback")!
+    static let legacyRedirectURL = URL(string: "cook://auth/callback")!
 
     static let client: SupabaseClient = {
         guard let urlString = Bundle.main.object(forInfoDictionaryKey: "RecipeSupabaseURL") as? String,

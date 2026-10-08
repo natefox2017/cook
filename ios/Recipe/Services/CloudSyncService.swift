@@ -355,7 +355,12 @@ final class CloudSyncCoordinator {
             deferredInitialChoice = nil
             lastSyncedAt = nil
             state = .localOnly
-        case .loading, .authenticating, .needsEmailVerification, .passwordResetSent, .passwordRecovery:
+        case .loading,
+             .authenticating,
+             .emailCodeSent,
+             .needsEmailVerification,
+             .passwordResetSent,
+             .passwordRecovery:
             break
         case .error(let message):
             state = .error(message)

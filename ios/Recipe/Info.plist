@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleDevelopmentRegion</key>
-    <string>en</string>
+    <string>zh-Hans</string>
     <key>CFBundleLocalizations</key>
     <array>
         <string>en</string>
@@ -34,6 +34,7 @@
             <string>com.modelhub.recipe.auth</string>
             <key>CFBundleURLSchemes</key>
             <array>
+                <string>recipe_app</string>
                 <string>cook</string>
             </array>
         </dict>
@@ -64,6 +65,7 @@
     <key>UIAppFonts</key>
     <array>
         <string>Lora-Variable.ttf</string>
+        <string>GoogleSans-Variable.ttf</string>
     </array>
 </dict>
 </plist>
