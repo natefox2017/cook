@@ -494,12 +494,23 @@ public final class CookStore {
                   recipe.updatedAt.timeIntervalSinceReferenceDate.isFinite else {
                 throw CookStoreError.invalidValue("Check the recipe's servings, times and ingredient identifiers.")
             }
+            let ingredientIDs = Set(recipe.ingredients.map(\.id))
             for ingredient in recipe.ingredients {
-                _ = try IngredientAmount(originalText: ingredient.amountText,
-                                         value: ingredient.quantity, unit: ingredient.unit)
+                _ = try IngredientAmount(
+                    originalText: ingredient.amountText,
+                    value: ingredient.quantity,
+                    unit: ingredient.unit
+                )
             }
-            guard recipe.steps.allSatisfy({ $0.durationSeconds.map { $0 > 0 } ?? true }) else {
-                throw CookStoreError.invalidValue("A cooking timer must be longer than zero seconds.")
+            for step in recipe.steps {
+                guard unique(step.linkedIngredientIDs),
+                      Set(step.linkedIngredientIDs).isSubset(of: ingredientIDs),
+                      unique(step.timers.map(\.id)),
+                      step.timers.allSatisfy({ $0.durationSeconds > 0 }) else {
+                    throw CookStoreError.invalidValue(
+                        "Check the cooking step's ingredient links and timers."
+                    )
+                }
             }
         }
         for item in snapshot.groceries {
