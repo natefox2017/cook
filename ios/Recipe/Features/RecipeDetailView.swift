@@ -108,7 +108,7 @@ struct RecipeDetailView: View {
                 }
                 source(recipe)
             }
-            .padding(RecipeSpacing.pageInset)
+            .recipePageContentInsets()
         }
         .accessibilityIdentifier("recipeDetailScroll")
         .safeAreaInset(edge: .bottom) {
@@ -630,6 +630,7 @@ private struct RecipeIngredientsSelectionView: View {
                 )
             }
         }
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .safeAreaInset(edge: .bottom) {
@@ -739,6 +740,7 @@ private struct RecipeCollectionMembershipSheet: View {
                     Text("Collections")
                 }
             }
+            .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
             .navigationTitle("Collections")

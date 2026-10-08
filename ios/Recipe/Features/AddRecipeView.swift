@@ -59,7 +59,7 @@ struct AddRecipeView: View {
                         .accessibilityIdentifier("createManually")
                     }
                 }
-                .padding(RecipeSpacing.pageInset)
+                .recipePageContentInsets()
             }
             .scrollDismissesKeyboard(.interactively)
             .background(RecipeTheme.canvas)

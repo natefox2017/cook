@@ -92,7 +92,10 @@ This contract applies to RecipePouch SwiftUI screens. Keep the implemented
 - **Spacing:** horizontal page inset 20 pt, content start 8 pt below the
   native navigation content area, compact text gaps 4 / 8 pt, related
   controls 12 pt, list sections 16 pt, and major groups 24 pt.
-  Shared values live in `RecipeSpacing`.
+  Shared values live in `RecipeSpacing`. For a scrolling secondary page use
+  `recipePageContentInsets()`; native List/Form screens use an 8-pt top
+  scroll-content margin. The system navigation bar retains responsibility for
+  status-bar and top-title placement.
 - **Colors:** primary text uses system `.primary`, supporting information
   uses `.secondary`, links and accents use
   `RecipeTheme.accentForeground`, and actions use
