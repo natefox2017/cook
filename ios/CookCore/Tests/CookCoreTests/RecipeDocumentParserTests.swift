@@ -213,3 +213,32 @@ func trailingApproximationDoesNotBecomePreciseTimer(_ instruction: String) throw
     let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/approximate")!))
     #expect(recipe.steps[0].timers.isEmpty)
 }
+
+
+@Test(arguments: [
+    "Bake for 1 / 2 hour.",
+    "Bake for 1⁄2 hour.",
+    "Bake for 1,5 hours.",
+    "Bake for 1,5 hours 30 minutes.",
+    "Bake for 1 1/2 hours."
+])
+func localizedFractionalDurationsDoNotProducePartialTimers(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Localized fraction\",\"recipeIngredient\":[\"1 cup flour\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/localized-fraction")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+}
+
+@Test(arguments: [
+    "Bake for 10 minutes or so.",
+    "Bake for 10 minutes, or so.",
+    "Bake for 10 minutes give or take.",
+    "Bake for 10 minutes, give or take.",
+    "Bake for 10 minutes more or less."
+])
+func trailingApproximationPhrasesDoNotBecomePreciseTimers(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Approximate phrase\",\"recipeIngredient\":[\"1 cup flour\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/approx-phrase")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+}
