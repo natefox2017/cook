@@ -208,10 +208,6 @@ struct AddRecipeView: View {
                         .accessibilityIdentifier("recipeText")
                 } header: {
                     Text("Recipe text")
-                } footer: {
-                    Text(
-                        "Include Ingredients and Instructions headings when available. The original text is always kept."
-                    )
                 }
             }
             .navigationTitle("Paste recipe text").navigationBarTitleDisplayMode(.inline)
