@@ -93,13 +93,13 @@ private struct RecipeRootView: View {
             NavigationStack {
                 EmptyStateView(
                     title: "Your saved library needs attention",
-                    message: "Recipe couldn't read your saved library. The file has been left unchanged.\n\n\(message)",
+                    message: "RecipePouch couldn't read your saved library. The file has been left unchanged.\n\n\(message)",
                     systemImage: "externaldrive.badge.exclamationmark",
                     actionTitle: "Try again",
                     action: { store.reload() }
                 )
                 .padding()
-                .navigationTitle("Recipe")
+                .navigationTitle("RecipePouch")
                 .background(RecipeTheme.canvas)
             }
         } else if !hasCompletedOnboarding && !bypassOnboarding {
