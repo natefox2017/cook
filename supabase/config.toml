@@ -2,6 +2,15 @@
 # Purpose: Keep import API user-authenticated and cron worker secret-authenticated.
 # This is a focused function configuration; no API/provider secrets live here.
 
+[functions.delete-account]
+# Account deletion always requires a verified Supabase Auth user JWT.
+verify_jwt = true
+
+[functions.admin-auth]
+# Uses separate admin bearer sessions and server-only service credentials.
+# Its handler verifies its own admin tokens and bootstrap authorization.
+verify_jwt = false
+
 [functions.recipe-imports]
 verify_jwt = true
 
