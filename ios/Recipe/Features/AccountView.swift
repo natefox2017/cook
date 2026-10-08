@@ -246,7 +246,7 @@ struct AccountView: View {
         case .needsEmailVerification(let address):
             return "Check \(address) to verify your account, then return to RecipePouch."
         case .passwordResetSent(let address):
-            return "A password reset link was sent to \(address)."
+            return "If an account exists for \(address), check its inbox for a password reset link."
         case .error(let message):
             return message
         default:

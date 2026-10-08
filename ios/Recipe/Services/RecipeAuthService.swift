@@ -24,6 +24,8 @@ final class RecipeAuthService {
 
     private(set) var state: RecipeAuthState = .loading
     private(set) var nonblockingNotice: String?
+    /// Advances after each accepted callback so the root view can present Account.
+    private(set) var authCallbackGeneration = 0
     private let client: SupabaseClient
     private let defaults: UserDefaults
 
@@ -176,11 +178,13 @@ final class RecipeAuthService {
                 let session = try await client.auth.session(from: url)
                 // Consume the marker only after the PKCE code has been exchanged successfully.
                 defaults.removeObject(forKey: Self.pendingPasswordRecoveryKey)
+                authCallbackGeneration += 1
                 if isPasswordRecovery {
                     state = .passwordRecovery(userID: session.user.id)
                 }
             } catch {
                 state = .error(error.localizedDescription)
+                authCallbackGeneration += 1
             }
         }
     }

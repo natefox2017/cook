@@ -16,12 +16,15 @@ Configure the project's email provider and confirmation policy in Supabase Auth.
 When email confirmation is enabled, registration returns a verification-needed
 state until the user follows the email link. Password reset returns to the same
 app callback and the recovered password is submitted through Supabase Auth. The
-Swift client uses PKCE, whose recovery callback is a generic code exchange rather
-than a recovery-specific auth event. After a reset request succeeds, the app keeps
-a local pending-recovery marker across app restarts and consumes it after a valid
-callback, so the recovery form appears without changing the callback URL. The
-PKCE verifier remains in Supabase's local auth storage; recovery links must be
-opened on the device that requested them. See the
+reset acknowledgment stays generic because Supabase does not reveal whether the
+email belongs to an account ([password-based Auth docs](https://supabase.com/docs/guides/auth/passwords)).
+The Swift client uses PKCE, whose recovery callback is a generic code exchange
+rather than a recovery-specific auth event. After a reset request succeeds, the
+app keeps a local pending-recovery marker across app restarts and consumes it
+after a valid callback, so the account screen opens to the recovery form without
+changing the callback URL. Failed callback exchanges also open the account screen
+so the error is visible. The PKCE verifier remains in Supabase's local auth
+storage; recovery links must be opened on the device that requested them. See the
 [Supabase PKCE flow docs](https://supabase.com/docs/guides/auth/sessions/pkce-flow).
 
 ## Sign in with Apple

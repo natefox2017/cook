@@ -92,6 +92,81 @@ final class RecipeAuthServiceTests: XCTestCase {
         XCTAssertEqual(service.state, .signedIn(userID: userID, email: email))
     }
 
+    func testEmailConfirmationCallbackSignsInTheConfirmedAccount() async throws {
+        let userID = UUID()
+        let email = "recipe-confirmation@example.test"
+        let defaults = makeAuthDefaults()
+        let storage = MemoryAuthStorage()
+        AuthMockURLProtocol.setHandler { request in
+            switch request.url?.path {
+            case "/auth/v1/signup":
+                return .json(
+                    payload: [
+                        "user": userPayload(id: userID, email: email),
+                        "session": NSNull(),
+                    ]
+                )
+            case "/auth/v1/token":
+                return .json(payload: sessionPayload(id: userID, email: email))
+            default:
+                return .json(statusCode: 404, payload: ["message": "Unexpected Auth request"])
+            }
+        }
+
+        let service = makeService(defaults: defaults, storage: storage)
+        await waitUntil { service.state == .signedOut }
+
+        try await service.signUp(email: email, password: "test-password-strong")
+        XCTAssertEqual(service.state, .needsEmailVerification(email))
+
+        service.handleAuthCallback(
+            URL(string: "cook://auth/callback?code=local-confirmation-code")!
+        )
+        await waitUntil {
+            service.state == .signedIn(userID: userID, email: email)
+                && service.authCallbackGeneration == 1
+        }
+        XCTAssertFalse(defaults.bool(forKey: "recipe.auth.pending_password_recovery"))
+    }
+
+    func testStoredSessionIsRestoredWhenAuthServiceIsRecreated() async throws {
+        let userID = UUID()
+        let email = "recipe-restore@example.test"
+        let defaults = makeAuthDefaults()
+        let storage = MemoryAuthStorage()
+        AuthMockURLProtocol.setHandler { request in
+            switch request.url?.path {
+            case "/auth/v1/token":
+                return .json(payload: sessionPayload(id: userID, email: email))
+            default:
+                return .json(statusCode: 404, payload: ["message": "Unexpected Auth request"])
+            }
+        }
+
+        let originalService = makeService(defaults: defaults, storage: storage)
+        await waitUntil { originalService.state == .signedOut }
+        try await originalService.signIn(email: email, password: "test-password")
+        XCTAssertEqual(originalService.state, .signedIn(userID: userID, email: email))
+
+        let restoredService = makeService(defaults: defaults, storage: storage)
+        await waitUntil { restoredService.state == .signedIn(userID: userID, email: email) }
+    }
+
+    func testFailedAuthCallbackPublishesAnAccountRouteableError() async throws {
+        let service = makeService(defaults: makeAuthDefaults())
+        await waitUntil { service.state == .signedOut }
+
+        service.handleAuthCallback(
+            URL(string: "cook://auth/callback?code=missing-local-verifier")!
+        )
+        await waitUntil {
+            if case .error = service.state {
+                return service.authCallbackGeneration == 1
+            }
+            return false
+        }
+    }
+
     func testPasswordRecoveryCallbackKeepsRecoveryStateAfterUpdateFailureAndAllowsRetry() async throws {
         let userID = UUID()
         let email = "recipe-recovery@example.test"
@@ -135,6 +210,7 @@ final class RecipeAuthServiceTests: XCTestCase {
         await waitUntil { callbackService.state == .signedOut }
         callbackService.handleAuthCallback(URL(string: "cook://auth/callback?code=local-code")!)
         await waitUntil { callbackService.state == .passwordRecovery(userID: userID) }
+        XCTAssertEqual(callbackService.authCallbackGeneration, 1)
         XCTAssertFalse(defaults.bool(forKey: "recipe.auth.pending_password_recovery"))
 
         do {

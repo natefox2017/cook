@@ -84,12 +84,14 @@ struct RecipeApp: App {
 }
 
 private struct RecipeRootView: View {
+    @State private var auth = RecipeAuthService.shared
     @Environment(RecipeStore.self) private var store
     @Environment(CloudSyncCoordinator.self) private var cloudSync
     @Environment(SubscriptionStore.self) private var subscriptions
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(FirstLaunchFlowView.completionKey) private var hasCompletedOnboarding = false
     @State private var selectedTab: RecipeTab = .recipes
+    @State private var profilePath: [ProfileRoute] = []
 
     let bypassOnboarding: Bool
 
@@ -141,8 +143,14 @@ private struct RecipeRootView: View {
                 }
                 .tag(RecipeTab.groceries)
 
-                NavigationStack {
+                NavigationStack(path: $profilePath) {
                     ProfileView()
+                        .navigationDestination(for: ProfileRoute.self) { route in
+                            switch route {
+                            case .account:
+                                AccountView()
+                            }
+                        }
                 }
                 .tabItem {
                     Label(RecipeTab.profile.title, systemImage: RecipeTab.profile.symbol)
@@ -155,18 +163,24 @@ private struct RecipeRootView: View {
         .task {
             await cloudSync.bind(
                 store: store,
-                authState: RecipeAuthService.shared.state
+                authState: auth.state
             )
+            if auth.authCallbackGeneration > 0 {
+                openAccountForAuthCallback()
+            }
         }
         .task {
             // Recover verified StoreKit entitlements even when the user never
             // opens the subscription screen in this process.
             await subscriptions.refreshEntitlements()
         }
-        .onChange(of: RecipeAuthService.shared.state) { _, state in
+        .onChange(of: auth.state) { _, state in
             Task {
                 await cloudSync.authenticationChanged(state)
             }
+        }
+        .onChange(of: auth.authCallbackGeneration) { _, _ in
+            openAccountForAuthCallback()
         }
         .onChange(of: store.changeToken) { _, token in
             Task {
@@ -182,6 +196,11 @@ private struct RecipeRootView: View {
                 await subscriptions.refreshEntitlements()
             }
         }
+    }
+
+    private func openAccountForAuthCallback() {
+        selectedTab = .profile
+        profilePath = [.account]
     }
 }
 
