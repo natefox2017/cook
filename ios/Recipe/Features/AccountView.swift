@@ -17,6 +17,7 @@ struct AccountView: View {
     let onExpand: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var auth = RecipeAuthService.shared
     @State private var mode: Mode = .signIn
     @State private var isEmailExpanded = false
@@ -97,7 +98,7 @@ struct AccountView: View {
                     subtitle: "Save and sync your recipes."
                 )
 
-                VStack(spacing: 16) {
+                VStack(spacing: 12) {
                     SignInWithAppleButton(mode == .signUp ? .signUp : .signIn) { request in
                         let nonce = RecipeAuthService.makeAppleNonce()
                         appleNonce = nonce.raw
@@ -106,10 +107,15 @@ struct AccountView: View {
                     } onCompletion: { result in
                         handleAppleResult(result)
                     }
-                    .signInWithAppleButtonStyle(.black)
+                    // Preserve the system button's localized Apple artwork and contrast.
+                    .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .whiteOutline)
+                    .frame(maxWidth: .infinity)
                     .frame(height: 50)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
                     .disabled(isAuthenticating)
                     .accessibilityIdentifier("account.apple")
+
+                    googleSignInButton
 
                     HStack(spacing: 12) {
                         Rectangle()
@@ -160,6 +166,62 @@ struct AccountView: View {
             .padding(.bottom, 32)
         }
         .scrollDismissesKeyboard(.interactively)
+    }
+
+    /// Reuses Google's four-color G branding while matching Apple's button geometry.
+    /// Brand-specific fill, border and text colors intentionally remain distinct.
+    private var googleSignInButton: some View {
+        let isDark = colorScheme == .dark
+
+        return Button {
+            signInWithGoogle()
+        } label: {
+            HStack(spacing: 12) {
+                Image("GoogleSignInG")
+                    .resizable()
+                    .renderingMode(.original)
+                    .interpolation(.high)
+                    .frame(width: 20, height: 20)
+                    .padding(3)
+                    .background(.white, in: RoundedRectangle(cornerRadius: 5))
+                    .accessibilityHidden(true)
+
+                Text(
+                    mode == .signUp
+                        ? LocalizedStringKey("Sign up with Google")
+                        : LocalizedStringKey("Sign in with Google")
+                )
+                .font(.system(size: 15, weight: .medium))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            }
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, minHeight: 50)
+            .foregroundStyle(
+                isDark
+                    ? Color(red: 227.0 / 255, green: 227.0 / 255, blue: 227.0 / 255)
+                    : Color(red: 31.0 / 255, green: 31.0 / 255, blue: 31.0 / 255)
+            )
+            .background(
+                isDark
+                    ? Color(red: 19.0 / 255, green: 19.0 / 255, blue: 20.0 / 255)
+                    : .white,
+                in: RoundedRectangle(cornerRadius: 14)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(
+                        isDark
+                            ? Color(red: 142.0 / 255, green: 145.0 / 255, blue: 143.0 / 255)
+                            : Color(red: 116.0 / 255, green: 119.0 / 255, blue: 117.0 / 255),
+                        lineWidth: 1
+                    )
+            }
+            .opacity(isAuthenticating ? 0.55 : 1)
+        }
+        .buttonStyle(.plain)
+        .disabled(isAuthenticating)
+        .accessibilityIdentifier("account.google")
     }
 
     private var emailForm: some View {
@@ -420,6 +482,25 @@ struct AccountView: View {
                     try await auth.signIn(email: address, password: password)
                 case .signUp:
                     try await auth.signUp(email: address, password: password)
+                }
+            } catch {
+                dismissAfterAuthentication = false
+                localMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func signInWithGoogle() {
+        guard !isAuthenticating else { return }
+        localMessage = nil
+        dismissAfterAuthentication = true
+
+        Task {
+            do {
+                let didSignIn = try await auth.signInWithGoogle()
+                if !didSignIn {
+                    // Canceling Google's system sheet is not a failed login.
+                    dismissAfterAuthentication = false
                 }
             } catch {
                 dismissAfterAuthentication = false
