@@ -346,6 +346,41 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testExportFormatsAreAvailableInBothEntryPoints() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let profileExport = app.buttons["profile.export"]
+        reveal(profileExport, in: app, maximumSwipes: 5)
+        profileExport.tap()
+        for format in ["Recipes (JSON)", "Recipes (HTML)", "All Local Library Data (JSON)"] {
+            XCTAssertTrue(app.buttons[format].waitForExistence(timeout: 5))
+        }
+        app.buttons["Cancel"].tap()
+
+        let settings = app.buttons["Settings"]
+        reveal(settings, in: app, maximumSwipes: 5)
+        settings.tap()
+
+        let dataAndPrivacy = app.buttons["Data & Privacy"]
+        reveal(dataAndPrivacy, in: app, maximumSwipes: 6)
+        dataAndPrivacy.tap()
+
+        let settingsExport = app.buttons["Export Data"]
+        waitUntilReady(settingsExport)
+        settingsExport.tap()
+        for format in ["Recipes (JSON)", "Recipes (HTML)", "All Local Library Data (JSON)"] {
+            XCTAssertTrue(app.buttons[format].waitForExistence(timeout: 5))
+        }
+        app.buttons["Cancel"].tap()
+        attachScreenshot("Export format choices", app: app)
+    }
+
+    @MainActor
     private func launchSeededApp() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting"]

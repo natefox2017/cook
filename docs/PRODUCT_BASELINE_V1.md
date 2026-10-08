@@ -64,6 +64,14 @@ V1 底部导航：
 
 “周计划”先作为食谱库的二级能力，不占一级 Tab。
 
+
+### V1 食谱导出（D3 已确认）
+
+- Profile 与 Settings → Data & Privacy 均提供 recipe-only `recipepouch.recipes` v1 JSON 与可在浏览器离线打开的 HTML。
+- JSON 保留原始来源、原始用量、食谱详情、Favorites、Collections 及关系；HTML 仅输出已保存的食谱文字内容，明确不附带照片、购物、计划和设备设置。
+- 原有全本地库 JSON 快照可以作为额外导出选项，但不得称为可恢复备份；当前没有 App 内恢复导入功能。
+- 用系统文件导出实现保存、取消及失败反馈，不另建导出后端。
+
 ## 4. 成功标准
 
 - 正常导入主动操作最多 2 次：分享 + 选择 App。

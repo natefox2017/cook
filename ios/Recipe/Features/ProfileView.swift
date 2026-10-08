@@ -14,6 +14,7 @@ struct ProfileView: View {
     @State private var confirmsReset = false
     @State private var isDeletingLocalData = false
     @State private var exportsData = false
+    @State private var choosesExportFormat = false
     @State private var exportDocument = RecipeExportDocument(data: Data())
     @State private var errorMessage: String?
 
@@ -136,8 +137,10 @@ struct ProfileView: View {
             .listRowBackground(RecipeTheme.card)
 
             Section {
-                Button(action: prepareExport) {
-                    ProfileRowLabel(title: "Export All Data", systemImage: "square.and.arrow.up")
+                Button {
+                    choosesExportFormat = true
+                } label: {
+                    ProfileRowLabel(title: "Export Data", systemImage: "square.and.arrow.up")
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("profile.export")
@@ -161,10 +164,24 @@ struct ProfileView: View {
         .fileExporter(
             isPresented: $exportsData,
             document: exportDocument,
-            contentType: .json,
-            defaultFilename: "RecipePouch-Backup-\(Date().formatted(.iso8601.year().month().day().dateSeparator(.dash)))"
+            contentType: exportDocument.contentType,
+            defaultFilename: exportDocument.filename
         ) { result in
-            if case let .failure(error) = result { errorMessage = error.localizedDescription }
+            if let feedback = RecipeExportFormat.feedback(for: result) {
+                errorMessage = feedback
+            }
+        }
+        .confirmationDialog(
+            "Choose export format",
+            isPresented: $choosesExportFormat,
+            titleVisibility: .visible
+        ) {
+            Button("Recipes (JSON)") { prepareExport(.recipesJSON) }
+            Button("Recipes (HTML)") { prepareExport(.recipesHTML) }
+            Button("All Local Library Data (JSON)") { prepareExport(.allLibraryJSON) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Recipe JSON/HTML includes sources and Collections but not photos. Full library JSON also includes groceries, meal plan and local preferences. This app cannot restore these exports.")
         }
         .confirmationDialog("Delete all local data?", isPresented: $confirmsReset, titleVisibility: .visible) {
             Button("Delete All RecipePouch Data", role: .destructive) {
@@ -187,7 +204,7 @@ struct ProfileView: View {
         } message: {
             Text("This deletes only data on this iPhone. Sign out first; cloud data and your App Store subscription remain intact. Signing in again may restore cloud recipes. Export local data first if needed.")
         }
-        .alert("Couldn’t update your data", isPresented: Binding(
+        .alert("RecipePouch", isPresented: Binding(
             get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
         )) {
             Button("OK", role: .cancel) { errorMessage = nil }
@@ -213,11 +230,13 @@ struct ProfileView: View {
         catch { errorMessage = error.localizedDescription }
     }
 
-    private func prepareExport() {
+    private func prepareExport(_ format: RecipeExportFormat) {
         do {
-            exportDocument = RecipeExportDocument(data: try store.exportData())
+            exportDocument = try format.makeDocument(from: store)
             exportsData = true
-        } catch { errorMessage = error.localizedDescription }
+        } catch {
+            errorMessage = "Export failed: \(error.localizedDescription)"
+        }
     }
 }
 
@@ -553,17 +572,94 @@ enum RecipeVersion {
     }
 }
 
-private struct RecipeExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.json] }
-    var data: Data
+/// Shared recipe export options. None are restorable device backups.
+enum RecipeExportFormat {
+    case recipesJSON
+    case recipesHTML
+    case allLibraryJSON
 
-    init(data: Data) { self.data = data }
+    var contentType: UTType {
+        switch self {
+        case .recipesHTML: .html
+        case .recipesJSON, .allLibraryJSON: .json
+        }
+    }
+
+    var filename: String {
+        let date = Date().formatted(
+            .iso8601.year().month().day().dateSeparator(.dash)
+        )
+        switch self {
+        case .recipesJSON, .recipesHTML:
+            return "RecipePouch-Recipes-\(date)"
+        case .allLibraryJSON:
+            return "RecipePouch-Local-Library-\(date)"
+        }
+    }
+
+    @MainActor
+    func makeDocument(from store: RecipeStore) throws -> RecipeExportDocument {
+        let data: Data
+        switch self {
+        case .recipesJSON:
+            data = try RecipePortableExport.json(
+                snapshot: store.exportCloudSnapshot()
+            )
+        case .recipesHTML:
+            data = RecipePortableExport.html(
+                snapshot: try store.exportCloudSnapshot()
+            )
+        case .allLibraryJSON:
+            data = try store.exportData()
+        }
+
+        return RecipeExportDocument(
+            data: data,
+            contentType: contentType,
+            filename: filename
+        )
+    }
+
+    /// Cancelling the system document picker is not a failed export.
+    static func feedback(for result: Result<URL, Error>) -> String? {
+        switch result {
+        case let .success(url):
+            return "Export saved as \(url.lastPathComponent)."
+        case let .failure(error):
+            let nsError = error as NSError
+            if nsError.domain == NSCocoaErrorDomain
+                && nsError.code == CocoaError.Code.userCancelled.rawValue {
+                return nil
+            }
+            return "Export failed: \(error.localizedDescription)"
+        }
+    }
+}
+
+struct RecipeExportDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.json, .html] }
+
+    var data: Data
+    var contentType: UTType
+    var filename: String
+
+    init(
+        data: Data,
+        contentType: UTType = .json,
+        filename: String = "RecipePouch-Recipes"
+    ) {
+        self.data = data
+        self.contentType = contentType
+        self.filename = filename
+    }
 
     init(configuration: ReadConfiguration) throws {
         guard let contents = configuration.file.regularFileContents else {
             throw CocoaError(.fileReadCorruptFile)
         }
         data = contents
+        contentType = configuration.contentType
+        filename = "RecipePouch-Recipes"
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {

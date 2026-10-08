@@ -11,7 +11,8 @@ struct DataPrivacySettingsView: View {
     @State private var auth = RecipeAuthService.shared
 
     @State private var exportsData = false
-    @State private var exportDocument = SettingsExportDocument(data: Data())
+    @State private var choosesExportFormat = false
+    @State private var exportDocument = RecipeExportDocument(data: Data())
     @State private var confirmsLocalDelete = false
     @State private var isDeletingLocalData = false
     @State private var confirmsAccountDelete = false
@@ -20,8 +21,8 @@ struct DataPrivacySettingsView: View {
     var body: some View {
         List {
             Section("Your data") {
-                Button("Export All Local Data") {
-                    prepareExport()
+                Button("Export Data") {
+                    choosesExportFormat = true
                 }
 
                 NavigationLink("What RecipePouch Stores") {
@@ -69,12 +70,24 @@ struct DataPrivacySettingsView: View {
         .fileExporter(
             isPresented: $exportsData,
             document: exportDocument,
-            contentType: .json,
-            defaultFilename: "RecipePouch-Export"
+            contentType: exportDocument.contentType,
+            defaultFilename: exportDocument.filename
         ) { result in
-            if case let .failure(error) = result {
-                message = error.localizedDescription
+            if let feedback = RecipeExportFormat.feedback(for: result) {
+                message = feedback
             }
+        }
+        .confirmationDialog(
+            "Choose export format",
+            isPresented: $choosesExportFormat,
+            titleVisibility: .visible
+        ) {
+            Button("Recipes (JSON)") { prepareExport(.recipesJSON) }
+            Button("Recipes (HTML)") { prepareExport(.recipesHTML) }
+            Button("All Local Library Data (JSON)") { prepareExport(.allLibraryJSON) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Recipe JSON/HTML includes source text and Collections but not photos. Full library JSON includes groceries, meal plan and local preferences. No in-app restore is available.")
         }
         .confirmationDialog(
             "Delete all local RecipePouch data?",
@@ -91,7 +104,7 @@ struct DataPrivacySettingsView: View {
                             store: store,
                             cloudSync: cloudSync
                         )
-                        exportDocument = SettingsExportDocument(data: Data())
+                        exportDocument = RecipeExportDocument(data: Data())
                         message = "Local RecipePouch data deleted."
                     } catch {
                         message = error.localizedDescription
@@ -143,31 +156,13 @@ struct DataPrivacySettingsView: View {
         return false
     }
 
-    private func prepareExport() {
+    private func prepareExport(_ format: RecipeExportFormat) {
         do {
-            exportDocument = SettingsExportDocument(data: try store.exportData())
+            exportDocument = try format.makeDocument(from: store)
             exportsData = true
         } catch {
-            message = error.localizedDescription
+            message = "Export failed: \(error.localizedDescription)"
         }
-    }
-}
-
-private struct SettingsExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.json] }
-
-    var data: Data
-
-    init(data: Data) {
-        self.data = data
-    }
-
-    init(configuration: ReadConfiguration) throws {
-        data = configuration.file.regularFileContents ?? Data()
-    }
-
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        FileWrapper(regularFileWithContents: data)
     }
 }
 
