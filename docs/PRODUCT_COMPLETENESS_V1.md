@@ -47,7 +47,7 @@ Required:
 - Open recipe detail.
 - Collections/cookbooks are P0 in the existing product overview and need a concrete UI/data model if retained in V1.
 
-Implementation status: **MOSTLY IMPLEMENTED**; collections/cookbooks are **NOT IMPLEMENTED**.
+Implementation status: **IMPLEMENTED locally**, including custom Collections/cookbooks with stable IDs, multi-membership, Favorites independence, local persistence and filtering. Remote Collection sync remains part of cloud sync.
 
 ### 4. Add/import
 Required:
@@ -161,7 +161,7 @@ Visual requirements:
 - Share Extension durable receipt;
 - TikTok/Instagram/YouTube backend AI extraction;
 - delete cloud account/data;
-- collections/cookbooks if kept as V1 P0.
+- production-verified remote Collection sync across devices.
 
 ## Release gate
 
