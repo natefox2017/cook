@@ -236,3 +236,70 @@ revoke all on function public.retry_own_recipe_import(uuid)
     from public, anon, authenticated;
 grant execute on function public.retry_own_recipe_import(uuid)
     to authenticated;
+
+-- Service-only processing lease. Queue messages are at-least-once: claiming
+-- must be atomic, must reject superseded message IDs, and must recover after
+-- worker crashes. Job result writes are restricted to the service role.
+create or replace function public.claim_recipe_import_job(
+    p_job_id uuid,
+    p_message_id bigint
+)
+returns setof public.recipe_import_jobs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_job public.recipe_import_jobs%rowtype;
+begin
+    select * into v_job
+    from public.recipe_import_jobs
+    where id = p_job_id
+    for update;
+
+    if not found
+       or v_job.queue_message_id is distinct from p_message_id then
+        return;
+    end if;
+
+    if not (
+        v_job.status = 'queued'
+        or (
+            v_job.status in ('extracting', 'parsing', 'validating')
+            and v_job.updated_at < now() - interval '2 minutes'
+        )
+    ) then
+        return;
+    end if;
+
+    if v_job.attempt_count >= 3 then
+        update public.recipe_import_jobs
+        set status = 'failed', stage = 'done',
+            error = pg_catalog.jsonb_build_object(
+                'code','INTERNAL_ERROR',
+                'message','Processing stopped after repeated interruptions.',
+                'recoverable',false,
+                'request_id',gen_random_uuid()
+            ),
+            completed_at = now(), updated_at = now()
+        where id = p_job_id
+        returning * into v_job;
+        return next v_job;
+        return;
+    end if;
+
+    update public.recipe_import_jobs
+    set status = 'extracting', stage = 'extract',
+        attempt_count = attempt_count + 1,
+        updated_at = now()
+    where id = p_job_id
+    returning * into v_job;
+
+    return next v_job;
+end;
+$$;
+
+revoke all on function public.claim_recipe_import_job(uuid, bigint)
+    from public, anon, authenticated;
+grant execute on function public.claim_recipe_import_job(uuid, bigint)
+    to service_role;
