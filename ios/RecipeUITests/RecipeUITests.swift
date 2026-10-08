@@ -435,10 +435,8 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
-    func testUnreadableLocalLibraryShowsExportFailureFeedback() {
-        let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--uitesting-export-failure"]
-        app.launch()
+    func testExportGenerationFailureShowsFeedback() {
+        let app = launchSeededApp(arguments: ["--uitesting-export-failure"])
         defer { app.terminate() }
 
         let profile = app.tabBars.buttons["Profile"]
@@ -494,9 +492,9 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
-    private func launchSeededApp() -> XCUIApplication {
+    private func launchSeededApp(arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting"]
+        app.launchArguments = ["--uitesting"] + arguments
         app.launch()
         waitUntilReady(app.buttons["addRecipeButton"])
         waitUntilReady(app.buttons["recipe.C0010000-0000-4000-8000-000000000001"])
@@ -512,18 +510,15 @@ final class RecipeUITests: XCTestCase {
 
     @MainActor
     private func saveExportFromFiles(in app: XCUIApplication, fileExtension: String) {
-        let save = app.buttons["Save"]
-        if !save.waitForExistence(timeout: 3) {
-            let onMyIPhone = app.descendants(matching: .any)
-                .matching(NSPredicate(format: "label == %@", "On My iPhone"))
-                .firstMatch
-            XCTAssertTrue(onMyIPhone.waitForExistence(timeout: 8), app.debugDescription)
-            onMyIPhone.tap()
-        }
+        let save = app.buttons.matching(
+            NSPredicate(format: "label IN %@", ["Save", "保存"])
+        ).firstMatch
         waitUntilReady(save)
         save.tap()
 
-        let replace = app.alerts.buttons["Replace"]
+        let replace = app.alerts.buttons.matching(
+            NSPredicate(format: "label IN %@", ["Replace", "替换"])
+        ).firstMatch
         if replace.waitForExistence(timeout: 2) {
             replace.tap()
         }
@@ -544,7 +539,9 @@ final class RecipeUITests: XCTestCase {
         let files = XCUIApplication(bundleIdentifier: "com.apple.DocumentsApp")
         files.activate()
 
-        let recents = files.buttons["Recents"]
+        let recents = files.buttons.matching(
+            NSPredicate(format: "label IN %@", ["Recents", "最近项目", "最近"])
+        ).firstMatch
         if recents.waitForExistence(timeout: 5) {
             recents.tap()
         }

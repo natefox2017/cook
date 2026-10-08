@@ -26,7 +26,6 @@ struct RecipeApp: App {
 
         let arguments = ProcessInfo.processInfo.arguments
         let isUITesting = arguments.contains("--uitesting")
-        let isExportFailureTest = arguments.contains("--uitesting-export-failure")
         self.isUITesting = isUITesting
 
         _ = RecipeAuthService.shared
@@ -40,16 +39,8 @@ struct RecipeApp: App {
             UserDefaults.standard.set(true, forKey: FirstLaunchFlowView.completionKey)
         }
 
-        let testLibraryURL: URL?
-        if isUITesting && isExportFailureTest {
-            // An empty character device forces a local read error without creating test files.
-            testLibraryURL = URL(fileURLWithPath: "/dev/null")
-        } else {
-            testLibraryURL = isUITesting ? nil : libraryURL
-        }
-
-        let localStore = RecipeStore(fileURL: testLibraryURL)
-        if isUITesting && !isExportFailureTest {
+        let localStore = RecipeStore(fileURL: isUITesting ? nil : libraryURL)
+        if isUITesting {
             for key in UserDefaults.standard.dictionaryRepresentation().keys
             where key.hasPrefix("recipe.cookingSession.")
                 || key.hasPrefix("cook.cookingSession.") {
