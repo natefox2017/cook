@@ -59,7 +59,10 @@ struct RecipesView: View {
     }
 
     var body: some View {
-        ScrollView {
+        // Filtering and sorting is shared by the count and grid in this render.
+        let visible = visibleRecipes
+
+        return ScrollView {
             VStack(alignment: .leading, spacing: RecipeSpacing.large) {
                 searchField
                 pendingSharesBanner
@@ -68,9 +71,9 @@ struct RecipesView: View {
                     .foregroundStyle(.secondary)
                 if !store.recipes.isEmpty {
                     filterBar
-                    resultsHeader
+                    resultsHeader(count: visible.count)
                 }
-                libraryContent
+                libraryContent(recipes: visible)
             }
             .padding(.horizontal, RecipeSpacing.pageInset)
             .padding(.top, RecipeSpacing.xSmall)
@@ -162,7 +165,7 @@ struct RecipesView: View {
     }
 
     @ViewBuilder
-    private var libraryContent: some View {
+    private func libraryContent(recipes: [Recipe]) -> some View {
         if store.recipes.isEmpty {
             VStack(spacing: 12) {
                 EmptyStateView(
@@ -180,7 +183,7 @@ struct RecipesView: View {
                 .accessibilityIdentifier("loadSampleRecipes")
             }
             .padding(.top, RecipeSpacing.large)
-        } else if visibleRecipes.isEmpty {
+        } else if recipes.isEmpty {
             EmptyStateView(
                 title: searchText.isEmpty ? emptyScopeTitle : "No recipes found",
                 message: searchText.isEmpty ? emptyScopeMessage : "Try another dish or ingredient, or clear your filters.",
@@ -195,7 +198,7 @@ struct RecipesView: View {
             .padding(.top, RecipeSpacing.large)
         } else {
             LazyVGrid(columns: columns, alignment: .leading, spacing: RecipeSpacing.large) {
-                ForEach(visibleRecipes) { recipe in
+                ForEach(recipes) { recipe in
                     RecipeLibraryCard(recipe: recipe) {
                         do { try store.toggleFavorite(id: recipe.id) }
                         catch { errorMessage = error.localizedDescription }
@@ -276,9 +279,9 @@ struct RecipesView: View {
         return filter.emptyMessage
     }
 
-    private var resultsHeader: some View {
+    private func resultsHeader(count: Int) -> some View {
         HStack {
-            Text("\(visibleRecipes.count) Recipes", comment: "Recipe library count. Plural forms are chosen by the String Catalog for the current language.")
+            Text("\(count) Recipes", comment: "Recipe library count. Plural forms are chosen by the String Catalog for the current language.")
                 .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("recipeCount")
