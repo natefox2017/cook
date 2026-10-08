@@ -1,7 +1,7 @@
 // Account deletion: verifies JWT, purges user storage, deletes auth user via service role.
 // Never expose SUPABASE_SERVICE_ROLE_KEY to clients.
 // Deploy: supabase functions deploy delete-account --project-ref semsjyrqjnumpvanibip
-// Closes: GitHub Issue #11
+// Related: GitHub Issue #29
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { authCorsHeaders, handleCors } from "../_shared/cors.ts";
