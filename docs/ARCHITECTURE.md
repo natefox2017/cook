@@ -17,7 +17,7 @@ AI：
 - OpenAI-compatible provider router
 - 后端调用，客户端不持有 provider secret
 
-该组合复用此前 cookapp 已验证过的基础能力，但本仓库重新以当前 V1 产品基线为准，不继承旧 UI/旧需求。
+该组合以当前产品基线为准；本次架构契约未部署，不把其他仓库或旧聊天的结果作为本项目验收。
 
 ## 2. 高层结构
 
@@ -27,9 +27,12 @@ Third-party App / Browser
         v
 iOS Share Extension
         |
-        | create import job
+        | durable receive (offline-capable)
         v
-Supabase API / Edge Function
+App Group Inbox --> iOS uploader / background URLSession
+        | authenticated, idempotent create import job
+        v
+Supabase API / Edge Function + transactional outbox
         |
         v
 recipe-import queue
@@ -57,9 +60,9 @@ iOS App realtime/poll refresh
 Share Extension 只负责：
 1. 读取 extension context 的 URL/text/image/video 等输入。
 2. 做轻量本地校验。
-3. 写入共享容器/发起短请求或后台传输。
-4. 创建 import job。
-5. 立即完成 host request。
+3. 复制全部附件，校验后耐久提交 App Group LocalEnvelope。
+4. 此时才可报告本地 received（已收下）；可选发起后台传输，主 App 负责恢复。
+5. 完成 host request；不等待服务器 job 创建或完整解析。
 
 禁止：
 - 在 Extension 内等待完整 AI 推理
@@ -114,3 +117,13 @@ Apple 官方资料：
 - media artifact storage
 
 客户端不得直接依赖某个具体 AI 模型名。
+
+## 7. Issue #6 导入边界与恢复
+
+当前 [导入协议](RECIPE_IMPORT_PIPELINE.md) / [API](API_CONTRACT.md) / [机器契约](schemas/import-v1.schema.json) 为待人工审阅冻结候选。App Group InboxStore 是本地耐久收件责任方，服务端 received 是 DB + input references + outbox 耐久责任转移点，queued 才表示入队。具体收件、租约 fencing、退避、去重、用户修改事务与故障验收由导入协议定义。
+
+契约要求断网可收件；iOS 不保证后台执行时机，处理最终依赖系统调度/主 App 恢复和服务器 worker，不能宣称扩展结束即已经整理完成。扩展和 App 的共享容器访问需跨进程协调；原生权益/App Group 与数据保护配置另行 Issue/人工审批。
+
+Supabase 官方 [Queues](https://supabase.com/docs/guides/queues) 的窗口内投递保证不能替代业务写入幂等和过期 worker 防护；[Private Storage](https://supabase.com/docs/guides/storage/buckets/fundamentals) 要求按对象授权访问。2026-10-03 已查 changelog 与 PostgreSQL 15.19/17.11 变更；本阶段无迁移/SQL/环境部署，未验证实际 pgmq/RLS/Storage 配置。
+
+来源样本的 Mac HTTP 可获取性也不代表 Edge Functions 出口可获取性；上线适配前必须在计划运行环境重测 HTTP、内容质量、超时/体积、短链与认证限制。公开抓取测试脚本不是生产 SSRF 过滤器。
