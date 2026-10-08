@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Receives shared source content and records it for the RecipePouch host app.
+
 import SwiftUI
 import UniformTypeIdentifiers
 
