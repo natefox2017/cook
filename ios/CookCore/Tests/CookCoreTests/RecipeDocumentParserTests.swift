@@ -185,3 +185,73 @@ func ambiguousCompoundDurationDoesNotLeakInnerTimers(_ instruction: String) thro
     let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/bake")!))
     #expect(recipe.steps[0].timers.isEmpty)
 }
+
+
+@Test(arguments: [
+    "Bake for 1.5 hours.",
+    "Bake for 1/2 hour.",
+    "Bake for 2.25 hours.",
+    "Bake for 3/4 hour."
+])
+func fractionalDurationsDoNotProducePartialIntegerTimers(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Fractional duration\",\"recipeIngredient\":[\"1 cup flour\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/fractional")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+}
+
+@Test(arguments: [
+    "Bake for 10 minutes approximately.",
+    "Bake for 10 minutes, approximately.",
+    "Bake for 10 minutes about.",
+    "Bake for 10 minutes, around.",
+    "Bake for 10 minutes roughly."
+])
+func trailingApproximationDoesNotBecomePreciseTimer(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Approximate duration\",\"recipeIngredient\":[\"1 cup flour\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/approximate")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+}
+
+
+@Test(arguments: [
+    "Bake for 1 / 2 hour.",
+    "Bake for 1⁄2 hour.",
+    "Bake for 1,5 hours.",
+    "Bake for 1,5 hours 30 minutes.",
+    "Bake for 1 1/2 hours."
+])
+func localizedFractionalDurationsDoNotProducePartialTimers(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Localized fraction\",\"recipeIngredient\":[\"1 cup flour\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/localized-fraction")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+}
+
+@Test(arguments: [
+    "Bake for 10 minutes or so.",
+    "Bake for 10 minutes, or so.",
+    "Bake for 10 minutes give or take.",
+    "Bake for 10 minutes, give or take.",
+    "Bake for 10 minutes more or less."
+])
+func trailingApproximationPhrasesDoNotBecomePreciseTimers(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Approximate phrase\",\"recipeIngredient\":[\"1 cup flour\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/approx-phrase")!))
+    #expect(recipe.steps[0].timers.isEmpty)
+}
+
+
+@Test(arguments: [
+    "Bake for 10 minutes. About halfway through, rotate the pan.",
+    "Bake for 10 minutes! Around halfway through, check the color.",
+    "Bake for 10 minutes? Roughly halfway through, rotate the tray."
+])
+func approximationInNextSentenceDoesNotInvalidateExactTimer(_ instruction: String) throws {
+    let escaped = instruction.replacingOccurrences(of: "\"", with: "\\\"")
+    let html = "<script type='application/ld+json'>{\"@type\":\"Recipe\",\"name\":\"Exact timer\",\"recipeIngredient\":[\"1 cup flour\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"\(escaped)\"}]}</script>"
+    let recipe = try #require(RecipeDocumentParser.recipe(inHTML: html, sourceURL: URL(string: "https://example.com/exact-timer")!))
+    #expect(recipe.steps[0].timers.map(\.durationSeconds) == [600])
+}
