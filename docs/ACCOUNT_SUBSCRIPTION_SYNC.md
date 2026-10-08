@@ -41,14 +41,14 @@ Required account actions:
 ## Snapshot sync implementation status
 
 - The Supabase `cookapp` project is active. Production was verified to contain the owner-scoped `user_snapshots` table plus revision/CAS migrations through `20261008030120`.
-- This branch adds `20261008050000_restrict_user_snapshot_writes_to_rpc.sql`, which removes direct authenticated INSERT/UPDATE/DELETE/TRUNCATE access and makes the owner-checked revision RPC the only end-user mutation path. **This final hardening migration is committed but not yet applied to production because the current Supabase write-authorization UI could not be completed.**
+- Production has applied `20261008050000_restrict_user_snapshot_writes_to_rpc.sql`. Live metadata confirms RLS is enabled, `authenticated` has SELECT but no direct INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER, and `anon` has no SELECT; only `authenticated` can execute the owner-checked revision RPC. The production migration history contains two records with this same name, so resolve that duplicate history only if a future migration operation reports a conflict; do not rewrite production history speculatively.
 - The client persists the last successfully synchronized snapshot per account under Application Support and records which RecipePouch account the local library is linked to. Switching accounts never silently uploads another account's local library.
 - Reconnect/foreground refresh uses a three-way merge: last synchronized base + local + newest cloud snapshot. Remote-only and local-only changes merge automatically; true concurrent edits remain explicit conflicts.
 - Collection membership conflicts use both Collection and Recipe identifiers. Same normalized Collection names and same meal-plan slots are surfaced as resolvable domain conflicts rather than generic validation errors.
 - Automatic, Wi-Fi Only, and Manual modes update the live coordinator. Foregrounding or refreshing the same signed-in account checks for newer revisions.
 - The existing Settings UI now exposes real account/status/last-sync state, Sync Now, first-sync merge/keep-local choice, and per-conflict local/cloud resolution.
 - Account/cloud deletion calls the authenticated `delete-account` Edge Function; deleting local data remains a separate explicit action.
-- Two-account/two-device production acceptance is still required before #29 can be considered production-verified.
+- Two-account/two-device production acceptance is still required before #29 can be considered production-verified. The deployed account-deletion function is now checked into `supabase/functions/delete-account/`; it clears the four private storage buckets before deleting the Auth user. This code was recovered from the active deployment, and no real account deletion was executed during this verification.
 
 ## Subscription model
 

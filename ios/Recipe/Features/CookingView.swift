@@ -97,7 +97,9 @@ struct CookingView: View {
                 Button("Start a New Session") { replaceUnreadableSession() }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This replaces the unreadable cooking progress for this recipe. The recipe itself is kept.")
+                Text(
+                    "This replaces the unreadable cooking progress for this recipe. The recipe itself is kept."
+                )
             }
             .alert(
                 "Cooking",
@@ -182,7 +184,11 @@ struct CookingView: View {
 
                 if !step.timers.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(step.timers.count == 1 ? "Timer" : "Timers for this step")
+                        Text(
+                            step.timers.count == 1
+                                ? LocalizedStringKey("Timer")
+                                : LocalizedStringKey("Timers for this step")
+                        )
                             .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                         ForEach(step.timers) { definition in
                             CookingStepTimerPanel(
@@ -199,7 +205,9 @@ struct CookingView: View {
 
                 otherTimerLinks(currentStepID: step.id, recipe: recipe)
 
-                Button { isShowingIngredients = true } label: {
+                Button {
+                    isShowingIngredients = true
+                } label: {
                     Label("View All Ingredients", systemImage: "carrot")
                         .frame(minHeight: 44)
                 }
@@ -230,7 +238,11 @@ struct CookingView: View {
             ProgressView(value: Double(completed), total: Double(max(1, count)))
                 .tint(RecipeTheme.accent)
                 .accessibilityLabel("Cooking progress")
-                .accessibilityValue("\(completed) of \(count) steps completed")
+                .accessibilityValue(
+                    count == 1
+                        ? LocalizedStringKey("\(completed) of \(count) step completed")
+                        : LocalizedStringKey("\(completed) of \(count) steps completed")
+                )
         }
     }
 
@@ -251,7 +263,9 @@ struct CookingView: View {
                 }
 
                 ForEach(linked) { ingredient in
-                    Button { toggleIngredient(ingredient.id) } label: {
+                    Button {
+                        toggleIngredient(ingredient.id)
+                    } label: {
                         HStack(spacing: 12) {
                             Image(
                                 systemName: session.usedIngredientIDs.contains(ingredient.id)
@@ -282,7 +296,9 @@ struct CookingView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(
-                        "\(ingredient.name), \(session.usedIngredientIDs.contains(ingredient.id) ? "used" : "not used")"
+                        session.usedIngredientIDs.contains(ingredient.id)
+                            ? LocalizedStringKey("\(ingredient.name), used")
+                            : LocalizedStringKey("\(ingredient.name), not used")
                     )
                 }
             }
@@ -294,7 +310,8 @@ struct CookingView: View {
     private func stepControls(_ recipe: Recipe, index: Int) -> some View {
         let step = recipe.steps[index]
         let isDone = session.completedStepIDs.contains(step.id)
-        let layout = dynamicTypeSize.isAccessibilitySize
+        let layout =
+            dynamicTypeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(spacing: 10))
             : AnyLayout(HStackLayout(spacing: 14))
 
@@ -361,7 +378,8 @@ struct CookingView: View {
                         let remaining = active.timer.remaining(at: context.date)
                         Button {
                             if let stepID = active.stepID,
-                               recipe.steps.contains(where: { $0.id == stepID }) {
+                                recipe.steps.contains(where: { $0.id == stepID })
+                            {
                                 selectStep(stepID)
                             } else {
                                 isShowingTimers = true
@@ -373,7 +391,7 @@ struct CookingView: View {
                                     Text(
                                         remaining == 0
                                             ? "Time’s up"
-                                            : "\(clockText(remaining)) remaining"
+                                            : String(localized: "\(clockText(remaining)) remaining")
                                     )
                                     .font(RecipeTheme.text(12, relativeTo: .caption))
                                     .monospacedDigit()
@@ -410,7 +428,9 @@ struct CookingView: View {
                     .font(RecipeTheme.title(32))
                     .accessibilityAddTraits(.isHeader)
 
-                Text("You completed \(session.completedStepIDs.count) of \(recipe.steps.count) steps for \(recipe.title).")
+                Text(
+                    "You completed \(session.completedStepIDs.count) of \(recipe.steps.count) steps for \(recipe.title)."
+                )
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
 
@@ -430,7 +450,8 @@ struct CookingView: View {
         VStack(spacing: 16) {
             EmptyStateView(
                 title: "Your cooking progress needs attention",
-                message: "The saved session could not be read. Its original data has been kept. Start a new session to cook this recipe again.",
+                message:
+                    "The saved session could not be read. Its original data has been kept. Start a new session to cook this recipe again.",
                 systemImage: "clock.badge.exclamationmark",
                 actionTitle: "Start a New Session",
                 action: { isConfirmingSessionRecovery = true }
@@ -456,10 +477,15 @@ struct CookingView: View {
             } label: {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     let runningCount = session.runningTimerCount(at: context.date)
-                    Label(
-                        runningCount > 0 ? "Timers \(runningCount)" : "Timers",
-                        systemImage: "timer"
-                    )
+                    Label {
+                        if runningCount > 0 {
+                            Text("\(runningCount) timer")
+                        } else {
+                            Text("Timers")
+                        }
+                    } icon: {
+                        Image(systemName: "timer")
+                    }
                 }
             }
             .disabled(recipe == nil)
@@ -490,7 +516,9 @@ struct CookingView: View {
                         }
 
                         ForEach(recipe.ingredients) { ingredient in
-                            Button { toggleIngredient(ingredient.id) } label: {
+                            Button {
+                                toggleIngredient(ingredient.id)
+                            } label: {
                                 HStack(spacing: 12) {
                                     Image(
                                         systemName: session.usedIngredientIDs.contains(ingredient.id)
@@ -523,7 +551,9 @@ struct CookingView: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel(
-                                "\(ingredient.name), \(session.usedIngredientIDs.contains(ingredient.id) ? "used" : "not used")"
+                                session.usedIngredientIDs.contains(ingredient.id)
+                                    ? LocalizedStringKey("\(ingredient.name), used")
+                                    : LocalizedStringKey("\(ingredient.name), not used")
                             )
                         }
                     } header: {
@@ -561,9 +591,11 @@ struct CookingView: View {
                 } else {
                     List {
                         Section("Kitchen timers") {
-                            ForEach(session.timers.values.sorted {
+                            ForEach(
+                                session.timers.values.sorted {
                                 $0.label.localizedCaseInsensitiveCompare($1.label) == .orderedAscending
-                            }) { active in
+                                }
+                            ) { active in
                                 timerManagerRow(active)
                             }
                         }
@@ -658,7 +690,7 @@ struct CookingView: View {
                 Section("Timer") {
                     TextField("Name", text: $manualTimerLabel)
                     Stepper(
-                        "\(manualTimerMinutes) \(manualTimerMinutes == 1 ? "minute" : "minutes")",
+                        "\(manualTimerMinutes) minute",
                         value: $manualTimerMinutes,
                         in: 1...720
                     )
@@ -708,7 +740,10 @@ struct CookingView: View {
                 session = try JSONDecoder().decode(PersistedCookingSession.self, from: data)
             } catch {
                 requiresSessionRecovery = true
-                errorMessage = "Your previous cooking session could not be restored. \(error.localizedDescription)"
+                errorMessage = String(
+                    localized:
+                        "Your previous cooking session could not be restored. \(error.localizedDescription)"
+                )
             }
         }
 
@@ -721,7 +756,8 @@ struct CookingView: View {
                 session.completedStepIDs = Set(recipe.steps.map(\.id))
                 session.needsLegacyCompletedStepMigration = false
             } else {
-                session.completedStepIDs = Set(session.completedStepIDs.filter { completedID in
+                session.completedStepIDs = Set(
+                    session.completedStepIDs.filter { completedID in
                     recipe.steps.contains(where: { $0.id == completedID })
                 })
             }
@@ -735,7 +771,8 @@ struct CookingView: View {
             reconcileTimers(with: recipe)
 
             if let startStepID,
-               recipe.steps.contains(where: { $0.id == startStepID }) {
+                recipe.steps.contains(where: { $0.id == startStepID })
+            {
                 applyRequestedStartStep(startStepID, in: recipe)
             }
         }
@@ -785,7 +822,8 @@ struct CookingView: View {
     }
 
     private func startTimer(_ definition: RecipeStepTimer, stepID: UUID) {
-        var active = session.timers[definition.id]
+        var active =
+            session.timers[definition.id]
             ?? PersistedActiveTimer(
                 id: definition.id,
                 stepID: stepID,
@@ -930,7 +968,10 @@ struct CookingView: View {
                 forKey: sessionKey
             )
         } catch {
-            errorMessage = "Your cooking progress could not be saved. \(error.localizedDescription)"
+            errorMessage = String(
+                localized:
+                    "Your cooking progress could not be saved. \(error.localizedDescription)"
+            )
         }
     }
 
@@ -945,7 +986,9 @@ struct CookingView: View {
     }
 
     private func applyRequestedStartStep(_ requestedStepID: UUID, in recipe: Recipe) {
-        guard let startIndex = recipe.steps.firstIndex(where: { $0.id == requestedStepID }) else { return }
+        guard let startIndex = recipe.steps.firstIndex(where: { $0.id == requestedStepID }) else {
+            return
+        }
 
         let wasComplete = session.isComplete
         session.stepID = requestedStepID
@@ -967,7 +1010,8 @@ struct CookingView: View {
         for (timerID, active) in Array(session.timers) {
             guard !active.isManual,
                   let stepID = active.stepID,
-                  resetStepIDs.contains(stepID) else { continue }
+                resetStepIDs.contains(stepID)
+            else { continue }
             session.timers.removeValue(forKey: timerID)
             cancelNotification(for: timerID)
         }
@@ -993,7 +1037,8 @@ struct CookingView: View {
             }
 
             guard let (stepID, definition) = definitionsByID[id],
-                  definition.durationSeconds == active.timer.durationSeconds else {
+                definition.durationSeconds == active.timer.durationSeconds
+            else {
                 cancelNotification(for: id)
                 continue
             }
@@ -1020,7 +1065,8 @@ struct CookingView: View {
     private func scheduleNotification(for active: PersistedActiveTimer) {
         guard store.settings.timerNotifications,
               active.timer.isRunning,
-              active.timer.remaining(at: .now) > 0 else { return }
+            active.timer.remaining(at: .now) > 0
+        else { return }
 
         let previous = notificationTasks[active.id]
         previous?.cancel()
@@ -1044,7 +1090,10 @@ struct CookingView: View {
                 }
             } catch {
                 if !Task.isCancelled {
-                    errorMessage = "The timer is running, but its notification could not be scheduled. \(error.localizedDescription)"
+                    errorMessage = String(
+                        localized:
+                            "The timer is running, but its notification could not be scheduled. \(error.localizedDescription)"
+                    )
                 }
             }
         }
@@ -1055,7 +1104,8 @@ struct CookingView: View {
             if !session.isComplete
                 && store.settings.timerNotifications
                 && active.timer.isRunning
-                && active.timer.remaining(at: .now) > 0 {
+                && active.timer.remaining(at: .now) > 0
+            {
                 scheduleNotification(for: active)
             } else {
                 cancelNotification(for: id)
@@ -1177,9 +1227,11 @@ private struct PersistedCookingSession: Codable {
         stepID = try container.decodeIfPresent(UUID.self, forKey: .stepID)
         isComplete = try container.decodeIfPresent(Bool.self, forKey: .isComplete) ?? false
         servings = try container.decodeIfPresent(Int.self, forKey: .servings)
-        usedIngredientIDs = try container.decodeIfPresent(Set<UUID>.self, forKey: .usedIngredientIDs) ?? []
+        usedIngredientIDs =
+            try container.decodeIfPresent(Set<UUID>.self, forKey: .usedIngredientIDs) ?? []
         needsLegacyCompletedStepMigration = isComplete && !container.contains(.completedStepIDs)
-        completedStepIDs = try container.decodeIfPresent(Set<UUID>.self, forKey: .completedStepIDs) ?? []
+        completedStepIDs =
+            try container.decodeIfPresent(Set<UUID>.self, forKey: .completedStepIDs) ?? []
 
         if let current = try? container.decode([UUID: PersistedActiveTimer].self, forKey: .timers) {
             timers = current
@@ -1208,6 +1260,7 @@ private struct CookingStepTimerPanel: View {
     let onReset: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.locale) private var locale
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -1215,10 +1268,15 @@ private struct CookingStepTimerPanel: View {
 
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Label(
-                        remaining == 0 ? "Time’s up" : label,
-                        systemImage: remaining == 0 ? "bell.badge" : "timer"
-                    )
+                    Label {
+                        if remaining == 0 {
+                            Text("Time’s up")
+                        } else {
+                            Text(label)
+                        }
+                    } icon: {
+                        Image(systemName: remaining == 0 ? "bell.badge" : "timer")
+                    }
                     .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                     .foregroundStyle(RecipeTheme.accentForeground)
                     Spacer()
@@ -1241,7 +1299,7 @@ private struct CookingStepTimerPanel: View {
 
                 Text(
                     remaining == 0
-                        ? "Continue when you’re ready. The next step is still up to you."
+                        ? LocalizedStringKey("Continue when you’re ready. The next step is still up to you.")
                         : notificationMessage
                 )
                 .font(RecipeTheme.text(12, relativeTo: .caption))
@@ -1254,7 +1312,7 @@ private struct CookingStepTimerPanel: View {
         }
     }
 
-    private var notificationMessage: String {
+    private var notificationMessage: LocalizedStringKey {
         notificationsEnabled
             ? "Your timer keeps time when you leave this screen."
             : "Your timer progress is saved. Keep RecipePouch open to see when time is up."
@@ -1262,20 +1320,25 @@ private struct CookingStepTimerPanel: View {
 
     private func timerControls(remaining: Int) -> some View {
         let running = timer.isRunning && remaining > 0
-        let layout = dynamicTypeSize.isAccessibilitySize
+        let title: LocalizedStringKey
+        if running {
+            title = "Pause"
+        } else if remaining == 0 {
+            title = "Start Again"
+        } else if remaining < timer.durationSeconds {
+            title = "Resume"
+        } else {
+            title = "Start Timer"
+        }
+        let layout =
+            dynamicTypeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(spacing: 8))
             : AnyLayout(HStackLayout(spacing: 12))
 
         return layout {
             Button(action: running ? onPause : onStart) {
                 Label(
-                    running
-                        ? "Pause"
-                        : (
-                            remaining == 0
-                                ? "Start Again"
-                                : (remaining < timer.durationSeconds ? "Resume" : "Start Timer")
-                        ),
+                    title,
                     systemImage: running ? "pause.fill" : "play.fill"
                 )
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -1306,20 +1369,15 @@ private struct CookingStepTimerPanel: View {
     }
 
     private func durationText(_ seconds: Int) -> String {
-        if seconds % 3_600 == 0 {
-            return "\(seconds / 3_600) hr"
-        }
-        if seconds % 60 == 0 {
-            return "\(seconds / 60) min"
-        }
-        return "\(seconds / 60)m \(seconds % 60)s"
+        return Duration.seconds(seconds).formatted(
+            .units(width: .abbreviated, maximumUnitCount: 2).locale(locale)
+        )
     }
 
     private func spokenDuration(_ seconds: Int) -> String {
-        if seconds == 0 { return "Time’s up" }
-        if seconds >= 3_600 {
-            return "\(seconds / 3_600) hours, \(seconds / 60 % 60) minutes, \(seconds % 60) seconds"
-        }
-        return "\(seconds / 60) minutes, \(seconds % 60) seconds"
+        if seconds == 0 { return String(localized: "Time’s up", locale: locale) }
+        return Duration.seconds(seconds).formatted(
+            .units(width: .wide, maximumUnitCount: 3).locale(locale)
+        )
     }
 }

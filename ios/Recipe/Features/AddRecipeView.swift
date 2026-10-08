@@ -1,11 +1,11 @@
 // Developer: gengyun
 // Purpose: Implements recipe intake from links, text, documents, photos, and manual entry.
 
-import SwiftUI
-import PhotosUI
 import AVFoundation
-import UniformTypeIdentifiers
+import PhotosUI
 import RecipeCore
+import SwiftUI
+import UniformTypeIdentifiers
 
 struct AddRecipeView: View {
     @Environment(RecipeStore.self) private var store
@@ -37,31 +37,60 @@ struct AddRecipeView: View {
                     }
                     linkCard
                     if isWorking {
-                        HStack(spacing: 12) { ProgressView(); Text(status) }
+                        HStack(spacing: 12) {
+                            ProgressView()
+                            Text(LocalizedStringKey(status))
+                        }
                             .accessibilityElement(children: .combine)
                     }
                     if let savedID, let recipe = store.recipe(id: savedID) { savedCard(recipe) }
                     VStack(spacing: 12) {
-                        importOption("Take a photo", subtitle: "Read a recipe from a book or a note.", icon: "camera") { requestCamera() }
-                        importOption("Import from Photos", subtitle: "Choose a screenshot or recipe photo.", icon: "photo.on.rectangle") { showPhotos = true }
-                        importOption("Paste recipe text", subtitle: "Keep ingredients and directions together.", icon: "doc.on.clipboard") { showText = true }
-                        importOption("Import a document", subtitle: "Choose a text file or a PDF with selectable text.", icon: "doc") { showFile = true }
-                        importOption("Create manually", subtitle: "Write down a recipe of your own.", icon: "square.and.pencil") {
+                        importOption(
+                            "Take a photo", subtitle: "Read a recipe from a book or a note.",
+                            icon: "camera"
+                        ) { requestCamera() }
+                        importOption(
+                            "Import from Photos", subtitle: "Choose a screenshot or recipe photo.",
+                            icon: "photo.on.rectangle"
+                        ) { showPhotos = true }
+                        importOption(
+                            "Paste recipe text",
+                            subtitle: "Keep ingredients and directions together.",
+                            icon: "doc.on.clipboard"
+                        ) { showText = true }
+                        importOption(
+                            "Import a document",
+                            subtitle: "Choose a text file or a PDF with selectable text.",
+                            icon: "doc"
+                        ) { showFile = true }
+                        importOption(
+                            "Create manually", subtitle: "Write down a recipe of your own.",
+                            icon: "square.and.pencil"
+                        ) {
                             let recipe = Recipe(title: "")
                             savedID = recipe.id
                             editor = recipe
                         }
                         .accessibilityIdentifier("createManually")
                     }
-                    Text("Recipe websites with structured ingredients and steps can be imported directly. For private pages and social videos, keep the source and add text or photos.")
-                        .font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote)).foregroundStyle(.secondary)
+                    Text(
+                        "Recipe websites with structured ingredients and steps can be imported directly. For private pages and social videos, keep the source and add text or photos."
+                    )
+                    .font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote))
+                    .foregroundStyle(
+                        .secondary)
                 }
                 .padding(22)
             }
             .scrollDismissesKeyboard(.interactively)
             .background(RecipeTheme.canvas)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Done") { operation?.cancel(); dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        operation?.cancel()
+                        dismiss()
+                    }
+                }
             }
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(item: $detailID) { RecipeDetailView(recipeID: $0) }
@@ -69,7 +98,9 @@ struct AddRecipeView: View {
             .onChange(of: photo) { _, selection in
                 guard let selection else { return }
                 perform("Reading your photo…") {
-                    guard let data = try await selection.loadTransferable(type: Data.self) else { throw RecipeImportError.unreadableImage }
+                    guard let data = try await selection.loadTransferable(type: Data.self) else {
+                        throw RecipeImportError.unreadableImage
+                    }
                     try await importPhoto(data)
                 }
             }
@@ -82,9 +113,12 @@ struct AddRecipeView: View {
                 .ignoresSafeArea()
             }
             .sheet(isPresented: $showText) { textSheet }
-            .sheet(item: $editor, onDismiss: {
+            .sheet(
+                item: $editor,
+                onDismiss: {
                 if let savedID, store.recipe(id: savedID) == nil { self.savedID = nil }
-            }) { RecipeEditorView(recipe: $0) }
+                }
+            ) { RecipeEditorView(recipe: $0) }
             .fileImporter(isPresented: $showFile, allowedContentTypes: [.plainText, .pdf]) { result in
                 switch result {
                 case .success(let url):
@@ -101,44 +135,63 @@ struct AddRecipeView: View {
                     }
                 }
             }
-            .alert("Couldn't finish importing", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+            .alert(
+                "Couldn't finish importing",
+                isPresented: Binding(
+                    get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+            ) {
                 if let failedURL {
                     Button("Save link for later") { saveLink(failedURL) }
                     Button("Try again") { importLink() }
                 }
                 Button("OK", role: .cancel) {}
-            } message: { Text(errorMessage ?? "") }
+            } message: {
+                Text(errorMessage ?? "")
+            }
             .onDisappear { operation?.cancel() }
         }
     }
 
     private var linkCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("From a link", systemImage: "link").font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
+            Label("From a link", systemImage: "link").font(
+                RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
             TextField("https://…", text: $sourceLink)
                 .textInputAutocapitalization(.never).autocorrectionDisabled()
                 .keyboardType(.URL).textContentType(.URL)
                 .padding(14).background(RecipeTheme.canvas, in: RoundedRectangle(cornerRadius: 14))
                 .accessibilityIdentifier("importURL")
-            Button { importLink() } label: { Label("Import recipe", systemImage: "arrow.down.doc") }
+            Button {
+                importLink()
+            } label: {
+                Label("Import recipe", systemImage: "arrow.down.doc")
+            }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(sourceLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isWorking)
         }
         .padding(20).background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 24))
     }
 
-    private func importOption(_ title: String, subtitle: String, icon: String, action: @escaping () -> Void) -> some View {
+    private func importOption(
+        _ title: String, subtitle: String, icon: String, action: @escaping () -> Void
+    ) -> some View {
         Button {
             failedURL = nil
             savedID = nil
             action()
         } label: {
             HStack(spacing: 16) {
-                Image(systemName: icon).font(.system(size: 22)).foregroundStyle(RecipeTheme.accentForeground)
+                Image(systemName: icon).font(.system(size: 22)).foregroundStyle(
+                    RecipeTheme.accentForeground
+                )
                     .frame(width: 46, height: 46).background(RecipeTheme.accent.opacity(0.09), in: Circle())
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title).font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline)).foregroundStyle(.primary)
-                    Text(subtitle).font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
+                    Text(LocalizedStringKey(title))
+                        .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
+                        .foregroundStyle(.primary)
+                    Text(LocalizedStringKey(subtitle))
+                        .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
+                        .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(.system(size: 12)).foregroundStyle(.secondary)
@@ -151,8 +204,13 @@ struct AddRecipeView: View {
 
     private func savedCard(_ recipe: Recipe) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label(recipe.needsReview ? "Source saved — add the missing details" : "Saved to your recipes", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(RecipeTheme.accentForeground).font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
+            Label(
+                recipe.needsReview
+                    ? "Source saved — add the missing details" : "Saved to your recipes",
+                systemImage: "checkmark.circle.fill"
+            )
+            .foregroundStyle(RecipeTheme.accentForeground).font(
+                RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
             Text(recipe.title)
             Button(recipe.needsReview ? "Complete recipe" : "Open recipe") {
                 if recipe.needsReview { editor = recipe } else { detailID = recipe.id }
@@ -171,7 +229,9 @@ struct AddRecipeView: View {
                 } header: {
                     Text("Recipe text")
                 } footer: {
-                    Text("Include Ingredients and Instructions headings when available. The original text is always kept.")
+                    Text(
+                        "Include Ingredients and Instructions headings when available. The original text is always kept."
+                    )
                 }
             }
             .navigationTitle("Paste recipe text").navigationBarTitleDisplayMode(.inline)
@@ -191,11 +251,16 @@ struct AddRecipeView: View {
                     }.disabled(pastedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
-            .alert("Recipe text is too long", isPresented: Binding(
+            .alert(
+                "Recipe text is too long",
+                isPresented: Binding(
                 get: { textErrorMessage != nil }, set: { if !$0 { textErrorMessage = nil } }
-            )) {
+                )
+            ) {
                 Button("OK", role: .cancel) { textErrorMessage = nil }
-            } message: { Text(textErrorMessage ?? "") }
+            } message: {
+                Text(textErrorMessage ?? "")
+            }
         }
     }
 
@@ -203,15 +268,21 @@ struct AddRecipeView: View {
         guard !isWorking else { return }
         failedURL = nil
         savedID = nil
-        guard let url = RecipeDocumentParser.validatedSourceURL(sourceLink) else { errorMessage = RecipeImportError.invalidLink.localizedDescription; return }
+        guard let url = RecipeDocumentParser.validatedSourceURL(sourceLink) else {
+            errorMessage = RecipeImportError.invalidLink.localizedDescription
+            return
+        }
         if let existing = store.recipes.first(where: {
             guard let value = $0.sourceURL, let other = URL(string: value) else { return false }
             return RecipeDocumentParser.sourceKey(other) == RecipeDocumentParser.sourceKey(url)
-        }) { savedID = existing.id; return }
+        }) {
+            savedID = existing.id
+            return
+        }
         perform("Reading the recipe page…") {
-            do { try saveImported(try await RecipeImportService.importWebpage(url)) }
-            catch is CancellationError { throw CancellationError() }
-            catch {
+            do {
+                try saveImported(try await RecipeImportService.importWebpage(url))
+            } catch is CancellationError { throw CancellationError() } catch {
                 try Task.checkCancellation()
                 failedURL = url
                 throw error
@@ -221,7 +292,9 @@ struct AddRecipeView: View {
 
     private func saveLink(_ url: URL) {
         do {
-            let recipe = Recipe(title: "Recipe from \(url.host() ?? "a saved link")", servings: nil, sourceURL: url.absoluteString, sourceName: url.host())
+            let recipe = Recipe(
+                title: "Recipe from \(url.host() ?? "a saved link")", servings: nil,
+                sourceURL: url.absoluteString, sourceName: url.host())
             try saveImported(recipe)
             failedURL = nil
         } catch { errorMessage = error.localizedDescription }
@@ -236,14 +309,17 @@ struct AddRecipeView: View {
     private func importPhoto(_ data: Data) async throws {
         let normalized = try RecipeImportService.normalizedPhoto(data)
         let text: String
-        do { text = try await RecipeImportService.recognizeText(in: normalized) }
-        catch is CancellationError { throw CancellationError() }
-        catch {
+        do {
+            text = try await RecipeImportService.recognizeText(in: normalized)
+        } catch is CancellationError { throw CancellationError() } catch {
             // The photo is still a usable source even when OCR finds no text.
             var recipe = Recipe(title: "Recipe from a photo", servings: nil, sourceName: "Photo import")
             recipe.coverData = normalized
             try saveImported(recipe)
-            status = "Photo saved. Add the ingredients and steps when you're ready."
+            status = String(
+                localized:
+                    "Photo saved. Add the ingredients and steps when you're ready."
+            )
             return
         }
         var recipe = RecipeDocumentParser.recipe(fromText: text)
@@ -255,7 +331,7 @@ struct AddRecipeView: View {
     private func perform(_ message: String, action: @escaping @MainActor () async throws -> Void) {
         guard !isWorking else { return }
         isWorking = true
-        status = message
+        status = String(localized: String.LocalizationValue(message))
         errorMessage = nil
         savedID = nil
         failedURL = nil
@@ -264,9 +340,7 @@ struct AddRecipeView: View {
             do {
                 try Task.checkCancellation()
                 try await action()
-            }
-            catch is CancellationError { }
-            catch {
+            } catch is CancellationError {} catch {
                 if !Task.isCancelled { errorMessage = error.localizedDescription }
             }
         }
@@ -274,12 +348,22 @@ struct AddRecipeView: View {
 
     private func requestCamera() {
         guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
-            errorMessage = "A camera isn't available here. Choose Import from Photos instead."; return
+            errorMessage = String(
+                localized:
+                    "A camera isn't available here. Choose Import from Photos instead."
+            )
+            return
         }
         Task {
             let allowed = await AVCaptureDevice.requestAccess(for: .video)
-            if allowed { showCamera = true }
-            else { errorMessage = "Camera access is off. Enable it for Recipe in iPhone Settings, or use Import from Photos." }
+            if allowed {
+                showCamera = true
+            } else {
+                errorMessage = String(
+                    localized:
+                        "Camera access is off. Enable it for Recipe in iPhone Settings, or use Import from Photos."
+                )
+            }
         }
     }
 }
@@ -294,11 +378,16 @@ private struct CameraCaptureView: UIViewControllerRepresentable {
         return picker
     }
     func updateUIViewController(_ controller: UIImagePickerController, context: Context) {}
-    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    final class Coordinator: NSObject, UIImagePickerControllerDelegate,
+        UINavigationControllerDelegate
+    {
         let completion: (Data?) -> Void
         init(completion: @escaping (Data?) -> Void) { self.completion = completion }
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) { completion(nil) }
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+        ) {
             completion((info[.originalImage] as? UIImage)?.jpegData(compressionQuality: 0.8))
         }
     }

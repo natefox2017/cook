@@ -73,7 +73,9 @@ protocol RecipeCloudSyncing: Sendable {
 /// cloud write succeeded.
 struct UnconfiguredCloudSync: RecipeCloudSyncing {
     struct NotConfigured: LocalizedError {
-        var errorDescription: String? { "RecipePouch cloud sync is not configured in this build." }
+        var errorDescription: String? {
+            String(localized: "RecipePouch cloud sync is not configured in this build.")
+        }
     }
     func upload(
         _ snapshot: CloudSnapshotEnvelope,
@@ -97,11 +99,11 @@ enum RecipeCloudSyncError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedPayload:
-            "This library snapshot cannot be sent to cloud sync."
+            String(localized: "This library snapshot cannot be sent to cloud sync.")
         case .revisionConflict:
-            "This library changed on another device. Download the latest version before retrying."
+            String(localized: "This library changed on another device. Download the latest version before retrying.")
         case .missingSaveResult:
-            "Cloud sync did not confirm that the snapshot was saved."
+            String(localized: "Cloud sync did not confirm that the snapshot was saved.")
         }
     }
 }
@@ -201,11 +203,11 @@ enum RecipeLocalResetError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .requiresSignOut:
-            "Sign out of your RecipePouch account before deleting only this iPhone's data. Your cloud library will stay intact."
+            String(localized: "Sign out of your RecipePouch account before deleting only this iPhone's data. Your cloud library will stay intact.")
         case .syncInProgress:
-            "A cloud sync operation is still finishing. Try deleting local data again after it stops."
+            String(localized: "A cloud sync operation is still finishing. Try deleting local data again after it stops.")
         case .markerPersistenceFailed:
-            "Could not securely persist the local erase barrier. Your library was not deleted. Check device storage and try again."
+            String(localized: "Could not securely persist the local erase barrier. Your library was not deleted. Check device storage and try again.")
         }
     }
 }
