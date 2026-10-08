@@ -309,7 +309,7 @@ final class CloudSyncCoordinator {
                         return
                     }
                 }
-                await uploadLocalSnapshot()
+                await uploadLocalSnapshot(forceFollowUp: true)
             } catch {
                 state = .error(error.localizedDescription)
             }
@@ -329,14 +329,14 @@ final class CloudSyncCoordinator {
                 return
             }
             mergeBaseSnapshot = nil
-            await uploadLocalSnapshot()
+            await uploadLocalSnapshot(forceFollowUp: true)
         } catch {
             state = .error(error.localizedDescription)
         }
     }
 
     func syncNow() async {
-        guard accountID != nil else {
+        guard let requestedAccountID = accountID else {
             state = .localOnly
             return
         }
@@ -354,8 +354,9 @@ final class CloudSyncCoordinator {
         if case .conflicts = state { return }
 
         await refreshFromCloudIfAllowed(force: true)
+        guard accountID == requestedAccountID else { return }
         if case .conflicts = state { return }
-        await uploadLocalSnapshot()
+        await uploadLocalSnapshot(forceFollowUp: true)
     }
 
     func appBecameActive() async {
@@ -364,7 +365,14 @@ final class CloudSyncCoordinator {
     }
 
     func deleteAccountAndCloudData() async throws {
+        guard let deletingAccountID = accountID else {
+            state = .localOnly
+            return
+        }
+
         try await service.deleteAccountAndCloudData()
+        guard accountID == deletingAccountID else { return }
+
         accountID = nil
         remoteSnapshot = nil
         mergeBaseSnapshot = nil
@@ -398,6 +406,7 @@ final class CloudSyncCoordinator {
                 state = .localOnly
             }
         } catch {
+            guard accountID == userID else { return }
             state = .error(error.localizedDescription)
         }
     }
@@ -482,7 +491,7 @@ final class CloudSyncCoordinator {
         }
     }
 
-    private func uploadLocalSnapshot() async {
+    private func uploadLocalSnapshot(forceFollowUp: Bool = false) async {
         guard let store, let accountID else { return }
         guard !isSyncing else { return }
         do {
@@ -498,7 +507,13 @@ final class CloudSyncCoordinator {
             defer {
                 isSyncing = false
                 if followUpSyncNeeded {
-                    Task { @MainActor in await self.syncLocalChangesIfAllowed() }
+                    Task { @MainActor in
+                        if forceFollowUp {
+                            await self.uploadLocalSnapshot(forceFollowUp: true)
+                        } else {
+                            await self.syncLocalChangesIfAllowed()
+                        }
+                    }
                 }
             }
             let pending = CloudSnapshotEnvelope(
@@ -549,6 +564,7 @@ final class CloudSyncCoordinator {
                 }
             }
         } catch {
+            guard self.accountID == accountID else { return }
             state = .error(error.localizedDescription)
         }
     }
