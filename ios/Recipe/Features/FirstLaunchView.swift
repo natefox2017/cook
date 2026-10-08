@@ -1,3 +1,6 @@
+// Developer: gengyun
+// Purpose: Implements first-launch onboarding, usage guidance, and optional Premium conversion.
+
 import SwiftUI
 
 struct FirstLaunchFlowView: View {
