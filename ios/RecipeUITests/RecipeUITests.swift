@@ -521,9 +521,20 @@ final class RecipeUITests: XCTestCase {
 
         let profileExport = app.buttons["profile.export"]
         reveal(profileExport, in: app, maximumSwipes: 5)
+        let exportRowFrame = profileExport.frame
+        attachScreenshot("Profile export trigger", app: app)
         profileExport.tap()
         for format in ["Recipes (JSON)", "Recipes (HTML)", "All Local Library Data (JSON)"] {
             XCTAssertTrue(app.buttons[format].waitForExistence(timeout: 5))
+        }
+        attachScreenshot("Profile export format chooser", app: app)
+        if #available(iOS 27.0, *) {
+            // The native popover must point to the export row, not the whole List.
+            XCTAssertGreaterThanOrEqual(
+                app.buttons["All Local Library Data (JSON)"].frame.maxY,
+                exportRowFrame.minY - 60,
+                "Export choices appeared far above their triggering row."
+            )
         }
         app.buttons["Recipes (JSON)"].tap()
         let profileExportCancel = fileExporterCancel(in: app)
@@ -557,6 +568,7 @@ final class RecipeUITests: XCTestCase {
         for format in ["Recipes (JSON)", "Recipes (HTML)", "All Local Library Data (JSON)"] {
             XCTAssertTrue(settingsApp.buttons[format].waitForExistence(timeout: 5))
         }
+        attachScreenshot("Settings export format chooser", app: settingsApp)
         settingsApp.buttons["Recipes (HTML)"].tap()
         let settingsExportCancel = fileExporterCancel(in: settingsApp)
         XCTAssertTrue(
