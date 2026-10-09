@@ -91,7 +91,9 @@ enum TimerNotifications {
                 && !request.identifier.hasSuffix(".early")
         }
         for request in completionRequests {
-            guard let deadline = request.trigger?.nextTriggerDate(), deadline > .now else {
+            guard let trigger = request.trigger as? UNTimeIntervalNotificationTrigger,
+                let deadline = trigger.nextTriggerDate(), deadline > .now
+            else {
                 continue
             }
             let task = schedule(
