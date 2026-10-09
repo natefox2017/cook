@@ -1,8 +1,8 @@
 // Developer: RecipePouch
 // Purpose: Expose owner-only aggregate user, subscription, payment, and download statistics.
-// Production baseline: admin-dashboard v1 index.ts, SHA-256 508bd852b227a8367fe7cf6c2776f3e74d0d2fdd6a3d77ee8700eaef71169237.
+// Production baseline: admin-dashboard v3, downloaded entrypoint SHA-256 508bd852b227a8367fe7cf6c2776f3e74d0d2fdd6a3d77ee8700eaef71169237.
 
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import "jsr:@supabase/functions-js@2.117.3/edge-runtime.d.ts";
 import { handleCors, publicCorsHeaders } from "../_shared/cors.ts";
 import { AppError, errorResponse, json } from "../_shared/errors.ts";
 import { createServiceClient } from "../_shared/auth.ts";

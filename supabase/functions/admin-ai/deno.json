@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "ipaddr.js": "npm:ipaddr.js@2.2.0"
+  },
+  "lock": {
+    "path": "./deno.lock",
+    "frozen": true
+  }
+}
