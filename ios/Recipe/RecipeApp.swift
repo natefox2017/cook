@@ -434,6 +434,22 @@ struct RecipeApp: App {
     }
 }
 
+private struct RecipeRootTabVisibility: ViewModifier {
+    @State private var isRootVisible = false
+
+    func body(content: Content) -> some View {
+        content
+            // Inactive roots must relinquish their preference to the current page.
+            .toolbarVisibility(isRootVisible ? .visible : .automatic, for: .tabBar)
+            .onAppear {
+                isRootVisible = true
+            }
+            .onDisappear {
+                isRootVisible = false
+            }
+    }
+}
+
 private struct RecipeRootView: View {
     @State private var auth = RecipeAuthService.shared
     @Environment(RecipeStore.self) private var store
@@ -480,6 +496,7 @@ private struct RecipeRootView: View {
                 TabView(selection: $selectedTab) {
                     NavigationStack {
                         RecipesView()
+                            .modifier(RecipeRootTabVisibility())
                     }
                     .tabItem {
                         Label(RecipeTab.recipes.title, systemImage: RecipeTab.recipes.symbol)
@@ -489,6 +506,7 @@ private struct RecipeRootView: View {
 
                     NavigationStack {
                         MealPlanView()
+                            .modifier(RecipeRootTabVisibility())
                     }
                     .tabItem {
                         Label(RecipeTab.plan.title, systemImage: RecipeTab.plan.symbol)
@@ -498,6 +516,7 @@ private struct RecipeRootView: View {
 
                     NavigationStack {
                         GroceriesView()
+                            .modifier(RecipeRootTabVisibility())
                     }
                     .tabItem {
                         Label(RecipeTab.groceries.title, systemImage: RecipeTab.groceries.symbol)
@@ -507,6 +526,7 @@ private struct RecipeRootView: View {
 
                     NavigationStack {
                         ProfileView(onOpenAccount: presentAccount)
+                            .modifier(RecipeRootTabVisibility())
                     }
                     .tabItem {
                         Label(RecipeTab.profile.title, systemImage: RecipeTab.profile.symbol)
