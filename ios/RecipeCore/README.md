@@ -26,4 +26,4 @@ swift test --package-path ios/RecipeCore
 
 `CookingTimer` 保存绝对截止时间，前后台切换无需按秒累减。`remaining(at:)` 向上取整并限制在零至剩余时长；暂停记录剩余秒数，恢复建立新的截止时间。`isRunning` 表示存在活动截止时间，结束时由界面显示完成状态、处理通知并停止计时。完成不会自动推进烹饪步骤。
 
-产品最低版本为 iOS 18.0；macOS 14 下限用于 Swift 6 命令行测试与 Observation。主 App Bundle ID 保持已注册的 `com.modelhub.cook`，签名、App Group 和后端由应用工程单独配置。本目录的测试覆盖来源与精度保留、完整落盘、写失败不发布、坏文件保护、购物合并、计划清理和计时恢复；iOS 界面编译由应用工程的 Xcode CI 验证。
+产品最低版本为 iOS 18.0；macOS 14 下限用于 Swift 6 命令行测试与 Observation。主 App Bundle ID 为 `com.shopkivoo.recipe`；签名、App Group 和后端由应用工程单独配置。本目录的测试覆盖来源与精度保留、完整落盘、写失败不发布、坏文件保护、购物合并、计划清理和计时恢复；iOS 界面编译由应用工程的 Xcode CI 验证。

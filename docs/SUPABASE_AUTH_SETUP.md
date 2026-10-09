@@ -31,7 +31,7 @@ storage; recovery links must be opened on the device that requested them. See th
 
 The client exchanges Apple's identity token with Supabase Auth and sends the raw
 nonce used for the Apple request. Before enabling the Apple action, enable the
-**Sign in with Apple** capability for the existing App ID (`com.modelhub.cook`) and
+**Sign in with Apple** capability for the App ID (`com.shopkivoo.recipe`) and
 its Xcode target, ensure the provisioning profile carries that capability, and
 configure the corresponding Apple provider in Supabase Auth. Keep any Apple
 private key and provider secrets in provider configuration; never add them to
