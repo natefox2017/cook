@@ -1,0 +1,18 @@
+{
+  "id": "5b479669-6886-4e49-b324-dd46f7889afb",
+  "slug": "revenuecat-webhook",
+  "version": 3,
+  "verify_jwt": false,
+  "entrypoint_path": "/tmp/user_fn_semsjyrqjnumpvanibip_5b479669-6886-4e49-b324-dd46f7889afb_1/source/index.ts",
+  "ezbr_sha256": "84c47669ef0797808e4fdc3cc61c93cde5b5c04b4b2c69f2aeff9cfe25c591be",
+  "created_at": 1789654003081,
+  "updated_at": 1789654003081,
+  "source_sha256": "05387a7f853ee783ef44b207adbb8f074e2f605d4bb47c5f8c50c542ef33e385",
+  "source_bytes": 6127,
+  "observed_rpc_sha256": {
+    "public.map_commerce_platform": "8a9b96863e67a87ebf96983310a0a81cea2f18d75aac45d822fb4bcc371adf34",
+    "public.map_commerce_store": "01ee64ce5736778e3673592cd8ccf245886cf80cea2c23e415258b9f1d8b5268",
+    "public.upsert_payment_transaction": "f0862bd9b3ff829849c48bfded9aa4a8a90da3bf0a1ede52d5def733b6b0ad9f",
+    "public.upsert_subscription_from_revenuecat": "23bae09a4777761105feb432010c67cb3fa06606e839f175cfe239ed2dfb3e59"
+  }
+}

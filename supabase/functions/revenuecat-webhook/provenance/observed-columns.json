@@ -1,0 +1,373 @@
+[
+  {
+    "name": "id",
+    "type": "uuid",
+    "table": "payment_transactions",
+    "default": "gen_random_uuid()",
+    "nullable": "NO"
+  },
+  {
+    "name": "user_id",
+    "type": "uuid",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "platform",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "store",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "environment",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "product_id",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "entitlement_id",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "transaction_id",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "original_transaction_id",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "order_id",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "purchase_token",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "event_type",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "NO"
+  },
+  {
+    "name": "status",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": "'unknown'::text",
+    "nullable": "NO"
+  },
+  {
+    "name": "purchase_at",
+    "type": "timestamp with time zone",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "renewal_at",
+    "type": "timestamp with time zone",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "expires_at",
+    "type": "timestamp with time zone",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "cancel_at",
+    "type": "timestamp with time zone",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "refund_at",
+    "type": "timestamp with time zone",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "currency",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "gross_amount",
+    "type": "numeric",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "refund_amount",
+    "type": "numeric",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "estimated_proceeds",
+    "type": "numeric",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "final_proceeds",
+    "type": "numeric",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "estimated_gross_usd",
+    "type": "numeric",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "territory",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "provider_source",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": "'revenuecat'::text",
+    "nullable": "NO"
+  },
+  {
+    "name": "provider_event_id",
+    "type": "text",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "purchase_event_id",
+    "type": "uuid",
+    "table": "payment_transactions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "created_at",
+    "type": "timestamp with time zone",
+    "table": "payment_transactions",
+    "default": "now()",
+    "nullable": "NO"
+  },
+  {
+    "name": "updated_at",
+    "type": "timestamp with time zone",
+    "table": "payment_transactions",
+    "default": "now()",
+    "nullable": "NO"
+  },
+  {
+    "name": "id",
+    "type": "uuid",
+    "table": "purchase_events",
+    "default": "gen_random_uuid()",
+    "nullable": "NO"
+  },
+  {
+    "name": "user_id",
+    "type": "uuid",
+    "table": "purchase_events",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "rc_event_id",
+    "type": "text",
+    "table": "purchase_events",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "event_type",
+    "type": "text",
+    "table": "purchase_events",
+    "default": null,
+    "nullable": "NO"
+  },
+  {
+    "name": "product_id",
+    "type": "text",
+    "table": "purchase_events",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "store",
+    "type": "text",
+    "table": "purchase_events",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "environment",
+    "type": "text",
+    "table": "purchase_events",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "raw_event",
+    "type": "jsonb",
+    "table": "purchase_events",
+    "default": "'{}'::jsonb",
+    "nullable": "NO"
+  },
+  {
+    "name": "created_at",
+    "type": "timestamp with time zone",
+    "table": "purchase_events",
+    "default": "now()",
+    "nullable": "NO"
+  },
+  {
+    "name": "user_id",
+    "type": "uuid",
+    "table": "subscriptions",
+    "default": null,
+    "nullable": "NO"
+  },
+  {
+    "name": "entitlement_id",
+    "type": "text",
+    "table": "subscriptions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "product_id",
+    "type": "text",
+    "table": "subscriptions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "status",
+    "type": "text",
+    "table": "subscriptions",
+    "default": "'none'::text",
+    "nullable": "NO"
+  },
+  {
+    "name": "store",
+    "type": "text",
+    "table": "subscriptions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "environment",
+    "type": "text",
+    "table": "subscriptions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "expires_at",
+    "type": "timestamp with time zone",
+    "table": "subscriptions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "will_renew",
+    "type": "boolean",
+    "table": "subscriptions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "revenuecat_app_user_id",
+    "type": "text",
+    "table": "subscriptions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "latest_event_type",
+    "type": "text",
+    "table": "subscriptions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "updated_at",
+    "type": "timestamp with time zone",
+    "table": "subscriptions",
+    "default": "now()",
+    "nullable": "NO"
+  },
+  {
+    "name": "created_at",
+    "type": "timestamp with time zone",
+    "table": "subscriptions",
+    "default": "now()",
+    "nullable": "NO"
+  },
+  {
+    "name": "plan",
+    "type": "text",
+    "table": "subscriptions",
+    "default": null,
+    "nullable": "YES"
+  },
+  {
+    "name": "latest_event_timestamp_ms",
+    "type": "bigint",
+    "table": "subscriptions",
+    "default": null,
+    "nullable": "YES"
+  }
+]

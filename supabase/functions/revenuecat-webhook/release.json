@@ -1,0 +1,26 @@
+{
+  "slug": "revenuecat-webhook",
+  "verify_jwt": false,
+  "entrypoint": "index.ts",
+  "import_map": "deno.json",
+  "source_sha256": {
+    "index.ts": "ad712275563f8c24a25b765698d529750958641ec828f067bd99e5b943627e9e",
+    "webhook.ts": "1f875aea76b5e5b3012dfba46bede3788f11178f1002e08767e5763a21c98d80",
+    "deno.json": "e13cf0336d14f38013762c11935bd6123978f809120f530738d5b69669281524",
+    "deno.lock": "4748873dbe0dab7d3a7c0f6a9988c14ea0be8b5c7f311952a2d5700a6e5e3db0"
+  },
+  "required_migration": {
+    "path": "supabase/migrations/20261009150000_revenuecat_event_owner_binding.sql",
+    "sha256": "10acf9c549bfa422e51f6f6527a2c9f77e7a0e5b304f5af9992c776f3328adf9"
+  },
+  "required_environment_names": [
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "REVENUECAT_WEBHOOK_SECRET"
+  ],
+  "optional_environment_names": [
+    "REVENUECAT_WEBHOOK_SIGNING_SECRET"
+  ],
+  "observed_baseline": "provenance/deployed-v3.json",
+  "deployment_performed": false
+}

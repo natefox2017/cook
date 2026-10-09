@@ -1,4 +1,4 @@
-// Developer: RecipePouch
+// Developer: gengyun
 // Purpose: Normalize and validate RevenueCat webhook values before persistence.
 
 export const STATUS_MAP: Record<string, string> = {
@@ -59,8 +59,64 @@ export async function timingSafeEqual(a: string, b: string): Promise<boolean> {
 export function msToIso(ms: unknown): string | null {
   if (ms == null) return null;
   const n = typeof ms === "number" ? ms : Number(ms);
-  if (!Number.isFinite(n) || n <= 0) return null;
+  if (!Number.isFinite(n) || n <= 0 || n > 8.64e15) return null;
   return new Date(n).toISOString();
+}
+
+// Bearer authentication and the optional provider HMAC are separate credentials.
+export async function verifySignature(
+  body: Uint8Array,
+  header: string,
+  secret: string,
+  now = Date.now(),
+): Promise<boolean> {
+  const match = /^t=(\d+),v1=([a-f0-9]{64})$/.exec(header);
+  if (!match || Math.abs(now / 1000 - Number(match[1])) > 300) return false;
+  const prefix = new TextEncoder().encode(`${match[1]}.`);
+  const payload = new Uint8Array(prefix.length + body.length);
+  payload.set(prefix);
+  payload.set(body, prefix.length);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const digest = new Uint8Array(await crypto.subtle.sign("HMAC", key, payload));
+  const expected = Array.from(
+    digest,
+    (byte) => byte.toString(16).padStart(2, "0"),
+  ).join("");
+  return await timingSafeEqual(expected, match[2]);
+}
+
+export async function readBody(req: Request): Promise<Uint8Array> {
+  const limit = 64 * 1024;
+  if (Number(req.headers.get("content-length")) > limit) {
+    throw new Error("payload_too_large");
+  }
+  const reader = req.body?.getReader();
+  if (!reader) return new Uint8Array();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    size += value.length;
+    if (size > limit) {
+      await reader.cancel();
+      throw new Error("payload_too_large");
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return bytes;
 }
 
 export function sanitize(

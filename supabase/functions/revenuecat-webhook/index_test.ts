@@ -1,4 +1,4 @@
-// Developer: RecipePouch
+// Developer: gengyun
 // Purpose: Verify RevenueCat webhook authentication and payload normalization.
 
 import {
@@ -7,6 +7,7 @@ import {
   STATUS_MAP,
   timingSafeEqual,
   UUID_RE,
+  verifySignature,
 } from "./webhook.ts";
 
 Deno.test("webhook bearer comparison accepts equal values and rejects mismatches", async () => {
@@ -15,6 +16,48 @@ Deno.test("webhook bearer comparison accepts equal values and rejects mismatches
   }
   if (await timingSafeEqual("Bearer secret", "Bearer other")) {
     throw new Error("different bearer values must not match");
+  }
+});
+
+Deno.test("provider signatures authenticate exact bytes and expire independently of event time", async () => {
+  const body = new TextEncoder().encode('{ "event": {} }');
+  const secret = "local-signing-fixture";
+  const timestamp = "1700000000";
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const digest = new Uint8Array(
+    await crypto.subtle.sign(
+      "HMAC",
+      key,
+      new TextEncoder().encode(timestamp + '.{ "event": {} }'),
+    ),
+  );
+  const signature = Array.from(
+    digest,
+    (byte) => byte.toString(16).padStart(2, "0"),
+  ).join("");
+  const header = `t=${timestamp},v1=${signature}`;
+  if (!await verifySignature(body, header, secret, 1700000000000)) {
+    throw new Error("valid signature rejected");
+  }
+  if (
+    await verifySignature(
+      new TextEncoder().encode('{"event":{}}'),
+      header,
+      secret,
+      1700000000000,
+    )
+  ) throw new Error("modified bytes accepted");
+  if (await verifySignature(body, header, secret, 1700000301000)) {
+    throw new Error("stale signature accepted");
+  }
+  if (await verifySignature(body, header, "wrong-secret", 1700000000000)) {
+    throw new Error("wrong signing secret accepted");
   }
 });
 
