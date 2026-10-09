@@ -191,7 +191,8 @@ struct GroceriesView: View {
             }
             return title
         }
-        return titles.isEmpty ? nil : "From " + titles.joined(separator: ", ")
+        return titles.isEmpty
+            ? nil : RecipeLanguage.localized("From %@", titles.joined(separator: ", "))
     }
 
     private func groceryRow(_ item: GroceryItem) -> some View {
@@ -354,7 +355,9 @@ private struct GroceryItemEditorView: View {
             }
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
-            .navigationTitle(originalItem == nil ? "Add Grocery Item" : "Edit Grocery Item")
+            .navigationTitle(
+                LocalizedStringKey(originalItem == nil ? "Add Grocery Item" : "Edit Grocery Item")
+            )
             .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

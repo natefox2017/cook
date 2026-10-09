@@ -237,12 +237,14 @@ private struct CollectionDetailView: View {
                 List {
                     if recipes.isEmpty {
                         ContentUnavailableView(
-                            searchText.isEmpty ? "No recipes yet" : "No recipes found",
+                            LocalizedStringKey(searchText.isEmpty ? "No recipes yet" : "No recipes found"),
                             systemImage: "folder",
                             description: Text(
-                                searchText.isEmpty
-                                    ? "Add recipes from this collection or from any recipe page."
-                                    : "Try another search."
+                                LocalizedStringKey(
+                                    searchText.isEmpty
+                                        ? "Add recipes from this collection or from any recipe page."
+                                        : "Try another search."
+                                )
                             )
                         )
                     } else {

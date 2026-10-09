@@ -139,14 +139,14 @@ struct RecipeEditorView: View {
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle(isExisting ? "Edit recipe" : "New recipe")
+            .navigationTitle(LocalizedStringKey(isExisting ? "Edit recipe" : "New recipe"))
             .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { if isDirty { showDiscard = true } else { dismiss() } }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(previewNeedsReview ? "Save draft" : "Save") { save() }
+                    Button(LocalizedStringKey(previewNeedsReview ? "Save draft" : "Save")) { save() }
                         .disabled(
                             draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                 || isLoadingPhoto
@@ -218,7 +218,7 @@ struct RecipeEditorView: View {
         HStack {
             Text(LocalizedStringKey(title))
             Spacer()
-            TextField(placeholder, text: text).keyboardType(.numberPad)
+            TextField(RecipeLanguage.localized(placeholder), text: text).keyboardType(.numberPad)
                 .multilineTextAlignment(.trailing).frame(maxWidth: 100)
                 .accessibilityLabel(Text(LocalizedStringKey(title)))
         }
@@ -228,9 +228,9 @@ struct RecipeEditorView: View {
         do {
             var recipe = draft
             recipe.title = recipe.title.trimmingCharacters(in: .whitespacesAndNewlines)
-            recipe.servings = try number(servingsText, name: "Servings", range: 1...100)
-            recipe.prepMinutes = try number(prepText, name: "Prep time", range: 0...10_080)
-            recipe.cookMinutes = try number(cookText, name: "Cook time", range: 0...10_080)
+            recipe.servings = try number(servingsText, name: RecipeLanguage.localized("Servings"), range: 1...100)
+            recipe.prepMinutes = try number(prepText, name: RecipeLanguage.localized("Prep time"), range: 0...10_080)
+            recipe.cookMinutes = try number(cookText, name: RecipeLanguage.localized("Cook time"), range: 0...10_080)
             recipe.ingredients = try draft.ingredients.compactMap { ingredient in
                 let name = ingredient.name.trimmingCharacters(in: .whitespacesAndNewlines)
                 let amount = ingredient.amountText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -453,12 +453,18 @@ private struct StepEditorRow: View {
 
     private func durationLabel(_ seconds: Int) -> String {
         if seconds % 3_600 == 0 {
-            return "\(seconds / 3_600) hr"
+            return Duration.seconds(seconds).formatted(
+                .units(width: .abbreviated, maximumUnitCount: 2).locale(RecipeLanguage.active)
+            )
         }
         if seconds % 60 == 0 {
-            return "\(seconds / 60) min"
+            return Duration.seconds(seconds).formatted(
+                .units(width: .abbreviated, maximumUnitCount: 2).locale(RecipeLanguage.active)
+            )
         }
-        return "\(seconds / 60)m \(seconds % 60)s"
+        return Duration.seconds(seconds).formatted(
+            .units(width: .abbreviated, maximumUnitCount: 2).locale(RecipeLanguage.active)
+        )
     }
 }
 

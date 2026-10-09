@@ -1,6 +1,6 @@
 # Localization
 
-Updated: 2026-10-08
+Updated: 2026-10-09
 
 ## Runtime policy
 
@@ -21,6 +21,14 @@ Initial targets: English (en), Simplified Chinese (zh-Hans), Traditional Chinese
 - Redundant informational footnotes, duplicate read-only settings rows and long marketing subtitles were removed from common screens. Necessary statuses are short, ideally one line; preserve important data-deletion warnings, privacy notices and App Store renewal disclosure rather than obscuring essential terms.
 - The Share Extension now has its **own** catalog, `ios/ShareExtension/Localizable.xcstrings` (11 source keys, zh-Hans/zh-Hant/ja), included in the `RecipeShare` target's Resources phase. The app catalog alone does not localize this separate extension bundle.
 - UI assertions cover localized Profile defaults, Account and Premium menu labels in the four shipping locales and retain stable accessibility identifiers. This code-only pass verified catalog JSON completeness and static Swift delimiter balance; **Xcode build, iPhone/simulator screenshots, VoiceOver and exhaustive view-state runtime tests have not been executed in this environment**. Complete these before release.
+
+## 2026-10-09 localization source sweep
+
+- Rebased the sweep on the latest `main` timer changes; the iOS app String Catalog now has **808** source keys, each with Simplified Chinese, Traditional Chinese and Japanese values. The Share Extension has **14** translated keys, including shared-storage errors.
+- Covered new authentication code actions, empty states, cooking timers, groceries, collection views, recipe editor, subscription statuses, cloud/import/Core errors, accessibility labels and portable HTML export headings.
+- Runtime-generated Core/service strings are looked up in the host app or Share Extension catalog with `RecipeLanguage.active`, preventing device-language fallback during the English-only testing stage. Static multi-branch SwiftUI labels now pass `LocalizedStringKey` explicitly.
+- Existing user recipe text, persisted enum identifiers, source metadata, StoreKit names/prices and backend technical content are not automatically translated. The separate internal `admin/` React tool is outside the documented iOS localization targets.
+- **Verification performed:** JSON parsing, all three locale values present, and placeholder-count checks. **Not run in this environment:** native Xcode/SwiftUI build, simulator locale screenshots, accessibility testing, Share Extension host testing, subscription checkout or export display QA. Complete those before claiming international-release readiness.
 
 ## Implementation rules
 
