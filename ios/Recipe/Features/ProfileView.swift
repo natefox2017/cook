@@ -631,18 +631,15 @@ enum RecipeExportFormat {
         )
     }
 
-    /// Cancelling the system document picker is not a failed export.
+    /// Only the system exporter's completion callback can report a successful save.
     static func feedback(for result: Result<URL, Error>) -> String? {
-        switch result {
-        case let .success(url):
-            return "Export saved as \(url.lastPathComponent)."
-        case let .failure(error):
-            let nsError = error as NSError
-            if nsError.domain == NSCocoaErrorDomain
-                && nsError.code == CocoaError.Code.userCancelled.rawValue {
-                return nil
-            }
-            return "Export failed: \(error.localizedDescription)"
+        switch RecipeFileExportResult(result) {
+        case let .saved(filename):
+            return "Export saved as \(filename)."
+        case .cancelled:
+            return nil
+        case let .failed(message):
+            return "Export failed: \(message)"
         }
     }
 }
