@@ -1,18 +1,40 @@
 // Developer: gengyun
 // Purpose: Creates the Recipe iOS app, shared services, compatibility migrations, and primary navigation.
 
+import Foundation
 import RecipeCore
 import StoreKit
 import SwiftUI
 
 enum RecipeUITestNamespace {
     static let resetCookingSessionsArgument = "--uitesting-reset-cooking-sessions"
+    static let exportQAArgument = "--uitesting-export-qa"
+    static let resetExportQAArgument = "--uitesting-export-qa-reset"
+    static let exportQAPermissionFailureArgument =
+        "--uitesting-export-qa-inject-write-permission-denial"
 
     static var isUITesting: Bool {
         #if DEBUG
             ProcessInfo.processInfo.arguments.contains("--uitesting")
         #else
             false
+        #endif
+    }
+
+    static var isExportQA: Bool {
+        #if DEBUG
+            ProcessInfo.processInfo.arguments.contains(exportQAArgument) && isUITesting
+        #else
+            false
+        #endif
+    }
+
+    static var injectsExportQAPermissionFailure: Bool {
+        #if DEBUG
+            return isExportQA
+                && ProcessInfo.processInfo.arguments.contains(exportQAPermissionFailureArgument)
+        #else
+            return false
         #endif
     }
 
@@ -34,7 +56,8 @@ enum RecipeUITestNamespace {
     static func preferenceKey(_ key: String, isUITesting: Bool) -> String {
         guard isUITesting else { return key }
 
-        let suffix = key.hasPrefix("recipe.")
+        let suffix =
+            key.hasPrefix("recipe.")
             ? String(key.dropFirst("recipe.".count))
             : key
         return "recipe.uitesting.\(suffix)"
@@ -71,7 +94,195 @@ enum RecipeUITestNamespace {
         let prefix = timerNotificationPrefix(recipeID: recipeID, isUITesting: isUITesting)
         return "\(prefix)\(timerID.uuidString)"
     }
+
+    static var exportQALibraryURL: URL {
+        URL.applicationSupportDirectory
+            .appendingPathComponent("Recipe", isDirectory: true)
+            .appendingPathComponent("UITestExportQA", isDirectory: true)
+            .appendingPathComponent("library.json")
+    }
 }
+
+#if DEBUG
+    enum RecipeExportQAFixture {
+        static let seed: UInt64 = 127
+        static let recipeIDs = (0..<5).map {
+            RecipePerformanceFixtureConfiguration.recipeID(seed: seed, index: $0)
+        }
+        static let firstRecipeID = recipeIDs[0]
+        static let privateNotes = "PRIVATE QA NOTES: synthetic export fixture; not personal data."
+        static let sourceURL = "https://example.test/recipe-export-qa/roast"
+
+        private static let timestamp = Date(timeIntervalSince1970: 1_790_000_000)
+        private static let coverImageData: Data = {
+            guard
+                let data = Data(
+                    base64Encoded:
+                        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC"
+                )
+            else {
+                preconditionFailure("The embedded QA cover image must be valid base64.")
+            }
+            return data
+        }()
+
+        static let snapshot = RecipeLibrarySnapshot(
+            recipes: (0..<5).map(recipe),
+            groceries: [
+                GroceryItem(
+                    id: RecipePerformanceFixtureConfiguration.recipeID(seed: seed, index: 80_001),
+                    name: "QA flour",
+                    amountText: "about 2 cups",
+                    category: .pantry,
+                    recipeIDs: [recipeIDs[1]]
+                ),
+                GroceryItem(
+                    id: RecipePerformanceFixtureConfiguration.recipeID(seed: seed, index: 80_002),
+                    name: "QA tomatoes",
+                    amountText: "a few",
+                    category: .produce,
+                    recipeIDs: [recipeIDs[0]]
+                ),
+            ],
+            mealPlan: [
+                MealPlanEntry(
+                    id: RecipePerformanceFixtureConfiguration.recipeID(seed: seed, index: 90_001),
+                    recipeID: recipeIDs[0],
+                    date: Date(timeIntervalSince1970: 1_790_060_000),
+                    slot: .dinner
+                ),
+                MealPlanEntry(
+                    id: RecipePerformanceFixtureConfiguration.recipeID(seed: seed, index: 90_002),
+                    recipeID: recipeIDs[1],
+                    date: Date(timeIntervalSince1970: 1_790_146_400),
+                    slot: .breakfast
+                ),
+            ],
+            collections: [
+                RecipeCollection(
+                    id: RecipePerformanceFixtureConfiguration.recipeID(seed: seed, index: 10_001),
+                    name: "QA Export Collection",
+                    createdAt: timestamp,
+                    updatedAt: timestamp
+                )
+            ],
+            collectionMemberships: [
+                RecipeCollectionMembership(
+                    recipeID: recipeIDs[0],
+                    collectionID: RecipePerformanceFixtureConfiguration.recipeID(
+                        seed: seed,
+                        index: 10_001
+                    )
+                ),
+                RecipeCollectionMembership(
+                    recipeID: recipeIDs[1],
+                    collectionID: RecipePerformanceFixtureConfiguration.recipeID(
+                        seed: seed,
+                        index: 10_001
+                    )
+                ),
+            ],
+            settings: RecipeSettings(
+                displayName: "Export QA",
+                email: "qa-export@example.test",
+                appearance: .dark,
+                keepScreenAwake: false,
+                timerNotifications: false
+            ),
+            deletedEntities: []
+        )
+
+        @MainActor
+        static func makeStore(at fileURL: URL, reset: Bool = false) throws -> RecipeStore {
+            if reset, FileManager.default.fileExists(atPath: fileURL.path) {
+                try FileManager.default.removeItem(at: fileURL)
+            }
+            let fileExists = FileManager.default.fileExists(atPath: fileURL.path)
+            let store = RecipeStore(fileURL: fileURL)
+            guard !fileExists else { return store }
+            try store.replaceLibrary(with: snapshot)
+            return store
+        }
+
+        private static func recipe(index: Int) -> Recipe {
+            let recipeID = recipeIDs[index]
+            let ingredients: [RecipeIngredient]
+            if index == 0 {
+                ingredients = [
+                    RecipeIngredient(
+                        id: RecipePerformanceFixtureConfiguration.recipeID(
+                            seed: seed, index: 20_001),
+                        name: "Olive oil",
+                        amountText: "a little",
+                        category: .pantry
+                    ),
+                    RecipeIngredient(
+                        id: RecipePerformanceFixtureConfiguration.recipeID(
+                            seed: seed, index: 20_002),
+                        name: "Sea salt",
+                        amountText: "to taste",
+                        category: .pantry
+                    ),
+                    RecipeIngredient(
+                        id: RecipePerformanceFixtureConfiguration.recipeID(
+                            seed: seed, index: 20_003),
+                        name: "Stock",
+                        amountText: "about 1 cup",
+                        category: .other
+                    ),
+                ]
+            } else {
+                ingredients = [
+                    RecipeIngredient(
+                        id: RecipePerformanceFixtureConfiguration.recipeID(
+                            seed: seed,
+                            index: 20_000 + index * 10
+                        ),
+                        name: "QA ingredient",
+                        amountText: "to taste"
+                    )
+                ]
+            }
+
+            return Recipe(
+                id: recipeID,
+                title: [
+                    "QA Export Roast",
+                    "QA Export Breakfast",
+                    "QA Export Dessert",
+                    "QA Export Side",
+                    "QA Export Drink",
+                ][index],
+                summary: "Synthetic fixture for Recipe export QA.",
+                category: RecipeCategory.allCases[index % RecipeCategory.allCases.count],
+                servings: index == 0 ? 4 : 2,
+                prepMinutes: index == 0 ? 15 : nil,
+                cookMinutes: index == 0 ? 40 : nil,
+                ingredients: ingredients,
+                steps: [
+                    RecipeStep(
+                        id: RecipePerformanceFixtureConfiguration.recipeID(
+                            seed: seed,
+                            index: 50_000 + index
+                        ),
+                        title: "Prepare",
+                        instruction: "Prepare the synthetic Recipe export QA fixture."
+                    )
+                ],
+                sourceURL: index == 0
+                    ? sourceURL
+                    : "https://example.test/recipe-export-qa/\(recipeID.uuidString)",
+                sourceText: index == 0 ? "QA source text retained for export verification." : nil,
+                sourceName: "Recipe Export QA",
+                coverData: index == 0 ? coverImageData : nil,
+                isFavorite: index == 0,
+                notes: index == 0 ? privateNotes : "Synthetic QA sample \(index + 1).",
+                createdAt: timestamp,
+                updatedAt: timestamp
+            )
+        }
+    }
+#endif
 
 @main
 @MainActor
@@ -117,7 +328,8 @@ struct RecipeApp: App {
         #endif
         self.isUITesting = isUITesting
         self.bypassOnboarding = bypassOnboarding
-        let cloudSyncService: any RecipeCloudSyncing = isUITesting
+        let cloudSyncService: any RecipeCloudSyncing =
+            isUITesting
             ? UnconfiguredCloudSync()
             : SupabaseCloudSync()
         _cloudSync = State(
@@ -134,44 +346,63 @@ struct RecipeApp: App {
             arguments: arguments
         )
         let localStore: RecipeStore
-        if performanceFixtureRequested {
-            let configuration = RecipePerformanceFixtureConfiguration.parse(arguments: arguments)
-            if let configuration {
+        #if DEBUG
+            if RecipeUITestNamespace.isExportQA {
                 do {
-                    localStore = try configuration.makeStore(arguments: arguments)
+                    localStore = try RecipeExportQAFixture.makeStore(
+                        at: RecipeUITestNamespace.exportQALibraryURL,
+                        reset: arguments.contains(RecipeUITestNamespace.resetExportQAArgument)
+                    )
                 } catch {
-                    assertionFailure("Performance fixture could not be loaded: \(error)")
+                    assertionFailure("Export QA fixture could not be loaded: \(error)")
+                    localStore = RecipeStore(fileURL: RecipeUITestNamespace.exportQALibraryURL)
+                }
+            } else if performanceFixtureRequested {
+                let configuration = RecipePerformanceFixtureConfiguration.parse(
+                    arguments: arguments)
+                if let configuration {
+                    do {
+                        localStore = try configuration.makeStore(arguments: arguments)
+                    } catch {
+                        assertionFailure("Performance fixture could not be loaded: \(error)")
+                        localStore = RecipeStore(fileURL: nil)
+                    }
+                } else {
+                    assertionFailure(
+                        "Pass a supported --uitesting-performance-count=100, 500, 1000, or 5000."
+                    )
                     localStore = RecipeStore(fileURL: nil)
                 }
-            } else {
-                assertionFailure(
-                    "Pass a supported --uitesting-performance-count=100, 500, 1000, or 5000."
-                )
+            } else if isUITesting {
+                if arguments.contains(RecipeUITestNamespace.resetCookingSessionsArgument) {
+                    RecipeUITestNamespace.clearCookingSessions(from: defaults)
+                }
                 localStore = RecipeStore(fileURL: nil)
+                do {
+                    try localStore.loadSampleRecipes()
+                } catch {
+                    assertionFailure("UI test fixtures could not be loaded: \(error)")
+                }
+            } else {
+                localStore = Self.makeProductionStore(defaults: defaults)
             }
-        } else if isUITesting {
-            if arguments.contains(RecipeUITestNamespace.resetCookingSessionsArgument) {
-                RecipeUITestNamespace.clearCookingSessions(from: defaults)
-            }
-            localStore = RecipeStore(fileURL: nil)
-            do {
-                try localStore.loadSampleRecipes()
-            } catch {
-                assertionFailure("UI test fixtures could not be loaded: \(error)")
-            }
-        } else {
-            let libraryURL = RecipeStore.defaultFileURL()
-            if FileManager.default.fileExists(atPath: libraryURL.path),
-                defaults.object(forKey: FirstLaunchFlowView.completionKey) == nil
-            {
-                // Existing installs with a persisted library should not be mistaken for new users
-                // when this onboarding key is introduced for the first time.
-                defaults.set(true, forKey: FirstLaunchFlowView.completionKey)
-            }
-            localStore = RecipeStore(fileURL: libraryURL)
-        }
+        #else
+            localStore = Self.makeProductionStore(defaults: defaults)
+        #endif
 
         _store = State(initialValue: localStore)
+    }
+
+    private static func makeProductionStore(defaults: UserDefaults) -> RecipeStore {
+        let libraryURL = RecipeStore.defaultFileURL()
+        if FileManager.default.fileExists(atPath: libraryURL.path),
+            defaults.object(forKey: FirstLaunchFlowView.completionKey) == nil
+        {
+            // Existing installs with a persisted library should not be mistaken for new users
+            // when this onboarding key is introduced for the first time.
+            defaults.set(true, forKey: FirstLaunchFlowView.completionKey)
+        }
+        return RecipeStore(fileURL: libraryURL)
     }
 
     var body: some Scene {
