@@ -281,7 +281,7 @@ public enum SampleRecipes {
                     ),
                 ],
                 sourceName: "Sample recipe",
-                coverAsset: "salmon",
+                coverAsset: "chicken",
                 createdAt: created,
                 updatedAt: created
             ),
