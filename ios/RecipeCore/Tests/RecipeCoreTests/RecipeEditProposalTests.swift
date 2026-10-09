@@ -1,94 +1,88 @@
 // Developer: gengyun
-// Purpose: Ensure generated recipe edit proposals cannot overwrite unapproved user data.
+// Purpose: AI proposal safety, conflicts and reversible non-mutating previews.
 
 import Foundation
 import Testing
 @testable import RecipeCore
 
 @Test
-func proposedSubstitutionIsAReviewableCopyWithStableIngredientLink() throws {
+func proposedIngredientAndStepChangesNeverMutateThePrivateRecipeUntilAccepted() throws {
     let ingredient = RecipeIngredient.from(name: "Butter", amountText: "50 g")
-    let step = RecipeStep(
-        instruction: "Melt the butter.",
-        linkedIngredientIDs: [ingredient.id]
+    let step = RecipeStep(instruction: "Melt butter in a pan.")
+    let old = Recipe(
+        title: "Dinner", ingredients: [ingredient], steps: [step],
+        sourceURL: "https://example.com/original", sourceText: "Author's recipe",
+        notes: "Personal private note", updatedAt: Date(timeIntervalSince1970: 1000)
     )
-    let original = Recipe(
-        title: "Sauce", servings: 2, ingredients: [ingredient], steps: [step],
-        sourceURL: "https://example.test/original",
-        sourceText: "Original owner's recipe",
-        notes: "Private family note"
+    let patch = RecipeEditProposal(
+        recipeID: old.id, basedOnUpdate: old.updatedAt,
+        changes: [
+            .ingredientName(
+                id: ingredient.id, original: "Butter", proposed: "Olive oil"),
+            .ingredientAmount(
+                id: ingredient.id, original: "50 g", proposed: "to taste"),
+            .stepInstruction(
+                id: step.id, original: "Melt butter in a pan.",
+                proposed: "Heat oil in a pan.")
+        ],
+        reasons: ["Substitute to avoid dairy."],
+        warnings: ["Verify cooking temperature and amount."]
     )
-    let proposal = RecipeEditProposal(
-        recipeID: original.id, expectedUpdatedAt: original.updatedAt,
-        explanation: "Replace butter with olive oil.",
-        operations: [
-            .replaceIngredient(id: ingredient.id, name: "Olive oil", amountText: nil),
-            .editStep(id: step.id, instruction: "Warm the olive oil."),
-            .setServings(4)
-        ]
-    )
-    let preview = try proposal.preview(on: original)
-    #expect(original.ingredients[0].name == "Butter")
-    #expect(original.servings == 2)
-    #expect(preview.ingredients[0].name == "Olive oil")
-    #expect(preview.ingredients[0].id == ingredient.id)
-    #expect(preview.ingredients[0].amountText == "50 g")
-    #expect(preview.steps[0].linkedIngredientIDs == [ingredient.id])
-    #expect(preview.steps[0].instruction == "Warm the olive oil.")
-    #expect(preview.steps[0].id == step.id)
-    #expect(preview.servings == 4)
-    #expect(preview.sourceText == original.sourceText)
-    #expect(preview.sourceURL == original.sourceURL)
-    #expect(preview.notes == original.notes)
-    let decoded = try JSONDecoder().decode(
-        RecipeEditProposal.self, from: JSONEncoder().encode(proposal))
-    #expect(decoded == proposal)
+    let preview = try patch.preview(on: old)
+    #expect(old.ingredients[0].name == "Butter")
+    #expect(preview.after.ingredients[0].name == "Olive oil")
+    #expect(preview.after.ingredients[0].quantity == nil)
+    #expect(preview.after.ingredients[0].amountText == "to taste")
+    #expect(preview.after.steps[0].timers == old.steps[0].timers)
+    #expect(preview.after.sourceURL == old.sourceURL)
+    #expect(preview.after.sourceText == old.sourceText)
+    #expect(preview.after.notes == old.notes)
+    #expect(preview.reasons.count == 1)
+    let variant = try patch.approvedRecipe(
+        from: old, at: Date(timeIntervalSince1970: 1100), asVariant: true)
+    #expect(variant.id != old.id)
+    #expect(variant.createdAt == Date(timeIntervalSince1970: 1100))
+    #expect(old.updatedAt == Date(timeIntervalSince1970: 1000))
 }
 
 @Test
-func invalidOrStaleSuggestionsCannotChangeExistingRecipe() throws {
-    let recipe = Recipe(
-        title: "Toast", ingredients: [.from(name: "Bread", amountText: "2 slices")],
-        steps: [.init(instruction: "Toast it.")])
-    let wrong = RecipeEditProposal(
-        recipeID: UUID(), expectedUpdatedAt: recipe.updatedAt,
-        explanation: "Test", operations: [.setServings(4)])
-    #expect(throws: RecipeEditProposalError.wrongRecipe) {
-        _ = try wrong.preview(on: recipe)
+func proposedEditsRejectStaleRevisionsUnexpectedPathsAndUnsafeText() throws {
+    let ingredient = RecipeIngredient(name: "Salt", amountText: "to taste")
+    let old = Recipe(
+        title: "Soup", ingredients: [ingredient],
+        steps: [.init(instruction: "Mix.")],
+        updatedAt: Date(timeIntervalSince1970: 1000)
+    )
+    let good = RecipeEditChange.ingredientName(
+        id: ingredient.id, original: "Salt", proposed: "Pepper")
+    let duplicate = RecipeEditProposal(
+        recipeID: old.id, basedOnUpdate: old.updatedAt, changes: [good, good])
+    #expect(throws: RecipeEditProposalError.duplicatedPath) {
+        try duplicate.preview(on: old)
     }
     let stale = RecipeEditProposal(
-        recipeID: recipe.id, expectedUpdatedAt: recipe.updatedAt.addingTimeInterval(-1),
-        explanation: "Test", operations: [.setServings(4)])
+        recipeID: old.id,
+        basedOnUpdate: Date(timeIntervalSince1970: 999),
+        changes: [good])
     #expect(throws: RecipeEditProposalError.staleRecipe) {
-        _ = try stale.preview(on: recipe)
+        try stale.preview(on: old)
     }
-    let invented = RecipeEditProposal(
-        recipeID: recipe.id, expectedUpdatedAt: recipe.updatedAt,
-        explanation: "Test",
-        operations: [.replaceIngredient(id: UUID(), name: "Sugar", amountText: "5 g")])
-    #expect(throws: RecipeEditProposalError.missingIngredient) {
-        _ = try invented.preview(on: recipe)
+    let wrongOriginal = RecipeEditProposal(
+        recipeID: old.id, basedOnUpdate: old.updatedAt,
+        changes: [.ingredientName(id: ingredient.id, original: "Sugar", proposed: "Pepper")])
+    #expect(throws: RecipeEditProposalError.sourceChanged) {
+        try wrongOriginal.preview(on: old)
     }
-    #expect(recipe.ingredients[0].name == "Bread")
-    let excessive = RecipeEditProposal(
-        recipeID: recipe.id, expectedUpdatedAt: recipe.updatedAt,
-        explanation: "Test", operations: [.setServings(0)])
-    #expect(throws: RecipeEditProposalError.invalidOperation) {
-        _ = try excessive.preview(on: recipe)
+    let unknown = RecipeEditProposal(
+        recipeID: old.id, basedOnUpdate: old.updatedAt,
+        changes: [.ingredientName(id: UUID(), original: "Salt", proposed: "Pepper")])
+    #expect(throws: RecipeEditProposalError.missingField) {
+        try unknown.preview(on: old)
     }
-}
-
-@Test
-func recipeVariantRetainsSourceButNeverOverwritesOriginal() throws {
-    let original = Recipe(title: "Salad", sourceURL: "https://example.test/salad")
-    let proposal = RecipeEditProposal(
-        recipeID: original.id, expectedUpdatedAt: original.updatedAt,
-        explanation: "Make more servings.", operations: [.setServings(3)])
-    let variantID = UUID()
-    let variant = try proposal.privateVariant(of: original, id: variantID)
-    #expect(variant.id == variantID)
-    #expect(variant.sourceURL == original.sourceURL)
-    #expect(variant.isFavorite == false)
-    #expect(original.id != variant.id)
-    #expect(original.servings != 3)
+    let blank = RecipeEditProposal(
+        recipeID: old.id, basedOnUpdate: old.updatedAt,
+        changes: [.ingredientAmount(id: ingredient.id, original: "to taste", proposed: " ")])
+    #expect(throws: RecipeEditProposalError.invalidReplacement) {
+        try blank.preview(on: old)
+    }
 }
