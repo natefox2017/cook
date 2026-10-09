@@ -9,6 +9,7 @@ import {
   newChallenge,
   newTotpSecret,
   totpAt,
+  webauthnConfig,
 } from "./factors.ts";
 
 Deno.test("TOTP follows RFC 6238 SHA-1 vectors and rejects replayed counters", async () => {
@@ -54,5 +55,49 @@ Deno.test("factor challenges are random and stored through a one-way digest", as
   }
   if (await hashChallenge(first) === first) {
     throw new Error("Challenge digest did not transform the token.");
+  }
+});
+
+Deno.test("WebAuthn configuration requires a secure origin within its RP ID", () => {
+  const originalOrigin = Deno.env.get("ADMIN_WEBAUTHN_ORIGIN");
+  const originalRPID = Deno.env.get("ADMIN_WEBAUTHN_RP_ID");
+  try {
+    Deno.env.set("ADMIN_WEBAUTHN_ORIGIN", "https://admin.example.com");
+    Deno.env.set("ADMIN_WEBAUTHN_RP_ID", "example.com");
+    const config = webauthnConfig();
+    if (
+      config.origin !== "https://admin.example.com" ||
+      config.rpID !== "example.com"
+    ) {
+      throw new Error("Valid WebAuthn configuration was changed.");
+    }
+
+    for (
+      const [origin, rpID] of [
+        ["http://admin.example.com", "example.com"],
+        ["https://example.com.attacker.test", "example.com"],
+        ["https://admin.example.com", "other.test"],
+        ["https://admin.example.com/", "example.com"],
+      ]
+    ) {
+      Deno.env.set("ADMIN_WEBAUTHN_ORIGIN", origin);
+      Deno.env.set("ADMIN_WEBAUTHN_RP_ID", rpID);
+      let rejected = false;
+      try {
+        webauthnConfig();
+      } catch {
+        rejected = true;
+      }
+      if (!rejected) {
+        throw new Error(
+          `Unsafe WebAuthn configuration was accepted: ${origin} / ${rpID}`,
+        );
+      }
+    }
+  } finally {
+    if (originalOrigin === undefined) Deno.env.delete("ADMIN_WEBAUTHN_ORIGIN");
+    else Deno.env.set("ADMIN_WEBAUTHN_ORIGIN", originalOrigin);
+    if (originalRPID === undefined) Deno.env.delete("ADMIN_WEBAUTHN_RP_ID");
+    else Deno.env.set("ADMIN_WEBAUTHN_RP_ID", originalRPID);
   }
 });
