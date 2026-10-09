@@ -157,3 +157,7 @@ Worker 所有写入都必须允许安全重试。
 - OCR Provider 应接收 `application/octet-stream` 请求，附带 `X-OCR-Content-Type`、`X-OCR-Max-Pages` 和 `X-OCR-Max-Pixels-Per-Page` 边界，返回 JSON `{ "pages": [{ "page_number": 1, "text": "...", "confidence": 0.98, "pixel_count": 1500000 }] }`；配置的服务必须在解码前执行页数/像素/时间上限。生产启用前还必须确认服务的访问政策、数据保留、区域合规与成本。
 - 接入结果按 `ocr` evidence 记录页码、来源 artifact UUID、原文 excerpt 和 confidence；低于 0.85 的字段强制 review，含糊用量不填规范化数值。空文本、异常响应、配额不足、服务超时或未配置 Provider 均保留私有原件并进入 `needs_review`，不伪装为识别成功。
 - 仓库 mock fixture 只说明契约/安全边界；未运行真实 OCR 供应商、未证明 Edge/Storage/Queue 部署；旧 #135/#138/#141 已关闭 not_planned，新批准功能按 #250 验证。
+
+## Source-only review-question assistance (2026-10-10)
+
+`RecipeImportReviewPlan.questions(from:)` now inspects the already persisted `RecipeImportJobResponse.Result.reviewFields` (up to three prompts), suppresses fields explicitly marked `userConfirmed`, and preserves matching evidence IDs. The existing Recipe Editor shows these factual questions without inventing data; Save Draft still requires the user's explicit save and sets `reviewedAt` so retries cannot replace manual edits. Fully ready imports create no prompts. This is **not** a deployed multi-turn AI provider or universal video understanding: AI inference, legal ASR/visual sources, staging and user-provider review remain #238/#239/#250.

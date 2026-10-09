@@ -178,13 +178,20 @@ struct RecipeEditorView: View {
                 }
                 if previewNeedsReview {
                     Section {
-                        Label(
-                            "Needs review",
-                            systemImage: "pencil.circle"
-                        )
-                        .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(
-                            .secondary)
+                        Label("Needs review", systemImage: "pencil.circle")
+                            .font(RecipeTheme.text(
+                                15, weight: .regular, relativeTo: .subheadline))
+                            .foregroundStyle(.secondary)
+                        if let importResult = draft.importRecord?.result,
+                            draft.importRecord?.reviewedAt == nil
+                        {
+                            ForEach(RecipeImportReviewPlan.questions(from: importResult)) {
+                                question in
+                                Text(LocalizedStringKey(question.question))
+                                    .font(RecipeTheme.text(13, relativeTo: .footnote))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
                 }
             }
