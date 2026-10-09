@@ -68,16 +68,14 @@ struct CollectionsView: View {
                         }
                     }
                 }
-            } header: {
-                Text("Collections")
-            } footer: {
-                Text("A recipe can belong to more than one collection. Favorites stays separate.")
             }
         }
+        .listSectionSpacing(RecipeSpacing.medium)
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("Collections")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .task { migrateLegacyCollectionsIfNeeded() }
         .sheet(item: $editingCollection) { collection in
             RenameCollectionSheet(collection: collection)
@@ -197,10 +195,11 @@ private struct FavoriteRecipesView: View {
                 )
             }
         }
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("Favorites")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }
 
@@ -258,10 +257,11 @@ private struct CollectionDetailView: View {
                         }
                     }
                 }
+                .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
                 .scrollContentBackground(.hidden)
                 .background(RecipeTheme.canvas)
                 .navigationTitle(collection.name)
-                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
                 .searchable(text: $searchText, prompt: "Search this collection")
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -312,7 +312,7 @@ private struct CollectionRecipeRow: View {
                 .frame(width: 72)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                 Text(recipe.title.isEmpty ? String(localized: LocalizedStringResource("Untitled Recipe", locale: RecipeLanguage.active)) : recipe.title)
                     .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
                     .foregroundStyle(.primary)
@@ -378,10 +378,11 @@ private struct CollectionRecipePickerSheet: View {
                     .accessibilityValue(isMember ? "In collection" : "Not in collection")
                 }
             }
+            .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
             .navigationTitle(collection?.name ?? "Collection")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .searchable(text: $searchText, prompt: "Search recipes")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -435,7 +436,7 @@ private struct RenameCollectionSheet: View {
                     .textInputAutocapitalization(.words)
             }
             .navigationTitle("Rename Collection")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

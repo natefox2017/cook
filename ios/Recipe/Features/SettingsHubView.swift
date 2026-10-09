@@ -80,13 +80,18 @@ struct SettingsHubView: View {
             }
         }
         .listSectionSpacing(RecipeSpacing.medium)
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
+        .scrollContentBackground(.hidden)
+        .background(RecipeTheme.canvas)
         .navigationTitle("Settings")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
     }
 }
 
 private struct SettingsRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let title: String
     let icon: String
 
@@ -96,16 +101,17 @@ private struct SettingsRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: RecipeSpacing.small) {
             Image(systemName: icon)
-                .frame(width: 32)
+                .font(.system(size: 19))
+                .frame(width: 24)
                 .foregroundStyle(RecipeTheme.accentForeground)
+                .accessibilityHidden(true)
 
-            // These labels are static product copy routed through a shared
-            // String helper, not user-authored settings values.
             Text(LocalizedStringKey(title))
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
+                .font(RecipeTheme.text(17, relativeTo: .body))
+                .foregroundStyle(.primary)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
         }
         .frame(minHeight: 50)
     }
@@ -143,7 +149,7 @@ struct CloudSyncSettingsView: View {
             stateActions
         }
         .navigationTitle("Cloud Sync")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .onChange(of: conflictIDs) { _, ids in
             conflictChoices = conflictChoices.filter {
                 ids.contains($0.key)
@@ -377,7 +383,7 @@ struct AppearanceSettingsView: View {
 
         }
         .navigationTitle("Appearance")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .alert(
             "Couldn’t save",
             isPresented: Binding(
@@ -428,7 +434,7 @@ struct CookingSettingsView: View {
 
         }
         .navigationTitle("Cooking")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .alert(
             "Couldn’t save",
             isPresented: Binding(
@@ -477,7 +483,7 @@ struct GrocerySettingsView: View {
 
         }
         .navigationTitle("Groceries")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }
 
@@ -496,6 +502,6 @@ struct MealPlanSettingsView: View {
 
         }
         .navigationTitle("Meal Plan")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }

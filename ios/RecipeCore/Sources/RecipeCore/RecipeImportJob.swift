@@ -349,15 +349,20 @@ public struct RecipeImportRecord: Codable, Hashable, Sendable {
     public let result: RecipeImportJobResponse.Result
     /// Records explicit local review without altering server fields or evidence.
     public var reviewedAt: Date?
+    /// Local tombstone for user-deleted private source bytes. Keeps job evidence
+    /// immutable so older snapshots and completed retries remain decodable.
+    public var sourceArtifactDeletedAt: Date?
 
     public init(
         jobID: UUID,
         result: RecipeImportJobResponse.Result,
-        reviewedAt: Date? = nil
+        reviewedAt: Date? = nil,
+        sourceArtifactDeletedAt: Date? = nil
     ) {
         self.jobID = jobID
         self.result = result
         self.reviewedAt = reviewedAt
+        self.sourceArtifactDeletedAt = sourceArtifactDeletedAt
     }
 }
 

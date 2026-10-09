@@ -16,6 +16,10 @@
     <string>RecipeShare</string>
     <key>CFBundlePackageType</key>
     <string>XPC!</string>
+    <key>UIAppFonts</key>
+    <array>
+        <string>Lora-Variable.ttf</string>
+    </array>
     <key>NSExtension</key>
     <dict>
         <key>NSExtensionPointIdentifier</key>

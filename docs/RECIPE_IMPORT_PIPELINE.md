@@ -141,3 +141,17 @@ Worker 所有写入都必须允许安全重试。
 
 分享附件的上传 intent 两小时失效，已确认 artifact 保留七天。附件 API 提供 owner-scoped 删除操作，但当前 App 没有单个附件的删除入口；到期清理函数需要由受信任的项目 scheduler 每日调用。
 - 本路径不做 ASR、OCR、模型补全、视频二进制抓取或平台登录。源码支持不证明线上 DNS/TLS/redirect 行为、VTT 来源可访问性或端到端 Share 交接。
+
+## 12. 原始附件删除与保留边界
+
+- Recipe Detail 的来源区允许二次确认删除个人私有图片/文件原件；该操作与删除 Recipe 分离。API 只按 JWT 所属 owner 和 artifact UUID 定位私有对象，不接受客户端自选 Storage path。账户切换时不在新账户的本地库记录删除成功。
+- 删除成功将服务端 artifact 标记为 `expired`，新的签名下载请求不能再成功；原始 Job 与字段 evidence 仍保留，旧版本快照继续可读。客户端在 `RecipeImportRecord.sourceArtifactDeletedAt` 存储本地 tombstone，避免误展示已删除原件入口；未含此字段的旧快照默认为未删除。
+- 上传意向过期为 2 小时，可用附件有效期为 7 天；到期服务端清理 endpoint 每日由受信任的调度器调用一次，密钥使用 `RECIPE_IMPORT_ARTIFACT_CLEANUP_SECRET` 环境配置，不能提交至仓库。部署/真实 Storage 验证见 #141 / #135，代码合并不代表已在生产生效。
+
+## 13. 可选的私有图片/扫描 PDF OCR（#117 阶段实现）
+
+- Worker 仅对 owner 校验通过、仍有效、`recipe-import-artifacts` 私有 Bucket 内的 image 或 `application/pdf` 使用 OCR。上传 10 MB 上限不变；OCR 必须限制图片每页不超过 4,000 万像素、扫描 PDF 不超过 20 页、总识别文本不超过 100,000 字符、请求最长 8 秒。
+- 默认**禁用任何 OCR 外部发送**。只有项目持有人明确批准服务及个人数据处理后，才可在服务端配置 `RECIPE_IMPORT_OCR_APPROVED=true`、`RECIPE_IMPORT_OCR_PROVIDER_URL`、`RECIPE_IMPORT_OCR_APPROVED_HOST`、`RECIPE_IMPORT_OCR_API_KEY`。URL 必须为 HTTPS，主机与独立 allowlist 精确匹配，禁止重定向；禁止把 key 写入 iOS、Git、Issue 或日志。
+- OCR Provider 应接收 `application/octet-stream` 请求，附带 `X-OCR-Content-Type`、`X-OCR-Max-Pages` 和 `X-OCR-Max-Pixels-Per-Page` 边界，返回 JSON `{ "pages": [{ "page_number": 1, "text": "...", "confidence": 0.98, "pixel_count": 1500000 }] }`；配置的服务必须在解码前执行页数/像素/时间上限。生产启用前还必须确认服务的访问政策、数据保留、区域合规与成本。
+- 接入结果按 `ocr` evidence 记录页码、来源 artifact UUID、原文 excerpt 和 confidence；低于 0.85 的字段强制 review，含糊用量不填规范化数值。空文本、异常响应、配额不足、服务超时或未配置 Provider 均保留私有原件并进入 `needs_review`，不伪装为识别成功。
+- 仓库 mock fixture 只说明契约/安全边界；未运行真实 OCR 供应商、未部署 Edge/Storage/Queue，相关线上测试仍由 #135/#138/#141 承接。

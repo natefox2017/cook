@@ -5,6 +5,12 @@ import SwiftUI
 import RecipeCore
 
 struct RecipesView: View {
+    let titleDisplayMode: NavigationBarItem.TitleDisplayMode
+
+    init(titleDisplayMode: NavigationBarItem.TitleDisplayMode = RecipeNavigation.rootTitleMode) {
+        self.titleDisplayMode = titleDisplayMode
+    }
+
     @Environment(RecipeStore.self) private var store
     @Environment(RecipeShareInboxCoordinator.self) private var shareInbox
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -63,12 +69,9 @@ struct RecipesView: View {
         let visible = visibleRecipes
 
         return ScrollView {
-            VStack(alignment: .leading, spacing: RecipeSpacing.large) {
+            VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
                 searchField
                 pendingSharesBanner
-                Text("Your saved recipes, all in one place.")
-                    .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
-                    .foregroundStyle(.secondary)
                 if !store.recipes.isEmpty {
                     filterBar
                     resultsHeader(count: visible.count)
@@ -76,12 +79,14 @@ struct RecipesView: View {
                 libraryContent(recipes: visible)
             }
             .padding(.horizontal, RecipeSpacing.pageInset)
-            .padding(.top, RecipeSpacing.xSmall)
+            .padding(.top, RecipeSpacing.pageTop)
             .padding(.bottom, RecipeSpacing.large)
         }
+        .recipeRootScrollClearance()
         .accessibilityIdentifier("recipeLibraryScroll")
         .background(RecipeTheme.canvas)
-        .navigationTitle("My Recipes").navigationBarTitleDisplayMode(.large)
+        .navigationTitle("My Recipes")
+        .navigationBarTitleDisplayMode(titleDisplayMode)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Add Recipe", systemImage: "plus") { isAdding = true }
@@ -113,7 +118,7 @@ struct RecipesView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "tray.full")
                         .foregroundStyle(RecipeTheme.accentForeground)
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                         Text("\(shareInbox.pendingReceipts.count) sources saved")
                             .font(RecipeTheme.text(16, weight: .semibold))
                             .foregroundStyle(.primary)
@@ -167,7 +172,7 @@ struct RecipesView: View {
     @ViewBuilder
     private func libraryContent(recipes: [Recipe]) -> some View {
         if store.recipes.isEmpty {
-            VStack(spacing: 12) {
+            VStack(spacing: RecipeSpacing.small) {
                 EmptyStateView(
                     title: "Make room for your favorites",
                     message: "Save a recipe from a link, photo, or your own kitchen notes.",
@@ -313,14 +318,14 @@ private struct RecipeLibraryCard: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             NavigationLink(value: recipe.id) {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                     GeometryReader { geometry in
                         RecipeImage(recipe: recipe, height: geometry.size.height)
                     }
                     .aspectRatio(1.4, contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 18))
                     Text(recipe.title.isEmpty ? String(localized: LocalizedStringResource("Untitled Recipe", locale: RecipeLanguage.active)) : recipe.title)
-                        .font(RecipeTheme.title(20))
+                        .font(RecipeTheme.heading(.card))
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
@@ -440,7 +445,7 @@ private struct PendingSharesView: View {
                 }
             }
             .navigationTitle("Pending Sources")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
@@ -457,7 +462,7 @@ private struct PendingShareRow: View {
     @State private var originalSource = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
             Label(
                 title,
                 systemImage: symbol

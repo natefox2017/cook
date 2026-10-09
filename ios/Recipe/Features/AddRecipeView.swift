@@ -30,11 +30,7 @@ struct AddRecipeView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Add a recipe").font(RecipeTheme.title(34))
-                        Text("Good food, kept in one place.").foregroundStyle(.secondary)
-                    }
+                VStack(alignment: .leading, spacing: RecipeSpacing.large) {
                     linkCard
                     if isWorking {
                         HStack(spacing: 12) {
@@ -44,7 +40,7 @@ struct AddRecipeView: View {
                             .accessibilityElement(children: .combine)
                     }
                     if let savedID, let recipe = store.recipe(id: savedID) { savedCard(recipe) }
-                    VStack(spacing: 12) {
+                    VStack(spacing: RecipeSpacing.small) {
                         importOption("Take a photo", icon: "camera") { requestCamera() }
                         importOption("Import from Photos", icon: "photo.on.rectangle") {
                             showPhotos = true
@@ -63,7 +59,7 @@ struct AddRecipeView: View {
                         .accessibilityIdentifier("createManually")
                     }
                 }
-                .padding(22)
+                .recipePageContentInsets()
             }
             .scrollDismissesKeyboard(.interactively)
             .background(RecipeTheme.canvas)
@@ -75,7 +71,8 @@ struct AddRecipeView: View {
                     }
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Add Recipe")
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .navigationDestination(item: $detailID) { RecipeDetailView(recipeID: $0) }
             .photosPicker(isPresented: $showPhotos, selection: $photo, matching: .images)
             .onChange(of: photo) { _, selection in
@@ -136,7 +133,7 @@ struct AddRecipeView: View {
     }
 
     private var linkCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: RecipeSpacing.small) {
             Label("From a link", systemImage: "link").font(
                 RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
             TextField("https://…", text: $sourceLink)
@@ -152,7 +149,7 @@ struct AddRecipeView: View {
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(sourceLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isWorking)
         }
-        .padding(20).background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 24))
+        .padding(RecipeSpacing.pageInset).background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 24))
     }
 
     private func importOption(
@@ -168,7 +165,7 @@ struct AddRecipeView: View {
                     RecipeTheme.accentForeground
                 )
                     .frame(width: 46, height: 46).background(RecipeTheme.accent.opacity(0.09), in: Circle())
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                     Text(LocalizedStringKey(title))
                         .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
                         .foregroundStyle(.primary)
@@ -183,7 +180,7 @@ struct AddRecipeView: View {
     }
 
     private func savedCard(_ recipe: Recipe) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: RecipeSpacing.small) {
             Label(
                 recipe.needsReview
                     ? "Source saved — add the missing details" : "Saved to your recipes",
@@ -210,7 +207,8 @@ struct AddRecipeView: View {
                     Text("Recipe text")
                 }
             }
-            .navigationTitle("Paste recipe text").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Paste recipe text")
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { showText = false } }
                 ToolbarItem(placement: .confirmationAction) {

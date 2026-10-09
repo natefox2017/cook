@@ -75,3 +75,50 @@ iOS 使用 SwiftUI 与 Apple Human Interface Guidelines。
 - Error 必须带下一步动作。
 - 触控目标遵循 iOS 可访问性要求。
 - 支持动态字体、VoiceOver、深色模式的结构性兼容。
+
+## 6. UI typography and spacing contract (2026-10-09)
+
+This contract applies to RecipePouch SwiftUI screens. Keep the implemented
+**Lora** font and green palette; do not reinstate older exploratory fonts.
+
+- **Navigation titles:** let the native iOS navigation bar and safe area
+  determine top alignment. Root tabs use the large title (34 pt); pushed
+  pages and sheets use the inline title (17 pt). Do not create a second
+  in-content heading that duplicates the navigation title.
+- **Heading sizes:** hero 34 pt, page 28 pt, section 22 pt, card 20 pt.
+  **Content sizes:** body 17 pt, secondary 15 pt, footnote 13 pt.
+  Use `RecipeTheme.heading` and Dynamic Type-aware `RecipeTheme.text`.
+  Functional large text in Cooking Mode is deliberately exempt.
+- **Spacing:** horizontal page inset 20 pt, content start 8 pt below the
+  native navigation content area, compact text gaps 4 / 8 pt, related
+  controls 12 pt, list sections 16 pt, and major groups 24 pt.
+  Shared values live in `RecipeSpacing`. For a scrolling secondary page use
+  `recipePageContentInsets()`; native List/Form screens use an 8-pt top
+  scroll-content margin. The system navigation bar retains responsibility for
+  status-bar and top-title placement.
+- **Colors:** primary text uses system `.primary`, supporting information
+  uses `.secondary`, links and accents use
+  `RecipeTheme.accentForeground`, and actions use
+  `RecipeTheme.accent` (`#42A85A`). Preserve high contrast in dark mode.
+- **Concise UI copy:** remove decorative slogans, redundant counters,
+  unnecessary explanations, and duplicate headings. Preserve actionable
+  labels, error/recovery guidance, destructive-action disclosures,
+  subscription and legal text, actual user recipe content, and accessibility
+  labels. Necessary helper copy should generally fit one line.
+- **Navigation:** root tabs retain native tab bar; pushed screens hide it;
+  the focused cooking flow remains tab-free. The Share Extension is a
+  separate native host and shows only concise receipt or failure content.
+
+Before release, check the updated pages on iPhone simulator and device at
+standard and accessibility Dynamic Type sizes, in light/dark appearance.
+
+### Compact copy versus essential information
+
+A single-line limit is appropriate for decorative metadata at standard text
+sizes; it is **not** appropriate for recovery errors, account warnings,
+or a StoreKit trial-price/renewal disclosure. At Accessibility Dynamic Type
+sizes, navigation/setting labels may wrap; never shrink normal body labels
+to a fraction of their specified type scale. For subscription choices use a
+horizontal title/price row when it fits and a vertical arrangement when not.
+Maintain the 24-pt profile/settings icon column consistently and preserve
+all VoiceOver text.

@@ -269,6 +269,11 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const row = artifact as ArtifactRow;
 
     if (request.method === "POST" && tail.length === 2 && tail[1] === "complete") {
+      // Completion can be retried after a response was lost. Do not turn a
+      // previously confirmed, still-valid upload into a permanent 422.
+      if (row.state === "available" && Date.parse(row.expires_at) > Date.now()) {
+        return json({ artifact: artifactResponse(row) }, 200, headers);
+      }
       if (row.state !== "upload_pending" || Date.parse(row.expires_at) <= Date.now()) {
         return errorResponse("ARTIFACT_NOT_READY", "The upload intent has expired.", 422, headers);
       }
@@ -311,8 +316,23 @@ Deno.serve(async (request: Request): Promise<Response> => {
         expires_at: availableUntil,
         updated_at: new Date().toISOString(),
       }).eq("id", row.id).eq("owner_id", user.id).eq("state", "upload_pending")
+        // Re-check expiration when committing, not only before downloading.
+        // Otherwise a cleanup invocation can race a long-running completion
+        // and delete a source just after it becomes available.
+        .gt("expires_at", new Date().toISOString())
         .select("*").maybeSingle();
       if (updateError || !updated) {
+        // Another completion request may have won the conditional update.
+        // Re-read the same owner-scoped row rather than rejecting a confirmed
+        // upload as a service failure.
+        if (!updateError) {
+          const { data: confirmed } = await admin.from("recipe_import_artifacts")
+            .select("*").eq("id", row.id).eq("owner_id", user.id).maybeSingle();
+          if (confirmed?.state === "available" &&
+            Date.parse(confirmed.expires_at) > Date.now()) {
+            return json({ artifact: artifactResponse(confirmed as ArtifactRow) }, 200, headers);
+          }
+        }
         return errorResponse("SERVICE_UNAVAILABLE", "Artifact could not be confirmed.", 503, headers);
       }
       return json({ artifact: artifactResponse(updated as ArtifactRow) }, 200, headers);

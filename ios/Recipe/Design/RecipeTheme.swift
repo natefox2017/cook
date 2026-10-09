@@ -6,11 +6,52 @@ import UIKit
 import RecipeCore
 
 enum RecipeSpacing {
+    static let xxSmall: CGFloat = 4
     static let xSmall: CGFloat = 8
     static let small: CGFloat = 12
     static let medium: CGFloat = 16
     static let large: CGFloat = 24
     static let pageInset: CGFloat = 20
+    static let pageTop: CGFloat = xSmall
+    static let readingLine: CGFloat = 5
+}
+
+enum RecipeHeadingLevel {
+    case hero
+    case title
+    case section
+    case card
+}
+
+enum RecipeNavigation {
+    static let rootTitleMode: NavigationBarItem.TitleDisplayMode = .large
+    static let detailTitleMode: NavigationBarItem.TitleDisplayMode = .inline
+}
+
+// A scroll-aware final inset, not a hard-coded Tab Bar height. SwiftUI
+// updates its safe area for each device, rotation and keyboard presentation.
+private struct RecipeRootScrollClearance: ViewModifier {
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear
+                .frame(height: RecipeSpacing.medium)
+                .accessibilityHidden(true)
+                .allowsHitTesting(false)
+        }
+    }
+}
+
+extension View {
+    func recipeRootScrollClearance() -> some View {
+        modifier(RecipeRootScrollClearance())
+    }
+
+    // Use the same content start below the native navigation bar on scroll screens.
+    func recipePageContentInsets(bottom: CGFloat = RecipeSpacing.large) -> some View {
+        padding(.horizontal, RecipeSpacing.pageInset)
+            .padding(.top, RecipeSpacing.pageTop)
+            .padding(.bottom, bottom)
+    }
 }
 
 enum RecipeTheme {
@@ -31,6 +72,16 @@ enum RecipeTheme {
         .custom("Lora-Regular", size: size, relativeTo: style).weight(weight)
     }
 
+    // Semantic levels keep headings consistent without constraining timer displays.
+    static func heading(_ level: RecipeHeadingLevel) -> Font {
+        switch level {
+        case .hero: text(34, weight: .semibold, relativeTo: .largeTitle)
+        case .title: text(28, weight: .semibold, relativeTo: .title)
+        case .section: text(22, weight: .semibold, relativeTo: .title2)
+        case .card: text(20, weight: .semibold, relativeTo: .title3)
+        }
+    }
+
     static func title(_ size: CGFloat = 32) -> Font {
         text(size, weight: .semibold, relativeTo: .title)
     }
@@ -45,8 +96,14 @@ enum RecipeTheme {
 
         let navigation = UINavigationBar.appearance()
         navigation.prefersLargeTitles = true
-        navigation.titleTextAttributes = [.font: UIFontMetrics(forTextStyle: .headline).scaledFont(for: regular)]
-        navigation.largeTitleTextAttributes = [.font: UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: regular.withSize(34))]
+        navigation.titleTextAttributes = [
+            .font: UIFontMetrics(forTextStyle: .headline).scaledFont(for: regular),
+            .foregroundColor: UIColor.label
+        ]
+        navigation.largeTitleTextAttributes = [
+            .font: UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: regular.withSize(34)),
+            .foregroundColor: UIColor.label
+        ]
 
         let tabItem = UITabBarItem.appearance()
         tabItem.setTitleTextAttributes([.font: UIFontMetrics(forTextStyle: .caption2).scaledFont(for: regular.withSize(10))], for: .normal)
@@ -58,7 +115,7 @@ struct PrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(RecipeTheme.text(18, weight: .semibold, relativeTo: .headline))
+            .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
             .frame(maxWidth: .infinity, minHeight: 50)
             .foregroundStyle(.white)
             .background(RecipeTheme.accent, in: Capsule())
@@ -67,11 +124,14 @@ struct PrimaryButtonStyle: ButtonStyle {
 }
 
 struct EmptyStateView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let title: String
     let message: String
     let systemImage: String
     var actionTitle: String? = nil
     var action: (() -> Void)? = nil
+    var messageLineLimit: Int? = 1
 
     var body: some View {
         VStack(spacing: RecipeSpacing.medium) {
@@ -79,8 +139,14 @@ struct EmptyStateView: View {
                 .font(.system(size: 44, weight: .light))
                 .foregroundStyle(RecipeTheme.accentForeground)
                 .accessibilityHidden(true)
-            Text(LocalizedStringKey(title)).font(RecipeTheme.title(27)).multilineTextAlignment(.center)
-            Text(LocalizedStringKey(message)).foregroundStyle(.secondary).multilineTextAlignment(.center).lineLimit(1)
+            Text(LocalizedStringKey(title))
+                .font(RecipeTheme.heading(.title))
+                .multilineTextAlignment(.center)
+            Text(LocalizedStringKey(message))
+                .font(RecipeTheme.text(15, relativeTo: .subheadline))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : messageLineLimit)
             if let actionTitle, let action {
                 Button(action: action) { Text(LocalizedStringKey(actionTitle)) }.buttonStyle(PrimaryButtonStyle())
             }

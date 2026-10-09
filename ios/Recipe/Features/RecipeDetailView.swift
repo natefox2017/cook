@@ -23,6 +23,8 @@ struct RecipeDetailView: View {
     @State private var isPlanningMeal = false
     @State private var isManagingCollections = false
     @State private var isLoadingSourceArtifact = false
+    @State private var isDeletingSourceArtifact = false
+    @State private var confirmsSourceArtifactDeletion = false
 
     var body: some View {
         Group {
@@ -34,7 +36,8 @@ struct RecipeDetailView: View {
         }
         .background(RecipeTheme.canvas)
         .toolbar(.hidden, for: .tabBar)
-        .navigationTitle("Recipe").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Recipe")
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar { detailToolbar }
         .sheet(isPresented: $isEditing) {
             if let recipe = store.recipe(id: recipeID) { RecipeEditorView(recipe: recipe) }
@@ -60,6 +63,18 @@ struct RecipeDetailView: View {
             Button("Delete Recipe", role: .destructive, action: deleteRecipe)
             Button("Cancel", role: .cancel) {}
         } message: { Text("This removes the recipe from your library and meal plan.") }
+        .confirmationDialog(
+            "Delete original attachment?",
+            isPresented: $confirmsSourceArtifactDeletion,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Original Attachment", role: .destructive) {
+                Task { await deleteSourceArtifact() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Your recipe will stay saved.")
+        }
         .alert("Recipe", isPresented: feedbackPresented) {
             Button("OK", role: .cancel) { feedbackMessage = nil }
         } message: { Text(feedbackMessage ?? "") }
@@ -79,21 +94,21 @@ struct RecipeDetailView: View {
 
     private func recipeContent(_ recipe: Recipe) -> some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: RecipeSpacing.large) {
                 RecipeImage(recipe: recipe, height: 270)
                     .clipShape(RoundedRectangle(cornerRadius: 24))
                 overview(recipe)
                 ingredients(recipe)
                 steps(recipe)
                 if !recipe.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                         sectionTitle("Kitchen Notes")
                         Text(recipe.notes).textSelection(.enabled)
                     }
                 }
                 source(recipe)
             }
-            .padding(20)
+            .recipePageContentInsets()
         }
         .accessibilityIdentifier("recipeDetailScroll")
         .safeAreaInset(edge: .bottom) {
@@ -107,21 +122,21 @@ struct RecipeDetailView: View {
             .buttonStyle(PrimaryButtonStyle())
             .disabled(recipe.steps.isEmpty)
             .accessibilityIdentifier("startCooking")
-            .padding(.horizontal, 20)
+            .padding(.horizontal, RecipeSpacing.pageInset)
             .padding(.vertical, 12)
             .background(.regularMaterial)
         }
     }
 
     private func overview(_ recipe: Recipe) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: RecipeSpacing.small) {
             Text(recipe.title.isEmpty ? String(localized: LocalizedStringResource("Untitled Recipe", locale: RecipeLanguage.active)) : recipe.title)
-                .font(RecipeTheme.title(34))
+                .font(RecipeTheme.heading(.hero))
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 16) { recipeMetadata(recipe) }
-                VStack(alignment: .leading, spacing: 8) { recipeMetadata(recipe) }
+                VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) { recipeMetadata(recipe) }
             }
             .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
             .foregroundStyle(.secondary)
@@ -180,7 +195,7 @@ struct RecipeDetailView: View {
     }
 
     private func ingredients(_ recipe: Recipe) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
             sectionTitle("Ingredients")
             if let originalServings = recipe.servings, originalServings > 0 {
                 Stepper("\(servings) servings", value: servingsSelection, in: 1...max(100, max(originalServings, servings)))
@@ -212,14 +227,14 @@ struct RecipeDetailView: View {
     }
 
     private func steps(_ recipe: Recipe) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
             sectionTitle("Steps")
             if recipe.steps.isEmpty {
                 Text("No steps yet. Edit this recipe before you start cooking.")
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(Array(recipe.steps.enumerated()), id: \.element.id) { index, step in
-                    VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: RecipeSpacing.small) {
                         HStack(alignment: .top, spacing: 14) {
                             Text("\(index + 1)")
                                 .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
@@ -227,7 +242,7 @@ struct RecipeDetailView: View {
                                 .frame(minWidth: 32, minHeight: 32)
                                 .background(RecipeTheme.accent.opacity(0.1), in: Circle())
 
-                            VStack(alignment: .leading, spacing: 6) {
+                            VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                                 if !step.title.isEmpty {
                                     Text(step.title)
                                         .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
@@ -240,7 +255,7 @@ struct RecipeDetailView: View {
 
                         let linkedIngredients = recipe.ingredients.filter { step.linkedIngredientIDs.contains($0.id) }
                         if !linkedIngredients.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
+                            VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                                 Label("For this step", systemImage: "carrot")
                                     .font(RecipeTheme.text(13, weight: .semibold, relativeTo: .footnote))
                                     .foregroundStyle(RecipeTheme.accentForeground)
@@ -261,7 +276,7 @@ struct RecipeDetailView: View {
                         if step.temperature != nil || !step.timers.isEmpty {
                             ViewThatFits(in: .horizontal) {
                                 HStack(spacing: 10) { stepSignals(step) }
-                                VStack(alignment: .leading, spacing: 8) { stepSignals(step) }
+                                VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) { stepSignals(step) }
                             }
                         }
 
@@ -302,13 +317,15 @@ struct RecipeDetailView: View {
 
     @ViewBuilder
     private func source(_ recipe: Recipe) -> some View {
-        let artifactID = recipe.importRecord?.result.source.sourceArtifactID
+        let artifactID = recipe.importRecord?.sourceArtifactDeletedAt == nil
+            ? recipe.importRecord?.result.source.sourceArtifactID
+            : nil
         let sourceType = recipe.importRecord?.result.source.inputType
         if recipe.sourceName != nil
             || recipe.sourceURL != nil
             || recipe.sourceText != nil
             || artifactID != nil {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                 sectionTitle("Source")
                 if let name = recipe.sourceName, !name.isEmpty {
                     Text(name)
@@ -334,7 +351,7 @@ struct RecipeDetailView: View {
                         Text(text)
                             .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
                             .textSelection(.enabled)
-                            .padding(.top, 8)
+                            .padding(.top, RecipeSpacing.xSmall)
                     }
                 }
                 if let artifactID,
@@ -357,7 +374,14 @@ struct RecipeDetailView: View {
                             .frame(minHeight: 44, alignment: .leading)
                         }
                     }
-                    .disabled(isLoadingSourceArtifact)
+                    .disabled(isLoadingSourceArtifact || isDeletingSourceArtifact)
+
+                    Button("Delete Original Attachment", systemImage: "trash", role: .destructive) {
+                        confirmsSourceArtifactDeletion = true
+                    }
+                    .frame(minHeight: 44, alignment: .leading)
+                    .disabled(isLoadingSourceArtifact || isDeletingSourceArtifact)
+                    .accessibilityIdentifier("source.deleteAttachment")
                 }
             }
         }
@@ -391,6 +415,47 @@ struct RecipeDetailView: View {
         }
     }
 
+    @MainActor
+    private func deleteSourceArtifact() async {
+        guard let artifactID = store.recipe(id: recipeID)?
+            .importRecord?.result.source.sourceArtifactID,
+            case .signedIn(let ownerID, _) = RecipeAuthService.shared.state
+        else {
+            feedbackMessage = String(localized: LocalizedStringResource(
+                "Sign in required", locale: RecipeLanguage.active
+            ))
+            return
+        }
+
+        isDeletingSourceArtifact = true
+        defer { isDeletingSourceArtifact = false }
+
+        do {
+            // The API resolves artifact ownership from the JWT; never pass an
+            // arbitrary storage path or delete the recipe itself.
+            try await RecipeImportArtifactService().delete(
+                artifactID: artifactID,
+                ownerID: ownerID
+            )
+            guard case .signedIn(let currentOwnerID, _) = RecipeAuthService.shared.state,
+                  currentOwnerID == ownerID
+            else {
+                throw RecipeShareImportWorkflowError.accountChanged
+            }
+            guard var recipe = store.recipe(id: recipeID),
+                  recipe.importRecord?.result.source.sourceArtifactID == artifactID
+            else { return }
+            recipe.importRecord?.sourceArtifactDeletedAt = .now
+            try store.upsert(recipe)
+            feedbackMessage = String(localized: LocalizedStringResource(
+                "Attachment deleted. Your recipe was kept.",
+                locale: RecipeLanguage.active
+            ))
+        } catch {
+            feedbackMessage = error.localizedDescription
+        }
+    }
+
     @ToolbarContentBuilder
     private var detailToolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .topBarTrailing) {
@@ -415,7 +480,9 @@ struct RecipeDetailView: View {
     }
 
     private func sectionTitle(_ title: String) -> some View {
-        Text(LocalizedStringKey(title)).font(RecipeTheme.title(24)).accessibilityAddTraits(.isHeader)
+        Text(LocalizedStringKey(title))
+            .font(RecipeTheme.heading(.section))
+            .accessibilityAddTraits(.isHeader)
     }
 
     private var servingsSelection: Binding<Int> {
@@ -464,7 +531,7 @@ private struct RecipeIngredientLine: View {
                 Spacer(minLength: 8)
                 amount
             }
-            VStack(alignment: .leading, spacing: 4) { Text(ingredient.name); amount }
+            VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) { Text(ingredient.name); amount }
         }
         .padding(.vertical, 13)
         .accessibilityElement(children: .combine)
@@ -498,7 +565,8 @@ private struct RecipeIngredientsSelectionView: View {
                     EmptyStateView(title: "Recipe unavailable", message: "This recipe is no longer in your library.", systemImage: "book.closed")
                 }
             }
-            .navigationTitle("Add to Groceries").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Add to Groceries")
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             }
@@ -562,6 +630,7 @@ private struct RecipeIngredientsSelectionView: View {
                 )
             }
         }
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .safeAreaInset(edge: .bottom) {
@@ -570,7 +639,7 @@ private struct RecipeIngredientsSelectionView: View {
                 .frame(maxWidth: .infinity)
                 .disabled(selection.isEmpty)
                 .accessibilityIdentifier("confirmAddIngredientsButton")
-                .padding(20)
+                .padding(RecipeSpacing.pageInset)
                 .background(.regularMaterial)
         }
     }
@@ -669,14 +738,13 @@ private struct RecipeCollectionMembershipSheet: View {
                     }
                 } header: {
                     Text("Collections")
-                } footer: {
-                    Text("A recipe can belong to more than one collection.")
                 }
             }
+            .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
             .navigationTitle("Collections")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -739,7 +807,8 @@ private struct RecipeMealPlanSheet: View {
                     ForEach(MealSlot.allCases) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
                 }
             }
-            .navigationTitle("Add to Meal Plan").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Add to Meal Plan")
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

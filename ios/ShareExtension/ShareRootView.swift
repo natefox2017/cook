@@ -3,6 +3,16 @@
 
 import SwiftUI
 
+// The share extension has a separate bundle, so these values match RecipeTheme
+// without importing the main app target.
+private enum ShareVisualStyle {
+    static let accent = Color(red: 66.0 / 255, green: 168.0 / 255, blue: 90.0 / 255)
+    static let body = Font.custom("Lora-Regular", size: 17, relativeTo: .body)
+    static let headline = Font.custom("Lora-Regular", size: 17, relativeTo: .headline)
+        .weight(.semibold)
+    static let footnote = Font.custom("Lora-Regular", size: 13, relativeTo: .footnote)
+}
+
 enum SharePresentationState {
     case receiving
     case saved
@@ -17,36 +27,33 @@ struct ShareRootView: View {
     let cancel: () -> Void
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 16) {
             switch state {
             case .receiving:
                 ProgressView()
                 Text("Saving source…")
-                    .font(.headline)
+                    .font(ShareVisualStyle.headline)
 
             case .saved:
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 42))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(ShareVisualStyle.accent)
                 Text("Saved on this iPhone")
-                    .font(.headline)
-                Text("Import pending.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .font(ShareVisualStyle.headline)
 
             case .failed(let message):
                 Image(systemName: "exclamationmark.triangle")
                     .font(.system(size: 36))
                     .foregroundStyle(.orange)
                 Text("Couldn’t save your source")
-                    .font(.headline)
+                    .font(ShareVisualStyle.headline)
                 Text(message)
-                    .lineLimit(1)
-                    .font(.footnote)
+                    // Errors are actionable information, unlike decorative helper copy.
+                    .lineLimit(3)
+                    .font(ShareVisualStyle.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                HStack(spacing: 14) {
+                HStack(spacing: 12) {
                     Button("Cancel", role: .cancel, action: cancel)
                         .buttonStyle(.bordered)
                     Button("Try Again", action: retry)
@@ -54,7 +61,8 @@ struct ShareRootView: View {
                 }
             }
         }
-        .padding(28)
+        .font(ShareVisualStyle.body)
+        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .contain)
         // The share extension runs in its own process; pin its view locale too.

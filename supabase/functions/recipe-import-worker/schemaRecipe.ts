@@ -2,6 +2,7 @@
 // Purpose: Extract only evidenced Schema.org Recipe JSON-LD fields from public HTML.
 
 import { load } from "cheerio";
+import { publicSocialMetadata } from "./publicSocialMetadata.ts";
 import type { PageTextEvidence } from "./pageContent.ts";
 import { publicSocialSourceIdentity } from "./socialSource.ts";
 
@@ -171,6 +172,7 @@ export function parseSchemaOrgRecipePage(input: {
   const { nodes, malformed, excerpts, sourceTitle: pageName, pageAuthor } =
     recipeNodes(input.html);
   const identity = publicSocialSourceIdentity(input.source.canonicalURL);
+  const social = publicSocialMetadata(input.html, input.source.canonicalURL);
   const evidenceID = crypto.randomUUID();
   const timestamp = new Date().toISOString();
   const fields: Record<string, EvidenceField> = {};
@@ -256,9 +258,9 @@ export function parseSchemaOrgRecipePage(input: {
       original_url: input.source.originalURL,
       canonical_url: input.source.canonicalURL,
       source_artifact_id: null,
-      platform: identity?.platform ?? input.source.platformHint,
-      author_name: authorName,
-      source_title: pageName,
+      platform: identity?.platform ?? social.platform ?? input.source.platformHint,
+      author_name: authorName ?? social.authorName,
+      source_title: pageName ?? social.title,
       external_content_id: identity?.id ?? null,
     },
     fields,

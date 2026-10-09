@@ -44,6 +44,16 @@ enum CloudSyncCoordinatorState: Equatable, Sendable {
     case initialChoice(local: CloudLibraryCounts, cloud: CloudLibraryCounts?)
     case conflicts([LibraryMergeConflict])
     case error(String)
+
+    /// An incomplete cloud read never authorizes a write under a new account.
+    var permitsUpload: Bool {
+        switch self {
+        case .localOnly, .synced:
+            true
+        case .syncing, .initialChoice, .conflicts, .error:
+            false
+        }
+    }
 }
 
 enum InitialCloudSyncChoice: Sendable {
@@ -450,7 +460,9 @@ final class CloudSyncCoordinator {
 
         await refreshFromCloudIfAllowed(force: true)
         guard accountID == requestedAccountID else { return }
-        if case .conflicts = state { return }
+        // A failed download is not permission to overwrite unknown server data.
+        // Do not bypass a first-sync consent screen or unresolved conflicts.
+        guard state.permitsUpload else { return }
         await uploadLocalSnapshot(forceFollowUp: true)
     }
 
@@ -611,6 +623,9 @@ final class CloudSyncCoordinator {
         guard force || (!automaticSyncPaused && canSyncAutomatically) else {
             return
         }
+        // The first account download also uses .syncing; it does not hold
+        // isSyncing, so a foreground refresh must not race initial consent.
+        if case .syncing = state { return }
         if case .initialChoice = state { return }
         if case .conflicts = state { return }
 
@@ -680,8 +695,11 @@ final class CloudSyncCoordinator {
         guard accountID != nil, let store, store.changeToken != lastExportedToken,
               !automaticSyncPaused,
               !isSyncing, canSyncAutomatically else { return }
-        if case .initialChoice = state { return }
-        if case .conflicts = state { return }
+
+        // loadAccountSnapshot() awaits the server while displaying .syncing.
+        // Concurrent edits must not upload another account's local library
+        // before its owner and the first-sync decision have been resolved.
+        guard state.permitsUpload else { return }
         await uploadLocalSnapshot()
     }
 

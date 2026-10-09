@@ -5,6 +5,12 @@ import RecipeCore
 import SwiftUI
 
 struct MealPlanView: View {
+    let titleDisplayMode: NavigationBarItem.TitleDisplayMode
+
+    init(titleDisplayMode: NavigationBarItem.TitleDisplayMode = RecipeNavigation.rootTitleMode) {
+        self.titleDisplayMode = titleDisplayMode
+    }
+
     @Environment(RecipeStore.self) private var store
     @Environment(\.locale) private var locale
     @AppStorage("recipe.meal.weekStart") private var weekStart = "System Default"
@@ -31,15 +37,10 @@ struct MealPlanView: View {
             "\(localizedMealDate(start, template: "MMM d", locale: locale)) – \(localizedMealDate(end, template: "MMM d, yyyy", locale: locale))"
     }
 
-    private var weeklyMealCount: Int {
-        guard let interval = calendar.dateInterval(of: .weekOfYear, for: selectedDate) else { return 0 }
-        return store.mealPlan.filter { $0.date >= interval.start && $0.date < interval.end }.count
-    }
-
     var body: some View {
         List {
             Section {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
                     HStack(spacing: 8) {
                         Button("Previous week", systemImage: "chevron.left") { moveWeek(by: -1) }
                             .labelStyle(.iconOnly)
@@ -59,12 +60,6 @@ struct MealPlanView: View {
                                 dayButton(date)
                             }
                         }
-                    }
-                    HStack {
-                        Text("\(weeklyMealCount) meals planned this week")
-                            .font(RecipeTheme.text(13, weight: .regular, relativeTo: .footnote))
-                            .foregroundStyle(.secondary)
-                        Spacer()
                     }
                     DatePicker("Choose a date", selection: $selectedDate, displayedComponents: .date)
                         .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
@@ -97,11 +92,14 @@ struct MealPlanView: View {
             }
 
         }
+        .recipeRootScrollClearance()
         .listStyle(.insetGrouped)
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .listSectionSpacing(RecipeSpacing.medium)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("Meal Plan").navigationBarTitleDisplayMode(.large)
+        .navigationTitle("Meal Plan")
+        .navigationBarTitleDisplayMode(titleDisplayMode)
         .tint(RecipeTheme.accent)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -146,7 +144,7 @@ struct MealPlanView: View {
         return Button {
             selectedDate = date
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: RecipeSpacing.xxSmall) {
                 Text(localizedMealDate(date, template: "EEE", locale: locale))
                     .font(RecipeTheme.text(12, weight: .regular, relativeTo: .caption))
                 Text(localizedMealDate(date, template: "d", locale: locale))
@@ -184,7 +182,7 @@ struct MealPlanView: View {
                             .frame(width: 66, height: 66)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                             .accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                             Text(recipe.title).font(RecipeTheme.text(17, weight: .semibold, relativeTo: .body))
                             if let minutes = recipe.totalMinutes {
                                 Label(
@@ -309,7 +307,7 @@ private struct MealPlanRecipePicker: View {
                                             .frame(width: 60, height: 60)
                                             .clipShape(RoundedRectangle(cornerRadius: 10))
                                             .accessibilityHidden(true)
-                                        VStack(alignment: .leading, spacing: 4) {
+                                        VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                                             Text(recipe.title).foregroundStyle(.primary)
                                             if alreadyAdded {
                                                 Text("Already planned").font(
@@ -360,7 +358,8 @@ private struct MealPlanRecipePicker: View {
                 }
             }
             .background(RecipeTheme.canvas)
-            .navigationTitle("Choose a Recipe").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Choose a Recipe")
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             }

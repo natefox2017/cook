@@ -72,7 +72,7 @@ struct CookingView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(RecipeTheme.canvas)
             .navigationTitle("Cooking Mode")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar { cookingToolbar }
             .sheet(isPresented: $isShowingIngredients) { ingredientSheet }
             .sheet(isPresented: $isShowingTimers) { timersSheet }
@@ -138,7 +138,7 @@ struct CookingView: View {
         let step = recipe.steps[index]
 
         return ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: RecipeSpacing.large) {
                 if !dynamicTypeSize.isAccessibilitySize {
                     RecipeImage(recipe: recipe, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 22))
@@ -150,10 +150,10 @@ struct CookingView: View {
 
                 progress(index: index, count: recipe.steps.count)
 
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: RecipeSpacing.small) {
                     HStack(alignment: .firstTextBaseline) {
                         Text(step.title.isEmpty ? String(localized: LocalizedStringResource("Step \(index + 1)", locale: RecipeLanguage.active)) : step.title)
-                            .font(RecipeTheme.title(32))
+                            .font(RecipeTheme.heading(.hero))
                             .accessibilityAddTraits(.isHeader)
                         Spacer()
                         if session.completedStepIDs.contains(step.id) {
@@ -165,7 +165,7 @@ struct CookingView: View {
 
                     Text(step.instruction)
                         .font(RecipeTheme.body(25))
-                        .lineSpacing(5)
+                        .lineSpacing(RecipeSpacing.readingLine)
                         .fixedSize(horizontal: false, vertical: true)
                         .textSelection(.enabled)
                         .accessibilityIdentifier("cookingStepInstruction")
@@ -183,7 +183,7 @@ struct CookingView: View {
                 stepIngredients(step, recipe: recipe)
 
                 if !step.timers.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: RecipeSpacing.small) {
                         Text(
                             step.timers.count == 1
                                 ? LocalizedStringKey("Timer")
@@ -213,7 +213,7 @@ struct CookingView: View {
                 }
                 .buttonStyle(.bordered)
             }
-            .padding(20)
+            .recipePageContentInsets()
         }
         .accessibilityIdentifier("cookingScroll")
         .safeAreaInset(edge: .bottom) {
@@ -223,7 +223,7 @@ struct CookingView: View {
 
     private func progress(index: Int, count: Int) -> some View {
         let completed = session.completedStepIDs.count
-        return VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
             HStack {
                 Text("Step \(index + 1) of \(count)")
                     .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
@@ -250,7 +250,7 @@ struct CookingView: View {
     private func stepIngredients(_ step: RecipeStep, recipe: Recipe) -> some View {
         let linked = recipe.ingredients.filter { step.linkedIngredientIDs.contains($0.id) }
         if !linked.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: RecipeSpacing.small) {
                 HStack {
                     Label("For this step", systemImage: "carrot")
                         .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
@@ -351,7 +351,7 @@ struct CookingView: View {
             .buttonStyle(PrimaryButtonStyle())
             .accessibilityIdentifier("nextStep")
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, RecipeSpacing.pageInset)
         .padding(.vertical, 12)
         .background(.regularMaterial)
     }
@@ -365,7 +365,7 @@ struct CookingView: View {
 
         if !others.isEmpty {
             TimelineView(.periodic(from: .now, by: 1)) { context in
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                     HStack {
                         Text("Other Timers")
                             .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
@@ -386,7 +386,7 @@ struct CookingView: View {
                             }
                         } label: {
                             HStack {
-                                VStack(alignment: .leading, spacing: 3) {
+                                VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                                     Label(active.label, systemImage: "timer")
                                     Text(
                                         remaining == 0
@@ -415,7 +415,7 @@ struct CookingView: View {
 
     private func completionContent(_ recipe: Recipe) -> some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: RecipeSpacing.large) {
                 RecipeImage(recipe: recipe, height: 230)
                     .clipShape(RoundedRectangle(cornerRadius: 24))
 
@@ -425,7 +425,7 @@ struct CookingView: View {
                     .accessibilityHidden(true)
 
                 Text("Ready to enjoy")
-                    .font(RecipeTheme.title(32))
+                    .font(RecipeTheme.heading(.hero))
                     .accessibilityAddTraits(.isHeader)
 
                 Text("\(session.completedStepIDs.count) of \(recipe.steps.count) steps completed.")
@@ -446,14 +446,15 @@ struct CookingView: View {
     }
 
     private var sessionRecoveryContent: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: RecipeSpacing.medium) {
             EmptyStateView(
                 title: "Your cooking progress needs attention",
                 message:
                     "The saved session could not be read. Its original data has been kept. Start a new session to cook this recipe again.",
                 systemImage: "clock.badge.exclamationmark",
                 actionTitle: "Start a New Session",
-                action: { isConfirmingSessionRecovery = true }
+                action: { isConfirmingSessionRecovery = true },
+                messageLineLimit: nil
             )
             .disabled(isReplacingSession)
 
@@ -530,7 +531,7 @@ struct CookingView: View {
                                             : Color.secondary
                                     )
 
-                                    VStack(alignment: .leading, spacing: 4) {
+                                    VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                                         Text(ingredient.name)
                                             .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
 
@@ -567,7 +568,7 @@ struct CookingView: View {
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
             .navigationTitle("Ingredients")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { isShowingIngredients = false }
@@ -604,7 +605,7 @@ struct CookingView: View {
             }
             .background(RecipeTheme.canvas)
             .navigationTitle("Timers")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Add", systemImage: "plus") {
@@ -626,9 +627,9 @@ struct CookingView: View {
             let remaining = active.timer.remaining(at: context.date)
             let running = active.timer.isRunning && remaining > 0
 
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                 HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 3) {
+                    VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                         Text(active.label)
                             .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
                         Text(remaining == 0 ? String(localized: LocalizedStringResource("Time’s up", locale: RecipeLanguage.active)) : CookingClockFormatter.text(remaining))
@@ -647,7 +648,7 @@ struct CookingView: View {
                     HStack(spacing: 10) {
                         timerManagerButtons(active, running: running, remaining: remaining)
                     }
-                    VStack(spacing: 8) {
+                    VStack(spacing: RecipeSpacing.xSmall) {
                         timerManagerButtons(active, running: running, remaining: remaining)
                     }
                 }
@@ -696,7 +697,7 @@ struct CookingView: View {
                 }
             }
             .navigationTitle("Add Timer")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -1246,7 +1247,7 @@ private struct CookingStepTimerPanel: View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let remaining = timer.remaining(at: context.date)
 
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: RecipeSpacing.small) {
                 HStack {
                     Label {
                         if remaining == 0 {
@@ -1285,7 +1286,7 @@ private struct CookingStepTimerPanel: View {
                 .font(RecipeTheme.text(12, relativeTo: .caption))
                 .foregroundStyle(.secondary)
             }
-            .padding(20)
+            .padding(RecipeSpacing.pageInset)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 24))
             .sensoryFeedback(.success, trigger: remaining == 0)

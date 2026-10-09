@@ -25,20 +25,14 @@ struct GroceriesView: View {
     }
 
     private var purchasedCount: Int { store.groceries.filter(\.isChecked).count }
-    private var sourceCount: Int { Set(store.groceries.flatMap(\.recipeIDs)).count }
 
     var body: some View {
         List {
             Section {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
                     HStack(alignment: .firstTextBaseline) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("\(store.groceries.count) items")
-                                .font(RecipeTheme.title(25))
-                            Text("From \(sourceCount) saved recipes")
-                                .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
-                                .foregroundStyle(.secondary)
-                        }
+                        Text("\(store.groceries.count) items")
+                            .font(RecipeTheme.heading(.section))
                         Spacer()
                         Text("\(purchasedCount) bought")
                             .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
@@ -52,10 +46,10 @@ struct GroceriesView: View {
                     .pickerStyle(.segmented)
                     .accessibilityIdentifier("groceries.filter")
                 }
-                .padding(.vertical, 6)
+                .padding(.bottom, RecipeSpacing.xSmall)
             }
             .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: 0))
 
             if store.groceries.isEmpty {
                 emptyState(
@@ -118,11 +112,14 @@ struct GroceriesView: View {
                 }
             }
         }
+        .recipeRootScrollClearance()
         .listStyle(.insetGrouped)
+        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .listSectionSpacing(RecipeSpacing.medium)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("Groceries").navigationBarTitleDisplayMode(.large)
+        .navigationTitle("Groceries")
+        .navigationBarTitleDisplayMode(RecipeNavigation.rootTitleMode)
         .tint(RecipeTheme.accent)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -206,7 +203,7 @@ struct GroceriesView: View {
                 editor = GroceryEditorPresentation(item: item)
             } label: {
                 HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                         Text(item.name)
                             .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .body))
                             .strikethrough(item.isChecked)
@@ -329,7 +326,8 @@ private struct GroceryItemEditorView: View {
             }
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
-            .navigationTitle(originalItem == nil ? "Add Grocery Item" : "Edit Grocery Item").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(originalItem == nil ? "Add Grocery Item" : "Edit Grocery Item")
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
