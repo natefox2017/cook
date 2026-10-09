@@ -1,0 +1,122 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> test
+> node run.mjs
+
+PostgreSQL 18.3 (PGlite 0.5.8) on wasm32-unknown-emscripten, compiled by emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.74 (1092ec30a3fb1d46b1782ff1b4db5094d3d06ae5), 32-bit
+Extensions: [
+  { extname: 'pgmq', extversion: '1.11.1' },
+  { extname: 'pgtap', extversion: '1.3.5' },
+  { extname: 'plpgsql', extversion: '1.0' }
+]
+Applied 20261007_user_snapshots.sql
+Applied 20261008024843_user_snapshot_revision.sql
+Applied 20261008024927_guard_user_snapshot_revision_updates.sql
+Applied 20261008030120_bind_snapshot_writes_to_owner.sql
+Applied 20261008050000_restrict_user_snapshot_writes_to_rpc.sql
+Applied 20261008103818_restrict_untrusted_security_definer_rpcs.sql
+Applied 20261008155000_recipe_import_jobs_v1.sql
+Applied 20261008195255_preserve_recipe_import_source_url.sql
+Applied 20261008200000_recipe_import_artifacts_v1.sql
+
+tests/security_definer_function_privileges.test.sql
+1..20
+ok 1 - admin_bootstrap_owner exists in the ACL test database
+ok 2 - anon cannot execute admin_bootstrap_owner
+ok 3 - authenticated cannot execute admin_bootstrap_owner
+ok 4 - service_role can execute admin_bootstrap_owner
+ok 5 - admin_change_password exists in the ACL test database
+ok 6 - anon cannot execute admin_change_password
+ok 7 - authenticated cannot execute admin_change_password
+ok 8 - service_role can execute admin_change_password
+ok 9 - admin_verify_credentials exists in the ACL test database
+ok 10 - anon cannot execute admin_verify_credentials
+ok 11 - authenticated cannot execute admin_verify_credentials
+ok 12 - service_role can execute admin_verify_credentials
+ok 13 - capture_registration_meta exists in the ACL test database
+ok 14 - anon cannot execute capture_registration_meta
+ok 15 - authenticated can execute capture_registration_meta
+ok 16 - service_role cannot execute capture_registration_meta
+ok 17 - get_runtime_config_number exists in the ACL test database
+ok 18 - anon cannot execute get_runtime_config_number
+ok 19 - authenticated cannot execute get_runtime_config_number
+ok 20 - service_role cannot execute get_runtime_config_number
+
+tests/database/recipe_import_jobs_v1.sql
+1..40
+ok 1 - migration creates a dedicated V1 PGMQ queue
+ok 2 - job table has row-level security enabled
+ok 3 - anonymous users cannot submit jobs
+ok 4 - authenticated users cannot bypass frozen request validation through the internal RPC
+ok 5 - authenticated users can use the full owner-checked submit RPC
+ok 6 - anonymous users cannot read the V1 queue
+ok 7 - authenticated users cannot read the V1 queue
+ok 8 - service role can read the V1 queue
+ok 9 - service role can archive V1 messages
+ok 10 - anonymous users cannot archive V1 messages
+ok 11 - authenticated users cannot insert job rows directly
+ok 12 - authenticated users cannot update job rows directly
+ok 13 - authenticated users cannot delete job rows directly
+ok 14 - submit returns only after durable V1 queue admission
+ok 15 - same request replay returns the existing job
+ok 16 - optional original source URL is stored with the job
+ok 17 - same request ID cannot replace immutable source metadata
+ok 18 - same request ID cannot replace platform metadata
+ok 19 - changed source cannot reuse an idempotency key
+ok 20 - obsolete defaulted internal RPC remains inaccessible to authenticated users
+ok 21 - owner can read their own job through RLS
+ok 22 - V1 consumer reads the submitted V1 message
+ok 23 - legacy payload is not present in the V1 queue table
+ok 24 - worker atomically claims the first delivery attempt
+ok 25 - expired PGMQ visibility makes the same V1 message readable again
+ok 26 - expired processing lease is reclaimed as a new attempt
+ok 27 - stale worker from attempt one cannot write over attempt two
+ok 28 - claimed message remains unacknowledged before result persistence
+ok 29 - current attempt persists the terminal result
+ok 30 - durable result is visible before queue ACK
+ok 31 - V1 consumer can archive its own message
+ok 32 - V1 message is archived in the V1 archive table
+ok 33 - legacy message remains pending after V1 read and archive
+ok 34 - V1 archive does not move legacy messages
+ok 35 - another account cannot read the job through RLS
+ok 36 - another account cannot retry the job
+ok 37 - recoverable owner retry is re-queued
+ok 38 - retry admits a new durable queue message for the existing job
+ok 39 - retry message is admitted to the V1 queue
+ok 40 - queued job cannot be retried twice
+
+tests/database/snapshot_artifact_boundaries.sql
+1..25
+ok 1 - artifact bucket configuration is private
+ok 2 - artifact bucket configuration enforces ten MiB
+ok 3 - authenticated tests run without superuser or BYPASSRLS
+11111111-1111-4111-8111-111111111111
+{"sub":"11111111-1111-4111-8111-111111111111","is_anonymous":false}
+ok 4 - owner creates snapshot at revision one
+ok 5 - replayed creation cannot overwrite snapshot
+ok 6 - owner update increments snapshot revision
+ok 7 - stale revision cannot overwrite current snapshot
+ok 8 - stale update preserves stored data
+ok 9 - direct snapshot writes remain forbidden
+ok 10 - owner cannot save another account snapshot
+ok 11 - invalid snapshot shape is rejected
+ok 12 - owner reads their own artifact metadata
+ok 13 - owner cannot forge artifact availability
+ok 14 - available owner artifact is durably queued
+ok 15 - identical artifact submission is replayable
+ok 16 - artifact replay creates no duplicate job
+ok 17 - expired artifact cannot enter the queue
+22222222-2222-4222-8222-222222222222
+{"sub":"22222222-2222-4222-8222-222222222222","is_anonymous":false}
+ok 18 - another account cannot read snapshot through RLS
+ok 19 - another account cannot read artifact through RLS
+ok 20 - another account cannot read artifact job through RLS
+ok 21 - another account cannot import a private artifact
+11111111-1111-4111-8111-111111111111
+{"sub":"11111111-1111-4111-8111-111111111111","is_anonymous":true}
+ok 22 - anonymous Auth user cannot submit artifact import
+ok 23 - anon role cannot read artifact table
+ok 24 - anon role cannot invoke snapshot writes
+ok 25 - artifact replay and rejected submissions enqueue no duplicate messages
+
+PASS: all selected SQL suites; legacy bodies, HTTP Auth/Storage and deployment are not tested.
