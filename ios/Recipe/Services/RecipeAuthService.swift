@@ -210,7 +210,7 @@ final class RecipeAuthService {
                     )
                 } catch {
                     nonblockingNotice =
-                        "Signed in successfully, but your name couldn't be saved. You can update your profile later."
+                        RecipeLanguage.localized("Signed in successfully, but your name couldn't be saved. You can update your profile later.")
                 }
             }
         } catch {
