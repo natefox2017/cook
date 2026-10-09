@@ -96,7 +96,8 @@ Read the relevant documents before substantial product or architecture changes:
 ## CI Policy
 
 - Keep CI intentionally minimal.
-- The repository uses one lightweight PR auto-merge workflow.
+- The private GitHub Free repository uses one lightweight `pull_request_target` workflow to directly squash-merge open, ready, clean same-repository PRs. Never use `gh pr merge --auto`, which depends on paid native auto-merge protection.
+- Keep Draft PRs, change requests, unresolved review threads, and unmergeable PRs out of automatic merges. Do not check out or execute PR code with the write-enabled merge token.
 - Do not reintroduce per-PR Xcode builds, simulator runs, Swift tests, or documentation CI unless the user explicitly requests them.
 - Required status names may remain as compatibility gates, but they must not pretend to validate work they do not actually validate.
 - Run substantive build/tests manually when needed and report exactly what was executed.
