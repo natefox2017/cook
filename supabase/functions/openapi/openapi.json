@@ -1,0 +1,4220 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "RecipePouch Edge API — Repository Replacement",
+    "version": "2026-10-09.1",
+    "description": "Repository-scoped replacement contract assembled from implemented Edge Function handlers. It is not a parity reconstruction of the unavailable production OpenAPI v23. The route set is based on cook main bef764c4, including the merged admin and RevenueCat handlers. admin-ai is intentionally excluded because this repository has no implementation handler.",
+    "x_contract_kind": "repository-current-handler-replacement",
+    "x_source_revisions": {
+      "main": "bef764c4a95186d27d69dbcd76d8ae51c2b47977"
+    }
+  },
+  "servers": [
+    {
+      "url": "/functions/v1"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Status"
+    },
+    {
+      "name": "Account"
+    },
+    {
+      "name": "Imports"
+    },
+    {
+      "name": "Admin auth"
+    },
+    {
+      "name": "Admin users"
+    },
+    {
+      "name": "Billing admin"
+    },
+    {
+      "name": "RevenueCat"
+    },
+    {
+      "name": "Internal"
+    }
+  ],
+  "paths": {
+    "/openapi": {
+      "get": {
+        "summary": "Get this repository-scoped OpenAPI contract",
+        "tags": [
+          "Status"
+        ],
+        "responses": {
+          "200": {
+            "description": "Get this repository-scoped OpenAPI contract",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenAPIDocument"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Read authenticated backend capability status",
+        "tags": [
+          "Status"
+        ],
+        "responses": {
+          "200": {
+            "description": "Read authenticated backend capability status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "service": {
+                      "type": "string",
+                      "const": "cookapp-backend"
+                    },
+                    "modules": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "rest_base": {
+                      "type": "string",
+                      "const": "/rest/v1"
+                    },
+                    "openapi": {
+                      "type": "string",
+                      "const": "/functions/v1/openapi"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "ok",
+                    "service",
+                    "modules",
+                    "rest_base",
+                    "openapi"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseUserBearer": []
+          }
+        ]
+      }
+    },
+    "/delete-account": {
+      "post": {
+        "summary": "Delete the authenticated user's account and owned storage",
+        "tags": [
+          "Account"
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete the authenticated user's account and owned storage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseUserBearer": []
+          }
+        ]
+      }
+    },
+    "/recipe-imports": {
+      "post": {
+        "summary": "Create an authenticated asynchronous recipe import",
+        "tags": [
+          "Imports"
+        ],
+        "responses": {
+          "202": {
+            "description": "Create an authenticated asynchronous recipe import",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJob"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseUserBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipe-imports/{job_id}": {
+      "get": {
+        "summary": "Read an owner-scoped import job",
+        "tags": [
+          "Imports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Read an owner-scoped import job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJob"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseUserBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "description": "Import job UUID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/recipe-imports/{job_id}/retry": {
+      "post": {
+        "summary": "Retry an owner-scoped import job",
+        "tags": [
+          "Imports"
+        ],
+        "responses": {
+          "202": {
+            "description": "Retry an owner-scoped import job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJob"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseUserBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "description": "Import job UUID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/recipe-import-artifacts": {
+      "post": {
+        "summary": "Create or resume a private artifact upload intent",
+        "tags": [
+          "Imports"
+        ],
+        "responses": {
+          "201": {
+            "description": "Create or resume a private artifact upload intent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactUploadResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactErrorEnvelope"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Existing idempotent upload intent. An available artifact omits upload credentials; a pending one includes them.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ArtifactResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ArtifactUploadResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseUserBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArtifactCreateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipe-import-artifacts/{artifact_id}/complete": {
+      "post": {
+        "summary": "Confirm an uploaded private artifact",
+        "tags": [
+          "Imports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirm an uploaded private artifact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseUserBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "artifact_id",
+            "in": "path",
+            "required": true,
+            "description": "Artifact UUID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/recipe-import-artifacts/{artifact_id}/download": {
+      "get": {
+        "summary": "Issue a short-lived owner-scoped artifact download URL",
+        "tags": [
+          "Imports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Issue a short-lived owner-scoped artifact download URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactDownloadResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseUserBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "artifact_id",
+            "in": "path",
+            "required": true,
+            "description": "Artifact UUID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/recipe-import-artifacts/{artifact_id}": {
+      "delete": {
+        "summary": "Expire and delete an owner-scoped private artifact",
+        "tags": [
+          "Imports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Expire and delete an owner-scoped private artifact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactDeleteResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseUserBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "artifact_id",
+            "in": "path",
+            "required": true,
+            "description": "Artifact UUID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/admin-auth/bootstrap-status": {
+      "get": {
+        "summary": "Read whether owner bootstrap has completed",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Read whether owner bootstrap has completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBootstrapStatus"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/admin-auth/login": {
+      "post": {
+        "summary": "Sign in with admin credentials",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Sign in with admin credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AdminSession"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AdminFactorChallenge"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminLoginRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-auth/login-totp": {
+      "post": {
+        "summary": "Complete TOTP login challenge",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete TOTP login challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSession"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminTotpLoginRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-auth/login-passkey-options": {
+      "post": {
+        "summary": "Create passkey login options",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Create passkey login options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyOptionsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminPasskeyOptionsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-auth/login-passkey-verify": {
+      "post": {
+        "summary": "Verify passkey login response",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Verify passkey login response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSession"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminPasskeyVerifyRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-auth/bootstrap": {
+      "post": {
+        "summary": "Bootstrap the first owner account",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Non-production deployments without a configured bootstrap token may permit this operation without a credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AdminSession"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AdminFactorChallenge"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BootstrapHeader": []
+          },
+          {
+            "BootstrapBearer": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminBootstrapRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-auth/logout": {
+      "post": {
+        "summary": "Revoke the current admin session",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoke the current admin session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ]
+      }
+    },
+    "/admin-auth/session": {
+      "get": {
+        "summary": "Read the current admin session",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Read the current admin session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSessionResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ]
+      }
+    },
+    "/admin-auth/change-password": {
+      "post": {
+        "summary": "Change the current admin password",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Change the current admin password",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPasswordChangeResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminPasswordChangeRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-auth/factors": {
+      "get": {
+        "summary": "Read current admin TOTP and passkey factors",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Read current admin TOTP and passkey factors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminFactorsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ]
+      }
+    },
+    "/admin-auth/login-events": {
+      "get": {
+        "summary": "Read current admin login history",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Read current admin login history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLoginEventsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum rows; clamped to 1 through 100, default 50.",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          }
+        ]
+      }
+    },
+    "/admin-auth/totp-setup": {
+      "post": {
+        "summary": "Start TOTP enrollment",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Start TOTP enrollment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpSetupResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ]
+      }
+    },
+    "/admin-auth/totp-verify": {
+      "post": {
+        "summary": "Confirm and enable TOTP enrollment",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirm and enable TOTP enrollment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpEnabledResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpCodeRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-auth/totp-remove": {
+      "post": {
+        "summary": "Remove the current TOTP factor",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Remove the current TOTP factor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpRemovedResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpRemoveRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-auth/passkey-registration-options": {
+      "post": {
+        "summary": "Create passkey registration options",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Create passkey registration options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyOptionsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ]
+      }
+    },
+    "/admin-auth/passkey-registration-verify": {
+      "post": {
+        "summary": "Verify and save a passkey",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "201": {
+            "description": "Verify and save a passkey",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyCreatedResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyRegistrationVerifyRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-auth/passkey-remove": {
+      "post": {
+        "summary": "Remove an enrolled passkey",
+        "tags": [
+          "Admin auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Remove an enrolled passkey",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyRemovedResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyRemoveRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-users": {
+      "get": {
+        "summary": "List users with registration and subscription summaries",
+        "tags": [
+          "Admin users"
+        ],
+        "responses": {
+          "200": {
+            "description": "Requires role owner or admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number; invalid values use 1.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "description": "Page size; invalid values use 20 and values are capped at 100.",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search display name or email; truncated to 100 characters.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Filter: active, suspended, deleted, or all.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "suspended",
+                "deleted",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "registrationProvider",
+            "in": "query",
+            "required": false,
+            "description": "Filter registration provider.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "apple",
+                "google",
+                "email",
+                "unknown",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "subscription",
+            "in": "query",
+            "required": false,
+            "description": "Filter subscription tier.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "free",
+                "pro",
+                "lifetime",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "deviceType",
+            "in": "query",
+            "required": false,
+            "description": "Filter device type.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ios",
+                "android",
+                "web",
+                "unknown",
+                "all"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/admin-users/{user_id}": {
+      "get": {
+        "summary": "Read one user and payment history",
+        "tags": [
+          "Admin users"
+        ],
+        "responses": {
+          "200": {
+            "description": "Requires role owner or admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserDetail"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "description": "User UUID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/admin-dashboard": {
+      "get": {
+        "summary": "Read owner-only dashboard aggregates",
+        "tags": [
+          "Billing admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Requires the owner role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ]
+      }
+    },
+    "/admin-subscriptions/plans": {
+      "get": {
+        "summary": "List subscription plans",
+        "tags": [
+          "Billing admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Requires a valid admin session; the handler does not restrict this read by role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubscriptionPlan"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create a subscription plan",
+        "tags": [
+          "Billing admin"
+        ],
+        "responses": {
+          "201": {
+            "description": "Requires owner or admin role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionPlan"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanWriteRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-subscriptions/plans/{id}": {
+      "put": {
+        "summary": "Replace a subscription plan",
+        "tags": [
+          "Billing admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Requires owner or admin role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionPlan"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanWriteRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Subscription plan UUID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete a subscription plan",
+        "tags": [
+          "Billing admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Requires owner or admin role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Subscription plan UUID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/admin-subscriptions/records": {
+      "get": {
+        "summary": "List recent subscription records",
+        "tags": [
+          "Billing admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Requires owner or admin role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubscriptionRecord"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "query",
+            "required": false,
+            "description": "Optional platform filter. app_store and play_store filter results; other values are ignored by the current handler.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/admin-subscriptions/revenue": {
+      "get": {
+        "summary": "Read subscription revenue aggregates",
+        "tags": [
+          "Billing admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Requires owner or admin role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "query",
+            "required": false,
+            "description": "Optional platform filter. app_store and play_store filter results; other values are ignored by the current handler.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/recipe-import-worker": {
+      "post": {
+        "summary": "Process queued recipe imports",
+        "tags": [
+          "Internal"
+        ],
+        "responses": {
+          "200": {
+            "description": "Internal worker endpoint; Supabase gateway JWT verification is disabled and the handler requires its dedicated secret.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkerResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkerError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ImportWorkerSecret": []
+          }
+        ]
+      }
+    },
+    "/purge-expired-recipe-import-artifacts": {
+      "post": {
+        "summary": "Purge expired import artifacts",
+        "tags": [
+          "Internal"
+        ],
+        "responses": {
+          "200": {
+            "description": "Internal scheduled endpoint; Supabase gateway JWT verification is disabled and the handler requires its dedicated bearer secret.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CleanupResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CleanupError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ArtifactCleanupBearer": []
+          }
+        ]
+      }
+    },
+    "/revenuecat-webhook": {
+      "post": {
+        "summary": "Receive a RevenueCat subscription event",
+        "tags": [
+          "RevenueCat"
+        ],
+        "responses": {
+          "200": {
+            "description": "Processed, replayed, ignored, or skipped RevenueCat event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/WebhookProcessed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/WebhookReplay"
+                    },
+                    {
+                      "$ref": "#/components/schemas/WebhookIgnoredKnown"
+                    },
+                    {
+                      "$ref": "#/components/schemas/WebhookIgnoredUnknownType"
+                    },
+                    {
+                      "$ref": "#/components/schemas/WebhookSkipped"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error statuses and body shape are emitted by this function handler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "RevenueCatBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookRequest",
+                "description": "RevenueCat payload object; event fields are interpreted according to the event type."
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-RevenueCat-Webhook-Signature",
+            "in": "header",
+            "required": false,
+            "description": "Timestamped HMAC-SHA256 signature. Required only when the signing-secret environment variable is configured.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "description": "Current main includes the RevenueCat webhook handler and its bearer-secret verification. Optional X-RevenueCat-Webhook-Signature validation is active only when REVENUECAT_WEBHOOK_SIGNING_SECRET is configured."
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "SupabaseUserBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Supabase user JWT"
+      },
+      "AdminSessionBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Custom admin session token"
+      },
+      "BootstrapHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-CookApp-Bootstrap-Token"
+      },
+      "BootstrapBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Bootstrap secret"
+      },
+      "ImportWorkerSecret": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-recipe-worker-secret"
+      },
+      "ArtifactCleanupBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Artifact cleanup secret"
+      },
+      "RevenueCatBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "RevenueCat webhook secret"
+      }
+    },
+    "schemas": {
+      "OpenAPIDocument": {
+        "type": "object",
+        "properties": {
+          "openapi": {
+            "type": "string"
+          },
+          "info": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "paths": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "components": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "openapi",
+          "info",
+          "paths"
+        ]
+      },
+      "SharedErrorEnvelope": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "type": [
+                  "object",
+                  "array",
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "message",
+              "details"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ]
+      },
+      "ImportErrorEnvelope": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "recoverable": {
+            "type": "boolean"
+          },
+          "suggested_action": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message",
+          "recoverable",
+          "suggested_action",
+          "request_id"
+        ]
+      },
+      "ArtifactErrorEnvelope": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "recoverable": {
+            "type": "boolean"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message",
+          "recoverable",
+          "request_id"
+        ]
+      },
+      "WorkerError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ]
+      },
+      "CleanupError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "code"
+        ]
+      },
+      "WebhookError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ]
+      },
+      "Admin": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "operator",
+              "readonly"
+            ]
+          },
+          "mustChangePassword": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "username",
+          "role",
+          "mustChangePassword"
+        ]
+      },
+      "AdminSession": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "admin": {
+            "$ref": "#/components/schemas/Admin"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "token",
+          "expiresAt",
+          "admin"
+        ]
+      },
+      "AdminFactorChallenge": {
+        "type": "object",
+        "properties": {
+          "factorRequired": {
+            "type": "boolean",
+            "const": true
+          },
+          "challengeToken": {
+            "type": "string"
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "totp",
+                "passkey"
+              ]
+            }
+          },
+          "admin": {
+            "$ref": "#/components/schemas/Admin"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "factorRequired",
+          "challengeToken",
+          "methods",
+          "admin"
+        ]
+      },
+      "AdminBootstrapStatus": {
+        "type": "object",
+        "properties": {
+          "initialized": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "initialized"
+        ]
+      },
+      "AdminSessionResponse": {
+        "type": "object",
+        "properties": {
+          "admin": {
+            "$ref": "#/components/schemas/Admin"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "admin"
+        ]
+      },
+      "AdminFactorsResponse": {
+        "type": "object",
+        "properties": {
+          "totp": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "enabledAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "enabled",
+              "enabledAt"
+            ]
+          },
+          "passkeys": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "credential_id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "last_used_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "credential_id",
+                "name",
+                "created_at",
+                "last_used_at"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "totp",
+          "passkeys"
+        ]
+      },
+      "AdminLoginEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "password",
+              "totp",
+              "passkey",
+              "bootstrap"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "ipAddress": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "userAgent": {
+            "type": "string"
+          },
+          "failureReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "createdAt",
+          "method",
+          "success",
+          "ipAddress",
+          "userAgent",
+          "failureReason"
+        ]
+      },
+      "AdminLoginEventsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminLoginEvent"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "total"
+        ]
+      },
+      "ImportRequest": {
+        "type": "object",
+        "properties": {
+          "client_request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "input_type": {
+            "type": "string",
+            "enum": [
+              "url",
+              "text",
+              "image",
+              "file"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "artifact_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "platform_hint": {
+            "type": "string"
+          },
+          "original_source_url": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "client_request_id",
+          "input_type"
+        ],
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "input_type": {
+                "type": "string",
+                "const": "url"
+              },
+              "client_request_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "platform_hint": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "original_source_url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 8192
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 8192,
+                "description": "Handler accepts public HTTPS URLs only."
+              }
+            },
+            "required": [
+              "input_type",
+              "client_request_id",
+              "url"
+            ],
+            "additionalProperties": false,
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "text"
+                  ]
+                },
+                {
+                  "required": [
+                    "artifact_id"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "input_type": {
+                "type": "string",
+                "const": "text"
+              },
+              "client_request_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "platform_hint": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "original_source_url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 8192
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100000
+              }
+            },
+            "required": [
+              "input_type",
+              "client_request_id",
+              "text"
+            ],
+            "additionalProperties": false,
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "url"
+                  ]
+                },
+                {
+                  "required": [
+                    "artifact_id"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "input_type": {
+                "type": "string",
+                "const": "image"
+              },
+              "client_request_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "platform_hint": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "original_source_url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 8192
+              },
+              "artifact_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "input_type",
+              "client_request_id",
+              "artifact_id"
+            ],
+            "additionalProperties": false,
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "url"
+                  ]
+                },
+                {
+                  "required": [
+                    "text"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "input_type": {
+                "type": "string",
+                "const": "file"
+              },
+              "client_request_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "platform_hint": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "original_source_url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 8192
+              },
+              "artifact_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "input_type",
+              "client_request_id",
+              "artifact_id"
+            ],
+            "additionalProperties": false,
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "url"
+                  ]
+                },
+                {
+                  "required": [
+                    "text"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "ImportJob": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "client_request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "attempt_count": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "server_received_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "queue_confirmed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recipe_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recipe_status": {
+            "type": "string"
+          },
+          "review_count": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "job_id",
+          "client_request_id",
+          "status",
+          "stage",
+          "attempt_count",
+          "created_at",
+          "updated_at",
+          "server_received_at"
+        ]
+      },
+      "ArtifactCreateRequest": {
+        "type": "object",
+        "properties": {
+          "input_type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "file"
+            ]
+          },
+          "mime_type": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/heic",
+              "image/heif",
+              "application/pdf",
+              "text/plain"
+            ]
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10485760
+          },
+          "client_request_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "input_type",
+          "mime_type",
+          "size_bytes",
+          "client_request_id"
+        ],
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "input_type": {
+                "type": "string",
+                "const": "image"
+              },
+              "mime_type": {
+                "type": "string",
+                "enum": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/heic",
+                  "image/heif"
+                ]
+              },
+              "size_bytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10485760
+              },
+              "client_request_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "input_type",
+              "mime_type",
+              "size_bytes",
+              "client_request_id"
+            ],
+            "additionalProperties": true
+          },
+          {
+            "type": "object",
+            "properties": {
+              "input_type": {
+                "type": "string",
+                "const": "file"
+              },
+              "mime_type": {
+                "type": "string",
+                "enum": [
+                  "application/pdf",
+                  "text/plain"
+                ]
+              },
+              "size_bytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10485760
+              },
+              "client_request_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "input_type",
+              "mime_type",
+              "size_bytes",
+              "client_request_id"
+            ],
+            "additionalProperties": true
+          }
+        ]
+      },
+      "ArtifactResponse": {
+        "type": "object",
+        "properties": {
+          "artifact": {
+            "$ref": "#/components/schemas/Artifact"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "artifact"
+        ]
+      },
+      "Artifact": {
+        "type": "object",
+        "properties": {
+          "artifact_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "upload_pending",
+              "available",
+              "rejected",
+              "expired"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "original",
+              "screenshot"
+            ]
+          },
+          "mime_type": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer"
+          },
+          "checksum_sha256": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "artifact_id",
+          "state",
+          "kind",
+          "mime_type",
+          "size_bytes",
+          "checksum_sha256",
+          "expires_at"
+        ]
+      },
+      "ArtifactUploadResponse": {
+        "type": "object",
+        "properties": {
+          "artifact": {
+            "$ref": "#/components/schemas/Artifact"
+          },
+          "upload_path": {
+            "type": "string"
+          },
+          "upload_token": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "artifact",
+          "upload_path",
+          "upload_token"
+        ]
+      },
+      "ArtifactDownloadResponse": {
+        "type": "object",
+        "properties": {
+          "artifact": {
+            "$ref": "#/components/schemas/Artifact"
+          },
+          "download_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expires_in_seconds": {
+            "type": "integer",
+            "const": 60
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "artifact",
+          "download_url",
+          "expires_in_seconds"
+        ]
+      },
+      "ArtifactDeleteResponse": {
+        "type": "object",
+        "properties": {
+          "artifact_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "const": "expired"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "artifact_id",
+          "state"
+        ]
+      },
+      "AdminUserSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subscription": {
+            "type": "string",
+            "enum": [
+              "free",
+              "pro",
+              "lifetime"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended",
+              "deleted"
+            ]
+          },
+          "registrationProvider": {
+            "type": "string",
+            "enum": [
+              "apple",
+              "google",
+              "email",
+              "unknown"
+            ]
+          },
+          "deviceType": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android",
+              "web",
+              "unknown"
+            ]
+          },
+          "registrationCountryCode": {
+            "type": "null"
+          },
+          "lastLoginAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lastLoginIp": {
+            "type": "null"
+          },
+          "subscriptionPlan": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subscriptionBillingPeriod": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "monthly",
+              "yearly",
+              "lifetime",
+              null
+            ]
+          },
+          "subscriptionStatus": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "email",
+          "displayName",
+          "avatarUrl",
+          "subscription",
+          "createdAt",
+          "status",
+          "registrationProvider",
+          "deviceType",
+          "registrationCountryCode",
+          "lastLoginAt",
+          "lastLoginIp",
+          "subscriptionPlan",
+          "subscriptionBillingPeriod",
+          "subscriptionStatus"
+        ]
+      },
+      "AdminUserPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserSummary"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "AdminPayment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "productId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "store": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "amount": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "environment": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "purchasedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "eventType",
+          "productId",
+          "store",
+          "amount",
+          "currency",
+          "environment",
+          "purchasedAt"
+        ]
+      },
+      "AdminUserDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subscription": {
+            "type": "string",
+            "enum": [
+              "free",
+              "pro",
+              "lifetime"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended",
+              "deleted"
+            ]
+          },
+          "registrationProvider": {
+            "type": "string",
+            "enum": [
+              "apple",
+              "google",
+              "email",
+              "unknown"
+            ]
+          },
+          "deviceType": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android",
+              "web",
+              "unknown"
+            ]
+          },
+          "registrationCountryCode": {
+            "type": "null"
+          },
+          "lastLoginAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lastLoginIp": {
+            "type": "null"
+          },
+          "subscriptionPlan": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subscriptionBillingPeriod": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "monthly",
+              "yearly",
+              "lifetime",
+              null
+            ]
+          },
+          "subscriptionStatus": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "registrationIp": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminPayment"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "displayName",
+          "avatarUrl",
+          "subscription",
+          "createdAt",
+          "status",
+          "registrationProvider",
+          "deviceType",
+          "registrationCountryCode",
+          "lastLoginAt",
+          "lastLoginIp",
+          "subscriptionPlan",
+          "subscriptionBillingPeriod",
+          "subscriptionStatus",
+          "registrationIp",
+          "payments"
+        ],
+        "additionalProperties": false
+      },
+      "PlanWriteRequest": {
+        "type": "object",
+        "properties": {
+          "planKey": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "app_store",
+              "play_store"
+            ]
+          },
+          "productId": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "default": "USD"
+          },
+          "billingPeriod": {
+            "type": "string",
+            "enum": [
+              "monthly",
+              "yearly",
+              "lifetime"
+            ]
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "planKey",
+          "displayName",
+          "platform",
+          "productId",
+          "price",
+          "billingPeriod"
+        ]
+      },
+      "SubscriptionPlan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planKey": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "app_store",
+              "play_store"
+            ]
+          },
+          "productId": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "billingPeriod": {
+            "type": "string",
+            "enum": [
+              "monthly",
+              "yearly",
+              "lifetime"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "planKey",
+          "displayName",
+          "platform",
+          "productId",
+          "price",
+          "currency",
+          "billingPeriod",
+          "active",
+          "description",
+          "updatedAt"
+        ]
+      },
+      "SubscriptionRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "displayName",
+              "email"
+            ]
+          },
+          "plan": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "platform": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "app_store",
+              "play_store",
+              null
+            ]
+          },
+          "productId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "amount": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "expirationDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "user",
+          "plan",
+          "status",
+          "platform",
+          "productId",
+          "amount",
+          "currency",
+          "startDate",
+          "expirationDate"
+        ]
+      },
+      "RevenueResponse": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "properties": {
+              "mrr": {
+                "type": "number"
+              },
+              "appleRevenue": {
+                "type": "number"
+              },
+              "androidRevenue": {
+                "type": "number"
+              },
+              "activePaid": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "mrr",
+              "appleRevenue",
+              "androidRevenue",
+              "activePaid"
+            ]
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "month": {
+                  "type": "string"
+                },
+                "apple": {
+                  "type": "number"
+                },
+                "android": {
+                  "type": "number"
+                },
+                "total": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "month",
+                "apple",
+                "android",
+                "total"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "stats",
+          "series"
+        ]
+      },
+      "DashboardStats": {
+        "type": "object",
+        "properties": {
+          "totalUsers": {
+            "type": "integer"
+          },
+          "totalRecipes": {
+            "type": "integer"
+          },
+          "collections": {
+            "type": "integer"
+          },
+          "favorites": {
+            "type": "integer"
+          },
+          "newUsersThisMonth": {
+            "type": "integer"
+          },
+          "activePaidUsers": {
+            "type": "integer"
+          },
+          "suspendedUsers": {
+            "type": "integer"
+          },
+          "revenueTotal": {
+            "type": "number"
+          },
+          "revenueMrr": {
+            "type": "number"
+          },
+          "revenueApple": {
+            "type": "number"
+          },
+          "revenueAndroid": {
+            "type": "number"
+          },
+          "paymentTransactions": {
+            "type": "integer"
+          },
+          "downloadsTotal": {
+            "type": "integer"
+          },
+          "downloadsIos": {
+            "type": "integer"
+          },
+          "downloadsAndroid": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "totalUsers",
+          "totalRecipes",
+          "collections",
+          "favorites",
+          "newUsersThisMonth",
+          "activePaidUsers",
+          "suspendedUsers",
+          "revenueTotal",
+          "revenueMrr",
+          "revenueApple",
+          "revenueAndroid",
+          "paymentTransactions",
+          "downloadsTotal",
+          "downloadsIos",
+          "downloadsAndroid"
+        ]
+      },
+      "DashboardSeriesPoint": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "users": {
+            "type": "integer"
+          },
+          "recipes": {
+            "type": "integer"
+          },
+          "revenue": {
+            "type": "number"
+          },
+          "revenueApple": {
+            "type": "number"
+          },
+          "revenueAndroid": {
+            "type": "number"
+          },
+          "downloadsIos": {
+            "type": "integer"
+          },
+          "downloadsAndroid": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "month",
+          "users",
+          "recipes",
+          "revenue",
+          "revenueApple",
+          "revenueAndroid",
+          "downloadsIos",
+          "downloadsAndroid"
+        ]
+      },
+      "DashboardBreakdown": {
+        "type": "object",
+        "properties": {
+          "byRegistrationType": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "label",
+                "value"
+              ]
+            }
+          },
+          "byDeviceType": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "label",
+                "value"
+              ]
+            }
+          },
+          "byPlan": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "label",
+                "value"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "byRegistrationType",
+          "byDeviceType",
+          "byPlan"
+        ]
+      },
+      "DashboardActivity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "recipe",
+              "payment",
+              "download"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "subtitle": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "title",
+          "subtitle",
+          "createdAt"
+        ]
+      },
+      "DashboardRecentPayment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userLabel": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "store": {
+            "type": "string"
+          },
+          "amount": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "userLabel",
+          "eventType",
+          "store",
+          "amount",
+          "currency",
+          "createdAt"
+        ]
+      },
+      "DashboardResponse": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "$ref": "#/components/schemas/DashboardStats"
+          },
+          "growth": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "month": {
+                  "type": "string"
+                },
+                "users": {
+                  "type": "integer"
+                },
+                "recipes": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "month",
+                "users",
+                "recipes"
+              ]
+            }
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSeriesPoint"
+            }
+          },
+          "userBreakdown": {
+            "$ref": "#/components/schemas/DashboardBreakdown"
+          },
+          "recent": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardActivity"
+            }
+          },
+          "recentPayments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardRecentPayment"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "stats",
+          "growth",
+          "series",
+          "userBreakdown",
+          "recent",
+          "recentPayments"
+        ]
+      },
+      "WorkerResult": {
+        "type": "object",
+        "properties": {
+          "completed": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "deferred": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "completed",
+          "failed",
+          "deferred"
+        ]
+      },
+      "CleanupResult": {
+        "type": "object",
+        "properties": {
+          "attempted": {
+            "type": "integer"
+          },
+          "expired": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "attempted",
+          "expired",
+          "failed",
+          "has_more"
+        ]
+      },
+      "WebhookEvent": {
+        "type": "object",
+        "description": "Event object. The handler validates its shape but accepts event-specific fields dynamically.",
+        "additionalProperties": true
+      },
+      "WebhookRequest": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/WebhookEvent"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "event"
+        ]
+      },
+      "WebhookProcessed": {
+        "type": "object",
+        "properties": {
+          "received": {
+            "type": "boolean",
+            "const": true
+          },
+          "processed": {
+            "type": "boolean",
+            "const": true
+          },
+          "type": {
+            "type": "string"
+          },
+          "subscription": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "received",
+          "processed",
+          "type",
+          "subscription"
+        ]
+      },
+      "WebhookReplay": {
+        "type": "object",
+        "properties": {
+          "received": {
+            "type": "boolean",
+            "const": true
+          },
+          "already_processed": {
+            "type": "boolean",
+            "const": true
+          },
+          "rc_event_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "received",
+          "already_processed",
+          "rc_event_id"
+        ]
+      },
+      "WebhookSkipped": {
+        "type": "object",
+        "properties": {
+          "received": {
+            "type": "boolean",
+            "const": true
+          },
+          "skipped": {
+            "type": "boolean",
+            "const": true
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "received",
+          "skipped",
+          "reason"
+        ]
+      },
+      "AdminLoginRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "username",
+          "password"
+        ]
+      },
+      "AdminTotpLoginRequest": {
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "challengeToken",
+          "code"
+        ]
+      },
+      "AdminPasskeyOptionsRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "challengeToken": {
+            "type": "string"
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "username"
+            ]
+          },
+          {
+            "required": [
+              "challengeToken"
+            ]
+          }
+        ],
+        "additionalProperties": true
+      },
+      "AdminPasskeyVerifyRequest": {
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": "string"
+          },
+          "response": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "challengeId",
+          "response"
+        ]
+      },
+      "AdminBootstrapRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "default": "admin"
+          },
+          "newPassword": {
+            "type": "string"
+          },
+          "currentPassword": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "newPassword"
+        ]
+      },
+      "AdminPasswordChangeRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
+      },
+      "AdminPasswordChangeResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "token": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "admin": {
+            "$ref": "#/components/schemas/Admin"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "ok",
+          "token",
+          "expiresAt",
+          "admin"
+        ]
+      },
+      "TotpSetupResponse": {
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string"
+          },
+          "otpauthUri": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "secret",
+          "otpauthUri"
+        ]
+      },
+      "TotpCodeRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "code"
+        ]
+      },
+      "TotpEnabledResponse": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "enabled"
+        ]
+      },
+      "TotpRemoveRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "TotpRemovedResponse": {
+        "type": "object",
+        "properties": {
+          "removed": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "removed"
+        ]
+      },
+      "PasskeyOptionsResponse": {
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": "string"
+          },
+          "options": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "challengeId",
+          "options"
+        ]
+      },
+      "PasskeyRegistrationVerifyRequest": {
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": "string"
+          },
+          "response": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "challengeId",
+          "response"
+        ]
+      },
+      "PasskeyCreatedResponse": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "created"
+        ]
+      },
+      "PasskeyRemoveRequest": {
+        "type": "object",
+        "properties": {
+          "credentialId": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "credentialId"
+        ]
+      },
+      "PasskeyRemovedResponse": {
+        "type": "object",
+        "properties": {
+          "removed": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "removed"
+        ]
+      },
+      "WebhookIgnoredKnown": {
+        "type": "object",
+        "properties": {
+          "received": {
+            "type": "boolean",
+            "const": true
+          },
+          "ignored": {
+            "type": "boolean",
+            "const": true
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "received",
+          "ignored",
+          "type"
+        ],
+        "additionalProperties": false
+      },
+      "WebhookIgnoredUnknownType": {
+        "type": "object",
+        "properties": {
+          "received": {
+            "type": "boolean",
+            "const": true
+          },
+          "ignored": {
+            "type": "boolean",
+            "const": true
+          },
+          "reason": {
+            "type": "string",
+            "const": "unknown_type"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "received",
+          "ignored",
+          "reason",
+          "type"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}
