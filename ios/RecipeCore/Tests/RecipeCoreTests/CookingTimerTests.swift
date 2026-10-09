@@ -46,3 +46,47 @@ func timerHandlesZeroClockReversalAndRestart() {
     timer.start(at: start.addingTimeInterval(40))
     #expect(timer.deadline == start.addingTimeInterval(50))
 }
+
+@Test
+func multipleTimersRestoreIndependentlyAfterBackgroundElapsed() throws {
+    let start = Date(timeIntervalSince1970: 1_700_000_000)
+    var oven = CookingTimer(durationSeconds: 900)
+    var rice = CookingTimer(durationSeconds: 120)
+    oven.start(at: start)
+    rice.start(at: start.addingTimeInterval(20))
+
+    // Encode running deadlines as if the app were terminated before completion.
+    let saved = try JSONEncoder().encode([oven, rice])
+    let restored = try JSONDecoder().decode([CookingTimer].self, from: saved)
+    #expect(restored.count == 2)
+    #expect(restored[0].remaining(at: start.addingTimeInterval(150)) == 750)
+    #expect(restored[1].remaining(at: start.addingTimeInterval(150)) == 0)
+    #expect(restored[1].isRunning)
+
+    // Only an explicit restart resets a completed timer; the sibling is unchanged.
+    var restartedRice = restored[1]
+    restartedRice.start(at: start.addingTimeInterval(151))
+    #expect(restartedRice.deadline == start.addingTimeInterval(271))
+    #expect(restored[0].deadline == start.addingTimeInterval(900))
+}
+
+@Test
+func pausedTimerStaysPausedWhileSiblingExpiresAcrossRestoration() throws {
+    let start = Date(timeIntervalSince1970: 1_700_000_000)
+    var short = CookingTimer(durationSeconds: 60)
+    var long = CookingTimer(durationSeconds: 600)
+    short.start(at: start)
+    long.start(at: start)
+    short.pause(at: start.addingTimeInterval(20.5))
+
+    let data = try JSONEncoder().encode([short, long])
+    var restored = try JSONDecoder().decode([CookingTimer].self, from: data)
+    #expect(!restored[0].isRunning)
+    #expect(restored[0].remaining(at: start.addingTimeInterval(1_000)) == 40)
+    #expect(restored[1].remaining(at: start.addingTimeInterval(1_000)) == 0)
+    restored[1].reset()
+    #expect(restored[1].remaining(at: start.addingTimeInterval(1_000)) == 600)
+    #expect(restored[0].remainingSeconds == 40)
+    restored[0].start(at: start.addingTimeInterval(1_000))
+    #expect(restored[0].deadline == start.addingTimeInterval(1_040))
+}
