@@ -478,12 +478,11 @@ private struct PendingShareRow: View {
                     .lineLimit(4)
                     .textSelection(.enabled)
             }
-            Text(
-                "Received \(receipt.receivedAt.formatted(
-                    Date.FormatStyle(date: .abbreviated, time: .shortened)
-                        .locale(RecipeLanguage.active)
-                ))"
+            let receivedAt = receipt.receivedAt.formatted(
+                Date.FormatStyle(date: .abbreviated, time: .shortened)
+                    .locale(RecipeLanguage.active)
             )
+            Text("Received \(receivedAt)")
                 .lineLimit(1)
                 .font(RecipeTheme.text(12))
                 .foregroundStyle(.secondary)

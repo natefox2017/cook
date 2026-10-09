@@ -36,6 +36,8 @@ final class RecipeUITests: XCTestCase {
             ).firstMatch.exists)
         confirmation.buttons["OK"].tap()
 
+        app.navigationBars.buttons.firstMatch.tap()
+
         let groceriesTab = app.tabBars.buttons["Groceries"]
         waitUntilReady(groceriesTab)
         groceriesTab.tap()
@@ -136,9 +138,10 @@ final class RecipeUITests: XCTestCase {
         assertCookingStep("Step 2 of 3", in: app)
 
         let startTimer = app.buttons["timerStart"]
-        reveal(startTimer, in: app, scrollView: app.scrollViews["cookingScroll"], maximumSwipes: 2)
+        revealCookingTimer(startTimer, in: app)
         startTimer.tap()
         let pauseTimer = app.buttons["timerPause"]
+        XCTAssertTrue(pauseTimer.waitForExistence(timeout: 10), app.debugDescription)
         waitUntilReady(pauseTimer)
         pauseTimer.tap()
         waitUntilReady(app.buttons["timerStart"])
@@ -157,6 +160,7 @@ final class RecipeUITests: XCTestCase {
         waitUntilReady(app.buttons["closeCookingButton"])
         app.buttons["closeCookingButton"].tap()
         waitUntilReady(app.buttons["startCooking"])
+        app.navigationBars.buttons.firstMatch.tap()
         waitUntilReady(app.tabBars.buttons["Recipes"])
     }
 
@@ -180,12 +184,7 @@ final class RecipeUITests: XCTestCase {
         waitUntilReady(app.buttons["startCooking"])
 
         let cookFromStep = app.buttons["cookFromStep.4"]
-        reveal(
-            cookFromStep,
-            in: app,
-            scrollView: app.scrollViews["recipeDetailScroll"],
-            maximumSwipes: 8
-        )
+        revealRecipeStepAction(cookFromStep, in: app)
         cookFromStep.tap()
 
         assertCookingStep("Step 4 of 8", in: app)
@@ -201,13 +200,11 @@ final class RecipeUITests: XCTestCase {
 
         for _ in 0..<2 {
             let start = app.buttons["timerStart"].firstMatch
-            reveal(start, in: app, scrollView: app.scrollViews["cookingScroll"], maximumSwipes: 5)
+            revealCookingTimer(start, in: app)
             start.tap()
         }
 
-        let timers = app.buttons.matching(
-            NSPredicate(format: "label BEGINSWITH %@", "Timers")
-        ).firstMatch
+        let timers = app.buttons["cookingTimersButton"]
         waitUntilReady(timers)
         timers.tap()
 
@@ -223,12 +220,7 @@ final class RecipeUITests: XCTestCase {
 
         app.buttons["closeCookingButton"].tap()
         let restartAtStepTwo = app.buttons["cookFromStep.2"]
-        reveal(
-            restartAtStepTwo,
-            in: app,
-            scrollView: app.scrollViews["recipeDetailScroll"],
-            maximumSwipes: 8
-        )
+        revealRecipeStepAction(restartAtStepTwo, in: app)
         restartAtStepTwo.tap()
         assertCookingStep("Step 2 of 8", in: app)
         XCTAssertTrue(app.staticTexts["1 done"].exists == false)
@@ -284,6 +276,8 @@ final class RecipeUITests: XCTestCase {
         add.tap()
         XCTAssertTrue(app.staticTexts["Weeknight"].waitForExistence(timeout: 8))
 
+        app.navigationBars.buttons.firstMatch.tap()
+
         let recipesTab = app.tabBars.buttons["Recipes"]
         waitUntilReady(recipesTab)
         recipesTab.tap()
@@ -300,9 +294,19 @@ final class RecipeUITests: XCTestCase {
             NSPredicate(format: "label CONTAINS %@", "Weeknight")
         ).firstMatch
         waitUntilReady(weeknightMembership)
-        weeknightMembership.tap()
-        XCTAssertTrue((weeknightMembership.value as? String) != "Not in collection")
+        weeknightMembership
+            .coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .tap()
+        let membershipEnabled = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value == %@", "In collection"),
+            object: weeknightMembership
+        )
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [membershipEnabled], timeout: 5), .completed,
+            app.debugDescription
+        )
         app.navigationBars.buttons["Done"].tap()
+        app.navigationBars.buttons.firstMatch.tap()
 
         profile.tap()
         waitUntilReady(app.buttons["profile.collections"])
@@ -973,6 +977,71 @@ final class RecipeUITests: XCTestCase {
             }
         }
         waitUntilReady(element, file: file, line: line)
+    }
+
+    @MainActor
+    private func revealCookingTimer(
+        _ timer: XCUIElement, in app: XCUIApplication, file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let scrollView = app.scrollViews["cookingScroll"]
+        let previousStep = app.buttons["previousStep"]
+
+        for _ in 0..<5 {
+            if timer.exists && timer.isHittable
+                && timer.frame.maxY <= previousStep.frame.minY
+            {
+                break
+            }
+            scrollView.swipeUp()
+        }
+
+        waitUntilReady(timer, file: file, line: line)
+        XCTAssertLessThanOrEqual(
+            timer.frame.maxY, previousStep.frame.minY,
+            "The timer control must sit above the fixed cooking controls.",
+            file: file, line: line
+        )
+    }
+
+    @MainActor
+    private func revealRecipeStepAction(
+        _ action: XCUIElement, in app: XCUIApplication, file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let scrollView = app.scrollViews["recipeDetailScroll"]
+        let startCooking = app.buttons["startCooking"]
+
+        for _ in 0..<8 {
+            if action.exists && action.isHittable
+                && action.frame.maxY <= startCooking.frame.minY
+            {
+                break
+            }
+            if action.exists && action.frame.maxY < scrollView.frame.minY {
+                scrollView.swipeDown()
+            } else {
+                scrollView.swipeUp()
+            }
+        }
+
+        if !action.exists {
+            for _ in 0..<8 {
+                if action.exists && action.isHittable
+                    && action.frame.maxY <= startCooking.frame.minY
+                {
+                    break
+                }
+                scrollView.swipeDown()
+            }
+        }
+
+        waitUntilReady(action, file: file, line: line)
+        XCTAssertLessThanOrEqual(
+            action.frame.maxY, startCooking.frame.minY,
+            "The step action must sit above the fixed recipe controls.",
+            file: file, line: line
+        )
     }
 
     @MainActor

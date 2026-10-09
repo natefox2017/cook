@@ -489,6 +489,7 @@ struct CookingView: View {
                 }
             }
             .disabled(recipe == nil)
+            .accessibilityIdentifier("cookingTimersButton")
 
             Button("Ingredients", systemImage: "list.bullet") {
                 isShowingIngredients = true

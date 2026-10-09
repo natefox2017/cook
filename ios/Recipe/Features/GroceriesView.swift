@@ -196,7 +196,11 @@ struct GroceriesView: View {
                     ? LocalizedStringKey("Mark \(item.name) as to buy")
                     : LocalizedStringKey("Mark \(item.name) as bought")
             )
-            .accessibilityValue(item.isChecked ? LocalizedStringKey("To buy") : LocalizedStringKey("Bought"))
+            .accessibilityValue(
+                item.isChecked
+                    ? LocalizedStringKey("Bought")
+                    : LocalizedStringKey("To buy")
+            )
             .accessibilityIdentifier("grocery.check.\(item.id.uuidString)")
 
             Button {

@@ -47,12 +47,7 @@ final class RecipeAuthServiceTests: XCTestCase {
         AuthMockURLProtocol.setHandler { request in
             switch request.url?.path {
             case "/auth/v1/signup":
-                return .json(
-                    payload: [
-                        "user": userPayload(id: userID, email: email),
-                        "session": NSNull(),
-                    ]
-                )
+                return .json(payload: userPayload(id: userID, email: email))
             case "/auth/v1/token":
                 return .json(
                     statusCode: 400,
@@ -122,12 +117,7 @@ final class RecipeAuthServiceTests: XCTestCase {
         AuthMockURLProtocol.setHandler { request in
             switch request.url?.path {
             case "/auth/v1/signup":
-                return .json(
-                    payload: [
-                        "user": userPayload(id: userID, email: email),
-                        "session": NSNull(),
-                    ]
-                )
+                return .json(payload: userPayload(id: userID, email: email))
             case "/auth/v1/token":
                 return .json(payload: sessionPayload(id: userID, email: email))
             default:

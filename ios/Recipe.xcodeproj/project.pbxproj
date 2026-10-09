@@ -22,6 +22,7 @@
         B30000000000000000000024 = { isa = PBXBuildFile; fileRef = "51CF165429D76650010C25E5"; };
         B30000000000000000000004 = { isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "ShareExtension/ShareExtension.entitlements"; sourceTree = "<group>"; };
         B30000000000000000000005 = { isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "RecipeShare.appex"; sourceTree = "BUILT_PRODUCTS_DIR"; };
+        A12900000000000000000010 = { isa = PBXFileReference; explicitFileType = "wrapper.cfbundle"; includeInIndex = 0; path = "RecipeTests.xctest"; sourceTree = "BUILT_PRODUCTS_DIR"; };
         B30000000000000000000006 = { isa = PBXBuildFile; fileRef = "B30000000000000000000001"; };
         B30000000000000000000007 = { isa = PBXBuildFile; fileRef = "B30000000000000000000002"; };
         B30000000000000000000008 = { isa = PBXBuildFile; productRef = "81B19488E5437AEDF9981AA7"; };
@@ -149,7 +150,9 @@
 		F1A200000000000000000001 = { isa = PBXBuildFile; fileRef = "F1A100000000000000000001"; };
 		CA2500000000000000000003 = { isa = PBXBuildFile; fileRef = "CA2500000000000000000001"; };
 		CA2500000000000000000004 = { isa = PBXBuildFile; fileRef = "CA2500000000000000000002"; };
-		CA2500000000000000000011 = { isa = PBXBuildFile; fileRef = "CA2500000000000000000010"; };
+        A12900000000000000000011 = { isa = PBXBuildFile; fileRef = "CA2500000000000000000010"; };
+        A12900000000000000000012 = { isa = PBXBuildFile; productRef = "A12900000000000000000015"; };
+        A12900000000000000000013 = { isa = PBXBuildFile; productRef = "A12900000000000000000016"; };
 		7C1B02F888659FCC7085FB42 = {
 			isa = "PBXFileReference";
 			lastKnownFileType = "sourcecode.swift";
@@ -326,12 +329,30 @@
 			isa = "PBXBuildFile";
 			fileRef = "2CC9A60EF26491F8B85CECA8";
 		};
-		E6070659E02EF150F006F92C = {
-			isa = "PBXSourcesBuildPhase";
-			buildActionMask = 2147483647;
-			files = ("80F7A89205DA9433FDFE452E", "CA2500000000000000000011",);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
+        E6070659E02EF150F006F92C = {
+            isa = "PBXSourcesBuildPhase";
+            buildActionMask = 2147483647;
+            files = ("80F7A89205DA9433FDFE452E",);
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+        A12900000000000000000020 = {
+            isa = "PBXSourcesBuildPhase";
+            buildActionMask = 2147483647;
+            files = ("A12900000000000000000011",);
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+        A12900000000000000000021 = {
+            isa = "PBXFrameworksBuildPhase";
+            buildActionMask = 2147483647;
+            files = ("A12900000000000000000012", "A12900000000000000000013",);
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+        A12900000000000000000022 = {
+            isa = "PBXResourcesBuildPhase";
+            buildActionMask = 2147483647;
+            files = ();
+            runOnlyForDeploymentPostprocessing = 0;
+        };
 		044ABDC09B927641F43BEF9C = {
 			isa = "PBXBuildFile";
 			fileRef = "E9F6D189A93398EC97CBA986";
@@ -379,11 +400,21 @@
 			package = "CA2500000000000000000005";
 			productName = "Supabase";
 		};
-		CA2500000000000000000008 = {
-			isa = "XCSwiftPackageProductDependency";
-			package = "CA2500000000000000000005";
-			productName = "Supabase";
-		};
+        CA2500000000000000000008 = {
+            isa = "XCSwiftPackageProductDependency";
+            package = "CA2500000000000000000005";
+            productName = "Supabase";
+        };
+        A12900000000000000000015 = {
+            isa = "XCSwiftPackageProductDependency";
+            package = "E0BD853C4F100DAA8DCCA53D";
+            productName = "RecipeCore";
+        };
+        A12900000000000000000016 = {
+            isa = "XCSwiftPackageProductDependency";
+            package = "CA2500000000000000000005";
+            productName = "Supabase";
+        };
 		AADB53B4D5F92463C9E80ECC = {
 			isa = "PBXBuildFile";
 			productRef = "81B19488E5437AEDF9981AA7";
@@ -424,7 +455,7 @@
 		};
 		29493F7A0A1DC0A29D62667D = {
 			isa = "PBXGroup";
-			children = ("33EB7E4766593ED0F8C0DADC", "36E3FB1B84BF6F1C18ECDF2B", "B30000000000000000000005",);
+			children = ("33EB7E4766593ED0F8C0DADC", "36E3FB1B84BF6F1C18ECDF2B", "B30000000000000000000005", "A12900000000000000000010",);
 			name = "Products";
 			sourceTree = "<group>";
 		};
@@ -516,7 +547,7 @@
 			};
 			name = "Debug";
 		};
-		DF6CC9A37097903E086E3707 = {
+        DF6CC9A37097903E086E3707 = {
 			isa = "XCBuildConfiguration";
 			buildSettings = {
 				CODE_SIGN_STYLE = "Automatic";
@@ -527,9 +558,73 @@
 				TEST_TARGET_NAME = "Recipe";
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
 			};
-			name = "Release";
-		};
-		37E9DDA732639BAC9BF1722A = {
+            name = "Release";
+        };
+        A12900000000000000000030 = {
+            isa = "XCBuildConfiguration";
+            buildSettings = {
+                BUNDLE_LOADER = "$(TEST_HOST)";
+                CODE_SIGN_STYLE = "Automatic";
+                GENERATE_INFOPLIST_FILE = "YES";
+                IPHONEOS_DEPLOYMENT_TARGET = "18.0";
+                PRODUCT_BUNDLE_IDENTIFIER = "com.modelhub.recipeTests";
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+                SWIFT_VERSION = "6.0";
+                TARGETED_DEVICE_FAMILY = "1";
+                TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Recipe.app/Recipe";
+                LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
+            };
+            name = "Debug";
+        };
+        A12900000000000000000031 = {
+            isa = "XCBuildConfiguration";
+            buildSettings = {
+                BUNDLE_LOADER = "$(TEST_HOST)";
+                CODE_SIGN_STYLE = "Automatic";
+                GENERATE_INFOPLIST_FILE = "YES";
+                IPHONEOS_DEPLOYMENT_TARGET = "18.0";
+                PRODUCT_BUNDLE_IDENTIFIER = "com.modelhub.recipeTests";
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+                SWIFT_VERSION = "6.0";
+                TARGETED_DEVICE_FAMILY = "1";
+                TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Recipe.app/Recipe";
+                LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
+            };
+            name = "Release";
+        };
+        A12900000000000000000032 = {
+            isa = "XCConfigurationList";
+            buildConfigurations = ("A12900000000000000000030", "A12900000000000000000031",);
+            defaultConfigurationIsVisible = 0;
+            defaultConfigurationName = "Release";
+        };
+        A12900000000000000000033 = {
+            isa = "PBXContainerItemProxy";
+            containerPortal = "636D07FE5D129B92AEF8A1B0";
+            proxyType = 1;
+            remoteGlobalIDString = "5DF6F94716FBD940099F2324";
+            remoteInfo = "Recipe";
+        };
+        A12900000000000000000034 = {
+            isa = "PBXTargetDependency";
+            target = "5DF6F94716FBD940099F2324";
+            targetProxy = "A12900000000000000000033";
+        };
+        A12900000000000000000035 = {
+            isa = "PBXNativeTarget";
+            buildConfigurationList = "A12900000000000000000032";
+            buildPhases = ("A12900000000000000000020", "A12900000000000000000021", "A12900000000000000000022",);
+            buildRules = ();
+            dependencies = ("A12900000000000000000034",);
+            name = "RecipeTests";
+            packageProductDependencies = ("A12900000000000000000015", "A12900000000000000000016",);
+            productName = "RecipeTests";
+            productReference = "A12900000000000000000010";
+            productType = "com.apple.product-type.bundle.unit-test";
+        };
+        37E9DDA732639BAC9BF1722A = {
 			isa = "XCConfigurationList";
 			buildConfigurations = ("2877A2454DF336449D939893", "DF6CC9A37097903E086E3707",);
 			defaultConfigurationIsVisible = 0;
@@ -613,6 +708,10 @@
 						CreatedOnToolsVersion = "26.0";
 						TestTargetID = "5DF6F94716FBD940099F2324";
 					};
+					A12900000000000000000035 = {
+						CreatedOnToolsVersion = "27.0";
+						TestTargetID = "5DF6F94716FBD940099F2324";
+					};
 				};
 			};
 			buildConfigurationList = "C845F4CCB9DB0D7AEAC322D7";
@@ -625,7 +724,7 @@
 			productRefGroup = "29493F7A0A1DC0A29D62667D";
 			projectDirPath = "";
 			projectRoot = "";
-			targets = ("5DF6F94716FBD940099F2324", "4B556C01A3B5485ECB1BD618", "B3000000000000000000000E",);
+			targets = ("5DF6F94716FBD940099F2324", "4B556C01A3B5485ECB1BD618", "B3000000000000000000000E", "A12900000000000000000035",);
 		};
 	};
 	rootObject = "636D07FE5D129B92AEF8A1B0";
