@@ -487,6 +487,28 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testCookingProgressRestoresAfterAppRelaunch() {
+        let app = launchSeededApp()
+        defer {
+            app.terminate()
+        }
+
+        openSamplePasta(in: app)
+        app.buttons["startCooking"].tap()
+        waitUntilReady(app.buttons["nextStep"])
+        app.buttons["nextStep"].tap()
+        assertCookingStep("Step 2 of 3", in: app)
+
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--uitesting-reset-cooking-sessions" }
+        app.launch()
+        waitUntilReady(app.buttons["addRecipeButton"])
+        openSamplePasta(in: app)
+        app.buttons["startCooking"].tap()
+        assertCookingStep("Step 2 of 3", in: app)
+    }
+
+    @MainActor
     func testExportFormatsAreAvailableInBothEntryPoints() {
         let app = launchSeededApp()
         defer {
@@ -957,7 +979,12 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     private func launchSeededApp(storeKitTestProductID: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--uitesting-locale", "en"]
+        app.launchArguments = [
+            "--uitesting",
+            "--uitesting-reset-cooking-sessions",
+            "--uitesting-locale",
+            "en",
+        ]
         if let storeKitTestProductID {
             app.launchEnvironment["RECIPE_STOREKIT_TEST_PRODUCT_IDS"] = storeKitTestProductID
         }
