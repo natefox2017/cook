@@ -35,9 +35,9 @@ Linux x86_64; Deno 2.9.6 / TypeScript 6.0.3; code commit `08b6c8f`.
   temporary external lockfile; these are API-compatibility checks, not a claim
   that their deployment dependency graphs are now frozen.
 - **PASS:** baseline and pinned JSR/npm graph equality, and `git diff --check`.
-- **NOT RUN:** Supabase CLI bundling, actual Edge Runtime, staging/production
-  authentication, database/RLS, Storage or deployed health HTTP checks. These
-  remain required under #135/#141 before any release.
+- **NOT RUN:** production/staging authentication, database/RLS, Storage or
+  deployed health HTTP checks. The isolated local Edge Runtime and GoTrue check
+  completed later and is recorded below.
 
 The two new Auth tests use only synthetic values and a fetch stub, with no
 network permission. They verify a missing bearer is rejected, a user bearer and
@@ -88,3 +88,75 @@ deno test --config=supabase/functions/health/deno.json --frozen --cached-only \
 This check used no production Auth token, database, internet connection, or
 deployment. The 403 fixture is an error-boundary check, not evidence of a live
 health authorization rule.
+
+## Actual isolated Edge Runtime and GoTrue verification
+
+On 2026-10-09 UTC, code snapshot
+`2a586421d5ff2c982db06aca2666211c89af2f45` (PR #205 head immediately before
+this documentation follow-up) was copied into a disposable local Supabase
+project and served through Kong and Supabase Edge Runtime. Supabase CLI 2.120.0
+ran only Postgres, GoTrue, Kong, and Edge Runtime. The project used
+`issue155-edge-20261009-60181` on API/database ports 60181/60182; it did not use
+staging or production.
+
+- **Health:** anonymous, forged, and expired signed user JWT requests returned
+  401. A temporary confirmed user created in local GoTrue signed in through the
+  password grant; that GoTrue-issued token returned 200 from health.
+- **OpenAPI:** GET returned 200 and the exact bundled document (53,455 bytes);
+  every `$ref` resolved within the document. GET and OPTIONS returned wildcard
+  CORS; OPTIONS returned 200. POST returned 405 with CORS headers. The served
+  handler imports the bundled JSON and contains no `fetch()` call.
+- The temporary user and isolated project were deleted after the check.
+
+### Reproduce locally
+
+From the repository root, create a fresh temporary CLI project, copy only the
+shared helper and these two functions, and configure a unique project ID and
+unused API/database ports. Set `[functions.health] verify_jwt = true` and
+`[functions.openapi] verify_jwt = false` in its `supabase/config.toml`.
+
+```sh
+fixture=.tmp/issue-155-edge-runtime
+mkdir -p "$fixture/supabase/functions"
+supabase init --workdir "$fixture" --yes
+cp -R supabase/functions/_shared supabase/functions/health \
+  supabase/functions/openapi "$fixture/supabase/functions/"
+```
+
+In the generated config, set a unique `project_id`, use free API/database
+ports (this run used 60181/60182 and shadow port 60183), and append:
+
+```toml
+[functions.health]
+verify_jwt = true
+
+[functions.openapi]
+verify_jwt = false
+```
+
+Start only the services used by this check, then serve both functions through
+the local Kong route. The CLI prints synthetic local keys at startup; use them
+only for the temporary GoTrue user-creation and password-grant requests, and
+do not copy them into logs or commit them.
+
+```sh
+supabase start --workdir "$fixture" \
+  -x realtime,storage-api,imgproxy,mailpit,postgrest,postgres-meta,studio,logflare,vector,supavisor
+supabase functions serve --workdir "$fixture"
+```
+
+Against `http://127.0.0.1:<api-port>`, create a confirmed synthetic user via
+`/auth/v1/admin/users`, obtain its token via
+`/auth/v1/token?grant_type=password`, and request
+`/functions/v1/health` without a token, with a forged token, with an expired
+HS256 token for that user, and with the GoTrue-issued token. For OpenAPI, GET
+`/functions/v1/openapi`, resolve every `$ref` locally, send an OPTIONS request
+with an Origin and requested GET method, and send POST. Expected statuses are
+401/401/401/200 for health and 200/200/405 for OpenAPI GET/OPTIONS/POST.
+
+Afterwards stop only this fixture with
+`supabase stop --workdir "$fixture" --project-id <fixture-project-id> --no-backup`.
+The run record is retained locally at
+`.tmp/issue-155-provenance/edge-runtime-2026-10-09.md`; it is intentionally not
+committed. This local check does not establish production bundle parity or
+production/staging behavior.
