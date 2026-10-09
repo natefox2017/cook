@@ -68,3 +68,30 @@ public struct CookingReminderPlan: Equatable, Sendable {
         }
     }
 }
+
+/// Only exact short commands can move cooking progress; free-form speech is ignored.
+public enum CookingVoiceCommand: String, Codable, Equatable, Sendable {
+    case next
+    case previous
+    case repeatStep
+    case stop
+}
+
+public enum CookingVoiceCommandParser {
+    public static func parse(_ transcript: String) -> CookingVoiceCommand? {
+        let words = transcript.lowercased().split { !$0.isLetter && !$0.isNumber }
+        let command = words.joined(separator: " ")
+        switch command {
+        case "next", "next step":
+            return .next
+        case "previous", "previous step", "back", "go back", "privious":
+            return .previous
+        case "repeat", "repeat step", "read step":
+            return .repeatStep
+        case "stop listening":
+            return .stop
+        default:
+            return nil
+        }
+    }
+}
