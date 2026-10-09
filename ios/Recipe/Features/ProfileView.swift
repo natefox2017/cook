@@ -560,7 +560,13 @@ struct NotificationPreferencesView: View {
         settings.timerNotifications = enabled
         do {
             try store.updateSettings(settings)
-            if !enabled { Task { await RecipeNotificationCleanup.removeTimerReminders() } }
+            if !enabled {
+                Task {
+                    await RecipeNotificationCleanup.removeTimerReminders(
+                        isUITesting: RecipeUITestNamespace.isUITesting
+                    )
+                }
+            }
         } catch { errorMessage = error.localizedDescription }
     }
 }
@@ -568,22 +574,10 @@ struct NotificationPreferencesView: View {
 @MainActor
 enum RecipeNotificationCleanup {
     static func removeTimerReminders(isUITesting: Bool = false) async {
-        let center = UNUserNotificationCenter.current()
         let prefixes = isUITesting
             ? ["recipe.uitesting.timer."]
             : ["cook.timer.", "recipe.timer."]
-        let pending = await center.pendingNotificationRequests()
-        center.removePendingNotificationRequests(
-            withIdentifiers: pending.map(\.identifier).filter { id in
-                prefixes.contains { id.hasPrefix($0) }
-            }
-        )
-        let delivered = await center.deliveredNotifications()
-        center.removeDeliveredNotifications(
-            withIdentifiers: delivered.map(\.request.identifier).filter { id in
-                prefixes.contains { id.hasPrefix($0) }
-            }
-        )
+        await TimerNotifications.cancelAll(matchingPrefixes: prefixes)
     }
 }
 
@@ -674,7 +668,7 @@ enum RecipeLocalDataDeletion {
             cleanupError = cleanupError ?? error
         }
 
-        await RecipeNotificationCleanup.removeTimerReminders()
+        await RecipeNotificationCleanup.removeTimerReminders(isUITesting: isUITesting)
 
         // Clear independently stored personal data even if legacy file deletion
         // failed. The old sync lineage was invalidated before the library write.

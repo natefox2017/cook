@@ -163,6 +163,51 @@ final class RecipeTestIsolationTests: XCTestCase {
 
 @MainActor
 final class RecipeTimerNotificationTests: XCTestCase {
+    func testPrefixCleanupWaitsForQueuedAddAndPreservesNormalTimer() async throws {
+        let center = try await authorizedCenter()
+        let recipeID = UUID()
+        let timerID = UUID()
+        let testID = RecipeUITestNamespace.timerNotificationID(
+            recipeID: recipeID,
+            timerID: timerID,
+            isUITesting: true
+        )
+        let normalID = RecipeUITestNamespace.timerNotificationID(
+            recipeID: recipeID,
+            timerID: timerID,
+            isUITesting: false
+        )
+        let testPrefix = RecipeUITestNamespace.timerNotificationPrefix(
+            recipeID: recipeID,
+            isUITesting: true
+        )
+        defer {
+            TimerNotifications.cancel(id: testID)
+            TimerNotifications.cancel(id: normalID)
+        }
+
+        let queuedTestSchedule = TimerNotifications.schedule(
+            id: testID,
+            title: "QA timer removed during scheduling",
+            seconds: 120
+        )
+        let normalSchedule = TimerNotifications.schedule(
+            id: normalID,
+            title: "Normal timer preserved",
+            seconds: 120
+        )
+        await TimerNotifications.cancelAll(matchingPrefixes: [testPrefix])
+        try await queuedTestSchedule.value
+        try await normalSchedule.value
+
+        await verifyRemoval(of: [testID], from: center)
+        let pending = await center.pendingNotificationRequests()
+        XCTAssertEqual(
+            pending.first { $0.identifier == normalID }?.content.body,
+            "Normal timer preserved"
+        )
+    }
+
     func testLatestNotificationSurvivesRepeatedCancelAndReschedule() async throws {
         let center = try await authorizedCenter()
         let id = "recipe.uitesting.timer.\(UUID().uuidString)"
@@ -267,12 +312,17 @@ final class RecipeTimerNotificationTests: XCTestCase {
         // Observe only disposable test identifiers; never remove the user's requests.
         for _ in 0..<100 {
             let pending = await center.pendingNotificationRequests()
-            if pending.allSatisfy({ !identifiers.contains($0.identifier) }) {
+            let delivered = await center.deliveredNotifications()
+            let hasPending = pending.contains { identifiers.contains($0.identifier) }
+            let hasDelivered = delivered.contains {
+                identifiers.contains($0.request.identifier)
+            }
+            if !hasPending && !hasDelivered {
                 return
             }
             try? await Task.sleep(for: .milliseconds(50))
         }
-        XCTFail("The canceled test notification remained pending.")
+        XCTFail("A canceled test notification remained in the notification center.")
     }
 }
 
