@@ -218,7 +218,7 @@ struct RecipeEditorView: View {
         HStack {
             Text(LocalizedStringKey(title))
             Spacer()
-            TextField(placeholder, text: text).keyboardType(.numberPad)
+            TextField(RecipeLanguage.localized(placeholder), text: text).keyboardType(.numberPad)
                 .multilineTextAlignment(.trailing).frame(maxWidth: 100)
                 .accessibilityLabel(Text(LocalizedStringKey(title)))
         }
