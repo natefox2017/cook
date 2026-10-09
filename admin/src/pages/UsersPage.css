@@ -68,7 +68,7 @@
 .users-page button:not(.admin-select-trigger):focus-visible { outline: 3px solid rgb(104 85 219 / 28%); outline-offset: 2px; }
 .users-reset { padding: 6px 7px; border: 0; color: var(--users-brand) !important; background: transparent; font-size: 12px !important; font-weight: 600; cursor: pointer; }
 
-.users-table-wrap { overflow-x: auto; border-top: 1px solid var(--users-border); }
+.users-table-wrap { contain: paint; overflow-x: auto; border-top: 1px solid var(--users-border); }
 .users-table { width: 100%; min-width: 1180px; border-collapse: collapse; text-align: left; }
 .users-table th { height: 40px; padding: 0 12px; color: #888e9c; background: #fafbfc; font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; }
 .users-table th:first-child,
