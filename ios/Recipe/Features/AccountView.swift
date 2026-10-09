@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Presents RecipePouch account sign-in, recovery, and session controls in a compact sheet.
+// Purpose: Presents Recipe Pals account sign-in, recovery, and session controls in a compact sheet.
 
 import AuthenticationServices
 import Foundation
@@ -12,6 +12,7 @@ struct AccountView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .body) private var providerButtonHeight: CGFloat = 50
     @State private var auth = RecipeAuthService.shared
     @State private var isEmailExpanded = false
     @State private var usesPasswordSignIn = false
@@ -49,23 +50,15 @@ struct AccountView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(RecipeTheme.accentForeground)
-                        .frame(width: 56, height: 44)
-                        .background(RecipeTheme.card, in: Capsule())
-                        .overlay {
-                            Capsule()
-                                .strokeBorder(Color.secondary.opacity(0.16), lineWidth: 1)
-                        }
-                        .contentShape(Rectangle())
+            if #available(iOS 26.0, *) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    closeButton
                 }
-                .accessibilityLabel("Close")
-                .accessibilityIdentifier("account.close")
+                .sharedBackgroundVisibility(.hidden)
+            } else {
+                ToolbarItem(placement: .topBarTrailing) {
+                    closeButton
+                }
             }
         }
         .onChange(of: auth.state) { _, state in
@@ -90,9 +83,24 @@ struct AccountView: View {
     private var signedOutView: some View {
         ScrollView {
             VStack(spacing: RecipeSpacing.large) {
-                header("Welcome to RecipePouch", symbol: "leaf.fill", level: .hero)
+                VStack(spacing: RecipeSpacing.medium) {
+                    Image("RecipeBrand")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 88, height: 88)
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .accessibilityHidden(true)
 
-                VStack(spacing: RecipeSpacing.xSmall) {
+                    Text(verbatim: "Recipe Pals")
+                        .font(RecipeTheme.heading(.title))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("account.brand")
+                }
+                .frame(maxWidth: .infinity)
+
+                VStack(spacing: RecipeSpacing.small) {
                     SignInWithAppleButton(.signIn) { request in
                         let nonce = RecipeAuthService.makeAppleNonce()
                         appleNonce = nonce.raw
@@ -101,13 +109,13 @@ struct AccountView: View {
                     } onCompletion: { result in
                         handleAppleResult(result)
                     }
-                    // Keep Apple's localized native label and artwork, with the shared outline.
+                    // Apple's native artwork and authorization stay intact; only the geometry changes.
                     .signInWithAppleButtonStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .frame(height: providerButtonHeight)
+                    .clipShape(Capsule())
                     .overlay {
-                        RoundedRectangle(cornerRadius: 14)
+                        Capsule()
                             .strokeBorder(accountButtonBorderColor, lineWidth: 1)
                     }
                     .disabled(isAuthenticating)
@@ -130,6 +138,11 @@ struct AccountView: View {
 
                     if isEmailExpanded {
                         emailForm
+                            .padding(RecipeSpacing.medium)
+                            .background(
+                                RecipeTheme.card,
+                                in: RoundedRectangle(cornerRadius: 22)
+                            )
                     } else {
                         Button {
                             localMessage = nil
@@ -142,26 +155,16 @@ struct AccountView: View {
                                     .accessibilityHidden(true)
 
                                 Text("Continue with email")
-                                    .font(.system(.body, weight: .medium))
+                                    .multilineTextAlignment(.center)
                             }
-                            .frame(maxWidth: .infinity, minHeight: 50)
-                            .foregroundStyle(RecipeTheme.accentForeground)
-                            .background(
-                                RecipeTheme.accent.opacity(0.11),
-                                in: RoundedRectangle(cornerRadius: 14)
-                            )
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 14)
-                                    .strokeBorder(accountButtonBorderColor, lineWidth: 1)
-                            }
+                            .padding(.horizontal, RecipeSpacing.medium)
+                            .padding(.vertical, RecipeSpacing.xSmall)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(PrimaryButtonStyle())
                         .disabled(isAuthenticating)
                         .accessibilityIdentifier("account.email")
                     }
                 }
-                .padding(16)
-                .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 22))
 
                 if let feedback {
                     feedbackView(feedback)
@@ -174,6 +177,21 @@ struct AccountView: View {
             .padding(.bottom, 20)
         }
         .scrollDismissesKeyboard(.interactively)
+    }
+
+    private var closeButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Close")
+        .accessibilityIdentifier("account.close")
     }
 
     /// Reuses Google's four-color G while sharing the other sign-in buttons' geometry.
@@ -191,15 +209,16 @@ struct AccountView: View {
 
                 Text(LocalizedStringKey("Sign in with Google"))
                     .font(.system(.body, weight: .medium))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 16)
-            .frame(maxWidth: .infinity, minHeight: 50)
+            .padding(.horizontal, RecipeSpacing.medium)
+            .padding(.vertical, RecipeSpacing.xSmall)
+            .frame(maxWidth: .infinity, minHeight: providerButtonHeight)
             .foregroundStyle(Color(red: 31.0 / 255, green: 31.0 / 255, blue: 31.0 / 255))
-            .background(.white, in: RoundedRectangle(cornerRadius: 14))
+            .background(.white, in: Capsule())
             .overlay {
-                RoundedRectangle(cornerRadius: 14)
+                Capsule()
                     .strokeBorder(accountButtonBorderColor, lineWidth: 1)
             }
             .opacity(isAuthenticating ? 0.55 : 1)
@@ -311,6 +330,8 @@ struct AccountView: View {
                             ProgressView().tint(.white)
                         }
                         Text("Continue with Email")
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .buttonStyle(PrimaryButtonStyle())

@@ -441,13 +441,15 @@ final class RecipeUITests: XCTestCase {
 
         let emailEntry = app.buttons["account.email"]
         XCTAssertTrue(emailEntry.waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["Welcome to RecipePouch"].exists)
+        XCTAssertEqual(app.staticTexts["account.brand"].label, "Recipe Pals")
         let appleButton = app.buttons["account.apple"]
         let googleButton = app.buttons["account.google"]
         XCTAssertTrue(appleButton.waitForExistence(timeout: 8))
         XCTAssertTrue(googleButton.waitForExistence(timeout: 8))
         XCTAssertEqual(googleButton.frame.height, appleButton.frame.height, accuracy: 2)
         XCTAssertEqual(googleButton.frame.width, appleButton.frame.width, accuracy: 2)
+
+        attachScreenshot("Recipe Pals account sign in sheet", app: app)
 
         // Both providers and the email entry are shown without extra navigation.
         XCTAssertFalse(app.textFields["Email"].exists)
@@ -458,6 +460,11 @@ final class RecipeUITests: XCTestCase {
         XCTAssertTrue(app.buttons["account.passwordAlternative"].exists)
         XCTAssertFalse(app.textFields["account.emailCode"].exists)
         attachScreenshot("Expanded account sign in sheet", app: app)
+
+        app.buttons["account.passwordAlternative"].tap()
+        XCTAssertTrue(app.secureTextFields["Password"].waitForExistence(timeout: 8))
+        app.buttons["account.passwordAlternative"].tap()
+        XCTAssertFalse(app.secureTextFields["Password"].exists)
 
         app.buttons["account.close"].tap()
         XCTAssertTrue(app.buttons["profile.account"].waitForExistence(timeout: 8))
