@@ -3,6 +3,7 @@
 
 import Foundation
 import Observation
+import RecipeCore
 import StoreKit
 
 enum SubscriptionState: Equatable {
@@ -29,7 +30,7 @@ enum SubscriptionState: Equatable {
 @MainActor @Observable
 final class SubscriptionStore {
     private static let unconfiguredProductsMessage =
-        "Subscription products have not been configured in App Store Connect."
+        RecipeLanguage.localized("Subscription products have not been configured in App Store Connect.")
 
     private(set) var products: [Product] = []
     private(set) var trialEligibleProductIDs = Set<String>()
@@ -97,7 +98,7 @@ final class SubscriptionStore {
                 await refreshEntitlements()
                 if !state.hasEntitlement {
                     state = .unavailable(
-                        "No App Store subscription products are available for this storefront right now."
+                        RecipeLanguage.localized("No App Store subscription products are available for this storefront right now.")
                     )
                 }
                 // Product availability can be transient; keep load retryable.
@@ -130,7 +131,7 @@ final class SubscriptionStore {
             switch try await product.purchase() {
             case .success(let result):
                 guard case .verified(let transaction) = result else {
-                    message = "The App Store transaction could not be verified."
+                    message = RecipeLanguage.localized("The App Store transaction could not be verified.")
                     return
                 }
                 await finishAfterEntitlementDelivery(
@@ -139,13 +140,13 @@ final class SubscriptionStore {
                 )
 
             case .pending:
-                message = "Your purchase is pending approval."
+                message = RecipeLanguage.localized("Your purchase is pending approval.")
 
             case .userCancelled:
                 break
 
             @unknown default:
-                message = "The App Store returned an unknown purchase result."
+                message = RecipeLanguage.localized("The App Store returned an unknown purchase result.")
             }
         } catch {
             message = error.localizedDescription
@@ -171,11 +172,11 @@ final class SubscriptionStore {
             try await AppStore.sync()
             await refreshEntitlements()
             if state.hasEntitlement {
-                message = "Your active RecipePouch subscription has been restored."
+                message = RecipeLanguage.localized("Your active RecipePouch subscription has been restored.")
             } else if case .unavailable(let reason) = state {
                 message = reason
             } else {
-                message = "No active RecipePouch subscription was found for this App Store account."
+                message = RecipeLanguage.localized("No active RecipePouch subscription was found for this App Store account.")
             }
         } catch {
             message = error.localizedDescription
@@ -201,8 +202,7 @@ final class SubscriptionStore {
         guard entitledIDs.contains(transaction.productID) else {
             if reportUnavailable {
                 message =
-                    "The App Store verified your purchase, but the entitlement is not yet available. "
-                    + "Check your subscription status or try Restore Purchases."
+                    RecipeLanguage.localized("The App Store verified your purchase, but the entitlement is not yet available. Check your subscription status or try Restore Purchases.")
             }
             return
         }
@@ -268,7 +268,7 @@ final class SubscriptionStore {
             }
         } else if statusLookupFailed || groupIDs.isEmpty {
             state = .unavailable(
-                "The App Store subscription status could not be checked. Try again when you are online."
+                RecipeLanguage.localized("The App Store subscription status could not be checked. Try again when you are online.")
             )
         } else if renewalStates.contains(.revoked) {
             state = .revoked

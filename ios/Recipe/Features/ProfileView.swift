@@ -786,11 +786,11 @@ enum RecipeExportFormat {
     static func feedback(for result: Result<URL, Error>) -> String? {
         switch RecipeFileExportResult(result) {
         case .saved(let filename):
-            return "Export saved as \(filename)."
+            return RecipeLanguage.localized("Export saved as %@.", filename)
         case .cancelled:
             return nil
         case .failed(let message):
-            return "Export failed: \(message)"
+            return RecipeLanguage.localized("Export failed: %@", message)
         }
     }
 }

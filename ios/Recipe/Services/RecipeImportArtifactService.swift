@@ -77,7 +77,7 @@ struct RecipeImportArtifactService {
         try await verifySession(ownerID: ownerID)
         let data = try RecipeShareInbox.shared().fileData(for: receipt)
         guard let mimeType = receipt.payload.mimeType else {
-            throw RecipeRemoteImportError.transport("The shared file has no supported media type.")
+            throw RecipeRemoteImportError.transport(RecipeLanguage.localized("The shared file has no supported media type."))
         }
         let intent: UploadIntent = try await RecipeSupabase.client.functions.invoke(
             "recipe-import-artifacts",
@@ -95,7 +95,7 @@ struct RecipeImportArtifactService {
             return intent.artifact.artifactID
         }
         guard let path = intent.uploadPath, let token = intent.uploadToken else {
-            throw RecipeRemoteImportError.transport("The file upload could not be resumed.")
+            throw RecipeRemoteImportError.transport(RecipeLanguage.localized("The file upload could not be resumed."))
         }
 
         do {

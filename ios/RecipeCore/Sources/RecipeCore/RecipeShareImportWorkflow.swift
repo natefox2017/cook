@@ -27,17 +27,17 @@ public enum RecipeShareImportWorkflowError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .accountChanged:
-            "Your signed-in account changed. The saved source was kept for the correct account."
+            RecipeLanguage.localized("Your signed-in account changed. The saved source was kept for the correct account.")
         case .queueNotConfirmed:
-            "The server has not confirmed durable queue admission. The saved source remains available."
+            RecipeLanguage.localized("The server has not confirmed durable queue admission. The saved source remains available.")
         case .responseMismatch:
-            "The server response did not match this saved source. The local receipt was kept."
+            RecipeLanguage.localized("The server response did not match this saved source. The local receipt was kept.")
         case .localSourceChanged:
-            "The saved source was removed while it was processing. No recipe was added."
+            RecipeLanguage.localized("The saved source was removed while it was processing. No recipe was added.")
         case .completedResultMissing:
-            "The server finished processing without a recipe result. The original source remains saved."
+            RecipeLanguage.localized("The server finished processing without a recipe result. The original source remains saved.")
         case .unsupportedCompletedInput:
-            "This source type is not supported for recipe saving yet. The original source remains saved."
+            RecipeLanguage.localized("This source type is not supported for recipe saving yet. The original source remains saved.")
         }
     }
 }
@@ -213,7 +213,7 @@ public enum RecipeShareImportWorkflow {
                         } else if response.status == .failed {
                             let serverMessage =
                                 response.error?.message
-                                ?? "The import could not be completed."
+                                ?? RecipeLanguage.localized("The import could not be completed.")
                             let suggestedAction = nonempty(
                                 response.error?.suggestedAction
                             )
@@ -222,7 +222,7 @@ public enum RecipeShareImportWorkflow {
                                 .joined(separator: " ")
                             firstFailure =
                                 firstFailure
-                                ?? "A shared source failed: \(detail)"
+                                ?? RecipeLanguage.localized("A shared source failed: %@", detail)
                         }
 
                         hasActiveJobs = hasActiveJobs || response.isActive

@@ -355,9 +355,11 @@ struct CookingView: View {
             } label: {
                 HStack {
                     Text(
-                        index + 1 == recipe.steps.count
-                            ? "Finish Cooking"
-                            : (isDone ? "Next Step" : "Done & Next")
+                        LocalizedStringKey(
+                            index + 1 == recipe.steps.count
+                                ? "Finish Cooking"
+                                : (isDone ? "Next Step" : "Done & Next")
+                        )
                     )
                     Image(
                         systemName: index + 1 == recipe.steps.count
@@ -411,7 +413,11 @@ struct CookingView: View {
                                     Label(active.label, systemImage: "timer")
                                     Text(
                                         remaining == 0
-                                            ? "Time’s up"
+                                            ? String(
+                                                localized: LocalizedStringResource(
+                                                    "Time’s up", locale: RecipeLanguage.active
+                                                )
+                                            )
                                             : String(
                                                 localized: LocalizedStringResource(
                                                     "\(CookingClockFormatter.text(remaining)) remaining",
@@ -733,7 +739,9 @@ struct CookingView: View {
         running: Bool,
         remaining: Int
     ) -> some View {
-        Button(running ? "Pause" : (remaining == 0 ? "Start Again" : "Start")) {
+        Button(
+            LocalizedStringKey(running ? "Pause" : (remaining == 0 ? "Start Again" : "Start"))
+        ) {
             if running {
                 pauseTimer(active.id)
             } else {

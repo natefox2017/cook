@@ -14,15 +14,15 @@ public enum RecipeStoreError: LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .unreadableLibrary(let reason):
-            "Your library could not be read. Its original file has been preserved." + " \(reason)"
+            RecipeLanguage.localized("Your library could not be read. Its original file has been preserved. %@", reason)
         case .missingRecipe:
-            "This recipe is no longer in your library."
+            RecipeLanguage.localized("This recipe is no longer in your library.")
         case .missingItem:
-            "This item is no longer available. Please reopen the recipe or list."
+            RecipeLanguage.localized("This item is no longer available. Please reopen the recipe or list.")
         case .invalidValue(let message):
             message
         case .unsupportedVersion:
-            "This library was saved in an unsupported format. Its original file has been preserved."
+            RecipeLanguage.localized("This library was saved in an unsupported format. Its original file has been preserved.")
         }
     }
 }
@@ -240,7 +240,7 @@ public final class RecipeStore {
                 normalized($0.name) == normalized(cleaned)
             })
         else {
-            throw RecipeStoreError.invalidValue("A collection with this name already exists.")
+            throw RecipeStoreError.invalidValue(RecipeLanguage.localized("A collection with this name already exists."))
         }
 
         var next = snapshot
@@ -264,7 +264,7 @@ public final class RecipeStore {
                 $0.id != id && normalized($0.name) == normalized(cleaned)
             })
         else {
-            throw RecipeStoreError.invalidValue("A collection with this name already exists.")
+            throw RecipeStoreError.invalidValue(RecipeLanguage.localized("A collection with this name already exists."))
         }
 
         var next = snapshot
@@ -397,17 +397,17 @@ public final class RecipeStore {
         }
         guard !ingredientIDs.isEmpty else { return }
         if let servings, servings <= 0 {
-            throw RecipeStoreError.invalidValue("Choose a serving count greater than zero.")
+            throw RecipeStoreError.invalidValue(RecipeLanguage.localized("Choose a serving count greater than zero."))
         }
         if servings != nil, recipe.servings == nil {
             throw RecipeStoreError.invalidValue(
-                "Set the recipe's original serving count before scaling it.")
+                RecipeLanguage.localized("Set the recipe's original serving count before scaling it."))
         }
         let originalServings = recipe.servings ?? 1
         let requestedServings = servings ?? originalServings
         guard originalServings > 0 else {
             throw RecipeStoreError.invalidValue(
-                "The recipe's serving count must be greater than zero.")
+                RecipeLanguage.localized("The recipe's serving count must be greater than zero."))
         }
 
         var next = snapshot
@@ -431,7 +431,7 @@ public final class RecipeStore {
         for ingredient in recipe.ingredients where ingredientIDs.contains(ingredient.id) {
             guard !normalized(ingredient.name).isEmpty else {
                 throw RecipeStoreError.invalidValue(
-                    "Give each selected ingredient a name before adding it.")
+                    RecipeLanguage.localized("Give each selected ingredient a name before adding it."))
             }
 
             let item = try groceryItem(
@@ -513,7 +513,7 @@ public final class RecipeStore {
     public func upsertMeal(_ entry: MealPlanEntry) throws {
         guard recipe(id: entry.recipeID) != nil else { throw RecipeStoreError.missingRecipe }
         guard entry.date.timeIntervalSinceReferenceDate.isFinite else {
-            throw RecipeStoreError.invalidValue("Choose a valid date for your meal.")
+            throw RecipeStoreError.invalidValue(RecipeLanguage.localized("Choose a valid date for your meal."))
         }
         var next = snapshot
         next.deletedEntities?.remove(Self.deletionKey(.meal, entry.id))
@@ -1174,7 +1174,7 @@ public final class RecipeStore {
         guard unique(snapshot.recipes.map(\.id)), unique(snapshot.groceries.map(\.id)),
             unique(snapshot.mealPlan.map(\.id)), unique(snapshot.collections.map(\.id))
         else {
-            throw RecipeStoreError.invalidValue("The library contains duplicate identifiers.")
+            throw RecipeStoreError.invalidValue(RecipeLanguage.localized("The library contains duplicate identifiers."))
         }
         let recipeIDs = Set(snapshot.recipes.map(\.id))
         let collectionIDs = Set(snapshot.collections.map(\.id))
@@ -1197,7 +1197,7 @@ public final class RecipeStore {
             })
         else {
             throw RecipeStoreError.invalidValue(
-                "The library contains an item that is also marked as deleted.")
+                RecipeLanguage.localized("The library contains an item that is also marked as deleted."))
         }
 
         var collectionNameKeys: Set<String> = []
@@ -1209,7 +1209,7 @@ public final class RecipeStore {
                 collectionNameKeys.insert(normalized(name)).inserted
             else {
                 throw RecipeStoreError.invalidValue(
-                    "Collection names must be unique and cannot be empty."
+                    RecipeLanguage.localized("Collection names must be unique and cannot be empty.")
                 )
             }
         }
@@ -1223,7 +1223,7 @@ public final class RecipeStore {
                 ).inserted
             else {
                 throw RecipeStoreError.invalidValue(
-                    "A collection contains an unavailable or duplicate recipe relationship."
+                    RecipeLanguage.localized("A collection contains an unavailable or duplicate recipe relationship.")
                 )
             }
         }
@@ -1237,7 +1237,7 @@ public final class RecipeStore {
                 recipe.updatedAt.timeIntervalSinceReferenceDate.isFinite
             else {
                 throw RecipeStoreError.invalidValue(
-                    "Check the recipe's servings, times and ingredient identifiers.")
+                    RecipeLanguage.localized("Check the recipe's servings, times and ingredient identifiers."))
             }
             let ingredientIDs = Set(recipe.ingredients.map(\.id))
             for ingredient in recipe.ingredients {
@@ -1254,7 +1254,7 @@ public final class RecipeStore {
                     step.timers.allSatisfy({ $0.durationSeconds > 0 })
                 else {
                     throw RecipeStoreError.invalidValue(
-                        "Check the cooking step's ingredient links and timers."
+                        RecipeLanguage.localized("Check the cooking step's ingredient links and timers.")
                     )
                 }
             }
@@ -1264,7 +1264,7 @@ public final class RecipeStore {
                 unique(item.recipeIDs)
             else {
                 throw RecipeStoreError.invalidValue(
-                    "Check the grocery item's name and recipe sources.")
+                    RecipeLanguage.localized("Check the grocery item's name and recipe sources."))
             }
             _ = try IngredientAmount(
                 originalText: item.amountText, value: item.quantity, unit: item.unit)
@@ -1275,12 +1275,12 @@ public final class RecipeStore {
                 entry.date.timeIntervalSinceReferenceDate.isFinite
             else {
                 throw RecipeStoreError.invalidValue(
-                    "A meal plan refers to an unavailable recipe or date.")
+                    RecipeLanguage.localized("A meal plan refers to an unavailable recipe or date."))
             }
             let day = Calendar.current.startOfDay(for: entry.date).timeIntervalSinceReferenceDate
             guard occupiedSlots.insert("\(day):\(entry.slot.rawValue)").inserted else {
                 throw RecipeStoreError.invalidValue(
-                    "A day contains more than one recipe in the same meal slot.")
+                    RecipeLanguage.localized("A day contains more than one recipe in the same meal slot."))
             }
         }
     }
@@ -1292,13 +1292,13 @@ public final class RecipeStore {
             .joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleaned.isEmpty else {
-            throw RecipeStoreError.invalidValue("Give the collection a name.")
+            throw RecipeStoreError.invalidValue(RecipeLanguage.localized("Give the collection a name."))
         }
         guard cleaned.count <= 80 else {
-            throw RecipeStoreError.invalidValue("Collection names can be up to 80 characters.")
+            throw RecipeStoreError.invalidValue(RecipeLanguage.localized("Collection names can be up to 80 characters."))
         }
         guard normalized(cleaned) != "favorites" else {
-            throw RecipeStoreError.invalidValue("Favorites is already built in.")
+            throw RecipeStoreError.invalidValue(RecipeLanguage.localized("Favorites is already built in."))
         }
         return cleaned
     }

@@ -582,7 +582,7 @@ final class CloudSyncCoordinator {
             if let persistedBase {
                 guard let remote else {
                     state = .error(
-                        "The previously synced cloud library is no longer available."
+                        RecipeLanguage.localized("The previously synced cloud library is no longer available.")
                     )
                     return
                 }
@@ -687,7 +687,7 @@ final class CloudSyncCoordinator {
             guard let latest else {
                 if expectedRevision > 0 {
                     state = .error(
-                        "The cloud library is no longer available. Sync again before uploading."
+                        RecipeLanguage.localized("The cloud library is no longer available. Sync again before uploading.")
                     )
                 } else {
                     state = .localOnly
@@ -813,7 +813,7 @@ final class CloudSyncCoordinator {
 
                 guard let latest else {
                     state = .error(
-                        "Cloud sync changed while this device was saving. Try again."
+                        RecipeLanguage.localized("Cloud sync changed while this device was saving. Try again.")
                     )
                     return
                 }
