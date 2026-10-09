@@ -139,14 +139,14 @@ struct RecipeEditorView: View {
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle(isExisting ? "Edit recipe" : "New recipe")
+            .navigationTitle(LocalizedStringKey(isExisting ? "Edit recipe" : "New recipe"))
             .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { if isDirty { showDiscard = true } else { dismiss() } }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(previewNeedsReview ? "Save draft" : "Save") { save() }
+                    Button(LocalizedStringKey(previewNeedsReview ? "Save draft" : "Save")) { save() }
                         .disabled(
                             draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                 || isLoadingPhoto
@@ -453,12 +453,18 @@ private struct StepEditorRow: View {
 
     private func durationLabel(_ seconds: Int) -> String {
         if seconds % 3_600 == 0 {
-            return "\(seconds / 3_600) hr"
+            return Duration.seconds(seconds).formatted(
+                .units(width: .abbreviated, maximumUnitCount: 2).locale(RecipeLanguage.active)
+            )
         }
         if seconds % 60 == 0 {
-            return "\(seconds / 60) min"
+            return Duration.seconds(seconds).formatted(
+                .units(width: .abbreviated, maximumUnitCount: 2).locale(RecipeLanguage.active)
+            )
         }
-        return "\(seconds / 60)m \(seconds % 60)s"
+        return Duration.seconds(seconds).formatted(
+            .units(width: .abbreviated, maximumUnitCount: 2).locale(RecipeLanguage.active)
+        )
     }
 }
 
