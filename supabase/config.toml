@@ -19,6 +19,14 @@ verify_jwt = false
 # Uses the custom admin session checked by the handler, not a Supabase user JWT.
 verify_jwt = false
 
+[functions.admin-subscriptions]
+# Uses the custom admin session checked by the handler, not a Supabase user JWT.
+verify_jwt = false
+
+[functions.admin-dashboard]
+# Uses the custom admin session checked by the handler, not a Supabase user JWT.
+verify_jwt = false
+
 [functions.recipe-imports]
 verify_jwt = true
 
