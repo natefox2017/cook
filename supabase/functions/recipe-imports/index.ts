@@ -316,7 +316,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
   if (authError || !userData.user || userData.user.is_anonymous) {
     return failure(
       "AUTH_REQUIRED",
-      "Sign in with your RecipePouch account.",
+      "Sign in with your Recipe Pals account.",
       401,
       true,
       requestID,
