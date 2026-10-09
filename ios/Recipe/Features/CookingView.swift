@@ -1170,16 +1170,7 @@ struct CookingView: View {
             recipeID: recipeID,
             isUITesting: RecipeUITestNamespace.isUITesting
         )
-        let center = UNUserNotificationCenter.current()
-        let pending = await center.pendingNotificationRequests()
-        let delivered = await center.deliveredNotifications()
-
-        center.removePendingNotificationRequests(
-            withIdentifiers: pending.map(\.identifier).filter { $0.hasPrefix(prefix) }
-        )
-        center.removeDeliveredNotifications(
-            withIdentifiers: delivered.map { $0.request.identifier }.filter { $0.hasPrefix(prefix) }
-        )
+        await TimerNotifications.cancelAll(matchingPrefixes: [prefix])
     }
 
     private func replaceUnreadableSession() {

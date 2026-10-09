@@ -37,6 +37,33 @@ enum TimerNotifications {
     }
 
     static func cancel(id: String) {
+        enqueueCancellation(id: id)
+    }
+
+    static func cancelAll(matchingPrefixes prefixes: [String]) async {
+        let center = UNUserNotificationCenter.current()
+        let delivered = await center.deliveredNotifications()
+        let pending = await center.pendingNotificationRequests()
+        // The final center snapshot and queue snapshot cover completed and queued adds.
+        let identifiers = Set(
+            pending.map(\.identifier)
+                + delivered.map { $0.request.identifier }
+                + operations.keys.filter { id in
+                    prefixes.contains { id.hasPrefix($0) }
+                }
+        ).filter { id in
+            prefixes.contains { id.hasPrefix($0) }
+        }
+
+        let cancellationTasks = identifiers.map { id in
+            enqueueCancellation(id: id)
+        }
+        for task in cancellationTasks {
+            _ = try? await task.value
+        }
+    }
+
+    private static func enqueueCancellation(id: String) -> Task<Void, Error> {
         enqueue(id: id) {
             let center = UNUserNotificationCenter.current()
             center.removePendingNotificationRequests(withIdentifiers: [id])
