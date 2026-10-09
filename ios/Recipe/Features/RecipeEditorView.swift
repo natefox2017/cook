@@ -228,9 +228,9 @@ struct RecipeEditorView: View {
         do {
             var recipe = draft
             recipe.title = recipe.title.trimmingCharacters(in: .whitespacesAndNewlines)
-            recipe.servings = try number(servingsText, name: "Servings", range: 1...100)
-            recipe.prepMinutes = try number(prepText, name: "Prep time", range: 0...10_080)
-            recipe.cookMinutes = try number(cookText, name: "Cook time", range: 0...10_080)
+            recipe.servings = try number(servingsText, name: RecipeLanguage.localized("Servings"), range: 1...100)
+            recipe.prepMinutes = try number(prepText, name: RecipeLanguage.localized("Prep time"), range: 0...10_080)
+            recipe.cookMinutes = try number(cookText, name: RecipeLanguage.localized("Cook time"), range: 0...10_080)
             recipe.ingredients = try draft.ingredients.compactMap { ingredient in
                 let name = ingredient.name.trimmingCharacters(in: .whitespacesAndNewlines)
                 let amount = ingredient.amountText.trimmingCharacters(in: .whitespacesAndNewlines)
