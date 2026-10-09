@@ -387,6 +387,7 @@ private struct CollectionRecipePickerSheet: View {
                             Spacer()
                         }
                         .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityValue(isMember ? "In collection" : "Not in collection")

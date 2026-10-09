@@ -5,6 +5,48 @@ import RecipeCore
 import StoreKit
 import SwiftUI
 
+enum RecipeUITestNamespace {
+    static let resetCookingSessionsArgument = "--uitesting-reset-cooking-sessions"
+
+    static var isUITesting: Bool {
+        ProcessInfo.processInfo.arguments.contains("--uitesting")
+    }
+
+    static func preferenceKey(_ key: String, isUITesting: Bool) -> String {
+        guard isUITesting else { return key }
+
+        let suffix = key.hasPrefix("recipe.")
+            ? String(key.dropFirst("recipe.".count))
+            : key
+        return "recipe.uitesting.\(suffix)"
+    }
+
+    static func preferenceKey(_ key: String) -> String {
+        preferenceKey(key, isUITesting: isUITesting)
+    }
+
+    static func clearCookingSessions(from defaults: UserDefaults) {
+        for key in defaults.dictionaryRepresentation().keys
+        where key.hasPrefix("recipe.uitesting.cookingSession.") {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    static func timerNotificationPrefix(recipeID: UUID, isUITesting: Bool) -> String {
+        let prefix = isUITesting ? "recipe.uitesting.timer." : "cook.timer."
+        return "\(prefix)\(recipeID.uuidString)."
+    }
+
+    static func timerNotificationID(
+        recipeID: UUID,
+        timerID: UUID,
+        isUITesting: Bool
+    ) -> String {
+        let prefix = timerNotificationPrefix(recipeID: recipeID, isUITesting: isUITesting)
+        return "\(prefix)\(timerID.uuidString)"
+    }
+}
+
 @main
 @MainActor
 struct RecipeApp: App {
@@ -16,23 +58,34 @@ struct RecipeApp: App {
 
     init() {
         let defaults = UserDefaults.standard
-        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("cook.") {
-            let recipeKey = "recipe." + key.dropFirst("cook.".count)
-            if defaults.object(forKey: recipeKey) == nil, let value = defaults.object(forKey: key) {
-                defaults.set(value, forKey: recipeKey)
+        let arguments = ProcessInfo.processInfo.arguments
+        let isUITesting = arguments.contains("--uitesting")
+
+        if !isUITesting {
+            for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("cook.") {
+                let recipeKey = "recipe." + key.dropFirst("cook.".count)
+                if defaults.object(forKey: recipeKey) == nil,
+                    let value = defaults.object(forKey: key)
+                {
+                    defaults.set(value, forKey: recipeKey)
+                }
             }
         }
 
         RecipeTheme.installUIKitTypography()
 
-        let arguments = ProcessInfo.processInfo.arguments
-        let isUITesting = arguments.contains("--uitesting")
         var bypassOnboarding = isUITesting
         #if DEBUG
             if isUITesting && arguments.contains("--uitesting-onboarding") {
                 // Exercise the real first-launch flow with isolated UI-test fixtures.
                 bypassOnboarding = false
-                defaults.set(false, forKey: FirstLaunchFlowView.completionKey)
+                defaults.set(
+                    false,
+                    forKey: RecipeUITestNamespace.preferenceKey(
+                        FirstLaunchFlowView.completionKey,
+                        isUITesting: true
+                    )
+                )
             }
         #endif
         self.isUITesting = isUITesting
@@ -43,20 +96,17 @@ struct RecipeApp: App {
         let libraryURL = RecipeStore.defaultFileURL()
         if !isUITesting,
             FileManager.default.fileExists(atPath: libraryURL.path),
-            UserDefaults.standard.object(forKey: FirstLaunchFlowView.completionKey) == nil
+            defaults.object(forKey: FirstLaunchFlowView.completionKey) == nil
         {
             // Existing installs with a persisted library should not be mistaken for new users
             // when this onboarding key is introduced for the first time.
-            UserDefaults.standard.set(true, forKey: FirstLaunchFlowView.completionKey)
+            defaults.set(true, forKey: FirstLaunchFlowView.completionKey)
         }
 
         let localStore = RecipeStore(fileURL: isUITesting ? nil : libraryURL)
         if isUITesting {
-            for key in UserDefaults.standard.dictionaryRepresentation().keys
-            where key.hasPrefix("recipe.cookingSession.")
-                || key.hasPrefix("cook.cookingSession.")
-            {
-                UserDefaults.standard.removeObject(forKey: key)
+            if arguments.contains(RecipeUITestNamespace.resetCookingSessionsArgument) {
+                RecipeUITestNamespace.clearCookingSessions(from: defaults)
             }
             do {
                 try localStore.loadSampleRecipes()
@@ -103,7 +153,9 @@ private struct RecipeRootView: View {
     @Environment(CloudSyncCoordinator.self) private var cloudSync
     @Environment(SubscriptionStore.self) private var subscriptions
     @Environment(\.scenePhase) private var scenePhase
-    @AppStorage(FirstLaunchFlowView.completionKey) private var hasCompletedOnboarding = false
+    @AppStorage(
+        RecipeUITestNamespace.preferenceKey(FirstLaunchFlowView.completionKey)
+    ) private var hasCompletedOnboarding = false
     @State private var selectedTab: RecipeTab = .recipes
     @State private var shareInbox = RecipeShareInboxCoordinator()
     @State private var isAccountPresented = false

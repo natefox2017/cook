@@ -832,6 +832,7 @@ private struct RecipeCollectionMembershipSheet: View {
                                     .monospacedDigit()
                                 }
                                 .frame(minHeight: 44)
+                                .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityValue(

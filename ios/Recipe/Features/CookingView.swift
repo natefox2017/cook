@@ -36,7 +36,11 @@ struct CookingView: View {
     @State private var notificationTaskRevisions: [UUID: UUID] = [:]
 
     private var recipe: Recipe? { store.recipe(id: recipeID) }
-    private var sessionKey: String { "recipe.cookingSession.\(recipeID.uuidString)" }
+    private var sessionKey: String {
+        RecipeUITestNamespace.preferenceKey(
+            "recipe.cookingSession.\(recipeID.uuidString)"
+        )
+    }
 
     init(
         recipeID: UUID,
@@ -516,6 +520,7 @@ struct CookingView: View {
                 }
             }
             .disabled(recipe == nil)
+            .accessibilityIdentifier("cookingTimersButton")
 
             Button("Ingredients", systemImage: "list.bullet") {
                 isShowingIngredients = true
@@ -1091,7 +1096,11 @@ struct CookingView: View {
     }
 
     private func notificationID(for timerID: UUID) -> String {
-        "cook.timer.\(recipeID.uuidString).\(timerID.uuidString)"
+        RecipeUITestNamespace.timerNotificationID(
+            recipeID: recipeID,
+            timerID: timerID,
+            isUITesting: RecipeUITestNamespace.isUITesting
+        )
     }
 
     private func cancelNotification(for timerID: UUID) {
@@ -1188,18 +1197,25 @@ struct CookingView: View {
     static func discardSession(recipeID: UUID) {
         let defaults = UserDefaults.standard
         defaults.removeObject(
-            forKey: "recipe.cookingSession.\(recipeID.uuidString)"
+            forKey: RecipeUITestNamespace.preferenceKey(
+                "recipe.cookingSession.\(recipeID.uuidString)"
+            )
         )
-        defaults.removeObject(
-            forKey: "cook.cookingSession.\(recipeID.uuidString)"
-        )
+        if !RecipeUITestNamespace.isUITesting {
+            defaults.removeObject(
+                forKey: "cook.cookingSession.\(recipeID.uuidString)"
+            )
+        }
         Task { @MainActor in
             await removeSessionNotifications(recipeID: recipeID)
         }
     }
 
     private static func removeSessionNotifications(recipeID: UUID) async {
-        let prefix = "cook.timer.\(recipeID.uuidString)."
+        let prefix = RecipeUITestNamespace.timerNotificationPrefix(
+            recipeID: recipeID,
+            isUITesting: RecipeUITestNamespace.isUITesting
+        )
         let center = UNUserNotificationCenter.current()
         let pending = await center.pendingNotificationRequests()
         let delivered = await center.deliveredNotifications()
