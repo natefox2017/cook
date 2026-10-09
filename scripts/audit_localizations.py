@@ -61,6 +61,11 @@ def run(strict: bool) -> int:
                 set(plistlib.load(input_file).get("CFBundleLocalizations", ()))
             )
 
+    # Share Extension inherits the app's advertised languages when its Info.plist
+    # omits CFBundleLocalizations; do not accidentally skip its catalogs.
+    if not languages_by_target[1]:
+        languages_by_target[1] = set(languages_by_target[0])
+
     errors: list[str] = []
     incomplete: list[str] = []
     for label, path in CATALOGS:
