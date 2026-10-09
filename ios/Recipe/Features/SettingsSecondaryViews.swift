@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Implements RecipePouch data, privacy, help, and about settings screens.
+// Purpose: Implements Recipe Pals data, privacy, help, and about settings screens.
 
 import RecipeCore
 import SwiftUI
@@ -47,7 +47,7 @@ struct DataPrivacySettingsView: View {
                     )
                 }
 
-                NavigationLink("What RecipePouch Stores") {
+                NavigationLink("What Recipe Pals Stores") {
                     StoredDataView()
                 }
 
@@ -63,14 +63,14 @@ struct DataPrivacySettingsView: View {
 
                 if isSignedIn {
                     Button(
-                        "Delete RecipePouch Account & Cloud Data",
+                        "Delete Recipe Pals Account & Cloud Data",
                         role: .destructive
                     ) {
                         confirmsAccountDelete = true
                     }
                 } else {
                     HStack {
-                        Text("Delete RecipePouch Account & Cloud Data")
+                        Text("Delete Recipe Pals Account & Cloud Data")
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text("Sign in required")
@@ -104,7 +104,7 @@ struct DataPrivacySettingsView: View {
             }
         }
         .confirmationDialog(
-            "Delete all local RecipePouch data?",
+            "Delete all local Recipe Pals data?",
             isPresented: $confirmsLocalDelete,
             titleVisibility: .visible
         ) {
@@ -121,7 +121,7 @@ struct DataPrivacySettingsView: View {
                         exportDocument = RecipeExportDocument(data: Data())
                         message = String(
                             localized: LocalizedStringResource(
-                                "Local RecipePouch data deleted.",
+                                "Local Recipe Pals data deleted.",
                                 locale: RecipeLanguage.active
                             )
                         )
@@ -137,7 +137,7 @@ struct DataPrivacySettingsView: View {
             )
         }
         .confirmationDialog(
-            "Delete RecipePouch account?",
+            "Delete Recipe Pals account?",
             isPresented: $confirmsAccountDelete,
             titleVisibility: .visible
         ) {
@@ -147,7 +147,7 @@ struct DataPrivacySettingsView: View {
                         try await cloudSync.deleteAccountAndCloudData()
                         message = String(
                             localized: LocalizedStringResource(
-                                "RecipePouch account and cloud data deleted. Local data on this iPhone was kept.",
+                                "Recipe Pals account and cloud data deleted. Local data on this iPhone was kept.",
                                 locale: RecipeLanguage.active))
                     } catch {
                         message = error.localizedDescription
@@ -158,7 +158,7 @@ struct DataPrivacySettingsView: View {
             Text(
                 String(
                     localized: LocalizedStringResource(
-                        "This deletes the signed-in RecipePouch account and cloud data. Local data on this iPhone stays until you delete it separately. This does not cancel an App Store subscription.",
+                        "This deletes the signed-in Recipe Pals account and cloud data. Local data on this iPhone stays until you delete it separately. This does not cancel an App Store subscription.",
                         locale: RecipeLanguage.active)))
         }
         .alert(
@@ -206,7 +206,7 @@ struct StoredDataView: View {
         .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("What RecipePouch Stores")
+        .navigationTitle("What Recipe Pals Stores")
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
     }
@@ -219,25 +219,25 @@ struct PrivacySummaryView: View {
                 Text(
                     String(
                         localized: LocalizedStringResource(
-                            "RecipePouch is designed as a private recipe utility. It does not publish your recipes to a public feed.",
+                            "Recipe Pals is designed as a private recipe utility. It does not publish your recipes to a public feed.",
                             locale: RecipeLanguage.active)))
 
                 Text(
                     String(
                         localized: LocalizedStringResource(
-                            "Automated imports may send source material to RecipePouch’s backend only when processing is required. Provider secrets remain server-side.",
+                            "Automated imports may send source material to Recipe Pals’ backend only when processing is required. Provider secrets remain server-side.",
                             locale: RecipeLanguage.active)))
 
                 Text(
                     String(
                         localized: LocalizedStringResource(
-                            "App Store purchases are managed by Apple. Your App Store purchase identity and RecipePouch account are treated as separate identities.",
+                            "App Store purchases are managed by Apple. Your App Store purchase identity and Recipe Pals account are treated as separate identities.",
                             locale: RecipeLanguage.active)))
 
                 Text(
                     String(
                         localized: LocalizedStringResource(
-                            "You can export local data and request deletion of your RecipePouch account data from Settings.",
+                            "You can export local data and request deletion of your Recipe Pals account data from Settings.",
                             locale: RecipeLanguage.active)))
             }
             .recipePageContentInsets()
@@ -337,7 +337,7 @@ struct AboutSettingsView: View {
                     Image(systemName: "leaf.fill")
                         .font(.system(size: 34))
                         .foregroundStyle(RecipeTheme.accentForeground)
-                    Text("RecipePouch")
+                    Text("Recipe Pals")
                         .font(RecipeTheme.heading(.title))
                 }
             }
@@ -367,7 +367,7 @@ struct AboutSettingsView: View {
         .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("About RecipePouch")
+        .navigationTitle("About Recipe Pals")
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
     }
@@ -408,7 +408,7 @@ private struct AcknowledgementsView: View {
             Text(
                 String(
                     localized: LocalizedStringResource(
-                        "RecipePouch’s interaction model is informed by established private recipe managers: collect recipes, organize them, cook step-by-step, plan meals, and shop from ingredients. RecipePouch’s implementation and visual system remain its own.",
+                        "Recipe Pals’ interaction model is informed by established private recipe managers: collect recipes, organize them, cook step-by-step, plan meals, and shop from ingredients. Recipe Pals’ implementation and visual system remain its own.",
                         locale: RecipeLanguage.active))
             )
             .recipePageContentInsets()

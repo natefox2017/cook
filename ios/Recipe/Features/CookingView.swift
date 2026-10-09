@@ -1408,7 +1408,7 @@ private struct CookingStepTimerPanel: View {
     private var notificationMessage: LocalizedStringKey {
         notificationsEnabled
             ? "Your timer keeps time when you leave this screen."
-            : "Your timer progress is saved. Keep RecipePouch open to see when time is up."
+            : "Your timer progress is saved. Keep Recipe Pals open to see when time is up."
     }
 
     private func timerControls(remaining: Int) -> some View {

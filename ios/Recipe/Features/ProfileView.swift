@@ -179,7 +179,7 @@ struct ProfileView: View {
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(
-                        title: "Using RecipePouch",
+                        title: "Using Recipe Pals",
                         systemImage: "questionmark.circle"
                     )
                 }
@@ -267,7 +267,7 @@ struct ProfileView: View {
             isPresented: $confirmsReset,
             titleVisibility: .visible
         ) {
-            Button("Delete All RecipePouch Data", role: .destructive) {
+            Button("Delete All Recipe Pals Data", role: .destructive) {
                 guard !isDeletingLocalData else { return }
                 isDeletingLocalData = true
                 Task {
@@ -282,7 +282,7 @@ struct ProfileView: View {
                         exportDocument = RecipeExportDocument(data: Data())
                         errorMessage = String(
                             localized: LocalizedStringResource(
-                                "Local RecipePouch data deleted.",
+                                "Local Recipe Pals data deleted.",
                                 locale: RecipeLanguage.active
                             )
                         )
@@ -298,7 +298,7 @@ struct ProfileView: View {
             )
         }
         .alert(
-            "RecipePouch",
+            "Recipe Pals",
             isPresented: Binding(
                 get: {
                     errorMessage != nil
@@ -698,7 +698,7 @@ private struct RecipeHelpView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("Using RecipePouch")
+        .navigationTitle("Using Recipe Pals")
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }
@@ -706,11 +706,11 @@ private struct RecipeHelpView: View {
 private struct RecipeAboutView: View {
     var body: some View {
         List {
-            Section("RecipePouch") {
+            Section("Recipe Pals") {
                 LabeledContent("Version", value: RecipeVersion.display)
             }
             Section("Data & Privacy") {
-                NavigationLink("What RecipePouch Stores") {
+                NavigationLink("What Recipe Pals Stores") {
                     StoredDataView()
                 }
                 NavigationLink("Privacy Summary") {
@@ -754,9 +754,9 @@ enum RecipeExportFormat {
         )
         switch self {
         case .recipesJSON, .recipesHTML:
-            return "RecipePouch-Recipes-\(date)"
+            return "RecipePals-Recipes-\(date)"
         case .allLibraryJSON:
-            return "RecipePouch-Local-Library-\(date)"
+            return "RecipePals-Local-Library-\(date)"
         }
     }
 
@@ -826,7 +826,7 @@ struct RecipeExportDocument: FileDocument {
     init(
         data: Data,
         contentType: UTType = .json,
-        filename: String = "RecipePouch-Recipes"
+        filename: String = "RecipePals-Recipes"
     ) {
         self.data = data
         self.contentType = contentType
@@ -839,7 +839,7 @@ struct RecipeExportDocument: FileDocument {
         }
         data = contents
         contentType = configuration.contentType
-        filename = "RecipePouch-Recipes"
+        filename = "RecipePals-Recipes"
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
