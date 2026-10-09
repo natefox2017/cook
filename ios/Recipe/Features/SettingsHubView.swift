@@ -29,6 +29,20 @@ struct SettingsHubView: View {
 
             Section("App preferences") {
                 NavigationLink {
+                    LanguageSettingsView()
+                } label: {
+                    SettingsRow("Language", "character.bubble")
+                }
+                .accessibilityIdentifier("settings.language")
+
+                NavigationLink {
+                    CountryRegionSettingsView()
+                } label: {
+                    SettingsRow("Country or Region", "globe.americas")
+                }
+                .accessibilityIdentifier("settings.region")
+
+                NavigationLink {
                     AppearanceSettingsView()
                 } label: {
                     SettingsRow("Appearance", "circle.lefthalf.filled")
@@ -545,5 +559,121 @@ struct MealPlanSettingsView: View {
         }
         .navigationTitle("Meal Plan")
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
+    }
+}
+        
+/// A native-language label avoids making a language impossible to find after switching.
+private struct LanguageSettingsView: View {
+    @AppStorage(RecipeLanguage.languagePreferenceKey)
+    private var selectedLanguage = RecipeLanguage.defaultLanguage
+    @AppStorage(RecipeLanguage.regionPreferenceKey)
+    private var selectedRegion = RecipeLanguage.automaticRegion
+
+    var body: some View {
+        List {
+            ForEach(RecipeLanguage.languageOptions) { option in
+                Button {
+                    selectedLanguage = option.id
+                    RecipeLanguage.sharePreferences(
+                        language: option.id,
+                        region: selectedRegion
+                    )
+                } label: {
+                    HStack {
+                        Text(option.nativeName)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        if selectedLanguage == option.id {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(RecipeTheme.accentForeground)
+                                .accessibilityLabel("Selected")
+                        }
+                    }
+                    .frame(minHeight: 44)
+                }
+                .accessibilityIdentifier("settings.language.\(option.id)")
+            }
+        }
+        .listSectionSpacing(RecipeSpacing.medium)
+        .scrollContentBackground(.hidden)
+        .background(RecipeTheme.canvas)
+        .navigationTitle("Language")
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
+    }
+}
+
+/// Country affects regional date/number formats; it never changes the UI language.
+private struct CountryRegionSettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage(RecipeLanguage.languagePreferenceKey)
+    private var selectedLanguage = RecipeLanguage.defaultLanguage
+    @AppStorage(RecipeLanguage.regionPreferenceKey)
+    private var selectedRegion = RecipeLanguage.automaticRegion
+    @State private var query = ""
+
+    private var displayLocale: Locale {
+        RecipeLanguage.active
+    }
+
+    private func displayName(for code: String) -> String {
+        displayLocale.localizedString(forRegionCode: code) ?? code
+    }
+
+    private var countries: [String] {
+        RecipeLanguage.countryIdentifiers
+            .filter { code in
+                query.isEmpty || code.localizedStandardContains(query)
+                    || displayName(for: code).localizedStandardContains(query)
+            }
+            .sorted {
+                displayName(for: $0).localizedStandardCompare(displayName(for: $1))
+                    == .orderedAscending
+            }
+    }
+
+    var body: some View {
+        List {
+            if query.isEmpty {
+                Button {
+                    select(RecipeLanguage.automaticRegion)
+                } label: {
+                    countryRow("Use iPhone Region", code: RecipeLanguage.automaticRegion)
+                }
+                .accessibilityIdentifier("settings.region.automatic")
+            }
+
+            ForEach(countries, id: \.self) { code in
+                Button {
+                    select(code)
+                } label: {
+                    countryRow(displayName(for: code), code: code)
+                }
+                .accessibilityIdentifier("settings.region.\(code)")
+            }
+        }
+        .searchable(text: $query, prompt: "Search countries")
+        .scrollContentBackground(.hidden)
+        .background(RecipeTheme.canvas)
+        .navigationTitle("Country or Region")
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
+    }
+
+    private func countryRow(_ name: String, code: String) -> some View {
+        HStack {
+            Text(name).foregroundStyle(.primary)
+            Spacer()
+            if selectedRegion == code {
+                Image(systemName: "checkmark")
+                    .foregroundStyle(RecipeTheme.accentForeground)
+                    .accessibilityLabel("Selected")
+            }
+        }
+        .frame(minHeight: 44)
+    }
+
+    private func select(_ code: String) {
+        selectedRegion = code
+        RecipeLanguage.sharePreferences(language: selectedLanguage, region: code)
+        dismiss()
     }
 }
