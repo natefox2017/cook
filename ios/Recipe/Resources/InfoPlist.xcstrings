@@ -38,25 +38,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recipe"
+            "value": "Recipe Pals"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recipe"
+            "value": "私人菜谱"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recipe"
+            "value": "私人菜譜"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recipe"
+            "value": "Recipe Pals"
           }
         }
       }

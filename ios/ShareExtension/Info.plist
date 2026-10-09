@@ -11,9 +11,9 @@
     <key>CFBundleVersion</key>
     <string>$(CURRENT_PROJECT_VERSION)</string>
     <key>CFBundleDisplayName</key>
-    <string>RecipePouch</string>
+    <string>Recipe Pals</string>
     <key>CFBundleName</key>
-    <string>RecipeShare</string>
+    <string>Recipe Pals</string>
     <key>CFBundlePackageType</key>
     <string>XPC!</string>
     <key>UIAppFonts</key>
