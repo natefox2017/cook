@@ -439,8 +439,8 @@ private struct RecipeRootTabVisibility: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            // A retained root must not keep requesting a visible bar while a page is pushed.
-            .toolbarVisibility(isRootVisible ? .visible : .hidden, for: .tabBar)
+            // Inactive roots must relinquish their preference to the current page.
+            .toolbarVisibility(isRootVisible ? .visible : .automatic, for: .tabBar)
             .onAppear {
                 isRootVisible = true
             }
