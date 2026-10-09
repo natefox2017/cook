@@ -12,11 +12,11 @@ This manifest records the public source and a read-only production inventory for
 | `admin-subscriptions` | 4 | `false` | `4f355129a512842e7e96dff6e2f6274fa2565acbf3c6826655a6f0873c7351e8` | Added in this change. Production entrypoint baseline SHA-256: `a94b842e152464d180ba866dc2d4446dab2f8384fafaea746f9d82401601e19e`. Local source adds explicit owner/admin authorization and safe database error responses. |
 | `admin-users` | 6 | `false` | `99c86c74a719eea40cb3318fae787c78a9a096702dd699c53a3a37c8fe8a9805` | Tracked on `main`; its deployed entrypoint matched the checked-in file in the 2026-10-09 read-only audit. The bundle also includes shared modules. |
 | `admin-dashboard` | 3 | `false` | `ba97df336b9ca7f894d7fc08f10d9e6d49c76482f5606ae37bfc33ca4119bd51` | Added in this change. Production entrypoint baseline SHA-256: `508bd852b227a8367fe7cf6c2776f3e74d0d2fdd6a3d77ee8700eaef71169237`. Local source adds owner-only authorization and safe database error responses. |
-| `admin-ai` | 4 | `false` | `b90348513a08e7a1fd006fe6561b587c032387e33ceba88ee9ab3ac141f0c1ea` | **Source unavailable.** Production entrypoint is a 399-byte wrapper that imports an implementation from `natefox2017/cookapp` branch `cursor/ai-platform-core-4b9d`. Both the authenticated GitHub API and raw URL returned 404 during this audit. No placeholder or empty implementation is included. |
+| `admin-ai` | 4 | `false` | `b90348513a08e7a1fd006fe6561b587c032387e33ceba88ee9ab3ac141f0c1ea` | Complete source unavailable; this branch adds a conservative replacement from the current admin UI and live schema. It is not recovered source and does not claim bundle SHA parity. |
 | `health` | 8 | `true` | `7e5ee17f8b16ced8c802a0f42b5851e0c514328c81f205e0e6385ae745b0aeca` | Tracked on `main`; the source uses local shared modules. The deployed bundle hash still differs from the source-only local change and is not evidence of deployment parity. |
 | `openapi` | 23 | `false` | `a7c7f0d301fe53baff101d5f53bedf44a6d82ad55f48422e47a02d04c4217f51` | Source work is in a separate module branch. The production entrypoint currently references a mutable `cookapp` branch for CORS and the OpenAPI spec. |
 
-The function versions and bundle hashes are inventory evidence only. This branch does not claim that the new source was staged or deployed. The live `admin-ai` implementation and the full production origin of the missing functions remain source-provenance gaps until their authorized source is available.
+The function versions and bundle hashes are inventory evidence only. This branch does not claim that the new source was staged or deployed. The live `admin-ai` implementation remains a source-provenance gap; the replacement below is explicitly based on the current repository UI/database contract and is not old-source parity.
 
 ## Source and authorization decisions
 
@@ -49,9 +49,19 @@ deno check --frozen --config supabase/functions/admin-subscriptions/deno.json \
 deno check --frozen --config supabase/functions/admin-dashboard/deno.json \
   supabase/functions/admin-dashboard/index.ts \
   supabase/functions/admin-dashboard/http_test.ts
+
+deno test --frozen --config supabase/functions/admin-ai/deno.json \
+  --allow-net=127.0.0.1 \
+  supabase/functions/admin-ai/model_test.ts \
+  supabase/functions/admin-ai/http_test.ts
+
+deno check --frozen --config supabase/functions/admin-ai/deno.json \
+  supabase/functions/admin-ai/index.ts \
+  supabase/functions/admin-ai/http_test.ts \
+  supabase/functions/admin-ai/model_test.ts
 ```
 
-Latest result for the two local HTTP suites: subscriptions **5 passed**, dashboard **4 passed**. Both type checks passed. These local tests do not close Issue #155.
+Latest results before this follow-up: subscriptions **5 passed**, dashboard **4 passed**, admin-ai **8 passed**. All three type checks passed. The admin-dashboard runtime declaration is pinned directly to `@supabase/functions-js@2.117.3`, and its source baseline is production version 3; the SHA recorded above is the downloaded production entrypoint file hash, not an Edge bundle hash. These local tests do not close Issue #155.
 
 ### Local Supabase HTTP integration
 
@@ -71,14 +81,36 @@ The database used the schema-only #140 production catalog export for admin table
 
 Missing and invalid sessions returned 401 on both functions. The local plan row was created, updated and deleted through the real HTTP handlers and local PostgREST database. This confirms the two handlers' route and SQL behavior against the checked-in source with a production-derived schema subset. It is still local evidence, not hosted staging or production acceptance.
 
+### Local admin-ai runtime and database validation
+
+On 2026-10-09, before the deletion and active-state follow-up below, `admin-ai` was served from the checked-in source by Supabase Edge Runtime 1.77.4 (Deno 2.1.4), with PostgreSQL 17.11, in the separate disposable `issue155-http-57481` project. Its database used the production-derived `admin_accounts` and `admin_sessions` definitions plus a local schema-only subset of the six AI tables from the catalog below. The fixture had one provider, one model, two usage events, and an opaque synthetic secret record (`secret_ref`, ciphertext, nonce, key version). Four synthetic owner/admin/operator/readonly sessions were persisted locally. No production rows, production credentials, or provider keys were copied.
+
+Requests went through `http://127.0.0.1:57481/functions/v1/admin-ai`, local Kong, Edge Runtime, the real service-role PostgREST client, and local PostgreSQL. Results:
+
+| Local request | Result |
+| --- | ---: |
+| Unauthenticated `GET /providers` | 401 |
+| `GET /providers`, owner/admin/operator/readonly | 200 / 200 / 403 / 403 |
+| `GET /usage?range=7d`, owner/admin/operator/readonly | 200 / 200 / 403 / 403 |
+| `GET /usage?range=365d`, owner | 400 |
+| Owner/admin blank-key metadata `PUT /providers/{id}` with unchanged model/enabled fields | 200 |
+| Owner `PUT` changing model | 409 |
+| Owner `POST /providers` with a synthetic key | 503 |
+| Owner `POST /providers` without a key | 409 |
+| Owner saved-key `POST /providers/test` | 503 |
+| Owner `DELETE /providers/{id}` while a secret is attached | 409 |
+| Owner `DELETE /providers/{id}` with a usage event but no key/model/health row | 409 |
+
+After the successful metadata update, a separate local SQL predicate verified that opaque ciphertext, nonce, key version, and `secret_ref` stayed unchanged while provider name and base URL reflected the edit. The provider list returned only `apiKeyConfigured`; the response contained no `secret_ref` or ciphertext. The usage request aggregated both seeded events. This validates the replacement at that revision, not the missing deployed source or a hosted environment. The follow-up revision allows the provider enabled flag to change while retaining the `secret_ref`, and rejects deletion before service-role access to avoid a count-then-delete race. Those follow-up behaviors have current Deno HTTP test coverage: **9 admin-ai tests passed**, `deno check --frozen` passed, and `git diff --check` passed. No new local database integration run was made for these two follow-up behaviors. For repeatable deterministic checks, use the Deno commands above. To repeat the local HTTP/database run, create the disposable schema subset and synthetic role sessions described here, start `admin-ai` with `supabase functions serve admin-ai --no-verify-jwt`, then issue this request matrix through the local API URL. Never point the procedure at a hosted project.
+
 ## Admin AI recovery plan and source gap
 
 ### Source search and read-only database evidence
 
 - `git log --all --full-history -- supabase/functions/admin-ai` and `git rev-list --all --objects` contain no tracked `admin-ai` source path or blob. The scoped search of the known #155 worktrees found only the downloaded production wrapper under `.tmp/issue-155-live`; that 399-byte file imports implementation from the inaccessible `natefox2017/cookapp` feature branch. The wrapper's raw GitHub URL and authenticated repository lookup both returned 404.
-- A read-only production catalog query on 2026-10-09 found six AI tables: `ai_providers`, `ai_models`, `ai_routes`, `ai_secrets`, `ai_provider_health`, and `ai_usage_events`. RLS is enabled (not forced) on each. No policies were listed. `anon` and `authenticated` have no SELECT privilege; `service_role` has SELECT/INSERT/UPDATE/DELETE on all six. No public routines named `ai_*` or `llm_*` were found.
-- Catalog columns are: `ai_providers` — `id`, `name`, `protocol`, `base_url`, `secret_ref`, `enabled`, `request_timeout_ms`, `max_retries`, `status`, `last_health_check_at`, `environment`, `metadata`, timestamps; `ai_models` — `id`, `provider_id`, `display_name`, `upstream_model_id`, `enabled`, `capabilities`, `context_window`, `max_output_tokens`, input/output cost fields, `metadata`, timestamps; `ai_routes` — `id`, `route_key`, `primary_model_id`, `fallback_model_ids`, timeout/retry/temperature/output limits, `structured_schema_key`, `enabled`, `reserved`, timestamps; `ai_secrets` — `id`, `secret_ref`, `ciphertext`, `nonce`, `key_version`, timestamps; `ai_provider_health` — `provider_id`, `status`, success/error timestamps, `last_error`, `consecutive_failures`, `circuit_open_until`, `updated_at`; `ai_usage_events` — request/route/provider/model IDs, status, latency, input/output tokens, estimated cost, retry/error/attempt metadata, user/admin IDs, source job ID, timestamp.
-- The live `ai_usage_events` schema records request/route/provider/model IDs, final model, status, latency, input/output tokens, estimated cost, retries, error code, attempted models, user/admin IDs, source job ID and timestamp. It has no cached-input-token column. The UI treats cached input and average latency as optional; average latency can be aggregated from `latency_ms`, while cached-input usage must remain absent/null unless the source owner confirms another telemetry source.
+- A read-only production catalog query on 2026-10-09 found six AI tables: `ai_providers`, `ai_models`, `ai_routes`, `ai_secrets`, `ai_provider_health`, and `ai_usage_events`. RLS is enabled (not forced) on each. No policies were listed. `anon` and `authenticated` have no SELECT privilege; `service_role` has SELECT/INSERT/UPDATE/DELETE on all six. No public routines named `ai_*` or `llm_*` were found. The queried catalog had no `ai_provider_secrets` table.
+- Catalog columns are: `ai_providers` — `id`, `name`, `protocol`, `base_url`, `secret_ref`, `enabled`, `request_timeout_ms`, `max_retries`, `status`, `last_health_check_at`, `environment`, `metadata`, timestamps; `ai_models` — `id`, `provider_id`, `display_name`, `upstream_model_id`, `enabled`, `capabilities`, `context_window`, `max_output_tokens`, input/output cost fields, `metadata`, timestamps; `ai_routes` — `id`, `route_key`, `primary_model_id`, `fallback_model_ids`, timeout/retry/temperature/output limits, `structured_schema_key`, `enabled`, `reserved`, timestamps; `ai_secrets` — `id uuid` primary key, `secret_ref text` unique and non-null, `ciphertext text` and `nonce text` non-null, `key_version integer` non-null default 1, and timestamps; `ai_provider_health` — `provider_id`, `status`, success/error timestamps, `last_error`, `consecutive_failures`, `circuit_open_until`, `updated_at`; `ai_usage_events` — request/route/provider/model IDs, status, latency, input/output tokens, estimated cost, retry/error/attempt metadata, user/admin IDs, source job ID, timestamp. No secret row values were read.
+- The live `ai_usage_events` schema records request/route/provider/model IDs, final model, status, latency, input/output tokens, estimated cost, retries, error code, attempted models, user/admin IDs, source job ID and timestamp. That historical capture predates the repository migration `20261009133000_ai_usage_cache_read_tokens.sql`. The current canonical local schema includes nullable `cache_read_input_tokens`; the replacement sums reported cache reads without adding them to input totals. Unknown values remain null and reported zero remains zero. Apply that migration before deploying the handler; this is not evidence of its production application.
 - `ai_models.provider_id` and `ai_provider_health.provider_id` cascade from providers; `ai_routes.primary_model_id` and usage-event model/provider references use `ON DELETE SET NULL`. Provider `secret_ref` references `ai_secrets.secret_ref` with `ON DELETE SET NULL`. The provider/model/route schema contains enabled flags, retry/timeout bounds, model capabilities, cost fields and fallback model IDs. The UI exposes only a single provider/model projection, so the exact CRUD mapping must preserve the broader routing data.
 
 ### Recoverable admin UI contract
@@ -98,16 +130,49 @@ The UI makes provider-management actions available to `owner` and `admin` and sh
 
 ### What can be rebuilt from the current contract
 
-The provider CRUD projection, test route, usage range query, safe key-configured flag, owner/admin checks, and token/latency aggregation can be implemented from the UI and live table structure. The implementation should keep `ai_routes` fallback/model relationships intact and use the existing `ai_providers`/`ai_models`/`ai_secrets` data model instead of introducing parallel tables.
+The current UI contract and live catalog support safe provider listing, bounded usage aggregation, owner/admin checks, and a caller-supplied one-time probe. They do not establish the multi-model mapping needed for create/model updates or the encryption protocol needed for key writes and saved-key probes. The replacement preserves the existing `ai_providers`/`ai_models`/`ai_secrets` data model and refuses operations that could alter secrets or route relationships without those contracts.
 
-The complete former `admin-ai` source is still needed to resolve the provider-to-model projection, encrypted-secret write/read protocol, encryption-key custody and environment name, whether connection tests persist `ai_provider_health`, usage bucket timezone/retention semantics, route deletion policy and any provider-specific compatibility behavior. The wrapper comment mentions `COOKAPP_AI_MASTER_KEY`, but that name and the encryption format are not independently confirmed. Do not implement or deploy these unresolved storage/security behaviors by guessing. Recover the authorized function source or obtain the source owner's explicit data-mapping and key-custody contract first.
+The complete former `admin-ai` source is still needed to resolve the provider-to-model projection, encrypted-secret write/read protocol, encryption-key custody and environment name, whether connection tests persist `ai_provider_health`, usage bucket timezone/retention semantics, route deletion policy and any provider-specific compatibility behavior. The deployed wrapper comment names `COOKAPP_AI_MASTER_KEY`; the source branch `cursor/ai-platform-core-4b9d` returned 404 and the implementation could not be recovered. The name is wrapper evidence only. Its configured presence/value, key encoding or derivation, nonce encoding, ciphertext/tag packing, AAD, key-version interpretation, reference generation and rotation rules remain unknown. The current `recipe-import-worker` OCR provider reads a separate environment-only `RECIPE_IMPORT_OCR_API_KEY` and contains no AI provider secret resolver. The repository AES-GCM helper in `admin-auth/factors.ts` is for admin TOTP with separate key custody and storage, so it is not compatible evidence and must not be reused for provider keys.
+
+### Approved local replacement boundary
+
+The replacement is in `supabase/functions/admin-ai/`; its current protocol and
+six HTTP operations are documented in that directory's README. It supports
+owner/admin provider CRUD, v2 key writes/rotation, saved v2 probes, and existing
+usage aggregation. It uses the new `_shared/ai-secret.ts` helper and the
+service-role-only invoker save/delete RPC migration. Secret/provider/model
+writes are atomic. Model renames preserve identity and reject multiple-model or
+historical/routing dependencies. Delete guards primary/fallback routes,
+provider/model/final/attempted usage and audit history under transaction locks;
+old secrets remain intact. Cached-token aggregation uses the canonical nullable
+`cache_read_input_tokens` column, preserving unknown versus reported zero.
+
+The v2 contract is approved for this local implementation, not deployed:
+`COOKAPP_AI_SECRET_KEY_V2` is canonical unpadded base64url for 32 key bytes;
+AES-256-GCM uses a random 12-byte nonce, 128-bit tag and
+`ai-secrets:v2:${secret_ref}` AAD. Ciphertext plus tag and nonce use unpadded
+base64url; `key_version=2`. Each explicit key replacement inserts a new
+reference and retains old rows. Blank edits preserve v1 byte-for-byte; saved v1
+probes return 409 unsupported-version. The old master-key format remains
+unknown, and the external legacy worker has not been adapted or verified for v2.
+
+2026-10-09 local verification at `cbd5617`: 14 Deno tests, 44 pgTAP assertions and 151 actual
+Edge HTTP assertions passed with synthetic local accounts/sessions/keys. The
+complete original 17 migrations plus the new transaction migration replayed from
+an empty isolated Supabase project. Concurrent fallback/attempted-history
+insertion tests confirmed delete waits for the writer and then returns 409. No
+successful real provider authentication/generation is claimed. Earlier
+integration results above remain historical evidence for their tested revisions.
+The cache-column follow-up adds three targeted unit cases (17 Deno total) and a
+separate real local usage GET with synthetic reported, zero and unknown values;
+the full 44/151 matrix was not repeated for that projection-only change.
 
 ## Staging rollout and production rollback plan
 
 1. Build a staging project from a dedicated branch deploy directory. Do not link CLI commands to production. Before deployment, inspect `Deno.env.get` and the imported shared modules to enumerate the required secret names; configure values only in the staging secret store. Never copy production secrets into local files or test output.
 2. Apply the RevenueCat event-owner binding migration in staging before testing webhook deliveries. Replay duplicate event IDs for the same owner and a conflicting owner; verify idempotency and a conflict response without changing ownership.
 3. Deploy one function at a time with the `verify_jwt` value in this manifest. Run unauthenticated, invalid-session, and each administrator-role HTTP case against staging. Verify that `operator` and `readonly` receive 403 for plan writes and financial reads, and that non-owners receive 403 from `admin-dashboard`.
-4. Compare each staged function's deployed bundle SHA and version to the reviewed source commit and record the secret names (never values), timestamp, smoke-test results, and prior production version. Do not test `admin-ai` until its complete authorized implementation and provider contract are available.
+4. Compare each staged function's deployed bundle SHA and version to the reviewed source commit and record the secret names (never values), timestamp, smoke-test results, and prior production version. Stage `admin-ai` only after review accepts the v2 replacement and resolves external worker/key-custody compatibility for deployment.
 5. Production remains read-only until a separate, explicit release approval. If a later approved release fails, redeploy the prior reviewed source commit and matching lockfiles for that function, preserving the captured `verify_jwt` setting and server-side secret names. Record the resulting new Supabase version and bundle SHA; do not assume restoring a previous version number restores its content.
 
-No deployment, secret change, database write, migration, or Issue closure is included in this source change.
+No production deployment, production secret or data change, or Issue closure is included. The new migration has only been applied to isolated local databases.
