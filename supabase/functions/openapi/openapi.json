@@ -97,7 +97,21 @@
                     "modules": {
                       "type": "array",
                       "items": {
-                        "type": "string"
+                        "type": "string",
+                        "enum": [
+                          "auth",
+                          "user",
+                          "recipe",
+                          "collection",
+                          "ingredient",
+                          "grocery",
+                          "meal_plan",
+                          "pantry",
+                          "category",
+                          "storage",
+                          "subscription",
+                          "ai_platform"
+                        ]
                       }
                     },
                     "rest_base": {
@@ -982,10 +996,12 @@
             "name": "limit",
             "in": "query",
             "required": false,
-            "description": "Maximum rows; clamped to 1 through 100, default 50.",
+            "description": "Maximum rows, default 50. The handler floors fractional values and clamps the result to 1 through 100.",
             "schema": {
-              "type": "integer",
-              "default": 50
+              "type": "number",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
             }
           }
         ]
@@ -2284,6 +2300,14 @@
             "type": [
               "string",
               "null"
+            ],
+            "enum": [
+              "invalid_credentials",
+              "invalid_totp",
+              "invalid_passkey",
+              "account_locked",
+              "bootstrap_failed",
+              null
             ]
           }
         },
@@ -2643,7 +2667,7 @@
             "format": "uuid"
           }
         },
-        "additionalProperties": false,
+        "additionalProperties": true,
         "required": [
           "input_type",
           "mime_type",
@@ -3212,7 +3236,7 @@
             ]
           }
         },
-        "additionalProperties": false,
+        "additionalProperties": true,
         "required": [
           "planKey",
           "displayName",
@@ -3917,7 +3941,10 @@
             "type": "string"
           },
           "code": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^\\\\d{6}$",
+            "minLength": 6,
+            "maxLength": 6
           }
         },
         "additionalProperties": true,
@@ -3958,6 +3985,14 @@
           },
           "response": {
             "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ],
             "additionalProperties": true
           }
         },
@@ -3975,7 +4010,25 @@
             "default": "admin"
           },
           "newPassword": {
-            "type": "string"
+            "allOf": [
+              {
+                "type": "string",
+                "minLength": 12
+              },
+              {
+                "type": "string",
+                "pattern": "[A-Z]"
+              },
+              {
+                "type": "string",
+                "pattern": "[a-z]"
+              },
+              {
+                "type": "string",
+                "pattern": "[0-9]"
+              }
+            ],
+            "description": "At least 12 characters with uppercase, lowercase, and digit; common blocklisted values are rejected."
           },
           "currentPassword": {
             "type": "string"
@@ -3993,7 +4046,25 @@
             "type": "string"
           },
           "newPassword": {
-            "type": "string"
+            "allOf": [
+              {
+                "type": "string",
+                "minLength": 12
+              },
+              {
+                "type": "string",
+                "pattern": "[A-Z]"
+              },
+              {
+                "type": "string",
+                "pattern": "[a-z]"
+              },
+              {
+                "type": "string",
+                "pattern": "[0-9]"
+              }
+            ],
+            "description": "At least 12 characters with uppercase, lowercase, and digit; common blocklisted values are rejected."
           }
         },
         "additionalProperties": true,
@@ -4048,7 +4119,10 @@
         "type": "object",
         "properties": {
           "code": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^\\\\d{6}$",
+            "minLength": 6,
+            "maxLength": 6
           }
         },
         "additionalProperties": true,
@@ -4073,7 +4147,10 @@
         "type": "object",
         "properties": {
           "code": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^\\\\d{6}$",
+            "minLength": 6,
+            "maxLength": 6
           }
         },
         "additionalProperties": true
