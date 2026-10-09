@@ -18727,6 +18727,282 @@
           }
         }
       }
+    },
+    "RecipePouch Recipes": {
+      "comment": "Visible label or status in standalone HTML exports.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch 食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch 食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch レシピ"
+          }
+        }
+      }
+    },
+    "Exported %@. Recipe text only; photos, attachments, shopping lists, meal plans and app preferences are not included.": {
+      "comment": "Visible label or status in standalone HTML exports.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出时间：%@。仅包含食谱文字，不包括照片、附件、购物清单、膳食计划或应用设置。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯出時間：%@。僅包含食譜文字，不包括相片、附件、購物清單、餐食計畫或 App 設定。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポート日時：%@。レシピのテキストのみを含み、写真、添付ファイル、買い物リスト、献立、アプリ設定は含まれません。"
+          }
+        }
+      }
+    },
+    "No saved recipes in this export.": {
+      "comment": "Visible label or status in standalone HTML exports.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此次导出没有已保存的食谱。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此次匯出沒有已儲存的食譜。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このエクスポートには保存済みレシピがありません。"
+          }
+        }
+      }
+    },
+    "Recipe index": {
+      "comment": "Visible label or status in standalone HTML exports.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食谱目录"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食譜目錄"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピ一覧"
+          }
+        }
+      }
+    },
+    "Not specified": {
+      "comment": "Visible label or status in standalone HTML exports.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未填写"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未填寫"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未指定"
+          }
+        }
+      }
+    },
+    "Temperature/heat": {
+      "comment": "Visible label or status in standalone HTML exports.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "温度／火力"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "溫度／火力"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "温度／火加減"
+          }
+        }
+      }
+    },
+    "%lld seconds": {
+      "comment": "Visible label or status in standalone HTML exports.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 秒"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 秒"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 秒"
+          }
+        }
+      }
+    },
+    "Original URL": {
+      "comment": "Visible label or status in standalone HTML exports.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原始网址"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原始網址"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元のURL"
+          }
+        }
+      }
+    },
+    "Original source text": {
+      "comment": "Visible label or status in standalone HTML exports.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原始来源文本"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原始來源文字"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元のソーステキスト"
+          }
+        }
+      }
+    },
+    "Prep: %lld minutes": {
+      "comment": "Visible label or status in standalone HTML exports.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备：%lld 分钟"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備：%lld 分鐘"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備：%lld 分"
+          }
+        }
+      }
+    },
+    "Cook: %lld minutes": {
+      "comment": "Visible label or status in standalone HTML exports.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹饪：%lld 分钟"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹飪：%lld 分鐘"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理：%lld 分"
+          }
+        }
+      }
+    },
+    "Servings: %lld": {
+      "comment": "Visible label or status in standalone HTML exports.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "份数：%lld"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "份數：%lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "人数分：%lld"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
