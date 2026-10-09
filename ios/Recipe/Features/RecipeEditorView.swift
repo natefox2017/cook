@@ -106,7 +106,7 @@ struct RecipeEditorView: View {
                 Section {
                     ForEach($draft.ingredients) { $ingredient in
                         IngredientEditorRow(ingredient: $ingredient) {
-                            draft.ingredients.removeAll { $0.id == ingredient.id }
+                            draft.removeIngredient(id: ingredient.id)
                         }
                     }
                     Button {
@@ -120,7 +120,7 @@ struct RecipeEditorView: View {
                 Section("Steps") {
                     ForEach($draft.steps) { $step in
                         StepEditorRow(step: $step, ingredients: draft.ingredients) {
-                            draft.steps.removeAll { $0.id == step.id }
+                            draft.removeStep(id: step.id)
                         }
                     }
                     Button {
@@ -338,6 +338,9 @@ struct RecipeEditorView: View {
                 }
                 return cleaned
             }
+            // Empty editor rows are discarded above; their optional section/media links
+            // must not remain in a saved or synced recipe.
+            recipe.pruneDanglingReferences()
             if original.sourceURL == nil {
                 let value = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard value.isEmpty || RecipeDocumentParser.validatedSourceURL(value) != nil else {
