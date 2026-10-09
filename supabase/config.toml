@@ -15,6 +15,10 @@ verify_jwt = true
 # Its handler verifies its own admin tokens and bootstrap authorization.
 verify_jwt = false
 
+[functions.admin-users]
+# Uses the custom admin session checked by the handler, not a Supabase user JWT.
+verify_jwt = false
+
 [functions.recipe-imports]
 verify_jwt = true
 

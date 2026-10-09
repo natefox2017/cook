@@ -1,0 +1,57 @@
+.security-page { display: grid; gap: 18px; }
+.security-heading { margin-bottom: 1px; }
+.security-loading { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 220px; color: var(--muted); font-size: 12px; text-align: center; }
+.security-card { padding: 18px; }
+.security-card-heading { display: flex; align-items: center; gap: 12px; }
+.security-icon { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; color: #217a40; border-radius: 9px; background: #edf7ef; }
+.security-card-heading h2 { margin-bottom: 4px; }
+.security-card-heading p, .security-card-footer p, .security-form > p, .security-password-card p { color: var(--muted); font-size: 11px; line-height: 1.55; }
+.security-state { flex: 0 0 auto; margin-left: auto; padding: 5px 8px; border-radius: 99px; font-size: 10px; font-weight: 600; }
+.security-state.enabled { color: #176b34; background: #edf7ef; }
+.security-state.disabled { color: #748078; background: #f2f4f2; }
+.security-card-footer { display: flex; align-items: center; gap: 13px; margin-top: 17px; padding-top: 15px; border-top: 1px solid #edf0ed; }
+.security-card-footer p { flex: 1; }
+.security-form { display: grid; max-width: 480px; gap: 8px; margin: 18px 0 0 48px; }
+.security-form label, .security-passkey-footer label, .security-password-card label { color: #48534b; font-size: 11px; font-weight: 600; }
+.security-form input, .security-passkey-footer input, .security-password-card input { width: 100%; height: 37px; padding: 0 10px; color: var(--foreground); border: 1px solid var(--border-strong); outline: none; border-radius: 7px; background: white; font-size: 12px; }
+.security-form input:focus, .security-passkey-footer input:focus, .security-password-card input:focus { border-color: #71b784; box-shadow: 0 0 0 3px #2284481a; }
+.security-secret { display: block; overflow-wrap: anywhere; padding: 10px 11px; color: #33443a; border: 1px solid #e8eee8; border-radius: 7px; background: #f7faf7; font: 12px ui-monospace, SFMono-Regular, monospace; letter-spacing: .06em; }
+.security-actions { display: flex; gap: 8px; margin-top: 5px; }
+.security-remove-form { grid-template-columns: 1fr auto; align-items: end; }
+.security-remove-form > p { grid-column: 1 / -1; }
+.security-remove-form label { display: block; }
+.security-remove-form label + input { margin-top: -3px; }
+.security-remove-form button { grid-column: 2; grid-row: 2 / span 3; }
+.security-passkey-list { display: grid; margin: 17px 0 0 48px; border-top: 1px solid #edf0ed; }
+.security-passkey { display: flex; align-items: center; gap: 15px; min-height: 58px; border-bottom: 1px solid #edf0ed; }
+.security-passkey > div { display: grid; flex: 1; gap: 4px; }
+.security-passkey strong { color: #48534b; font-size: 11px; font-weight: 600; }
+.security-passkey span { color: #98a19a; font-size: 10px; }
+.security-delete { color: #8d5b56; font-size: 10px; }
+.security-passkey-footer { margin-left: 48px; }
+.security-passkey-footer label { white-space: nowrap; }
+.security-passkey-footer input { max-width: 280px; }
+.security-password-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(210px, 340px); align-items: center; gap: 10px 24px; }
+.security-password-card h2 { margin-bottom: 4px; }
+.security-success { display: flex; align-items: center; gap: 8px; padding: 10px 12px; color: #176b34; border: 1px solid #d9ebdc; border-radius: 8px; background: #f2faf3; font-size: 11px; }
+.security-event-list { display: grid; margin-top: 14px; border-top: 1px solid #edf0ed; }
+.security-event { display: flex; align-items: center; gap: 18px; min-height: 58px; padding: 9px 0; border-bottom: 1px solid #edf0ed; }
+.security-event-main, .security-event-meta { display: grid; flex: 1; gap: 4px; min-width: 0; }
+.security-event strong { color: #48534b; font-size: 11px; font-weight: 600; }
+.security-event span, .security-empty-events { color: #879188; font-size: 10px; }
+.security-event-meta { text-align: right; overflow-wrap: anywhere; }
+.security-empty-events { margin: 16px 0 2px; }
+
+@media (max-width: 680px) {
+  .security-card { padding: 14px; }
+  .security-card-heading { align-items: flex-start; flex-wrap: wrap; }
+  .security-state { margin-left: 48px; }
+  .security-form, .security-passkey-list, .security-passkey-footer { margin-left: 0; }
+  .security-card-footer, .security-passkey-footer { align-items: stretch; flex-direction: column; }
+  .security-passkey-footer input { max-width: none; }
+  .security-remove-form { grid-template-columns: 1fr; }
+  .security-remove-form > p, .security-remove-form button { grid-column: 1; grid-row: auto; }
+  .security-password-card { grid-template-columns: 1fr; }
+  .security-event { align-items: stretch; flex-direction: column; gap: 6px; }
+  .security-event-meta { text-align: left; }
+}
