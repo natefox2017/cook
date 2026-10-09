@@ -23,6 +23,7 @@ struct CookingView: View {
     @State private var isConfirmingSessionRecovery = false
     @State private var isReplacingSession = false
     @State private var isShowingIngredients = false
+    @State private var parameterInfo: RecipeParameterInfo?
     @State private var isShowingTimers = false
     @State private var isAddingManualTimer = false
     @State private var isRenamingManualTimer = false
@@ -83,6 +84,7 @@ struct CookingView: View {
             .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar { cookingToolbar }
             .sheet(isPresented: $isShowingIngredients) { ingredientSheet }
+            .sheet(item: $parameterInfo) { info in RecipeParameterSheet(info: info) }
             .sheet(isPresented: $isShowingTimers) { timersSheet }
             .confirmationDialog(
                 "Finish and stop active timers?",
@@ -195,12 +197,19 @@ struct CookingView: View {
                 }
 
                 if let temperature = step.temperature, !temperature.text.isEmpty {
-                    Label(temperature.text, systemImage: "thermometer.medium")
-                        .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
-                        .foregroundStyle(RecipeTheme.accentForeground)
-                        .padding(.horizontal, 14)
-                        .frame(minHeight: 44)
-                        .background(RecipeTheme.accent.opacity(0.08), in: Capsule())
+                    Button {
+                        parameterInfo = .temperature(temperature)
+                    } label: {
+                        Label(temperature.text, systemImage: "thermometer.medium")
+                            .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
+                            .foregroundStyle(RecipeTheme.accentForeground)
+                            .padding(.horizontal, 14)
+                            .frame(minHeight: 44)
+                            .background(RecipeTheme.accent.opacity(0.08), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Show temperature conversion")
+                    .accessibilityIdentifier("cookingStepTemperatureInfo")
                 }
 
                 stepIngredients(step, recipe: recipe)
@@ -220,7 +229,8 @@ struct CookingView: View {
                                 notificationsEnabled: store.settings.timerNotifications,
                                 onStart: { startTimer(definition, stepID: step.id) },
                                 onPause: { pauseTimer(definition.id) },
-                                onReset: { resetTimer(definition, stepID: step.id) }
+                                onReset: { resetTimer(definition, stepID: step.id) },
+                                onInfo: { parameterInfo = .timer(definition) }
                             )
                         }
                     }
@@ -286,43 +296,47 @@ struct CookingView: View {
                 }
 
                 ForEach(linked) { ingredient in
-                    Button {
-                        toggleIngredient(ingredient.id)
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(
-                                systemName: session.usedIngredientIDs.contains(ingredient.id)
-                                    ? "checkmark.circle.fill"
-                                    : "circle"
-                            )
-                            .foregroundStyle(
-                                session.usedIngredientIDs.contains(ingredient.id)
-                                    ? RecipeTheme.accentForeground
-                                    : Color.secondary
-                            )
-
-                            Text(ingredient.name)
-                                .foregroundStyle(.primary)
-
-                            Spacer(minLength: 8)
-
-                            let amount = ingredient.displayAmount(
-                                servings: session.servings,
-                                originalServings: recipe.servings
-                            )
-                            if !amount.isEmpty {
-                                Text(amount)
-                                    .foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        Button {
+                            toggleIngredient(ingredient.id)
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(
+                                    systemName: session.usedIngredientIDs.contains(ingredient.id)
+                                        ? "checkmark.circle.fill" : "circle"
+                                )
+                                .foregroundStyle(
+                                    session.usedIngredientIDs.contains(ingredient.id)
+                                        ? RecipeTheme.accentForeground : Color.secondary
+                                )
+                                Text(ingredient.name).foregroundStyle(.primary)
+                                Spacer(minLength: 8)
+                                let amount = ingredient.displayAmount(
+                                    servings: session.servings,
+                                    originalServings: recipe.servings
+                                )
+                                if !amount.isEmpty { Text(amount).foregroundStyle(.secondary) }
                             }
+                            .frame(minHeight: 44)
                         }
-                        .frame(minHeight: 44)
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(
+                            session.usedIngredientIDs.contains(ingredient.id)
+                                ? LocalizedStringKey("\(ingredient.name), used")
+                                : LocalizedStringKey("\(ingredient.name), not used")
+                        )
+                        Button {
+                            parameterInfo = .ingredient(
+                                ingredient, servings: session.servings,
+                                originalServings: recipe.servings)
+                        } label: {
+                            Image(systemName: "info.circle")
+                                .frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Show ingredient amount details")
+                        .accessibilityIdentifier("cookingIngredientInfo.\(ingredient.id.uuidString)")
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(
-                        session.usedIngredientIDs.contains(ingredient.id)
-                            ? LocalizedStringKey("\(ingredient.name), used")
-                            : LocalizedStringKey("\(ingredient.name), not used")
-                    )
                 }
             }
             .padding(16)
@@ -1356,6 +1370,7 @@ private struct CookingStepTimerPanel: View {
     let onStart: () -> Void
     let onPause: () -> Void
     let onReset: () -> Void
+    let onInfo: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.locale) private var locale
@@ -1366,17 +1381,22 @@ private struct CookingStepTimerPanel: View {
 
             VStack(alignment: .leading, spacing: RecipeSpacing.small) {
                 HStack {
-                    Label {
-                        if remaining == 0 {
-                            Text("Time’s up")
-                        } else {
-                            Text(label)
+                    Button(action: onInfo) {
+                        Label {
+                            if remaining == 0 {
+                                Text("Time’s up")
+                            } else {
+                                Text(label)
+                            }
+                        } icon: {
+                            Image(systemName: remaining == 0 ? "bell.badge" : "timer")
                         }
-                    } icon: {
-                        Image(systemName: remaining == 0 ? "bell.badge" : "timer")
+                        .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+                        .foregroundStyle(RecipeTheme.accentForeground)
                     }
-                    .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
-                    .foregroundStyle(RecipeTheme.accentForeground)
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Show timer details")
+                    .accessibilityIdentifier("cookingTimerInfo")
                     Spacer()
                     Text(durationText(timer.durationSeconds))
                         .font(RecipeTheme.text(12, relativeTo: .caption))

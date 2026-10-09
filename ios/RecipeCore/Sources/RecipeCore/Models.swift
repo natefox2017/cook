@@ -432,6 +432,29 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
     }
 }
 
+
+/// Convert only an explicitly numeric Celsius/Fahrenheit value; qualitative heat stays verbatim.
+public enum RecipeTemperatureConversion {
+    private static let pattern = try? NSRegularExpression(
+        pattern: #"^\s*(-?[0-9]+(?:\.[0-9]+)?)\s*°?\s*([CFcf])\s*$"#
+    )
+
+    public static func alternateUnit(for text: String) -> String? {
+        guard let pattern else { return nil }
+        let range = NSRange(text.startIndex..., in: text)
+        guard let match = pattern.firstMatch(in: text, range: range),
+            let numberRange = Range(match.range(at: 1), in: text),
+            let unitRange = Range(match.range(at: 2), in: text),
+            let number = Double(text[numberRange]),
+            number.isFinite, abs(number) < 10_000
+        else { return nil }
+
+        let unit = text[unitRange].uppercased()
+        let converted = unit == "C" ? number * 9 / 5 + 32 : (number - 32) * 5 / 9
+        return "\(Int(converted.rounded()))°\(unit == "C" ? "F" : "C")"
+    }
+}
+
 public struct CookingTemperature: Codable, Hashable, Sendable {
     public var text: String
 

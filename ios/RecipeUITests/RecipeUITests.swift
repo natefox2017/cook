@@ -196,7 +196,7 @@ final class RecipeUITests: XCTestCase {
         cookFromStep.tap()
 
         assertCookingStep("Step 4 of 8", in: app)
-        XCTAssertTrue(app.staticTexts["220°C"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["cookingStepTemperatureInfo"].waitForExistence(timeout: 8))
 
         let chicken = app.buttons.matching(
             NSPredicate(format: "label BEGINSWITH %@", "Chicken thighs")
@@ -520,6 +520,44 @@ final class RecipeUITests: XCTestCase {
 
         app.buttons["account.close"].tap()
         XCTAssertTrue(app.buttons["profile.account"].waitForExistence(timeout: 8))
+    }
+
+    @MainActor
+    func testCookingParameterDetailsDoNotChangeStepProgress() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let recipe = app.buttons["recipe.C0010000-0000-4000-8000-000000000005"]
+        reveal(recipe, in: app, maximumSwipes: 4)
+        recipe.tap()
+
+        let start = app.buttons["cookFromStep.4"]
+        revealRecipeStepAction(start, in: app)
+        start.tap()
+        assertCookingStep("Step 4 of 8", in: app)
+
+        let temperature = app.buttons["cookingStepTemperatureInfo"]
+        reveal(temperature, in: app, scrollView: app.scrollViews["cookingScroll"])
+        waitUntilReady(temperature)
+        temperature.tap()
+        XCTAssertTrue(app.navigationBars["Temperature"].waitForExistence(timeout: 8))
+        let conversion = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", "428°F")
+        ).firstMatch
+        XCTAssertTrue(conversion.exists)
+        app.navigationBars.buttons["Done"].tap()
+
+        let ingredientInfo = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "cookingIngredientInfo.")
+        ).firstMatch
+        reveal(ingredientInfo, in: app, scrollView: app.scrollViews["cookingScroll"])
+        waitUntilReady(ingredientInfo)
+        ingredientInfo.tap()
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", "Current amount")
+        ).firstMatch.waitForExistence(timeout: 8))
+        app.navigationBars.buttons["Done"].tap()
+        assertCookingStep("Step 4 of 8", in: app)
     }
 
     @MainActor
