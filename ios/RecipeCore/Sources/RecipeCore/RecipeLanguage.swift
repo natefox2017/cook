@@ -124,7 +124,9 @@ public enum RecipeLanguage {
             return Locale(identifier: arguments[index + 1])
         }
 
-        if arguments.contains("--uitesting") {
+        if arguments.contains("--uitesting") &&
+            !arguments.contains("--uitesting-allow-language-preferences")
+        {
             return Locale(identifier: defaultLanguage)
         }
 
