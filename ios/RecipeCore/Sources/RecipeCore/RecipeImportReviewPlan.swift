@@ -18,7 +18,7 @@ public struct RecipeImportReviewQuestion: Identifiable, Equatable, Sendable {
 /// Never invent missing measurements or instructions. This only asks users to
 /// clarify fields the import worker has already flagged as needing review.
 public enum RecipeImportReviewPlan {
-    private static let questions: [(key: String, text: String)] = [
+    private static let orderedQuestions: [(key: String, text: String)] = [
         ("title", "What should this recipe be called?"),
         ("ingredients", "Which ingredients and amounts are missing?"),
         ("steps", "What preparation steps are missing?"),
@@ -30,7 +30,7 @@ public enum RecipeImportReviewPlan {
     ) -> [RecipeImportReviewQuestion] {
         guard result.resultStatus == .needsReview, maximum > 0 else { return [] }
         let requested = Set((result.reviewFields ?? []).map { groupName($0) })
-        return questions.compactMap { candidate -> RecipeImportReviewQuestion? in
+        return orderedQuestions.compactMap { candidate -> RecipeImportReviewQuestion? in
             guard requested.contains(candidate.key) else { return nil }
             let relevant = result.fields.filter { groupName($0.key) == candidate.key }
             // Explicitly confirmed fields win over an older server review flag.
