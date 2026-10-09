@@ -160,3 +160,12 @@ func reminderWarningUsesDeadlineAndSkipsShortPausedOrExpiredTimers() {
             .earlyWarningAt == nil
     )
 }
+
+@Test
+func recipeTemperatureComparisonRequiresExplicitNumericSource() {
+    #expect(RecipeTemperatureConversion.alternateUnit(for: "180°C") == "356°F")
+    #expect(RecipeTemperatureConversion.alternateUnit(for: "95 °F") == "35°C")
+    #expect(RecipeTemperatureConversion.alternateUnit(for: "medium-high") == nil)
+    #expect(RecipeTemperatureConversion.alternateUnit(for: "180°C / 350°F") == nil)
+    #expect(RecipeTemperatureConversion.alternateUnit(for: "until golden") == nil)
+}
