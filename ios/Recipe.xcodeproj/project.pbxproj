@@ -729,7 +729,7 @@
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = "en";
 			hasScannedForEncodings = 0;
-			knownRegions = ("en", "zh-Hans", "zh-Hant", "ja", "Base",);
+			knownRegions = ("en", "zh-Hans", "zh-Hant", "ja", "de", "fr", "es", "it", "pt", "nl", "ko", "Base",);
 			mainGroup = "C9914A82A94653DFA8FC0769";
 			packageReferences = ("E0BD853C4F100DAA8DCCA53D", "CA2500000000000000000005",);
 			productRefGroup = "29493F7A0A1DC0A29D62667D";
