@@ -60,3 +60,26 @@ Queues：
 - https://supabase.com/docs/guides/queues/consuming-messages-with-edge-functions
 
 用于导入任务的 durable asynchronous processing。
+
+## Cooking 体验：下一阶段参考产品
+
+研究目的：观察**已上线**食谱 App 的实际持续运营功能，提炼重复出现的烹饪交互，而不是复刻旧代码或照搬某张商业 UI。
+
+| 参考 | 已上线的产品做法 | 提炼到 Recipe Pals | 参考链接 |
+| --- | --- | --- | --- |
+| Paprika（iOS） | 时间识别/点时间开始 timer；多个 timer 可管理；到点有系统通知音；食材可缩放 | 现有多 timer 上加提前/到点不同提示，安全复用当前 deadline | https://www.paprikaapp.com/help/ios/ |
+| ReciMe（官方说明 2026-08 更新） | 点击指令中高亮食材查看当前份量；点温度查看转换；支持配方份量/公英制转换 | Recipe Detail 与 Cooking Mode 的轻量原生参数信息卡，不增加冗长备注 | https://recime.app/help/en/articles/11596272-how-can-i-get-the-most-out-of-recime |
+| Crouton | 单步骤 Cooking 视图里集成 hands-free、计时器等操作 | 语音控制只加在现有 Cooking 视图，不创建第五个 Tab | https://mwm.ai/apps/crouton-recipe-manager/1461650987 |
+| Tamarin | 明示的 next/previous/read step/voice timer 指令，用户主动启用语音助理 | 先做明确的 Next/Previous/Repeat 闭集指令；不造全局 AI 语音对话系统 | https://jointamarin.com/ |
+
+### Apple API 和开源复用边界
+
+- 本地完成/提前通知优先复用 `UserNotifications.UNNotificationSound`：资源在设备上，自定义音频用 Apple 支持的格式且**短于 30 秒**，尊重系统静音/专注模式。 https://developer.apple.com/documentation/usernotifications/unnotificationsound
+- 语音指令优先 `Speech.SFSpeechRecognizer` + `AVAudioEngine`；识别授权与麦克风授权由用户明确同意。端侧能力要先检查 `supportsOnDeviceRecognition`，不能在不支持时谎称离线。 https://developer.apple.com/documentation/speech/sfspeechrecognizer/supportsondevicerecognition
+- 朗读当前步骤可直接使用 `AVSpeechSynthesizer`。 https://developer.apple.com/documentation/avfaudio/avspeechsynthesizer
+- 开源候选 `SwiftSpeech`（MIT）：参考其 SwiftUI 麦克风权限/会话/识别包装，开发前先确认 iOS 18+/Swift 6 兼容性、维护情况和依赖成本；不要为了几个固定指令引入过大的模型。 https://github.com/Cay-Zhang/SwiftSpeech
+- 参数信息卡优先用 SwiftUI `.popover` / `.sheet`，在紧凑 iPhone 走原生底部呈现，不引入新 UI 库。 https://developer.apple.com/documentation/swiftui/presentationadaptation
+
+产品边界：这些都是**功能设计参考**，不代表 Recipe Pals 已经实现。参数信息来自可验证的食谱字段，精确 `°C ↔ °F` 与同维度单位换算可以计算；模糊用量、重量↔容量、营养数值没有证据不可自动填充。
+
+下一步具体开发与验收定义：[Timer sounds #231](https://github.com/natefox2017/cook/issues/231)、[Voice controls #232](https://github.com/natefox2017/cook/issues/232)、[Tap-to-explain #233](https://github.com/natefox2017/cook/issues/233)。
