@@ -86,3 +86,39 @@ func proposedEditsRejectStaleRevisionsUnexpectedPathsAndUnsafeText() throws {
         try blank.preview(on: old)
     }
 }
+
+@Test
+func aiEditProposalHasBoundedOperationsAndNoSharedImportJobForVariants() throws {
+    let ingredient = RecipeIngredient.from(name: "Flour", amountText: "100 g")
+    var recipe = Recipe(title: "Bread", ingredients: [ingredient],
+        steps: [.init(instruction: "Knead")], sourceURL: "https://example.org/bread",
+        notes: "Personal")
+    let evidence = RecipeImportJobResponse.Result(
+        recipeID: recipe.id, status: "ready",
+        source: .init(inputType: "url"), fields: [:])
+    recipe.importRecord = RecipeImportRecord(jobID: UUID(), result: evidence)
+    recipe.isFavorite = true
+    let change = RecipeEditChange.ingredientName(
+        id: ingredient.id, original: "Flour", proposed: "Wheat flour")
+    let oversized = RecipeEditProposal(
+        recipeID: recipe.id, basedOnUpdate: recipe.updatedAt,
+        changes: Array(repeating: change, count: 31))
+    #expect(throws: RecipeEditProposalError.oversizedProposal) {
+        try oversized.preview(on: recipe)
+    }
+    let overlongReason = RecipeEditProposal(
+        recipeID: recipe.id, basedOnUpdate: recipe.updatedAt,
+        changes: [change], reasons: [String(repeating: "x", count: 301)])
+    #expect(throws: RecipeEditProposalError.oversizedProposal) {
+        try overlongReason.preview(on: recipe)
+    }
+    let valid = RecipeEditProposal(
+        recipeID: recipe.id, basedOnUpdate: recipe.updatedAt, changes: [change])
+    let variant = try valid.approvedRecipe(from: recipe, asVariant: true)
+    #expect(variant.id != recipe.id)
+    #expect(variant.importRecord == nil)
+    #expect(variant.isFavorite == false)
+    #expect(variant.sourceURL == recipe.sourceURL)
+    #expect(variant.notes == recipe.notes)
+    #expect(recipe.importRecord != nil)
+}
