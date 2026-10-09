@@ -986,7 +986,9 @@ struct CookingView: View {
     }
 
     private func beginManualTimerRename(_ active: PersistedActiveTimer) {
-        guard active.isManual else { return }
+        guard active.isManual else {
+            return
+        }
         manualTimerRenameID = active.id
         manualTimerRenameDraft = active.label
         isRenamingManualTimer = true
