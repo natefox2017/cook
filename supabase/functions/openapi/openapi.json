@@ -2,12 +2,14 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RecipePouch Edge API — Repository Replacement",
-    "version": "2026-10-09.1",
-    "description": "Repository-scoped replacement contract assembled from implemented Edge Function handlers. It is not a parity reconstruction of the unavailable production OpenAPI v23. The route set is based on cook main bef764c4, including the merged admin and RevenueCat handlers. admin-ai is intentionally excluded because this repository has no implementation handler.",
-    "x_contract_kind": "repository-current-handler-replacement",
+    "version": "2026-10-09.2",
+    "description": "Repository-scoped replacement contract assembled from implemented Edge Function handlers. It is not a parity reconstruction of the unavailable production OpenAPI v23. The existing handler contract is sourced from current main. Six admin-ai operations freeze the current admin UI types and PR #211 handler contract; they do not assert production deployment parity.",
+    "x_contract_kind": "repository-current-handler-and-frozen-admin-ai-contract",
     "x_source_revisions": {
-      "main": "bef764c4a95186d27d69dbcd76d8ae51c2b47977"
-    }
+      "main": "ceff8616e4a0433a45ad3731c0fc2c36b6e075f6",
+      "admin_ai_pr_211": "01e81cfddcae71779dd843ca66e4d13050f0b1fb"
+    },
+    "x_source_catalog": "supabase/ISSUE_155_EDGE_FUNCTION_SOURCE_MANIFEST.md#admin-ai-recovery-plan-and-source-gap"
   },
   "servers": [
     {
@@ -32,6 +34,9 @@
     },
     {
       "name": "Billing admin"
+    },
+    {
+      "name": "Admin AI"
     },
     {
       "name": "RevenueCat"
@@ -535,6 +540,388 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/admin-ai/providers": {
+      "get": {
+        "summary": "List AI providers",
+        "description": "Requires a valid custom admin session with role owner or admin. The response exposes only apiKeyConfigured, never key material.",
+        "tags": [
+          "Admin AI"
+        ],
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "x-required-admin-roles": [
+          "owner",
+          "admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMProviderList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminAiUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AdminAiForbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/AdminAiServiceUnavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/AdminAiInternalError"
+          },
+          "405": {
+            "$ref": "#/components/responses/AdminAiMethodNotAllowed"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create an AI provider",
+        "description": "Requires owner or admin. The provider, model mapping, and optional v2 secret envelope are saved atomically. A successful create returns the provider projection. Invalid input or a missing required key returns 400; a transaction conflict returns 409; unavailable v2 key configuration or an unsupported secret operation returns 503.",
+        "tags": [
+          "Admin AI"
+        ],
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "x-required-admin-roles": [
+          "owner",
+          "admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Created provider projection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/AdminAiBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminAiUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AdminAiForbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/AdminAiConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/AdminAiServiceUnavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/AdminAiInternalError"
+          },
+          "405": {
+            "$ref": "#/components/responses/AdminAiMethodNotAllowed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LLMProviderInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-ai/providers/{id}": {
+      "put": {
+        "summary": "Update provider metadata",
+        "description": "Requires owner or admin. An empty apiKey preserves the existing secret reference; an explicit key uses the v2 envelope. Provider metadata edits succeed while referenced. Changing the model returns 409 only when a history or route reference, or a multi-model mapping, prevents the atomic change. An unavailable v2 key configuration returns 503.",
+        "tags": [
+          "Admin AI"
+        ],
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "x-required-admin-roles": [
+          "owner",
+          "admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated provider projection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/AdminAiBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminAiUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AdminAiForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AdminAiNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/AdminAiConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/AdminAiServiceUnavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/AdminAiInternalError"
+          },
+          "405": {
+            "$ref": "#/components/responses/AdminAiMethodNotAllowed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LLMProviderInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Provider identifier from LLMProvider.id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete an AI provider",
+        "description": "Requires owner or admin. An unreferenced provider is deleted atomically and returns {ok: true}. History, route, usage, or model references return 409; an unknown provider returns 404.",
+        "tags": [
+          "Admin AI"
+        ],
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "x-required-admin-roles": [
+          "owner",
+          "admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider and unreferenced models deleted; retained secret rows are not purged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAiProviderDeleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/AdminAiBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminAiUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AdminAiForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AdminAiNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/AdminAiConflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/AdminAiInternalError"
+          },
+          "405": {
+            "$ref": "#/components/responses/AdminAiMethodNotAllowed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Provider identifier from LLMProvider.id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/admin-ai/providers/test": {
+      "post": {
+        "summary": "Test a provider connection",
+        "description": "Requires owner or admin. With providerId, the handler loads the saved provider endpoint, model, and key and ignores caller overrides. Without providerId, name, baseUrl, model, and a one-time apiKey are required. Keys are never persisted or echoed. A saved v1 key is unsupported and returns 409; a provider without a saved key/model also returns 409; a probe failure returns 200 with ok: false.",
+        "tags": [
+          "Admin AI"
+        ],
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "x-required-admin-roles": [
+          "owner",
+          "admin"
+        ],
+        "responses": {
+          "404": {
+            "description": "404 not_found: The provider does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "409 conflict: the saved provider lacks a usable key/model, its saved key version is unsupported, or a provider model/reference guard rejects a change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedErrorEnvelope"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Probe result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAiProviderTestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/AdminAiBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminAiUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AdminAiForbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/AdminAiServiceUnavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/AdminAiInternalError"
+          },
+          "405": {
+            "$ref": "#/components/responses/AdminAiMethodNotAllowed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminAiProviderTestInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-ai/usage": {
+      "get": {
+        "summary": "Read AI usage aggregates",
+        "description": "Requires owner or admin. cachedInputTokens sums reported cache-read input tokens, is null when no event reports a value, and is zero when reported values sum to zero. averageLatencyMs is nullable.",
+        "tags": [
+          "Admin AI"
+        ],
+        "security": [
+          {
+            "AdminSessionBearer": []
+          }
+        ],
+        "x-required-admin-roles": [
+          "owner",
+          "admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage totals, daily series, and model aggregates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMUsage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/AdminAiBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminAiUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AdminAiForbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/AdminAiServiceUnavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/AdminAiInternalError"
+          },
+          "405": {
+            "$ref": "#/components/responses/AdminAiMethodNotAllowed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "description": "Reporting window.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d"
+              ],
+              "default": "7d"
             }
           }
         ]
@@ -4291,6 +4678,349 @@
           "type"
         ],
         "additionalProperties": false
+      },
+      "LLMProvider": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "apiKeyConfigured": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "baseUrl",
+          "model",
+          "active",
+          "apiKeyConfigured",
+          "updatedAt"
+        ]
+      },
+      "LLMProviderInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "baseUrl": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048,
+            "description": "Absolute HTTP or HTTPS URL without URL credentials, query, or fragment."
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "apiKey": {
+            "type": "string",
+            "maxLength": 8192,
+            "writeOnly": true,
+            "description": "Write-only provider key. It is never returned or logged."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "baseUrl",
+          "model",
+          "apiKey",
+          "active"
+        ]
+      },
+      "LLMProviderList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LLMProvider"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "data"
+        ]
+      },
+      "AdminAiProviderTestInput": {
+        "type": "object",
+        "properties": {
+          "providerId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048,
+            "description": "Absolute HTTPS URL to a public provider endpoint."
+          },
+          "model": {
+            "type": "string"
+          },
+          "apiKey": {
+            "type": "string",
+            "maxLength": 8192,
+            "writeOnly": true,
+            "description": "Optional one-time key. Omitting it to use a saved v1 key returns 503/server_misconfigured."
+          }
+        },
+        "required": [
+          "name",
+          "baseUrl",
+          "model"
+        ]
+      },
+      "AdminAiProviderTestResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "ok"
+        ]
+      },
+      "LLMUsage": {
+        "type": "object",
+        "properties": {
+          "totals": {
+            "type": "object",
+            "properties": {
+              "requests": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "inputTokens": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "outputTokens": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "totalTokens": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "cachedInputTokens": {
+                "description": "Sum of reported cache-read input tokens. Null means no event reported a value; zero means reported values summed to zero.",
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "averageLatencyMs": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "requests",
+              "inputTokens",
+              "outputTokens",
+              "totalTokens"
+            ]
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "requests": {
+                  "type": "number"
+                },
+                "inputTokens": {
+                  "type": "number"
+                },
+                "outputTokens": {
+                  "type": "number"
+                },
+                "totalTokens": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "date",
+                "requests",
+                "inputTokens",
+                "outputTokens",
+                "totalTokens"
+              ]
+            }
+          },
+          "byModel": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "requests": {
+                  "type": "number"
+                },
+                "totalTokens": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "provider",
+                "model",
+                "requests",
+                "totalTokens"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "totals",
+          "series",
+          "byModel"
+        ]
+      },
+      "AdminAiProviderDeleteResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "ok"
+        ]
+      }
+    },
+    "responses": {
+      "AdminAiBadRequest": {
+        "description": "400 validation_error: The request body, URL, or usage range is invalid.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SharedErrorEnvelope"
+            }
+          }
+        }
+      },
+      "AdminAiUnauthorized": {
+        "description": "401 unauthorized: The custom admin session is missing, invalid, or expired.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SharedErrorEnvelope"
+            }
+          }
+        }
+      },
+      "AdminAiForbidden": {
+        "description": "403 forbidden: The session is valid but the role is not owner or admin.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SharedErrorEnvelope"
+            }
+          }
+        }
+      },
+      "AdminAiNotFound": {
+        "description": "404 not_found: The provider does not exist.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SharedErrorEnvelope"
+            }
+          }
+        }
+      },
+      "AdminAiConflict": {
+        "description": "409 conflict: the saved provider lacks a usable key/model, its saved key version is unsupported, or a provider model/reference guard rejects a change.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SharedErrorEnvelope"
+            }
+          }
+        }
+      },
+      "AdminAiServiceUnavailable": {
+        "description": "503 server_misconfigured: the v2 key is unavailable or a required service operation failed. 5xx messages are sanitized.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SharedErrorEnvelope"
+            }
+          }
+        }
+      },
+      "AdminAiMethodNotAllowed": {
+        "description": "405 method_not_allowed: The path does not support this HTTP method.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SharedErrorEnvelope"
+            }
+          }
+        }
+      },
+      "AdminAiInternalError": {
+        "description": "500 internal_error: An unexpected error occurred; details are not exposed.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SharedErrorEnvelope"
+            }
+          }
+        }
       }
     }
   }

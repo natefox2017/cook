@@ -84,7 +84,8 @@ Deno.test("OpenAPI GET serves the bundled contract over loopback", async () => {
       "Served document differs from bundled JSON",
     );
     expect(
-      served.info?.x_contract_kind === "repository-current-handler-replacement",
+      served.info?.x_contract_kind ===
+        "repository-current-handler-and-frozen-admin-ai-contract",
       "Missing replacement metadata",
     );
     validateLocalReferences(served);
@@ -143,6 +144,10 @@ Deno.test("OpenAPI documents the frozen implemented route set", () => {
     "/recipe-import-artifacts/{artifact_id}/download": ["get"],
     "/recipe-import-worker": ["post"],
     "/purge-expired-recipe-import-artifacts": ["post"],
+    "/admin-ai/providers": ["get", "post"],
+    "/admin-ai/providers/test": ["post"],
+    "/admin-ai/providers/{id}": ["delete", "put"],
+    "/admin-ai/usage": ["get"],
     "/admin-auth/bootstrap-status": ["get"],
     "/admin-auth/login": ["post"],
     "/admin-auth/login-totp": ["post"],
@@ -179,5 +184,227 @@ Deno.test("OpenAPI documents the frozen implemented route set", () => {
   expect(
     JSON.stringify(actualEntries) === JSON.stringify(expectedEntries),
     "OpenAPI methods or paths do not match the reviewed route inventory",
+  );
+});
+
+Deno.test("Admin AI contract freezes roles, types, and unsupported outcomes", () => {
+  const document = spec as unknown as {
+    paths: Record<string, Record<string, Record<string, unknown>>>;
+    components: { schemas: Record<string, Record<string, unknown>> };
+  };
+  const operations = [
+    ["/admin-ai/providers", "get"],
+    ["/admin-ai/providers", "post"],
+    ["/admin-ai/providers/{id}", "put"],
+    ["/admin-ai/providers/{id}", "delete"],
+    ["/admin-ai/providers/test", "post"],
+    ["/admin-ai/usage", "get"],
+  ] as const;
+
+  for (const [path, method] of operations) {
+    const operation = document.paths[path][method];
+    expect(
+      JSON.stringify(operation.security) ===
+        JSON.stringify([{ AdminSessionBearer: [] }]),
+      `${method.toUpperCase()} ${path} requires a custom admin session`,
+    );
+    expect(
+      JSON.stringify(operation["x-required-admin-roles"]) ===
+        JSON.stringify(["owner", "admin"]),
+      `${method.toUpperCase()} ${path} is owner/admin only`,
+    );
+    const responses = operation.responses as Record<string, unknown>;
+    expect(responses["401"] !== undefined, `${method} ${path} documents 401`);
+    expect(responses["403"] !== undefined, `${method} ${path} documents 403`);
+  }
+
+  const schemas = document.components.schemas;
+  const providerInput = schemas.LLMProviderInput;
+  const providerProperties = providerInput.properties as Record<
+    string,
+    Record<string, unknown>
+  >;
+  expect(
+    JSON.stringify(Object.keys(providerProperties).sort()) ===
+      JSON.stringify(["active", "apiKey", "baseUrl", "model", "name"]),
+    "Provider input fields match LLMProviderInput",
+  );
+  expect(
+    providerProperties.apiKey.writeOnly === true,
+    "Provider keys are write-only",
+  );
+  expect(
+    !("apiKey" in (schemas.LLMProvider.properties as Record<string, unknown>)),
+    "Provider responses never expose key material",
+  );
+  const providerResponseProperties = schemas.LLMProvider.properties as Record<
+    string,
+    unknown
+  >;
+  expect(
+    JSON.stringify(Object.keys(providerResponseProperties).sort()) ===
+      JSON.stringify([
+        "active",
+        "apiKeyConfigured",
+        "baseUrl",
+        "id",
+        "model",
+        "name",
+        "updatedAt",
+      ]),
+    "Provider response fields match LLMProvider",
+  );
+
+  const testInput = schemas.AdminAiProviderTestInput;
+  const testInputProperties = testInput.properties as Record<
+    string,
+    Record<string, unknown>
+  >;
+  expect(
+    JSON.stringify(Object.keys(testInputProperties).sort()) ===
+      JSON.stringify(["apiKey", "baseUrl", "model", "name", "providerId"]),
+    "Connection-test request fields match admin/src/api.ts",
+  );
+  expect(
+    JSON.stringify(testInput.required) ===
+      JSON.stringify(["name", "baseUrl", "model"]),
+    "Connection-test key and provider id remain optional",
+  );
+
+  const usage = schemas.LLMUsage;
+  const usageProperties = usage.properties as Record<
+    string,
+    Record<string, unknown>
+  >;
+  const totals = usageProperties.totals;
+  const totalProperties = totals.properties as Record<string, unknown>;
+  expect(
+    JSON.stringify(Object.keys(totalProperties).sort()) ===
+      JSON.stringify([
+        "averageLatencyMs",
+        "cachedInputTokens",
+        "inputTokens",
+        "outputTokens",
+        "requests",
+        "totalTokens",
+      ]),
+    "Usage totals match LLMUsage",
+  );
+  expect(
+    !((totals.required as string[]).includes("cachedInputTokens")),
+    "Cached input tokens remain optional in the response contract",
+  );
+  const cachedInput = totalProperties.cachedInputTokens as {
+    type: string[];
+    description: string;
+  };
+  expect(
+    JSON.stringify(cachedInput.type) === JSON.stringify(["number", "null"]) &&
+      cachedInput.description.includes(
+        "zero means reported values summed to zero",
+      ),
+    "Cached input distinguishes unknown values from reported zero",
+  );
+  const usageSeries = usageProperties.series.items as Record<
+    string,
+    unknown
+  >;
+  expect(
+    JSON.stringify(
+      Object.keys(usageSeries.properties as Record<string, unknown>).sort(),
+    ) ===
+      JSON.stringify([
+        "date",
+        "inputTokens",
+        "outputTokens",
+        "requests",
+        "totalTokens",
+      ]),
+    "Usage series fields match LLMUsage",
+  );
+  const usageByModel = usageProperties.byModel.items as Record<
+    string,
+    unknown
+  >;
+  expect(
+    JSON.stringify(
+      Object.keys(usageByModel.properties as Record<string, unknown>).sort(),
+    ) ===
+      JSON.stringify(["model", "provider", "requests", "totalTokens"]),
+    "Usage model aggregates match LLMUsage",
+  );
+  const range = (document.paths["/admin-ai/usage"].get.parameters as Array<{
+    name: string;
+    schema: { enum: string[]; default: string };
+  }>).find((parameter) => parameter.name === "range");
+  expect(
+    JSON.stringify(range?.schema.enum) ===
+        JSON.stringify(["7d", "30d", "90d"]) &&
+      range?.schema.default === "7d",
+    "Usage range matches the current API type",
+  );
+
+  const createResponses = document.paths["/admin-ai/providers"].post
+    .responses as Record<string, unknown>;
+  const updateResponses = document.paths["/admin-ai/providers/{id}"].put
+    .responses as Record<string, unknown>;
+  const deleteResponses = document.paths["/admin-ai/providers/{id}"].delete
+    .responses as Record<string, unknown>;
+  const testResponses = document.paths["/admin-ai/providers/test"].post
+    .responses as Record<string, unknown>;
+  expect(
+    createResponses["200"] !== undefined,
+    "Provider creation success is documented",
+  );
+  expect(
+    createResponses["400"] !== undefined,
+    "Missing provider key is a validation error",
+  );
+  expect(
+    createResponses["409"] !== undefined,
+    "Provider creation conflict is explicit",
+  );
+  expect(
+    createResponses["503"] !== undefined,
+    "Unavailable v2 key configuration is explicit",
+  );
+  expect(
+    updateResponses["409"] !== undefined,
+    "Model mapping conflict is explicit",
+  );
+  expect(
+    updateResponses["503"] !== undefined,
+    "Unavailable v2 key configuration is explicit",
+  );
+  expect(
+    deleteResponses["200"] !== undefined,
+    "Unreferenced provider deletion succeeds",
+  );
+  expect(
+    deleteResponses["409"] !== undefined,
+    "Referenced provider deletion conflict is explicit",
+  );
+  expect(
+    deleteResponses["404"] !== undefined,
+    "Unknown provider deletion is explicit",
+  );
+  expect(
+    testResponses["404"] !== undefined,
+    "Unknown saved provider test is explicit",
+  );
+  expect(
+    testResponses["409"] !== undefined,
+    "Saved provider without key/model is explicit",
+  );
+  expect(
+    testResponses["503"] !== undefined,
+    "Unavailable v2 key configuration is explicit for saved-key tests",
+  );
+
+  const deleteResponse = schemas.AdminAiProviderDeleteResponse;
+  expect(
+    (deleteResponse.properties as Record<string, Record<string, unknown>>)
+      .ok.const === true,
+    "Delete success response matches admin/src/api.ts",
   );
 });
