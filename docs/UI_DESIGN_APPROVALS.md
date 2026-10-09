@@ -4,7 +4,7 @@
 
 | ID | 页面/状态 | 设计资源 | 状态 | 备注 |
 |---|---|---|---|---|
-| UI-001 | 首次启动/导入教学 | `DESIGN_SYSTEM.md` + IMG-002/IMG-007 现有 iOS 视觉基线 | APPROVED | 2026-10-08 用户明确要求补齐；2026-10-09 用户要求三步全屏配图引导，顺序为 AI、链接、社交，标题单行叠加在图片上；右上角 Skip 进入订阅页；主路径为 Share → RecipePouch，Add Recipe 仅作兜底 |
+| UI-001 | 首次启动/导入教学 | `DESIGN_SYSTEM.md` + IMG-002/IMG-007 现有 iOS 视觉基线 | APPROVED | 2026-10-08 用户明确要求补齐；2026-10-09 用户要求三步全屏配图引导，顺序为 AI、链接、社交；首屏文案明确 Create with AI，不得被旧收藏标题覆盖，标题单行叠加在图片上；右上角 Skip 进入订阅页；主路径为 Share → Recipe Pals，Add Recipe 仅作兜底 |
 | UI-002 | 食谱库 | TBD | PENDING | 默认首页 |
 | UI-003 | 添加食谱菜单 | TBD | PENDING | 自动导入优先 |
 | UI-004 | 待完善 | TBD | PENDING | 只展示异常字段 |
@@ -15,7 +15,7 @@
 | UI-009 | 我的/设置（文字精简） | 用户截图（本次对话） | APPROVED | 仅删除辅助性小字；保留全部页面模块、入口和操作，不调整布局 |
 | UI-010 | Share Extension 成功 | TBD | PENDING | 快速结束 |
 | UI-011 | Share Extension 失败/降级 | TBD | PENDING | 可继续操作 |
-| UI-013 | RecipePouch App 启动页 | [RecipePouch 启动页方案](DESIGN/proposals/2026-10-07/recipepouch-launch-screen.svg) | PENDING | Apple HIG 系统启动画面：浅色/深色使用首屏画布纯色背景，不放文字或品牌图标；待用户确认后接入 |
+| UI-013 | Recipe Pals App 启动页 | [RecipePouch 启动页方案](DESIGN/proposals/2026-10-07/recipepouch-launch-screen.svg) | PENDING | Apple HIG 系统启动画面：浅色/深色使用首屏画布纯色背景，不放文字或品牌图标；待用户确认后接入 |
 | UI-014 | 全部页面间距与菜单图标统一 | [当前页面截图与间距修正提案](DESIGN/proposals/2026-10-07/spacing-normalization/README.md) | APPROVED | 统一页面标题、分组标题和卡片间距；菜单图标取消圆形底；保留全部模块与功能 |
 | UI-015 | 首次启动/Premium 计划 | `DESIGN_SYSTEM.md` + IMG-007 个人中心视觉基线 | APPROVED | 2026-10-08 用户明确要求补齐；2026-10-09 用户要求图片式付费页并明确年费、月费、免费三种选择；2026-10-09 要求单屏、右上角弱化关闭、功能权益及底部 CTA；2026-10-09 要求减少重复文案、增加呼吸感；2026-10-09 要求重新设计排版，突出短标签与留白；2026-10-09 指定 Product Design 依据 App 与实际功能实现：共用套餐卡、配图、短标签、原生主按钮，大字体可滚动；用户最新要求功能改为左对齐图标文字行，套餐纵向排列（月付在上、年付在下）并默认选中年付，免费使用为轻量文字入口；StoreKit 实时产品信息，保留免费继续、恢复购买和法律链接 |
 | UI-016 | 周日期条与底部 Liquid Glass 导航 | [2026-10-08 设计提案](DESIGN/proposals/2026-10-08/navigation-and-week-strip/README.md) + 用户提供的 Recipe / Meal Plan / Tab 截图 | APPROVED | 2026-10-08 用户明确要求直接修改；压低周日期卡并改用系统原生四 Tab 与安全区 |
