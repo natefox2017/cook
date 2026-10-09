@@ -5,7 +5,7 @@ Use this file as the repository-wide guide for coding agents. Keep changes scope
 ## Naming Contract
 
 - The technical project, Xcode project, target, Swift module, shared package, folders, files, and code identifiers use **Recipe** naming.
-- The user-facing product brand remains **RecipePouch** unless the user explicitly changes the brand.
+- The user-facing product brand is **Recipe Pals**. Technical names and legacy data identifiers keep their existing compatibility contracts.
 - Primary paths are:
   - `ios/Recipe.xcodeproj`
   - `ios/Recipe/`
@@ -18,7 +18,7 @@ Use this file as the repository-wide guide for coding agents. Keep changes scope
 
 ## Project Overview
 
-Recipe is the native iOS codebase for RecipePouch, a private recipe collection and cooking app. V1 focuses on collecting recipes from third-party sources, organizing them privately, and using them for cooking, shopping, and simple meal planning. The backend uses Supabase for authenticated sync and asynchronous import services.
+Recipe is the native iOS codebase for Recipe Pals, a private recipe collection and cooking app. V1 focuses on collecting recipes from third-party sources, organizing them privately, and using them for cooking, shopping, and simple meal planning. The backend uses Supabase for authenticated sync and asynchronous import services.
 
 ## Source of Truth
 

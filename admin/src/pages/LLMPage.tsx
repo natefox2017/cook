@@ -16,6 +16,8 @@ import {
   Plus,
   RefreshCw,
   Server,
+  Eye,
+  EyeOff,
   Trash2,
   Zap,
 } from "lucide-react";
@@ -29,6 +31,7 @@ import {
   YAxis,
 } from "recharts";
 import { adminApi, handleExpiredSession } from "../api";
+import { AdminSelect } from "../components/AdminSelect";
 import type { AdminRole, LLMProvider, LLMProviderInput, LLMUsage, LLMUsageRange } from "../types";
 import "./LLMPage.css";
 
@@ -65,30 +68,87 @@ function formatDate(value: string) {
     : new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(date);
 }
 
-function validUsage(usage: LLMUsage | null): usage is LLMUsage {
-  if (
-    !usage || !usage.totals || !Array.isArray(usage.series) ||
-    !Array.isArray(usage.byModel)
-  ) return false;
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
 
-  const validTotals = [
-    usage.totals.requests,
-    usage.totals.inputTokens,
-    usage.totals.outputTokens,
-    usage.totals.totalTokens,
-  ].every(Number.isFinite);
-  const validSeries = usage.series.every((row) =>
-    row && typeof row.date === "string" &&
-    [row.requests, row.inputTokens, row.outputTokens, row.totalTokens].every(
-      Number.isFinite,
-    )
-  );
-  const validModels = usage.byModel.every((row) =>
-    row && typeof row.provider === "string" && typeof row.model === "string" &&
-    [row.requests, row.totalTokens].every(Number.isFinite)
-  );
+function numberFrom(record: Record<string, unknown>, ...keys: string[]): number | null {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+  }
+  return null;
+}
 
-  return validTotals && validSeries && validModels;
+function normalizeUsage(value: unknown): LLMUsage | null {
+  const payload = asRecord(value);
+  if (!payload) return null;
+
+  const data = asRecord(payload.data) ?? asRecord(payload.usage) ?? payload;
+  const sourceTotals = asRecord(data.totals) ?? asRecord(data.summary);
+  const events = Array.isArray(data.events)
+    ? data.events.map(asRecord).filter((event): event is Record<string, unknown> => event !== null)
+    : [];
+
+  const eventTotals = events.reduce<{
+    requests: number;
+    inputTokens: number;
+    inputTokenCount: number;
+    outputTokens: number;
+    outputTokenCount: number;
+    cachedInputTokens: number;
+    cachedTokenCount: number;
+    latencyTotal: number;
+    latencyCount: number;
+  }>((totals, event) => ({
+    requests: totals.requests + 1,
+    inputTokens: totals.inputTokens + (numberFrom(event, "inputTokens", "input_tokens") ?? 0),
+    inputTokenCount: totals.inputTokenCount + (numberFrom(event, "inputTokens", "input_tokens") === null ? 0 : 1),
+    outputTokens: totals.outputTokens + (numberFrom(event, "outputTokens", "output_tokens") ?? 0),
+    outputTokenCount: totals.outputTokenCount + (numberFrom(event, "outputTokens", "output_tokens") === null ? 0 : 1),
+    cachedInputTokens: totals.cachedInputTokens + (numberFrom(event, "cachedInputTokens", "cached_input_tokens", "cacheReadInputTokens", "cache_read_input_tokens") ?? 0),
+    cachedTokenCount: totals.cachedTokenCount + (numberFrom(event, "cachedInputTokens", "cached_input_tokens", "cacheReadInputTokens", "cache_read_input_tokens") === null ? 0 : 1),
+    latencyTotal: totals.latencyTotal + (numberFrom(event, "latencyMs", "latency_ms") ?? 0),
+    latencyCount: totals.latencyCount + (numberFrom(event, "latencyMs", "latency_ms") === null ? 0 : 1),
+  }), { requests: 0, inputTokens: 0, inputTokenCount: 0, outputTokens: 0, outputTokenCount: 0, cachedInputTokens: 0, cachedTokenCount: 0, latencyTotal: 0, latencyCount: 0 });
+
+  const requests = numberFrom(sourceTotals ?? {}, "requests", "requestCount", "request_count")
+    ?? (events.length ? eventTotals.requests : null);
+  const inputTokens = numberFrom(sourceTotals ?? {}, "inputTokens", "input_tokens")
+    ?? (eventTotals.inputTokenCount === events.length && events.length ? eventTotals.inputTokens : null);
+  const outputTokens = numberFrom(sourceTotals ?? {}, "outputTokens", "output_tokens")
+    ?? (eventTotals.outputTokenCount === events.length && events.length ? eventTotals.outputTokens : null);
+
+  const series = Array.isArray(data.series) ? data.series.filter((item) => {
+    const row = asRecord(item);
+    return row && typeof row.date === "string" &&
+      [row.requests, row.inputTokens, row.outputTokens, row.totalTokens].every(Number.isFinite);
+  }) : [];
+  const byModel = Array.isArray(data.byModel) ? data.byModel.filter((item) => {
+    const row = asRecord(item);
+    return row && typeof row.provider === "string" && typeof row.model === "string" &&
+      [row.requests, row.totalTokens].every(Number.isFinite);
+  }) : [];
+  const cachedInputTokens = numberFrom(sourceTotals ?? {}, "cachedInputTokens", "cached_input_tokens", "cacheReadInputTokens", "cache_read_input_tokens")
+    ?? (eventTotals.cachedTokenCount === events.length && events.length ? eventTotals.cachedInputTokens : null);
+  const averageLatencyMs = numberFrom(sourceTotals ?? {}, "averageLatencyMs", "avgLatencyMs", "average_latency_ms", "avg_latency_ms")
+    ?? (eventTotals.latencyCount === events.length && events.length ? eventTotals.latencyTotal / eventTotals.latencyCount : null);
+
+  return {
+    totals: {
+      requests,
+      inputTokens,
+      outputTokens,
+      totalTokens: numberFrom(sourceTotals ?? {}, "totalTokens", "total_tokens")
+        ?? (inputTokens !== null && outputTokens !== null ? inputTokens + outputTokens : null),
+      cachedInputTokens,
+      averageLatencyMs,
+    },
+    series: series as LLMUsage["series"],
+    byModel: byModel as LLMUsage["byModel"],
+  };
 }
 
 function ErrorNotice({ message, onRetry }: { message: string; onRetry: () => void }) {
@@ -124,20 +184,56 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
   const [deleting, setDeleting] = useState<LLMProvider | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [deletingProvider, setDeletingProvider] = useState(false);
+  const [apiKeyVisible, setApiKeyVisible] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionResult, setConnectionResult] = useState("");
 
   async function load() {
     setLoading(true);
     setError("");
     try {
-      const [providerResult, usageResult] = await Promise.all([
+      const [providerResponse, usageResponse] = await Promise.allSettled([
         adminApi.llmProviders(token),
         adminApi.llmUsage(token, range),
       ]);
-      setProviders(providerResult.data);
-      setUsage(usageResult);
-    } catch (cause) {
-      handleExpiredSession(cause, onAuthExpired);
-      setError(cause instanceof Error ? cause.message : "Unable to load model administration data.");
+      if (providerResponse.status === "fulfilled") {
+        const providerPayload = asRecord(providerResponse.value);
+        const providerData = Array.isArray(providerResponse.value)
+          ? providerResponse.value
+          : Array.isArray(providerPayload?.data)
+          ? providerPayload.data
+          : null;
+        if (providerData) {
+          const normalizedProviders = providerData.flatMap((item): LLMProvider[] => {
+            const provider = asRecord(item);
+            if (!provider || typeof provider.id !== "string" || typeof provider.name !== "string") return [];
+            return [{
+              id: provider.id,
+              name: provider.name,
+              baseUrl: typeof provider.baseUrl === "string" ? provider.baseUrl : "",
+              model: typeof provider.model === "string" ? provider.model : "",
+              active: provider.active === true,
+              apiKeyConfigured: provider.apiKeyConfigured === true,
+              updatedAt: typeof provider.updatedAt === "string" ? provider.updatedAt : "",
+            }];
+          });
+          setProviders(normalizedProviders);
+        } else {
+          setError("Provider settings returned incomplete data.");
+        }
+      } else {
+        handleExpiredSession(providerResponse.reason, onAuthExpired);
+        setError(providerResponse.reason instanceof Error ? providerResponse.reason.message : "Unable to load provider settings.");
+      }
+      if (usageResponse.status === "fulfilled") {
+        const normalizedUsage = normalizeUsage(usageResponse.value);
+        setUsage(normalizedUsage);
+        if (!normalizedUsage) setError("Usage data could not be read. Provider settings are still available.");
+      } else {
+        handleExpiredSession(usageResponse.reason, onAuthExpired);
+        setUsage(null);
+        setError(usageResponse.reason instanceof Error ? usageResponse.reason.message : "Unable to load usage data.");
+      }
     } finally {
       setLoading(false);
     }
@@ -152,13 +248,24 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
   function beginCreate() {
     setDraft({ ...emptyDraft });
     setFormError("");
+    setConnectionResult("");
+    setApiKeyVisible(false);
     setEditor("new");
   }
 
   function beginEdit(provider: LLMProvider) {
     setDraft({ name: provider.name, baseUrl: provider.baseUrl, model: provider.model, apiKey: "", active: provider.active });
     setFormError("");
+    setConnectionResult("");
+    setApiKeyVisible(false);
     setEditor(provider);
+  }
+
+  function closeEditor() {
+    setEditor(null);
+    setDraft({ ...emptyDraft });
+    setApiKeyVisible(false);
+    setConnectionResult("");
   }
 
   async function saveProvider(event: FormEvent<HTMLFormElement>) {
@@ -169,12 +276,12 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
     const baseUrl = draft.baseUrl.trim();
     try {
       const parsed = new URL(baseUrl);
-      if (parsed.protocol !== "https:") {
-        setFormError("Use an HTTPS API base URL.");
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+        setFormError("Use an HTTP or HTTPS API base URL.");
         return;
       }
     } catch {
-      setFormError("Enter a valid HTTPS API base URL.");
+      setFormError("Enter a valid HTTP or HTTPS API base URL.");
       return;
     }
     if (currentEditor === "new" && !draft.apiKey.trim()) {
@@ -191,13 +298,56 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
         apiKey: draft.apiKey.trim(),
         active: draft.active,
       }, currentEditor === "new" ? undefined : currentEditor.id);
-      setEditor(null);
+      closeEditor();
       await load();
     } catch (cause) {
       handleExpiredSession(cause, onAuthExpired);
-      setFormError(cause instanceof Error ? cause.message : "Unable to save provider.");
+      setFormError("Unable to save provider. Check the configuration and try again.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function testConnection() {
+    if (!editor) return;
+    setFormError("");
+    setConnectionResult("");
+    const apiKey = draft.apiKey.trim();
+    let providerUrl: URL;
+    try {
+      providerUrl = new URL(draft.baseUrl.trim());
+    } catch {
+      setFormError("Enter a valid HTTPS provider URL before testing.");
+      return;
+    }
+    if (providerUrl.protocol !== "https:") {
+      setFormError("Connection tests require an HTTPS provider URL. The key was not sent.");
+      return;
+    }
+    if (!apiKey && (editor === "new" || !editor.apiKeyConfigured)) {
+      setFormError("Enter an API key before testing this connection.");
+      return;
+    }
+
+    setTestingConnection(true);
+    try {
+      const result = await adminApi.testLlmProvider(token, {
+        ...(editor === "new" ? {} : { providerId: editor.id }),
+        name: draft.name.trim(),
+        baseUrl: providerUrl.toString(),
+        model: draft.model.trim(),
+        ...(apiKey ? { apiKey } : {}),
+      });
+      if (!result.ok) {
+        setFormError("The provider could not verify the connection.");
+      } else {
+        setConnectionResult("Connection successful.");
+      }
+    } catch (cause) {
+      handleExpiredSession(cause, onAuthExpired);
+      setFormError("Connection test failed. Check the provider settings and try again.");
+    } finally {
+      setTestingConnection(false);
     }
   }
 
@@ -217,8 +367,12 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
     }
   }
 
-  const usageIsValid = validUsage(usage);
-  const hasUsage = usageIsValid && usage.totals.requests > 0;
+  const hasUsage = usage !== null && (
+    usage.totals.requests !== null
+      ? usage.totals.requests > 0
+      : usage.totals.inputTokens !== null || usage.totals.outputTokens !== null ||
+        usage.series.length > 0 || usage.byModel.length > 0
+  );
 
   return (
     <main className="llm-page">
@@ -229,12 +383,13 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
           <p className="muted">Configure OpenAI-compatible endpoints and monitor model usage.</p>
         </div>
         <div className="llm-heading-actions">
-          <label className="llm-range-select">
-            <span>Usage range</span>
-            <select value={range} onChange={(event) => setRange(event.target.value as LLMUsageRange)}>
-              {ranges.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-          </label>
+          <AdminSelect
+            className="llm-range-select"
+            label="Usage range"
+            value={range}
+            onValueChange={(value) => setRange(value as LLMUsageRange)}
+            options={ranges}
+          />
           <button type="button" className="button button-outline" onClick={() => void load()} disabled={loading}>
             <RefreshCw size={15} aria-hidden="true" className={loading ? "llm-spin" : ""} /> Refresh
           </button>
@@ -246,20 +401,19 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
 
       <section className="llm-usage-section" aria-labelledby="llm-usage-title">
         <div className="llm-section-heading">
-          <div><h2 id="llm-usage-title">Token usage</h2><p>Requests and tokens recorded by the model worker.</p></div>
+          <div><h2 id="llm-usage-title">Token usage</h2><p>Requests, tokens, and response time recorded by the model worker. Cached input is included in input tokens.</p></div>
           <span className="llm-period-pill"><Activity size={14} aria-hidden="true" /> Last {range.replace("d", " days")}</span>
         </div>
         {loading ? (
           <div className="llm-loading"><LoaderCircle size={18} className="llm-spin" aria-hidden="true" /> Loading usage…</div>
-        ) : !usageIsValid ? (
-          <ErrorNotice message="The usage service returned incomplete data." onRetry={() => void load()} />
         ) : hasUsage && usage ? (
           <>
             <div className="llm-metric-grid">
-              <Metric label="Requests" value={formatNumber(usage.totals.requests)} icon={Zap} />
-              <Metric label="Input tokens" value={formatNumber(usage.totals.inputTokens)} icon={ArrowDownToLine} />
-              <Metric label="Output tokens" value={formatNumber(usage.totals.outputTokens)} icon={ArrowUpToLine} />
-              <Metric label="Total tokens" value={formatNumber(usage.totals.totalTokens)} icon={Cpu} />
+              <Metric label="Requests" value={usage.totals.requests === null ? "Not reported" : formatNumber(usage.totals.requests)} icon={Zap} />
+              <Metric label="Input tokens" value={usage.totals.inputTokens === null ? "Not reported" : formatNumber(usage.totals.inputTokens)} icon={ArrowDownToLine} />
+              <Metric label="Output tokens" value={usage.totals.outputTokens === null ? "Not reported" : formatNumber(usage.totals.outputTokens)} icon={ArrowUpToLine} />
+              <Metric label="Cached input tokens" value={usage.totals.cachedInputTokens == null ? "Not reported" : formatNumber(usage.totals.cachedInputTokens)} icon={Cpu} />
+              <Metric label="Avg. response time" value={usage.totals.averageLatencyMs == null ? "Not reported" : `${formatNumber(usage.totals.averageLatencyMs)} ms`} icon={Activity} />
             </div>
             <div className="llm-usage-grid">
               <section className="llm-panel card">
@@ -336,18 +490,19 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
       </section>
 
       {editor && (
-        <div className="llm-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setEditor(null); }}>
+        <div className="llm-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) closeEditor(); }}>
           <section className="llm-dialog card" role="dialog" aria-modal="true" aria-labelledby="llm-editor-title">
-            <header><span className="llm-dialog-icon"><Cpu size={18} aria-hidden="true" /></span><div><h2 id="llm-editor-title">{editor === "new" ? "Add provider" : "Edit provider"}</h2><p>Connect an OpenAI-compatible API endpoint.</p></div><button type="button" className="icon-button" aria-label="Close dialog" onClick={() => setEditor(null)} disabled={saving}>×</button></header>
+            <header><span className="llm-dialog-icon"><Cpu size={18} aria-hidden="true" /></span><div><h2 id="llm-editor-title">{editor === "new" ? "Add provider" : "Edit provider"}</h2><p>Connect an OpenAI-compatible API endpoint.</p></div><button type="button" className="icon-button" aria-label="Close dialog" onClick={closeEditor} disabled={saving}>×</button></header>
             <form onSubmit={(event) => void saveProvider(event)}>
               <label className="llm-field"><span>Display name</span><input required autoFocus value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Production OpenAI" /></label>
-              <label className="llm-field"><span>HTTPS API base URL</span><input required type="url" inputMode="url" value={draft.baseUrl} onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })} placeholder="https://api.example.com/v1" /></label>
+              <label className="llm-field"><span>API base URL</span><input required type="url" inputMode="url" value={draft.baseUrl} onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })} placeholder="https://api.example.com/v1" /></label>
               <label className="llm-field"><span>Model name</span><input required value={draft.model} onChange={(event) => setDraft({ ...draft, model: event.target.value })} placeholder="gpt-4o-mini" /></label>
-              <label className="llm-field"><span>API key <small>{editor === "new" ? "Required" : "Optional · blank keeps the saved key"}</small></span><input required={editor === "new"} type="password" autoComplete="new-password" value={draft.apiKey} onChange={(event) => setDraft({ ...draft, apiKey: event.target.value })} placeholder={editor !== "new" && editor.apiKeyConfigured ? "Key configured · enter a new key to replace" : "sk-…"} /></label>
+              <label className="llm-field"><span>API key <small>{editor === "new" ? "Required" : "Optional · blank keeps the saved key"}</small></span><div className="llm-key-input"><input required={editor === "new"} type={apiKeyVisible ? "text" : "password"} autoComplete="new-password" value={draft.apiKey} onChange={(event) => setDraft({ ...draft, apiKey: event.target.value })} placeholder={editor !== "new" && editor.apiKeyConfigured ? "Key configured · enter a new key to replace" : "sk-…"} /><button type="button" className="llm-key-visibility" aria-label={apiKeyVisible ? "Hide API key" : "Show API key"} aria-pressed={apiKeyVisible} onClick={() => setApiKeyVisible((visible) => !visible)}><span aria-hidden="true">{apiKeyVisible ? <EyeOff size={16} /> : <Eye size={16} />}</span></button></div></label>
               {editor !== "new" && <p className="llm-key-hint">Saved API keys are never displayed. Leave this field blank to keep the current key.</p>}
+              <div className="llm-connection-row"><button type="button" className="button button-outline" onClick={() => void testConnection()} disabled={saving || testingConnection}><Zap size={15} aria-hidden="true" />{testingConnection ? "Testing…" : "Test connection"}</button>{connectionResult && <span role="status">{connectionResult}</span>}</div>
               <label className="llm-toggle"><input type="checkbox" checked={draft.active} onChange={(event) => setDraft({ ...draft, active: event.target.checked })} /><span><strong>Provider active</strong><small>Active providers can be selected for model calls.</small></span></label>
               {formError && <div className="llm-form-error" role="alert">{formError}</div>}
-              <footer><button type="button" className="button button-outline" disabled={saving} onClick={() => setEditor(null)}>Cancel</button><button type="submit" className="button button-primary" disabled={saving}>{saving && <LoaderCircle size={15} className="llm-spin" aria-hidden="true" />}{saving ? "Saving…" : "Save provider"}</button></footer>
+              <footer><button type="button" className="button button-outline" disabled={saving} onClick={closeEditor}>Cancel</button><button type="submit" className="button button-primary" disabled={saving || testingConnection}>{saving && <LoaderCircle size={15} className="llm-spin" aria-hidden="true" />}{saving ? "Saving…" : "Save provider"}</button></footer>
             </form>
           </section>
         </div>

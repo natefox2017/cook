@@ -1,8 +1,6 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap");
-
 body { background: var(--background); }
 h1, h2, h3, p { margin: 0; }
-h1, h2, h3 { color: var(--foreground); font-family: Manrope, "DM Sans", sans-serif; }
+h1, h2, h3 { color: var(--foreground); font-family: Lora, Georgia, serif; }
 h1 { font-size: 27px; font-weight: 700; letter-spacing: -.8px; line-height: 1.25; }
 h2 { font-size: 15px; font-weight: 700; letter-spacing: -.15px; }
 .muted { color: var(--muted); }
@@ -27,7 +25,7 @@ h2 { font-size: 15px; font-weight: 700; letter-spacing: -.15px; }
 .boot-screen { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 100vh; color: var(--muted); font-size: 13px; }
 .login-shell { display: grid; place-items: center; min-height: 100vh; padding: 36px 18px 72px; position: relative; background: radial-gradient(ellipse 60% 42% at 50% 0%, #eff6ef, transparent 78%), #f7f8f7; }
 .login-card { width: min(100%, 410px); padding: 30px; border-radius: 12px; }
-.brand { display: flex; align-items: center; gap: 9px; font-family: Manrope, sans-serif; font-size: 14px; font-weight: 800; letter-spacing: -.3px; }
+.brand { display: flex; align-items: center; gap: 9px; font-family: Lora, Georgia, serif; font-size: 14px; font-weight: 700; letter-spacing: -.3px; }
 .brand-mark { display: inline-grid; width: 28px; height: 28px; place-items: center; color: #fff; border-radius: 8px; background: #217b41; }
 .brand-login { margin-bottom: 39px; }
 .login-card .eyebrow { margin-bottom: 7px; }
@@ -96,7 +94,7 @@ h2 { font-size: 15px; font-weight: 700; letter-spacing: -.15px; }
 .metric-icon.blue { color: #35708a; background: #edf5f8; }
 .metric-icon.amber { color: #ad7a1f; background: #fbf5e9; }
 .metric-icon.violet { color: #8060a2; background: #f4f0f8; }
-.metric-value { margin-top: 9px; color: #1c2b21; font-family: Manrope, sans-serif; font-size: 25px; font-weight: 700; letter-spacing: -.6px; line-height: 1.2; }
+.metric-value { margin-top: 9px; color: #1c2b21; font-family: Lora, Georgia, serif; font-size: 25px; font-weight: 700; letter-spacing: -.6px; line-height: 1.2; }
 .metric-note { margin-top: 4px; color: #9aa19b; font-size: 10px; }
 .overview-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(275px, .9fr); gap: 14px; }
 .chart-card, .table-card { padding: 17px 17px 15px; }
@@ -115,7 +113,7 @@ h2 { font-size: 15px; font-weight: 700; letter-spacing: -.15px; }
 .donut-wrap { display: flex; flex: 1; align-items: center; justify-content: space-evenly; gap: 8px; min-height: 185px; }
 .donut-chart { position: relative; width: 147px; height: 147px; flex: 0 0 auto; }
 .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-.donut-center strong { color: #28352c; font-family: Manrope, sans-serif; font-size: 19px; }
+.donut-center strong { color: #28352c; font-family: Lora, Georgia, serif; font-size: 19px; }
 .donut-center span { color: #939c95; font-size: 9px; }
 .plan-legend { display: grid; width: min(130px, 42%); gap: 10px; }
 .plan-legend-row, .plan-legend-row span { display: flex; align-items: center; }

@@ -26,6 +26,7 @@ import {
   YAxis,
 } from "recharts";
 import { adminApi, handleExpiredSession } from "../api";
+import { AdminSelect } from "../components/AdminSelect";
 import type {
   AdminRole,
   RevenueData,
@@ -295,14 +296,17 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
           <p>Monitor subscription activity and manage store products.</p>
         </div>
         <div className="billing-header-actions">
-          <label className="billing-platform-select">
-            <span>Platform</span>
-            <select value={platform} onChange={(event) => setPlatform(event.target.value as Platform)}>
-              <option value="all">All platforms</option>
-              <option value="app_store">App Store</option>
-              <option value="play_store">Google Play</option>
-            </select>
-          </label>
+          <AdminSelect
+            className="billing-platform-select"
+            label="Platform"
+            value={platform}
+            onValueChange={(value) => setPlatform(value as Platform)}
+            options={[
+              { value: "all", label: "All platforms" },
+              { value: "app_store", label: "App Store" },
+              { value: "play_store", label: "Google Play" },
+            ]}
+          />
           {tab === "plans" && canManagePlans && (
             <button className="billing-primary-button" type="button" onClick={beginCreatePlan}>
               <Plus size={17} aria-hidden="true" /> Add plan
@@ -436,8 +440,27 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
               <div className="billing-form-grid">
                 <label className="billing-field"><span>Display name</span><input required value={planDraft.displayName} onChange={(event) => setPlanDraft({ ...planDraft, displayName: event.target.value })} /></label>
                 <label className="billing-field"><span>Plan key</span><input required value={planDraft.planKey} onChange={(event) => setPlanDraft({ ...planDraft, planKey: event.target.value })} /></label>
-                <label className="billing-field"><span>Platform</span><select value={planDraft.platform} onChange={(event) => setPlanDraft({ ...planDraft, platform: event.target.value as SubscriptionPlan["platform"] })}><option value="app_store">App Store</option><option value="play_store">Google Play</option></select></label>
-                <label className="billing-field"><span>Billing period</span><select value={planDraft.billingPeriod} onChange={(event) => setPlanDraft({ ...planDraft, billingPeriod: event.target.value as PlanDraft["billingPeriod"] })}><option value="monthly">Monthly</option><option value="yearly">Yearly</option><option value="lifetime">Lifetime</option></select></label>
+                <AdminSelect
+                  className="billing-field-select"
+                  label="Platform"
+                  value={planDraft.platform}
+                  onValueChange={(value) => setPlanDraft({ ...planDraft, platform: value as SubscriptionPlan["platform"] })}
+                  options={[
+                    { value: "app_store", label: "App Store" },
+                    { value: "play_store", label: "Google Play" },
+                  ]}
+                />
+                <AdminSelect
+                  className="billing-field-select"
+                  label="Billing period"
+                  value={planDraft.billingPeriod}
+                  onValueChange={(value) => setPlanDraft({ ...planDraft, billingPeriod: value as PlanDraft["billingPeriod"] })}
+                  options={[
+                    { value: "monthly", label: "Monthly" },
+                    { value: "yearly", label: "Yearly" },
+                    { value: "lifetime", label: "Lifetime" },
+                  ]}
+                />
                 <label className="billing-field billing-field-wide"><span>Store product ID</span><input required value={planDraft.productId} onChange={(event) => setPlanDraft({ ...planDraft, productId: event.target.value })} /></label>
                 <label className="billing-field"><span>Price</span><input type="number" min="0" step="0.01" required value={planDraft.price} onChange={(event) => setPlanDraft({ ...planDraft, price: Number(event.target.value) })} /></label>
                 <label className="billing-field"><span>Currency</span><input required maxLength={3} value={planDraft.currency} onChange={(event) => setPlanDraft({ ...planDraft, currency: event.target.value.toUpperCase() })} /></label>

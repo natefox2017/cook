@@ -58,7 +58,7 @@ export default function AdminShell({ activePage, onNavigate, admin, onLogout, ch
         <div className="admin-sidebar-brand">
           <div className="admin-brand">
             <span className="admin-brand-mark"><BookOpen size={17} strokeWidth={2.2} /></span>
-            <span>RecipePouch</span>
+            <span>Recipe Pals</span>
           </div>
           <button className="admin-icon-button admin-mobile-close" type="button" aria-label="Close navigation" onClick={() => setMenuOpen(false)}>
             <X size={17} />
@@ -87,7 +87,7 @@ export default function AdminShell({ activePage, onNavigate, admin, onLogout, ch
             <span className="admin-help-icon"><ShieldCheck size={16} /></span>
             <div><strong>Secure workspace</strong><small>Access is role controlled</small></div>
           </div>
-          <div className="admin-sidebar-version"><span>RecipePouch Admin</span><span>v1</span></div>
+          <div className="admin-sidebar-version"><span>Recipe Pals Admin</span><span>v1</span></div>
         </div>
       </aside>
 

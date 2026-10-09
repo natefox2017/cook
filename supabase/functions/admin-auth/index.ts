@@ -1108,7 +1108,7 @@ Deno.serve(async (req) => {
         );
       }
       const account = await loadAdminRow(session.adminId);
-      const issuer = "RecipePouch Admin";
+      const issuer = "Recipe Pals Admin";
       const label = encodeURIComponent(`${issuer}:${account.username}`);
       const uri = `otpauth://totp/${label}?secret=${secret}&issuer=${
         encodeURIComponent(issuer)

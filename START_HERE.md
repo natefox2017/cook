@@ -19,7 +19,7 @@
 
 用户于 2026-10-07 明确要求“把 ui 界面功能写好提交上去”。本轮已实现原生 App 与客户端本地闭环；先读 [实现与验收记录](docs/IOS/UI_IMPLEMENTATION.md)，再打开 `ios/Recipe.xcodeproj`。
 
-当前主导航为 Recipes / Plan / Groceries / Profile 四个 Tab。技术工程统一使用 `Recipe` 命名，用户可见品牌使用 RecipePouch。用户在当前对话中明确要求直接实现的 UI/功能可直接开发，并在 Issue/PR 中记录实际状态。
+当前主导航为 Recipes / Plan / Groceries / Profile 四个 Tab。技术工程统一使用 `Recipe` 命名，用户可见品牌使用 Recipe Pals。用户在当前对话中明确要求直接实现的 UI/功能可直接开发，并在 Issue/PR 中记录实际状态。
 
 当前阶段禁止：
 - 擅自增加社区、Feed、关注、评论、点赞等功能
