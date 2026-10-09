@@ -1258,6 +1258,30 @@ public final class RecipeStore {
                     )
                 }
             }
+            // Optional presentation metadata must not outlive the ingredient or
+            // step IDs that it references after a local edit or sync merge.
+            if let sections = recipe.ingredientSections {
+                guard unique(sections.map(\.id)),
+                    sections.allSatisfy({
+                        unique($0.ingredientIDs)
+                            && Set($0.ingredientIDs).isSubset(of: ingredientIDs)
+                    })
+                else {
+                    throw RecipeStoreError.invalidValue(
+                        RecipeLanguage.localized("Check the cooking step's ingredient links and timers.")
+                    )
+                }
+            }
+            if let images = recipe.stepImages {
+                let stepIDs = Set(recipe.steps.map(\.id))
+                guard unique(images.map(\.id)),
+                    images.allSatisfy({ stepIDs.contains($0.stepID) })
+                else {
+                    throw RecipeStoreError.invalidValue(
+                        RecipeLanguage.localized("Check the cooking step's ingredient links and timers.")
+                    )
+                }
+            }
         }
         for item in snapshot.groceries {
             guard !normalized(item.name).isEmpty, Set(item.recipeIDs).isSubset(of: recipeIDs),
