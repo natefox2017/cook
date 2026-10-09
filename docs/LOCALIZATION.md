@@ -1,5 +1,33 @@
 # Localization
 
+## Current policy: manual language and country choices (2026-10-09)
+
+**This section supersedes earlier test-stage rules below.** First launch remains English during testing, regardless of iPhone language. Users can now override this under **Settings → Language**. A separate **Settings → Country or Region** picker offers all ISO countries/territories (including Europe, the Americas, Japan and South Korea) and an automatic iPhone-region option.
+
+- Language and country are independent: English + UK, French + Canada, or German + Japan are all valid. The chosen country adjusts locale-aware regional formatting; it does not translate imported recipe data, control the App Store storefront or silently select another UI language.
+- Choices persist in standard UserDefaults (`recipe.preferences.language`, `recipe.preferences.region`). They are mirrored into the existing `group.com.shopkivoo.recipe` App Group for the Share Extension. Do not override `AppleLanguages`.
+- Existing `--uitesting-locale` smoke tests remain supported. Tests must opt in with `--uitesting-allow-language-preferences` to exercise runtime language switching. `--uitesting-reset-locale-preferences` resets saved values for deterministic tests.
+- Runtime localization uses the app's explicitly resolved locale. Source locale is English; regional variants reuse the corresponding base language translations (e.g. French for Canada, Portuguese for Brazil).
+
+### Verified catalog coverage (current working branch)
+
+| Locale | Main app String Catalog | Share Extension | Bundle metadata | Status |
+|---|---:|---:|---:|---|
+| English (`en`) | Source English | Source English | Complete | Ready for further UI testing |
+| Simplified Chinese (`zh-Hans`) | 815 / 815 | 14 / 14 | 3 / 3 | Full catalog; device QA pending |
+| Traditional Chinese (`zh-Hant`) | 815 / 815 | 14 / 14 | 3 / 3 | Full catalog; device QA pending |
+| Japanese (`ja`) | 815 / 815 | 14 / 14 | 3 / 3 | Full catalog; device QA pending |
+| German, French, Spanish, Italian, Portuguese, Dutch, Korean | 246 / 815 **each** | 14 / 14 each | 3 / 3 each | **Incomplete; do not release as fully translated** |
+
+For each of the seven new languages, **569 main-app strings remain untranslated** and fall back to English. Country availability does not mean every language spoken there has a finished translation. Do not fill missing keys by copying English under another locale or declare a locale complete before independent linguistic QA.
+
+Use `python3 scripts/audit_localizations.py` to report coverage and validate placeholders. For multilingual-release acceptance run `python3 scripts/audit_localizations.py --strict`; it must pass with zero missing keys, correct plural forms and localized InfoPlist/Share Extension strings. On macOS run `swift test --package-path ios/RecipeCore` and the iOS UI tests, checking login, onboarding, paywall, cooking, groceries, meal planning, privacy and Share Extension.
+
+---
+
+### Historical implementation notes (the older forced-English policy below is superseded)
+
+
 Updated: 2026-10-09
 
 ## Runtime policy
