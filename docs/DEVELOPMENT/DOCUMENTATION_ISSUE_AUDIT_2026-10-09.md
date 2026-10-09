@@ -3,8 +3,8 @@
 ## Snapshot and method
 
 - Repository: private [natefox2017/cook](https://github.com/natefox2017/cook), audited baseline `main@1b7fc8b43f50edb3b20ad8067437e8ed8bfa1629` (PR #249), with no open PRs at the inventory point.
-- Inventoried **461 tree nodes** and screened **70 tracked Markdown/YAML documentation/config paths** (66 Markdown, 4 workflow/template YAML). Checked local relative Markdown links against the tracked tree (not external domains or rendered anchors); found **one dangling image link** in `docs/DESIGN/proposals/2026-10-08/secondary-page-navigation/README.md`.
-- Enumerated GitHub issues: **24 open after adding #250/#251; 52 closed Issues** (13 closed as not_planned), **175 closed PRs**. 7 earlier closed QA tasks remain with historic unchecked boxes; verified live issue state before choosing what to change.
+- Inventoried **461 tree nodes** and screened **70 tracked Markdown/YAML documentation/config paths** (66 Markdown and four YAML config/templates). Checked local relative Markdown links against the tracked tree (not external domains or rendered anchors); found **one dangling image link** in `docs/DESIGN/proposals/2026-10-08/secondary-page-navigation/README.md`.
+- Enumerated GitHub issues: **24 open after adding #250/#251; 52 closed Issues** (13 closed as not_planned), **175 closed PRs**. Multiple earlier closed QA tasks retain historical unchecked boxes; verified live issue state before choosing what to change.
 - Read operational docs/README, AGENTS, localization, UI approvals, recipes/import/StoreKit/Auth/Share Extension, snapshot QA, current product plans and deployment provenance alongside current source (RecipeLanguage/InfoPlist/build product IDs/ShareViewController/model).
 - No Xcode, real iPhone, ASC Sandbox, live provider tests, Supabase production queries or external link availability checks performed in this audit. Static evidence is not runtime evidence.
 

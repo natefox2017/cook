@@ -1,6 +1,6 @@
 # Design System
 
-状态：DIRECTION / 未最终视觉确认
+状态：现有 RecipeTheme 视觉基础规范。**具体页面的用户批准、源码实现和真实设备验收是不同状态**，分别看 [UI_DESIGN_APPROVALS.md](UI_DESIGN_APPROVALS.md)、最新 `main` 和 [#251](https://github.com/natefox2017/cook/issues/251)。新增 AI/分享/详情体验属于 SCOPED（#238–#248），不等于已完成定版设计或已上线。
 
 ## 1. 设计读法
 

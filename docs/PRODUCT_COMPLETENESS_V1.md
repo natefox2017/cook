@@ -6,7 +6,7 @@ Updated: 2026-10-09
 
 ## Product benchmark
 
-RecipePouch is a private recipe utility: collect → organize → cook → shop → plan → sync. It does not add a public feed in V1.
+Recipe Pals is a private recipe utility: collect → organize → cook → shop → plan → sync. It does not add a public feed in V1.
 
 Repeated patterns verified in established products:
 - ReciMe: account login, multi-device recipe sync, mobile subscription, subscription status and Restore Purchase; recipe import, cookbooks, groceries and meal planning.

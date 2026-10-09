@@ -1,3 +1,5 @@
+> **Historical focused optimization audit (2026-10-08).** Previously observed performance risks are not fresh profiling results, and previous `RecipePouch` branding is superseded by current **Recipe Pals**. Use live #137 for current performance evidence, [latest Issue snapshot](CURRENT_BACKLOG_2026-10-09.md) for planning, and current `main` before modifying code. Do not treat this report as an instruction to rewrite already shipped features.
+
 # RecipePouch code-health review — 2026-10-08
 
 ## Scope and approach
