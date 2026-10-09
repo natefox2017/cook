@@ -1,83 +1,40 @@
-# RecipePouch — Remaining Development and Test Backlog
+# Recipe Pals — Remaining Issue and Test Matrix
 
-Updated: 2026-10-09. Initial audit baseline: `main@51aa4da`. Latest verified code merges include #114, #115 and #125; always refresh `main` before starting any Issue.
+> Reconciled on 2026-10-09 against `main@18541b1bba9e380b7e295686d60f112a0d26521b` (PR #225). This replaces the stale *open-issue predictions* previously in this file; Git history retains that historical roadmap.
 
-## Why these tasks and this order
+## Accounting rules
 
-Use the patterns repeated in **established shipped products**, rather than treating older internal issue sequences as development truth:
+- The authoritative backlog is the **seven open Issues** below. At the audit snapshot there are **zero open PRs**. Closed import/Share delivery Issues must **not** be reopened or treated as a release blocker without a new user decision.
+- **CODE MERGED** means the relevant implementation exists on `main`. A source file, a passing compile, a minimal GitHub merge check, or a mock/fixture test never means the physical-device or hosted acceptance passed.
+- Reuse recorded PASS evidence only for its exact commit/environment/scope. Do not repeat passed tests without a relevant code/config change. Missing evidence stays NOT RUN, PARTIAL or BLOCKED; keep the TEST Issue open.
+- The current acceptance scope uses the user's **existing iPhone**, normal text size and isolated QA data. No second device, simulator substitute, production synthetic payment/delete, secret disclosure or unapproved backend configuration change.
 
-- [Paprika iOS](https://www.paprikaapp.com/help/iphone/), [ReciMe](https://recime.app/help/en/articles/11594896-qu-est-ce-que-recime), and open-source [Mealie](https://github.com/mealie-recipes/mealie) consistently place private recipe saving/import, reliable manual editing, cooking, grocery lists, meal planning, and account sync in the normal workflow. RecipePouch already implements most local surfaces: do **not** restart them.
-- Open-source [recipe-scrapers](https://github.com/recipe-scrapers/recipe-scrapers) separates safely acquiring HTML from parsing supplied HTML, uses Schema.org/host-specific extraction, and includes representative per-source fixtures. Reuse the existing safe URL fetcher + field evidence/fixture testing; do not build a new scraper platform just for its own sake.
-- Consequently: **fix correctness/build/ownership first → complete bounded file and source extraction + honest needs_review → run cheap deterministic tests → deploy safely to staging → use iPhone/developer-account acceptance LAST**.
-- Do not expand into a public feed, creator social network, nutrition/paywall feature creep, or unauthorized scraping/login-wall bypass.
-
-## Development Issues — code/operations only
-
-| Priority | Issue | Exact scope | State / dependency |
-| --- | --- | --- | --- |
-| P0 | [#112](https://github.com/natefox2017/cook/issues/112) | Add existing artifact service to Xcode main target | **CODE MERGED** in [#114](https://github.com/natefox2017/cook/pull/114); **build untested**, #126 |
-| P1 | [#113](https://github.com/natefox2017/cook/issues/113) | Validate all local/external OpenAPI refs | **CODE MERGED** in [#115](https://github.com/natefox2017/cook/pull/115); Python execution #134 |
-| P1 | [#116](https://github.com/natefox2017/cook/issues/116) | Private plain-text and selectable-text PDF attachment parsing | OPEN; fixtures first, depends on deployed API #141 for integration |
-| P1 | [#117](https://github.com/natefox2017/cook/issues/117) | Image/scanned-PDF OCR evidence, provider abstraction | OPEN; controlled artifacts, no secrets in client |
-| P1 | [#118](https://github.com/natefox2017/cook/issues/118) | Public social caption → permitted ASR/visual fallback | OPEN; build only safe public/legal paths and truthful needs_review |
-| P1 | [#119](https://github.com/natefox2017/cook/issues/119) | Evidence priority and prevent late worker results overwriting user edits | OPEN; preserve old library and idempotent job outcomes |
-| P1 | [#120](https://github.com/natefox2017/cook/issues/120) | Artifact delete/retry/expiration behavior | OPEN; production cleanup scheduling part of #141 |
-| P2 | [#121](https://github.com/natefox2017/cook/issues/121) | Preserve original shared text whitespace and historical IDs | **CODE MERGED** [#125](https://github.com/natefox2017/cook/pull/125); native checks #126/#130 |
-| P1 | [#122](https://github.com/natefox2017/cook/issues/122) | Root floating Tab safe-area obscuring content | OPEN; requires #128 actual screenshot/layout validation |
-| P2 | [#123](https://github.com/natefox2017/cook/issues/123) | Persistence/large-library refactor only if profiling proves slowdown | BLOCKED by #137, no speculative rewrite |
-| P1 | [#124](https://github.com/natefox2017/cook/issues/124) | Files picker success/cancel/error callback bug, **only after reproduction** | BLOCKED by focused #127 |
-| P0 security | [#140](https://github.com/natefox2017/cook/issues/140) | Remove unjustified anonymous/security-definer RPC execute access | OPEN; staging validation and safe production release required |
-| P0 operations | [#141](https://github.com/natefox2017/cook/issues/141) | Deploy queue/artifact schema, Edge functions and scheduler in controlled stages | OPEN; latest project does **not** have these deployed |
-
-One Issue = one independently reviewable PR; add regression fixtures to development PRs without changing the release CI policy. Existing product UI and the temporary English-only QA policy remain unchanged.
-
-## Test Issues — no production feature edits
-
-### Can run without Apple developer account (run first when runtime is available)
-
-| Issue | Environment | Coverage |
+| Open Issue | Merged code and established tests | What still needs actual evidence |
 | --- | --- | --- |
-| [#134](https://github.com/natefox2017/cook/issues/134) | Python + Deno + local PostgreSQL | OpenAPI/worker safety/fixtures/RLS (deterministic tests). Python/Deno full commands not executed by current chat runtime. |
-| [#135](https://github.com/natefox2017/cook/issues/135) | Controlled Supabase staging + server credentials | Deployment/RLS/Queue/Storage/Edge/owner isolation; **not yet run end to end**. |
-| [#138](https://github.com/natefox2017/cook/issues/138) | Safe public sources + controlled backend | Real platform caption/VTT/fallback/needs_review; blocked where Dev #116–#119 incomplete. |
+| [#131 Auth](https://github.com/natefox2017/cook/issues/131) | Email/Apple/Google/PKCE client handlers are present; earlier local Auth HTTP 54/54 and hosted mock 8/8 are recorded; signed account UI inspected | Current provider configuration and controlled identities; real email code/password/reset, Apple native, Google OAuth, warm/cold PKCE callback, refresh/sign-out/A→B→A, with user/session outcomes |
+| [#132 StoreKit](https://github.com/natefox2017/cook/issues/132) | Default monthly/annual IDs and compatibility code merged; local StoreKitTest signed iPhone 2/2 PASS | Actual ASC Sandbox/TestFlight product metadata, purchases, restore, pending/cancel/failure, lifecycle, billing grace/retry, account binding and RevenueCat→Supabase receipt/entitlement |
+| [#133 Sync](https://github.com/natefox2017/cook/issues/133) | Snapshot/CAS/RLS/erase-marker code; prior Core 31, SQL 85, local HTTP 54 and isolated QA-hosted 4 PASS; QA local-delete result also recorded | Signed real-App controlled A/B sync environment; consent choices, offline edits, conflict, same-device isolation, manual/Wi-Fi/auto, normal-account erase, fault injection and delete-account; original two-device matrix remains restricted |
+| [#136 Cooking](https://github.com/natefox2017/cook/issues/136) | Cooking and timer code merged; real-device multi-timer, persistence, double-notification and permission-denied behaviors recorded PASS; PR #225 fixes **source-level** app/extension bundle names | Physical rotation, VoiceOver, close/reenter session, Keep Screen Awake and **Settings notification name** (old RecipePouch was still observed before #225; latest install acceptance is not recorded). A static plist guard is not a device PASS |
+| [#137 Performance](https://github.com/natefox2017/cook/issues/137) | Deterministic 100/1000/5000 fixture and signposts, four hosted fixture checks; CLI p50/p95 and single 5k Instruments startup observation recorded | See [remaining capture plan](../performance/ISSUE_137.md): interactive search/save/favorite/grocery/collections/100-scroll, offline launch, full cold start, Memory Graph/peak RSS and comparable p50/p95 |
+| [#155 Supabase Edge](https://github.com/natefox2017/cook/issues/155) | Seven target function sources/version provenance, local Edge/PostgREST/database tests and approved SQL/function deployment recorded in issue | Supabase/RevenueCat webhook secret **configuration by authorized owner**, controlled hosted identities/roles and replay, actual StoreKit→RevenueCat events, final source→build→deployed artifact index. No production mutation authorized by this audit |
+| [#189 UI Runner](https://github.com/natefox2017/cook/issues/189) | Xcode target linkage resolved; separate hosted suites 4/4 and 4/4 recorded; existing app UI test `testComplexCookingStepShowsIngredientsAndMultipleTimers` exists | New evidence-driven Runner→IDE proxy/config Code 74 diagnosis; only after a changed precondition, actual UI Runner test execution on the current iPhone. Hosted results do **not** imply UI Runner PASS |
 
-### Leave Mac / iOS native execution until code-only work is ready
+## Coverage inventory and exact follow-up
 
-| Issue | Scope |
-| --- | --- |
-| [#126](https://github.com/natefox2017/cook/issues/126) | Full RecipeCore SwiftPM tests, Xcode build and current-main simulator tests |
-| [#127](https://github.com/natefox2017/cook/issues/127) | JSON/HTML Files picker feedback and both local-delete entrances |
-| [#128](https://github.com/natefox2017/cook/issues/128) | Four tabs + all secondary screens, Liquid Glass safe area, accessibility/VoiceOver |
-| [#129](https://github.com/natefox2017/cook/issues/129) | Forced English under Chinese/Japanese system, plus explicit locale smoke |
-| [#136](https://github.com/natefox2017/cook/issues/136) | Cooking background timers, notifications, interrupted session recovery |
-| [#137](https://github.com/natefox2017/cook/issues/137) | Instruments baseline and realistic large-library datasets |
+1. **Auth (#131):** `RecipeAuthService.swift`, `RecipeAuthServiceTests.swift`, `RecipeUITests.swift`. Mock authentication, login UI and real OAuth are distinct layers; capture actual App session, callback URL result and sanitized identity on a real provider environment.
+2. **Purchases (#132):** `SubscriptionStore.swift`, `RecipeSubscriptionStoreTests.swift`, `RecipeUITests.swift`, `RecipeStoreKit.xcscheme`. Existing local StoreKit tests do not validate ASC storefront responses or provider webhook.
+3. **Sync (#133):** `CloudSyncService.swift`, `RecipeStoreTests.swift`, `RecipeLocalEraseMarkerTests.swift`, `RecipeTestIsolationTests.swift`, database tests. QA `--uitesting` intentionally blocks Supabase; use a separately authorized **non-production**, real-network test environment for remaining E2E.
+4. **Cooking (#136):** `CookingView.swift`, `TimerNotifications.swift`, `CookingTimerTests.swift`, `RecipeUITests.swift`, `RecipeTestIsolationTests.swift`; plist/catalog source guard `scripts/check_ios_branding.py`. Never reset the user's real notification permissions or recipes merely to pass a test.
+5. **Performance (#137):** `RecipePerformanceFixtures.swift`, `docs/performance/ISSUE_137.md`, `scripts/benchmark-recipe-store.sh`. Compare Instruments signposts `Library Search`, `Favorite Write`, `Grocery Write`, `Library Scroll` to user-perceived latency; report actual peak resident memory, not just total allocations.
+6. **Backend (#155):** `supabase/functions/{revenuecat-webhook,health,openapi,admin-ai,admin-subscriptions,admin-dashboard,admin-users}`, `supabase/tests/database`. Keep local, hosted staging and production evidence separate. Missing `REVENUECAT_WEBHOOK_SECRET` was recorded; don't infer it is now configured or read/rotate it.
+7. **Runner (#189):** `ios/RecipeUITests/RecipeUITests.swift`, Xcode schemes/test plans. Four historical Code 74 starts failed **before case execution**; a fifth identical attempt yields no new diagnostic value.
 
-### Leave real Apple/provider/multi-device verification LAST
+## Newly merged source-level regression boundaries
 
-| Issue | Access needed |
-| --- | --- |
-| [#130](https://github.com/natefox2017/cook/issues/130) | Signed iPhone / Share Extension / App Group / Safari, Photos, Files host integration |
-| [#131](https://github.com/natefox2017/cook/issues/131) | Apple Developer Sign in with Apple + Google/Supabase OAuth + email callback test accounts |
-| [#132](https://github.com/natefox2017/cook/issues/132) | App Store Connect subscription product IDs and Sandbox/TestFlight |
-| [#133](https://github.com/natefox2017/cook/issues/133) | Two accounts/two devices + signed-in staging backend, offline/revision/conflict/erase |
-| [#139](https://github.com/natefox2017/cook/issues/139) | V1 release gate; aggregates all above tests and remains open until actual PASS |
+- [PR #225](https://github.com/natefox2017/cook/pull/225) changed app and Share Extension `CFBundleName` / `CFBundleDisplayName` plus four locales, and added a static branding validator. This is **code delivered**, but the previously observed Settings notification title still needs a **freshly installed physical-device build**, screenshot, and exact bundle/build version. If it remains stale, investigate the actual installed bundle/extension/localized InfoPlist identity and OS state rather than assuming a cache explanation.
+- [PR #224](https://github.com/natefox2017/cook/pull/224) changed navigation destination strategy and root-tab visibility. Existing `testRootTabsUseNativeTitlesAndSecondaryPagesHideTabBar` must be executed on the merged code once the UI Runner issue is resolved; a green auto-merge status does not cover nested navigation.
+- [PR #223](https://github.com/natefox2017/cook/pull/223) changed the **first onboarding heading** from `Create with AI` to `Save recipes your way`, while keeping `OnboardingAI` artwork. The user specifically reported that first-page AI guidance was the approved version. The existing `testOnboardingPaywallFreeAndClosePaths` only tests Skip/Free/Close, not the first-screen heading or approved paywall visuals. **Do not mark UI/design acceptance PASS** without resolving this content discrepancy and running a focused signed-device test. Prior [#183](https://github.com/natefox2017/cook/issues/183) is a *closed code issue*, not proof that the latest user-accepted visual is still present.
 
-## Live backend read-only findings (2026-10-09)
+## Required evidence per missing test
 
-Supabase `cookapp` project `semsjyrqjnumpvanibip` currently reported `ACTIVE_HEALTHY` with 9 active Edge Functions, **none** named `recipe-imports`, `recipe-import-worker`, `recipe-import-artifacts` or `purge-expired-recipe-import-artifacts`. `public.recipe_import_jobs` and `public.recipe_import_artifacts` are absent. Production history ends at migration `20261008062415` (with earlier duplicate-name snapshot hardening versions), whereas current repo contains later import migrations.
-
-A read-only privilege query reported `anon_execute=true` on 5 public `SECURITY DEFINER` functions (`admin_bootstrap_owner`, `admin_change_password`, `admin_verify_credentials`, `capture_registration_meta`, `get_runtime_config_number`). This is an **authorization finding, not proof of exploitation**. Track in #140 and verify all callers and intended grants before deployment. Relevant Supabase [security advisor guidance](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable).
-
-The current Supabase connection shows no development branches; creating a paid staging project/branch requires the owner's explicit approval. Do not apply untested SQL, grant changes or queue migrations to production to make the backlog appear finished.
-
-## Historical QA and superseded branches
-
-- [#92](https://github.com/natefox2017/cook/issues/92) retains the detailed historical failure context. Its former instruction “do not start QA work” is superseded by the user's 2026-10-09 request; every actionable failure is carried into the dedicated TEST tickets above. Close #92 as *superseded/migrated* after links are posted.
-- [Draft PR #98](https://github.com/natefox2017/cook/pull/98) was closed without merging because its large outdated changes would switch the app back to Simplified Chinese and overwrite newer Auth UI. Three useful independent fixes have instead merged via #114/#115/#125. This is not a failed release test.
-- [PRs #100–#111](https://github.com/natefox2017/cook/pulls?q=is%3Apr+is%3Amerged) implemented localization, English QA policy, login improvements, optimization and source-contract fixes. Their source changes are not proof of native Xcode or production backend execution.
-
-## Rules for evidence and closure
-
-Write `PASS / FAIL / BLOCKED` for each acceptance case; include tested commit SHA, platform, dependency versions, anonymized fixtures, commands, actual result, and screenshot/log paths. A green `Validate iOS project` status is a compatibility auto-merge gate, **not** an iOS build or unit test. Keep unresolved TEST Issues open even when their corresponding DEV code merges. When the owner finishes the final Mac/Apple-account test batch, explicitly review every blocker and only then close #139 or schedule release.
-
-No new public-user data, account credentials, provider secrets, unapproved UI rewrites or production environment changes are authorized by this roadmap alone.
+Record (a) exact commit and signed app build / Supabase function or migration versions, (b) environment, one physical device, test identities and isolated fixture scopes, (c) exact steps/command, (d) observed outputs, PASS/FAIL/BLOCKED/PARTIAL/NOT RUN, and (e) accessible sanitized log/trace/screenshot location. Don't treat missing test execution as a code failure; don't close any of these seven Issues solely because its implementation is merged.
