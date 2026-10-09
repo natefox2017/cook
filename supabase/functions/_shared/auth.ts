@@ -4,7 +4,7 @@ import {
   createClient,
   type SupabaseClient,
   type User,
-} from "jsr:@supabase/supabase-js@2";
+} from "jsr:@supabase/supabase-js@2.117.3";
 import { AppError } from "./errors.ts";
 
 export function requireEnv(name: string): string {
