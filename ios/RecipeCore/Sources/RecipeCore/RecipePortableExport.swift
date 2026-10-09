@@ -70,12 +70,12 @@ public enum RecipePortableExport {
 
         var lines: [String] = [
             "<!doctype html>",
-            "<html lang=\"en\">",
+            "<html lang=\"\(escape(RecipeLanguage.active.identifier))\">",
             "<head>",
             "<meta charset=\"utf-8\">",
             "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
             "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\">",
-            "<title>RecipePouch Recipes</title>",
+            "<title>\(escape(RecipeLanguage.localized("RecipePouch Recipes")))</title>",
             """
             <style>
             body{font-family:system-ui,-apple-system,sans-serif;line-height:1.55;
@@ -90,14 +90,16 @@ public enum RecipePortableExport {
             """,
             "</head>",
             "<body>",
-            "<h1>RecipePouch Recipes</h1>",
-            "<p class=\"muted\">Exported \(dateText). Recipe text only; photos, attachments, shopping lists, meal plans and app preferences are not included.</p>",
+            "<h1>\(escape(RecipeLanguage.localized("RecipePouch Recipes")))</h1>",
+            "<p class=\"muted\">\(escape(RecipeLanguage.localized("Exported %@. Recipe text only; photos, attachments, shopping lists, meal plans and app preferences are not included.", dateText)))</p>",
         ]
 
         if recipes.isEmpty {
-            lines.append("<p>No saved recipes in this export.</p>")
+            lines.append("<p>\(escape(RecipeLanguage.localized("No saved recipes in this export.")))</p>")
         } else {
-            lines.append("<nav aria-label=\"Recipe index\"><h2>Recipes</h2><ol>")
+            lines.append(
+                "<nav aria-label=\"\(escape(RecipeLanguage.localized("Recipe index")))\"><h2>\(escape(RecipeLanguage.localized("Recipes")))</h2><ol>"
+            )
             for (index, recipe) in recipes.enumerated() {
                 lines.append(
                     "<li><a href=\"#recipe-\(index + 1)\">\(escape(recipe.title))</a></li>"
@@ -121,18 +123,18 @@ public enum RecipePortableExport {
                     lines.append("<p class=\"preserve\">\(escape(recipe.summary))</p>")
                 }
 
-                var facts: [String] = [recipe.category.rawValue]
+                var facts: [String] = [RecipeLanguage.localized(recipe.category.rawValue)]
                 if let servings = recipe.servings {
-                    facts.append("\(servings) servings")
+                    facts.append(RecipeLanguage.localized("%lld servings", servings))
                 }
                 if let prep = recipe.prepMinutes {
-                    facts.append("Prep: \(prep) minutes")
+                    facts.append(RecipeLanguage.localized("Prep: %lld minutes", prep))
                 }
                 if let cook = recipe.cookMinutes {
-                    facts.append("Cook: \(cook) minutes")
+                    facts.append(RecipeLanguage.localized("Cook: %lld minutes", cook))
                 }
                 if recipe.isFavorite {
-                    facts.append("Favorite")
+                    facts.append(RecipeLanguage.localized("Favorite"))
                 }
                 lines.append("<p class=\"muted\">\(escape(facts.joined(separator: " · ")))</p>")
 
@@ -141,13 +143,13 @@ public enum RecipePortableExport {
                     .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
                 if !associatedNames.isEmpty {
                     lines.append(
-                        "<p><strong>Collections:</strong> \(escape(associatedNames.joined(separator: ", ")))</p>"
+                        "<p><strong>\(escape(RecipeLanguage.localized("Collections"))):</strong> \(escape(associatedNames.joined(separator: ", ")))</p>"
                     )
                 }
 
-                lines.append("<h3>Ingredients</h3><ul>")
+                lines.append("<h3>\(escape(RecipeLanguage.localized("Ingredients")))</h3><ul>")
                 if recipe.ingredients.isEmpty {
-                    lines.append("<li>Not specified</li>")
+                    lines.append("<li>\(escape(RecipeLanguage.localized("Not specified")))</li>")
                 }
                 for ingredient in recipe.ingredients {
                     let amount = ingredient.amountText
@@ -156,48 +158,49 @@ public enum RecipePortableExport {
                 }
                 lines.append("</ul>")
 
-                lines.append("<h3>Steps</h3><ol>")
+                lines.append("<h3>\(escape(RecipeLanguage.localized("Steps")))</h3><ol>")
                 if recipe.steps.isEmpty {
-                    lines.append("<li>Not specified</li>")
+                    lines.append("<li>\(escape(RecipeLanguage.localized("Not specified")))</li>")
                 }
                 for (stepIndex, step) in recipe.steps.enumerated() {
-                    let title = step.title.isEmpty ? "Step \(stepIndex + 1)" : step.title
+                    let title = step.title.isEmpty
+                        ? RecipeLanguage.localized("Step %lld", stepIndex + 1) : step.title
                     lines.append("<li><strong>\(escape(title))</strong>")
                     lines.append("<p class=\"preserve\">\(escape(step.instruction))</p>")
                     if let temperature = step.temperature, !temperature.text.isEmpty {
-                        lines.append("<p>Temperature/heat: \(escape(temperature.text))</p>")
+                        lines.append("<p>\(escape(RecipeLanguage.localized("Temperature/heat"))): \(escape(temperature.text))</p>")
                     }
                     if !step.timers.isEmpty {
                         let timerLabels = step.timers.map {
-                            "\($0.label): \($0.durationSeconds) seconds"
+                            "\(escape($0.label)): \(escape(RecipeLanguage.localized("%lld seconds", $0.durationSeconds)))"
                         }
                         lines.append(
-                            "<p>Timers: \(escape(timerLabels.joined(separator: ", ")))</p>")
+                            "<p>\(escape(RecipeLanguage.localized("Timers"))): \(timerLabels.joined(separator: ", "))</p>")
                     }
                     lines.append("</li>")
                 }
                 lines.append("</ol>")
 
                 if !recipe.notes.isEmpty {
-                    lines.append("<h3>Notes</h3>")
+                    lines.append("<h3>\(escape(RecipeLanguage.localized("Notes")))</h3>")
                     lines.append("<p class=\"preserve\">\(escape(recipe.notes))</p>")
                 }
 
                 if let sourceName = recipe.sourceName, !sourceName.isEmpty {
-                    lines.append("<p><strong>Source:</strong> \(escape(sourceName))</p>")
+                    lines.append("<p><strong>\(escape(RecipeLanguage.localized("Source"))):</strong> \(escape(sourceName))</p>")
                 }
                 if let sourceURL = recipe.sourceURL, !sourceURL.isEmpty {
                     if safeHTTPSURL(sourceURL) {
                         lines.append(
-                            "<p><strong>Original URL:</strong> <a href=\"\(escape(sourceURL))\" rel=\"noopener noreferrer\">\(escape(sourceURL))</a></p>"
+                            "<p><strong>\(escape(RecipeLanguage.localized("Original URL"))):</strong> <a href=\"\(escape(sourceURL))\" rel=\"noopener noreferrer\">\(escape(sourceURL))</a></p>"
                         )
                     } else {
                         // Never place untrusted URL schemes in clickable hrefs.
-                        lines.append("<p><strong>Original URL:</strong> \(escape(sourceURL))</p>")
+                        lines.append("<p><strong>\(escape(RecipeLanguage.localized("Original URL"))):</strong> \(escape(sourceURL))</p>")
                     }
                 }
                 if let sourceText = recipe.sourceText, !sourceText.isEmpty {
-                    lines.append("<h3>Original source text</h3>")
+                    lines.append("<h3>\(escape(RecipeLanguage.localized("Original source text")))</h3>")
                     lines.append("<pre>\(escape(sourceText))</pre>")
                 }
                 lines.append("</article>")
