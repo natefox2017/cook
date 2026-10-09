@@ -2,6 +2,7 @@
 // Purpose: Implements RecipePouch subscription status, purchase, restore, and management UI.
 
 import Foundation
+import RecipeCore
 import StoreKit
 import SwiftUI
 
