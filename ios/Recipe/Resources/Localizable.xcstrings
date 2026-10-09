@@ -508,13 +508,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "关于 私人菜谱"
+            "value": "关于私人菜谱"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "關於 私人菜譜"
+            "value": "關於私人菜譜"
           }
         }
       }
@@ -2128,13 +2128,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "删除 私人菜谱账号及云端数据"
+            "value": "删除私人菜谱账号及云端数据"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "刪除 私人菜譜帳號與雲端資料"
+            "value": "刪除私人菜譜帳號與雲端資料"
           }
         }
       }
@@ -4516,13 +4516,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "正在准备 私人菜谱…"
+            "value": "正在准备私人菜谱…"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "正在準備 私人菜譜…"
+            "value": "正在準備私人菜譜…"
           }
         }
       }
@@ -4969,13 +4969,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recipe Pals 高级版"
+            "value": "私人菜谱高级版"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recipe Pals 進階版"
+            "value": "私人菜譜進階版"
           }
         }
       }
@@ -7297,13 +7297,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "您仍可免费使用 私人菜谱，稍后再查看。"
+            "value": "您仍可免费使用私人菜谱，稍后再查看。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "您仍可免費使用 私人菜譜，稍後再查看。"
+            "value": "您仍可免費使用私人菜譜，稍後再查看。"
           }
         }
       }
@@ -7682,13 +7682,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "导出的 JSON 文件包含本机 私人菜谱数据副本，包括你保存的姓名、电子邮件、来源文本和备注。文件保存位置由你选择。"
+            "value": "导出的 JSON 文件包含本机私人菜谱数据副本，包括你保存的姓名、电子邮件、来源文本和备注。文件保存位置由你选择。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "匯出的 JSON 檔案包含本機 私人菜譜資料副本，包括你儲存的姓名、電子郵件、來源文字和備註。檔案儲存位置由你選擇。"
+            "value": "匯出的 JSON 檔案包含本機私人菜譜資料副本，包括你儲存的姓名、電子郵件、來源文字和備註。檔案儲存位置由你選擇。"
           }
         },
         "ja": {
@@ -7816,13 +7816,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "确认后，“删除所有本机数据”会从这部 iPhone 移除 私人菜谱食谱库和偏好设置。单独导出的副本不会删除。"
+            "value": "确认后，“删除所有本机数据”会从这部 iPhone 移除私人菜谱食谱库和偏好设置。单独导出的副本不会删除。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "確認後，「刪除所有本機資料」會從這部 iPhone 移除 私人菜譜食譜庫和偏好設定。另行匯出的副本不會刪除。"
+            "value": "確認後，「刪除所有本機資料」會從這部 iPhone 移除私人菜譜食譜庫和偏好設定。另行匯出的副本不會刪除。"
           }
         },
         "ja": {
@@ -8090,13 +8090,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此版本未配置 私人菜谱云端同步。"
+            "value": "此版本未配置私人菜谱云端同步。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "此版本未設定 私人菜譜雲端同步。"
+            "value": "此版本未設定私人菜譜雲端同步。"
           }
         }
       }
@@ -8106,13 +8106,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "除非登录账号并启用云端同步，否则 私人菜谱不会上传此食谱库。打开来源链接会跳转到来源网站，该网站自身的隐私和使用规则仍然适用。"
+            "value": "除非登录账号并启用云端同步，否则私人菜谱不会上传此食谱库。打开来源链接会跳转到来源网站，该网站自身的隐私和使用规则仍然适用。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "除非登入帳號並啟用雲端同步，否則 私人菜譜不會上傳此食譜庫。開啟來源連結會前往來源網站，該網站本身的隱私和使用規則仍然適用。"
+            "value": "除非登入帳號並啟用雲端同步，否則私人菜譜不會上傳此食譜庫。開啟來源連結會前往來源網站，該網站本身的隱私和使用規則仍然適用。"
           }
         },
         "ja": {
@@ -8179,13 +8179,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "如需仅删除这部 iPhone 上的数据，请先退出 私人菜谱账号。云端食谱库会保留。"
+            "value": "如需仅删除这部 iPhone 上的数据，请先退出私人菜谱账号。云端食谱库会保留。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "如需僅刪除這部 iPhone 上的資料，請先登出 私人菜譜帳號。雲端食譜庫會保留。"
+            "value": "如需僅刪除這部 iPhone 上的資料，請先登出私人菜譜帳號。雲端食譜庫會保留。"
           }
         }
       }
@@ -8245,13 +8245,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "通常流程是通过系统分享发送到 私人菜谱。你也可以粘贴链接、使用照片、粘贴文本、导入文档或手动创建食谱。"
+            "value": "通常流程是通过系统分享发送到私人菜谱。你也可以粘贴链接、使用照片、粘贴文本、导入文档或手动创建食谱。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "一般流程是透過系統分享傳送至 私人菜譜。你也可以貼上連結、使用照片、貼上文字、匯入文件或手動建立食譜。"
+            "value": "一般流程是透過系統分享傳送至私人菜譜。你也可以貼上連結、使用照片、貼上文字、匯入文件或手動建立食譜。"
           }
         },
         "ja": {
@@ -8274,13 +8274,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "计时器正在运行。若要在关闭 私人菜谱后也收到提醒，请在“个人中心”启用通知。"
+            "value": "计时器正在运行。若要在关闭私人菜谱后也收到提醒，请在“个人中心”启用通知。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "計時器正在執行。若要在關閉 私人菜譜後也收到提醒，請在「個人中心」啟用通知。"
+            "value": "計時器正在執行。若要在關閉私人菜譜後也收到提醒，請在「個人中心」啟用通知。"
           }
         }
       }
@@ -8771,13 +8771,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在食谱或社交 App 中打开系统分享并选择 私人菜谱。分享扩展会快速接收内容，让你返回来源 App。如果无法分享，可使用“添加食谱”粘贴链接、添加文本或图片，或手动创建食谱。"
+            "value": "在食谱或社交 App 中打开系统分享并选择私人菜谱。分享扩展会快速接收内容，让你返回来源 App。如果无法分享，可使用“添加食谱”粘贴链接、添加文本或图片，或手动创建食谱。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "在食譜或社群 App 中開啟系統分享並選擇 私人菜譜。分享延伸功能會快速接收內容，讓你返回來源 App。如果無法分享，可使用「新增食譜」貼上連結、新增文字或照片，或手動建立食譜。"
+            "value": "在食譜或社群 App 中開啟系統分享並選擇私人菜譜。分享延伸功能會快速接收內容，讓你返回來源 App。如果無法分享，可使用「新增食譜」貼上連結、新增文字或照片，或手動建立食譜。"
           }
         },
         "ja": {
@@ -8837,13 +8837,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "这会删除已登录的 私人菜谱账号和云端数据。此 iPhone 上的本机数据会保留，直到你单独删除。此操作不会取消 App Store 订阅。"
+            "value": "这会删除已登录的私人菜谱账号和云端数据。此 iPhone 上的本机数据会保留，直到你单独删除。此操作不会取消 App Store 订阅。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "這會刪除已登入的 私人菜譜帳號和雲端資料。此 iPhone 上的本機資料會保留，直到你另外刪除。此操作不會取消 App Store 訂閱。"
+            "value": "這會刪除已登入的私人菜譜帳號和雲端資料。此 iPhone 上的本機資料會保留，直到你另外刪除。此操作不會取消 App Store 訂閱。"
           }
         },
         "ja": {
@@ -8903,13 +8903,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "仅在需要处理时，自动导入才会将来源内容发送到 私人菜谱后端。服务提供方密钥仅保留在服务器端。"
+            "value": "仅在需要处理时，自动导入才会将来源内容发送到私人菜谱后端。服务提供方密钥仅保留在服务器端。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "僅在需要處理時，自動匯入才會將來源內容傳送至 私人菜譜後端。服務提供方金鑰僅保留在伺服器端。"
+            "value": "僅在需要處理時，自動匯入才會將來源內容傳送至私人菜譜後端。服務提供方金鑰僅保留在伺服器端。"
           }
         },
         "ja": {
@@ -8925,13 +8925,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "App Store 购买项目由 Apple 管理。App Store 购买身份与 私人菜谱账号彼此独立。"
+            "value": "App Store 购买项目由 Apple 管理。App Store 购买身份与私人菜谱账号彼此独立。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "App Store 購買項目由 Apple 管理。App Store 購買身分與 私人菜譜帳號彼此獨立。"
+            "value": "App Store 購買項目由 Apple 管理。App Store 購買身分與私人菜譜帳號彼此獨立。"
           }
         },
         "ja": {
@@ -8947,13 +8947,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "你可以在“设置”中导出本机数据，并申请删除 私人菜谱账号数据。"
+            "value": "你可以在“设置”中导出本机数据，并申请删除私人菜谱账号数据。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "你可以在「設定」中匯出本機資料，並申請刪除 私人菜譜帳號資料。"
+            "value": "你可以在「設定」中匯出本機資料，並申請刪除私人菜譜帳號資料。"
           }
         },
         "ja": {
@@ -8969,13 +8969,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "选择如何将这部 iPhone 上的本机食谱库连接到 私人菜谱账号。"
+            "value": "选择如何将这部 iPhone 上的本机食谱库连接到私人菜谱账号。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "選擇如何將這部 iPhone 上的本機食譜庫連結至 私人菜譜帳號。"
+            "value": "選擇如何將這部 iPhone 上的本機食譜庫連結至私人菜譜帳號。"
           }
         },
         "ja": {
@@ -10070,13 +10070,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "删除所有 私人菜谱数据"
+            "value": "删除所有私人菜谱数据"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "刪除所有 私人菜譜資料"
+            "value": "刪除所有私人菜譜資料"
           }
         },
         "ja": {
@@ -10092,13 +10092,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "删除 私人菜谱账号？"
+            "value": "删除私人菜谱账号？"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "刪除 私人菜譜帳號？"
+            "value": "刪除私人菜譜帳號？"
           }
         },
         "ja": {
@@ -10114,13 +10114,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "删除所有 私人菜谱本机数据？"
+            "value": "删除所有私人菜谱本机数据？"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "刪除所有 私人菜譜本機資料？"
+            "value": "刪除所有私人菜譜本機資料？"
           }
         },
         "ja": {
@@ -10708,13 +10708,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用 私人菜谱"
+            "value": "使用私人菜谱"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用 私人菜譜"
+            "value": "使用私人菜譜"
           }
         },
         "ja": {
@@ -11214,13 +11214,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请查看 %@ 验证账号，然后返回 私人菜谱。"
+            "value": "请查看 %@ 验证账号，然后返回私人菜谱。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "請查看 %@ 驗證帳號，然後返回 私人菜譜。"
+            "value": "請查看 %@ 驗證帳號，然後返回私人菜譜。"
           }
         },
         "ja": {
@@ -13520,13 +13520,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "分享至 私人菜谱"
+            "value": "分享至私人菜谱"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "分享至 私人菜譜"
+            "value": "分享至私人菜譜"
           }
         },
         "ja": {
@@ -14169,13 +14169,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "欢迎使用 私人菜谱"
+            "value": "欢迎使用私人菜谱"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "歡迎使用 私人菜譜"
+            "value": "歡迎使用私人菜譜"
           }
         }
       }
@@ -16524,13 +16524,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "计时进度已保存。请保持 私人菜谱打开，以查看计时结束提醒。"
+            "value": "计时进度已保存。请保持私人菜谱打开，以查看计时结束提醒。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "計時進度已儲存。請保持 私人菜譜開啟，以查看計時結束提醒。"
+            "value": "計時進度已儲存。請保持私人菜譜開啟，以查看計時結束提醒。"
           }
         },
         "ja": {
@@ -17651,13 +17651,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请向 私人菜谱分享公开的 HTTPS 链接、可读取文本、图片或 PDF。"
+            "value": "请向私人菜谱分享公开的 HTTPS 链接、可读取文本、图片或 PDF。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "請向 私人菜譜分享公開的 HTTPS 連結、可讀取文字、圖片或 PDF。"
+            "value": "請向私人菜譜分享公開的 HTTPS 連結、可讀取文字、圖片或 PDF。"
           }
         },
         "ja": {
@@ -18180,13 +18180,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已恢复有效的 私人菜谱订阅。"
+            "value": "已恢复有效的私人菜谱订阅。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "已恢復有效的 私人菜譜訂閱。"
+            "value": "已恢復有效的私人菜譜訂閱。"
           }
         },
         "ja": {
@@ -18203,13 +18203,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此 App Store 账号没有有效的 私人菜谱订阅。"
+            "value": "此 App Store 账号没有有效的私人菜谱订阅。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "此 App Store 帳號沒有有效的 私人菜譜訂閱。"
+            "value": "此 App Store 帳號沒有有效的私人菜譜訂閱。"
           }
         },
         "ja": {
