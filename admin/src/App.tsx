@@ -39,6 +39,23 @@ const routePaths: Record<AdminPage, string> = {
   security: "/admin/security",
 };
 
+function readStoredSession(): AdminSession | null {
+  try {
+    const raw = sessionStorage.getItem(sessionStorageKey);
+    if (!raw) return null;
+
+    const saved = JSON.parse(raw) as AdminSession;
+    if (!saved.token || !saved.expiresAt || !saved.admin || Date.parse(saved.expiresAt) <= Date.now()) {
+      sessionStorage.removeItem(sessionStorageKey);
+      return null;
+    }
+    return saved;
+  } catch {
+    sessionStorage.removeItem(sessionStorageKey);
+    return null;
+  }
+}
+
 function pageFromPath(pathname: string): AdminPage | null {
   return (Object.entries(routePaths) as Array<[AdminPage, string]>)
     .find(([, path]) => path === pathname)?.[0] ?? null;
@@ -236,8 +253,7 @@ function AppShell({ session, onLogout, onAuthExpired }: { session: AdminSession;
 }
 
 function App() {
-  const [session, setSession] = useState<AdminSession | null>(null);
-  const [restoring, setRestoring] = useState(true);
+  const [session, setSession] = useState<AdminSession | null>(readStoredSession);
   const [allowBootstrap, setAllowBootstrap] = useState(false);
 
   useEffect(() => {
@@ -265,34 +281,14 @@ function App() {
   }, []);
 
   useEffect(() => {
-    function discardStoredSession() {
-      sessionStorage.removeItem(sessionStorageKey);
-      window.history.replaceState(null, "", "/admin/login");
-    }
-
-    const raw = sessionStorage.getItem(sessionStorageKey);
-    if (!raw || !isConfigured) {
+    const saved = readStoredSession();
+    if (!saved || !isConfigured) {
       if (window.location.pathname.startsWith("/admin/") && window.location.pathname !== "/admin/login") {
         window.history.replaceState(null, "", "/admin/login");
       }
-      setRestoring(false);
       return;
     }
-    let saved: AdminSession;
-    try {
-      saved = JSON.parse(raw) as AdminSession;
-    } catch {
-      discardStoredSession();
-      setRestoring(false);
-      return;
-    }
-    if (Date.parse(saved.expiresAt) <= Date.now()) {
-      discardStoredSession();
-      setRestoring(false);
-      return;
-    }
-    setSession(saved);
-    adminApi.session(saved.token).then(({ admin }) => setSession({ ...saved, admin })).catch(() => clearSession()).finally(() => setRestoring(false));
+    adminApi.session(saved.token).then(({ admin }) => setSession({ ...saved, admin })).catch(() => clearSession());
   }, [clearSession]);
 
   const acceptSession = useCallback((next: AdminSession) => {
@@ -311,7 +307,6 @@ function App() {
     clearSession();
   }, [clearSession, session]);
 
-  if (restoring && !session) return <div className="boot-screen"><span className="spinner" /> Checking admin session…</div>;
   if (!session) return <AdminLogin onLogin={acceptSession} allowBootstrap={allowBootstrap} />;
   if (session.admin.mustChangePassword) return <ChangePassword session={session} onUpdated={acceptSession} />;
   return <AppShell session={session} onLogout={logout} onAuthExpired={clearSession} />;

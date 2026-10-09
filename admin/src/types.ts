@@ -127,10 +127,10 @@ export type LLMUsageRange = "7d" | "30d" | "90d";
 
 export type LLMUsage = {
   totals: {
-    requests: number;
-    inputTokens: number;
-    outputTokens: number;
-    totalTokens: number;
+    requests: number | null;
+    inputTokens: number | null;
+    outputTokens: number | null;
+    totalTokens: number | null;
     cachedInputTokens?: number | null;
     averageLatencyMs?: number | null;
   };

@@ -38,7 +38,7 @@ async function request<T>(
   functionName: string,
   path: string,
   token: string | undefined,
-  options: { method?: string; body?: unknown; headers?: Record<string, string> } = {},
+  options: { method?: string; body?: unknown; headers?: Record<string, string>; redirect?: RequestRedirect } = {},
 ): Promise<T> {
   if (!functionsBase || !apiKey) {
     throw new AdminApiError("Add the Supabase function URL and publishable key to admin/.env.local.", 0);
@@ -53,6 +53,7 @@ async function request<T>(
       ...options.headers,
     },
     ...(options.body ? { body: JSON.stringify(options.body) } : {}),
+    ...(options.redirect ? { redirect: options.redirect } : {}),
     cache: "no-store",
   });
 
@@ -186,13 +187,33 @@ export const adminApi = {
     return request<{ data: LLMProvider[] }>("admin-ai", "/providers", token);
   },
   saveLlmProvider(token: string, input: LLMProviderInput, id?: string) {
+    if (input.apiKey && (!functionsBase || new URL(functionsBase).protocol !== "https:")) {
+      throw new AdminApiError("Saving an API key requires the configured HTTPS Supabase function endpoint. The key was not sent.", 0);
+    }
     return request<LLMProvider>("admin-ai", id ? `/providers/${encodeURIComponent(id)}` : "/providers", token, {
       method: id ? "PUT" : "POST",
       body: input,
+      ...(input.apiKey ? { redirect: "error" as const } : {}),
     });
   },
   deleteLlmProvider(token: string, id: string) {
     return request<{ ok: boolean }>("admin-ai", `/providers/${encodeURIComponent(id)}`, token, { method: "DELETE" });
+  },
+  testLlmProvider(token: string, input: {
+    providerId?: string;
+    name: string;
+    baseUrl: string;
+    model: string;
+    apiKey?: string;
+  }) {
+    if (!functionsBase || new URL(functionsBase).protocol !== "https:") {
+      throw new AdminApiError("Connection tests require the configured HTTPS Supabase function endpoint. The key was not sent.", 0);
+    }
+    return request<{ ok: boolean; message?: string }>("admin-ai", "/providers/test", token, {
+      method: "POST",
+      body: input,
+      redirect: "error",
+    });
   },
   llmUsage(token: string, range: LLMUsageRange) {
     return request<unknown>("admin-ai", `/usage?range=${range}`, token);

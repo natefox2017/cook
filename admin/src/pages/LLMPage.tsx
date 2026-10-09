@@ -16,6 +16,8 @@ import {
   Plus,
   RefreshCw,
   Server,
+  Eye,
+  EyeOff,
   Trash2,
   Zap,
 } from "lucide-react";
@@ -84,16 +86,18 @@ function normalizeUsage(value: unknown): LLMUsage | null {
   const payload = asRecord(value);
   if (!payload) return null;
 
-  const sourceTotals = asRecord(payload.totals) ?? asRecord(payload.summary);
-  const events = Array.isArray(payload.events)
-    ? payload.events.map(asRecord).filter((event): event is Record<string, unknown> => event !== null)
+  const data = asRecord(payload.data) ?? asRecord(payload.usage) ?? payload;
+  const sourceTotals = asRecord(data.totals) ?? asRecord(data.summary);
+  const events = Array.isArray(data.events)
+    ? data.events.map(asRecord).filter((event): event is Record<string, unknown> => event !== null)
     : [];
-  if (!sourceTotals && events.length === 0) return null;
 
   const eventTotals = events.reduce<{
     requests: number;
     inputTokens: number;
+    inputTokenCount: number;
     outputTokens: number;
+    outputTokenCount: number;
     cachedInputTokens: number;
     cachedTokenCount: number;
     latencyTotal: number;
@@ -101,47 +105,44 @@ function normalizeUsage(value: unknown): LLMUsage | null {
   }>((totals, event) => ({
     requests: totals.requests + 1,
     inputTokens: totals.inputTokens + (numberFrom(event, "inputTokens", "input_tokens") ?? 0),
+    inputTokenCount: totals.inputTokenCount + (numberFrom(event, "inputTokens", "input_tokens") === null ? 0 : 1),
     outputTokens: totals.outputTokens + (numberFrom(event, "outputTokens", "output_tokens") ?? 0),
+    outputTokenCount: totals.outputTokenCount + (numberFrom(event, "outputTokens", "output_tokens") === null ? 0 : 1),
     cachedInputTokens: totals.cachedInputTokens + (numberFrom(event, "cachedInputTokens", "cached_input_tokens", "cacheReadInputTokens", "cache_read_input_tokens") ?? 0),
     cachedTokenCount: totals.cachedTokenCount + (numberFrom(event, "cachedInputTokens", "cached_input_tokens", "cacheReadInputTokens", "cache_read_input_tokens") === null ? 0 : 1),
     latencyTotal: totals.latencyTotal + (numberFrom(event, "latencyMs", "latency_ms") ?? 0),
     latencyCount: totals.latencyCount + (numberFrom(event, "latencyMs", "latency_ms") === null ? 0 : 1),
-  }), { requests: 0, inputTokens: 0, outputTokens: 0, cachedInputTokens: 0, cachedTokenCount: 0, latencyTotal: 0, latencyCount: 0 });
+  }), { requests: 0, inputTokens: 0, inputTokenCount: 0, outputTokens: 0, outputTokenCount: 0, cachedInputTokens: 0, cachedTokenCount: 0, latencyTotal: 0, latencyCount: 0 });
 
-  const requests = sourceTotals
-    ? numberFrom(sourceTotals, "requests", "requestCount", "request_count")
-    : eventTotals.requests;
-  const inputTokens = sourceTotals
-    ? numberFrom(sourceTotals, "inputTokens", "input_tokens")
-    : eventTotals.inputTokens;
-  const outputTokens = sourceTotals
-    ? numberFrom(sourceTotals, "outputTokens", "output_tokens")
-    : eventTotals.outputTokens;
-  if (requests === null || inputTokens === null || outputTokens === null) return null;
+  const requests = numberFrom(sourceTotals ?? {}, "requests", "requestCount", "request_count")
+    ?? (events.length ? eventTotals.requests : null);
+  const inputTokens = numberFrom(sourceTotals ?? {}, "inputTokens", "input_tokens")
+    ?? (eventTotals.inputTokenCount === events.length && events.length ? eventTotals.inputTokens : null);
+  const outputTokens = numberFrom(sourceTotals ?? {}, "outputTokens", "output_tokens")
+    ?? (eventTotals.outputTokenCount === events.length && events.length ? eventTotals.outputTokens : null);
 
-  const series = Array.isArray(payload.series) ? payload.series.filter((item) => {
+  const series = Array.isArray(data.series) ? data.series.filter((item) => {
     const row = asRecord(item);
     return row && typeof row.date === "string" &&
       [row.requests, row.inputTokens, row.outputTokens, row.totalTokens].every(Number.isFinite);
   }) : [];
-  const byModel = Array.isArray(payload.byModel) ? payload.byModel.filter((item) => {
+  const byModel = Array.isArray(data.byModel) ? data.byModel.filter((item) => {
     const row = asRecord(item);
     return row && typeof row.provider === "string" && typeof row.model === "string" &&
       [row.requests, row.totalTokens].every(Number.isFinite);
   }) : [];
-  const cachedInputTokens = sourceTotals
-    ? numberFrom(sourceTotals, "cachedInputTokens", "cached_input_tokens", "cacheReadInputTokens", "cache_read_input_tokens")
-    : eventTotals.cachedTokenCount ? eventTotals.cachedInputTokens : null;
-  const averageLatencyMs = sourceTotals
-    ? numberFrom(sourceTotals, "averageLatencyMs", "avgLatencyMs", "average_latency_ms", "avg_latency_ms")
-    : eventTotals.latencyCount ? eventTotals.latencyTotal / eventTotals.latencyCount : null;
+  const cachedInputTokens = numberFrom(sourceTotals ?? {}, "cachedInputTokens", "cached_input_tokens", "cacheReadInputTokens", "cache_read_input_tokens")
+    ?? (eventTotals.cachedTokenCount === events.length && events.length ? eventTotals.cachedInputTokens : null);
+  const averageLatencyMs = numberFrom(sourceTotals ?? {}, "averageLatencyMs", "avgLatencyMs", "average_latency_ms", "avg_latency_ms")
+    ?? (eventTotals.latencyCount === events.length && events.length ? eventTotals.latencyTotal / eventTotals.latencyCount : null);
 
   return {
     totals: {
       requests,
       inputTokens,
       outputTokens,
-      totalTokens: numberFrom(sourceTotals ?? {}, "totalTokens", "total_tokens") ?? inputTokens + outputTokens,
+      totalTokens: numberFrom(sourceTotals ?? {}, "totalTokens", "total_tokens")
+        ?? (inputTokens !== null && outputTokens !== null ? inputTokens + outputTokens : null),
       cachedInputTokens,
       averageLatencyMs,
     },
@@ -183,29 +184,56 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
   const [deleting, setDeleting] = useState<LLMProvider | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [deletingProvider, setDeletingProvider] = useState(false);
+  const [apiKeyVisible, setApiKeyVisible] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionResult, setConnectionResult] = useState("");
 
   async function load() {
     setLoading(true);
     setError("");
     try {
-      const [providerResult, usageResult] = await Promise.all([
+      const [providerResponse, usageResponse] = await Promise.allSettled([
         adminApi.llmProviders(token),
         adminApi.llmUsage(token, range),
       ]);
-      const providerData = Array.isArray(providerResult)
-        ? providerResult
-        : Array.isArray(providerResult.data)
-        ? providerResult.data
-        : null;
-      const normalizedUsage = normalizeUsage(usageResult);
-      if (!providerData || !normalizedUsage) {
-        throw new Error("The model service returned incomplete usage data.");
+      if (providerResponse.status === "fulfilled") {
+        const providerPayload = asRecord(providerResponse.value);
+        const providerData = Array.isArray(providerResponse.value)
+          ? providerResponse.value
+          : Array.isArray(providerPayload?.data)
+          ? providerPayload.data
+          : null;
+        if (providerData) {
+          const normalizedProviders = providerData.flatMap((item): LLMProvider[] => {
+            const provider = asRecord(item);
+            if (!provider || typeof provider.id !== "string" || typeof provider.name !== "string") return [];
+            return [{
+              id: provider.id,
+              name: provider.name,
+              baseUrl: typeof provider.baseUrl === "string" ? provider.baseUrl : "",
+              model: typeof provider.model === "string" ? provider.model : "",
+              active: provider.active === true,
+              apiKeyConfigured: provider.apiKeyConfigured === true,
+              updatedAt: typeof provider.updatedAt === "string" ? provider.updatedAt : "",
+            }];
+          });
+          setProviders(normalizedProviders);
+        } else {
+          setError("Provider settings returned incomplete data.");
+        }
+      } else {
+        handleExpiredSession(providerResponse.reason, onAuthExpired);
+        setError(providerResponse.reason instanceof Error ? providerResponse.reason.message : "Unable to load provider settings.");
       }
-      setProviders(providerData);
-      setUsage(normalizedUsage);
-    } catch (cause) {
-      handleExpiredSession(cause, onAuthExpired);
-      setError(cause instanceof Error ? cause.message : "Unable to load model administration data.");
+      if (usageResponse.status === "fulfilled") {
+        const normalizedUsage = normalizeUsage(usageResponse.value);
+        setUsage(normalizedUsage);
+        if (!normalizedUsage) setError("Usage data could not be read. Provider settings are still available.");
+      } else {
+        handleExpiredSession(usageResponse.reason, onAuthExpired);
+        setUsage(null);
+        setError(usageResponse.reason instanceof Error ? usageResponse.reason.message : "Unable to load usage data.");
+      }
     } finally {
       setLoading(false);
     }
@@ -220,13 +248,24 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
   function beginCreate() {
     setDraft({ ...emptyDraft });
     setFormError("");
+    setConnectionResult("");
+    setApiKeyVisible(false);
     setEditor("new");
   }
 
   function beginEdit(provider: LLMProvider) {
     setDraft({ name: provider.name, baseUrl: provider.baseUrl, model: provider.model, apiKey: "", active: provider.active });
     setFormError("");
+    setConnectionResult("");
+    setApiKeyVisible(false);
     setEditor(provider);
+  }
+
+  function closeEditor() {
+    setEditor(null);
+    setDraft({ ...emptyDraft });
+    setApiKeyVisible(false);
+    setConnectionResult("");
   }
 
   async function saveProvider(event: FormEvent<HTMLFormElement>) {
@@ -237,12 +276,12 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
     const baseUrl = draft.baseUrl.trim();
     try {
       const parsed = new URL(baseUrl);
-      if (parsed.protocol !== "https:") {
-        setFormError("Use an HTTPS API base URL.");
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+        setFormError("Use an HTTP or HTTPS API base URL.");
         return;
       }
     } catch {
-      setFormError("Enter a valid HTTPS API base URL.");
+      setFormError("Enter a valid HTTP or HTTPS API base URL.");
       return;
     }
     if (currentEditor === "new" && !draft.apiKey.trim()) {
@@ -259,13 +298,56 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
         apiKey: draft.apiKey.trim(),
         active: draft.active,
       }, currentEditor === "new" ? undefined : currentEditor.id);
-      setEditor(null);
+      closeEditor();
       await load();
     } catch (cause) {
       handleExpiredSession(cause, onAuthExpired);
-      setFormError(cause instanceof Error ? cause.message : "Unable to save provider.");
+      setFormError("Unable to save provider. Check the configuration and try again.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function testConnection() {
+    if (!editor) return;
+    setFormError("");
+    setConnectionResult("");
+    const apiKey = draft.apiKey.trim();
+    let providerUrl: URL;
+    try {
+      providerUrl = new URL(draft.baseUrl.trim());
+    } catch {
+      setFormError("Enter a valid HTTPS provider URL before testing.");
+      return;
+    }
+    if (providerUrl.protocol !== "https:") {
+      setFormError("Connection tests require an HTTPS provider URL. The key was not sent.");
+      return;
+    }
+    if (!apiKey && (editor === "new" || !editor.apiKeyConfigured)) {
+      setFormError("Enter an API key before testing this connection.");
+      return;
+    }
+
+    setTestingConnection(true);
+    try {
+      const result = await adminApi.testLlmProvider(token, {
+        ...(editor === "new" ? {} : { providerId: editor.id }),
+        name: draft.name.trim(),
+        baseUrl: providerUrl.toString(),
+        model: draft.model.trim(),
+        ...(apiKey ? { apiKey } : {}),
+      });
+      if (!result.ok) {
+        setFormError("The provider could not verify the connection.");
+      } else {
+        setConnectionResult("Connection successful.");
+      }
+    } catch (cause) {
+      handleExpiredSession(cause, onAuthExpired);
+      setFormError("Connection test failed. Check the provider settings and try again.");
+    } finally {
+      setTestingConnection(false);
     }
   }
 
@@ -285,7 +367,12 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
     }
   }
 
-  const hasUsage = usage !== null && usage.totals.requests > 0;
+  const hasUsage = usage !== null && (
+    usage.totals.requests !== null
+      ? usage.totals.requests > 0
+      : usage.totals.inputTokens !== null || usage.totals.outputTokens !== null ||
+        usage.series.length > 0 || usage.byModel.length > 0
+  );
 
   return (
     <main className="llm-page">
@@ -322,11 +409,11 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
         ) : hasUsage && usage ? (
           <>
             <div className="llm-metric-grid">
-              <Metric label="Requests" value={formatNumber(usage.totals.requests)} icon={Zap} />
-              <Metric label="Input tokens" value={formatNumber(usage.totals.inputTokens)} icon={ArrowDownToLine} />
-              <Metric label="Output tokens" value={formatNumber(usage.totals.outputTokens)} icon={ArrowUpToLine} />
-              <Metric label="Cached input tokens" value={usage.totals.cachedInputTokens === null || usage.totals.cachedInputTokens === undefined ? "—" : formatNumber(usage.totals.cachedInputTokens)} icon={Cpu} />
-              <Metric label="Avg. response time" value={usage.totals.averageLatencyMs === null || usage.totals.averageLatencyMs === undefined ? "—" : `${formatNumber(usage.totals.averageLatencyMs)} ms`} icon={Activity} />
+              <Metric label="Requests" value={usage.totals.requests === null ? "Not reported" : formatNumber(usage.totals.requests)} icon={Zap} />
+              <Metric label="Input tokens" value={usage.totals.inputTokens === null ? "Not reported" : formatNumber(usage.totals.inputTokens)} icon={ArrowDownToLine} />
+              <Metric label="Output tokens" value={usage.totals.outputTokens === null ? "Not reported" : formatNumber(usage.totals.outputTokens)} icon={ArrowUpToLine} />
+              <Metric label="Cached input tokens" value={usage.totals.cachedInputTokens == null ? "Not reported" : formatNumber(usage.totals.cachedInputTokens)} icon={Cpu} />
+              <Metric label="Avg. response time" value={usage.totals.averageLatencyMs == null ? "Not reported" : `${formatNumber(usage.totals.averageLatencyMs)} ms`} icon={Activity} />
             </div>
             <div className="llm-usage-grid">
               <section className="llm-panel card">
@@ -403,18 +490,19 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
       </section>
 
       {editor && (
-        <div className="llm-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setEditor(null); }}>
+        <div className="llm-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) closeEditor(); }}>
           <section className="llm-dialog card" role="dialog" aria-modal="true" aria-labelledby="llm-editor-title">
-            <header><span className="llm-dialog-icon"><Cpu size={18} aria-hidden="true" /></span><div><h2 id="llm-editor-title">{editor === "new" ? "Add provider" : "Edit provider"}</h2><p>Connect an OpenAI-compatible API endpoint.</p></div><button type="button" className="icon-button" aria-label="Close dialog" onClick={() => setEditor(null)} disabled={saving}>×</button></header>
+            <header><span className="llm-dialog-icon"><Cpu size={18} aria-hidden="true" /></span><div><h2 id="llm-editor-title">{editor === "new" ? "Add provider" : "Edit provider"}</h2><p>Connect an OpenAI-compatible API endpoint.</p></div><button type="button" className="icon-button" aria-label="Close dialog" onClick={closeEditor} disabled={saving}>×</button></header>
             <form onSubmit={(event) => void saveProvider(event)}>
               <label className="llm-field"><span>Display name</span><input required autoFocus value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Production OpenAI" /></label>
-              <label className="llm-field"><span>HTTPS API base URL</span><input required type="url" inputMode="url" value={draft.baseUrl} onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })} placeholder="https://api.example.com/v1" /></label>
+              <label className="llm-field"><span>API base URL</span><input required type="url" inputMode="url" value={draft.baseUrl} onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })} placeholder="https://api.example.com/v1" /></label>
               <label className="llm-field"><span>Model name</span><input required value={draft.model} onChange={(event) => setDraft({ ...draft, model: event.target.value })} placeholder="gpt-4o-mini" /></label>
-              <label className="llm-field"><span>API key <small>{editor === "new" ? "Required" : "Optional · blank keeps the saved key"}</small></span><input required={editor === "new"} type="password" autoComplete="new-password" value={draft.apiKey} onChange={(event) => setDraft({ ...draft, apiKey: event.target.value })} placeholder={editor !== "new" && editor.apiKeyConfigured ? "Key configured · enter a new key to replace" : "sk-…"} /></label>
+              <label className="llm-field"><span>API key <small>{editor === "new" ? "Required" : "Optional · blank keeps the saved key"}</small></span><div className="llm-key-input"><input required={editor === "new"} type={apiKeyVisible ? "text" : "password"} autoComplete="new-password" value={draft.apiKey} onChange={(event) => setDraft({ ...draft, apiKey: event.target.value })} placeholder={editor !== "new" && editor.apiKeyConfigured ? "Key configured · enter a new key to replace" : "sk-…"} /><button type="button" className="llm-key-visibility" aria-label={apiKeyVisible ? "Hide API key" : "Show API key"} aria-pressed={apiKeyVisible} onClick={() => setApiKeyVisible((visible) => !visible)}><span aria-hidden="true">{apiKeyVisible ? <EyeOff size={16} /> : <Eye size={16} />}</span></button></div></label>
               {editor !== "new" && <p className="llm-key-hint">Saved API keys are never displayed. Leave this field blank to keep the current key.</p>}
+              <div className="llm-connection-row"><button type="button" className="button button-outline" onClick={() => void testConnection()} disabled={saving || testingConnection}><Zap size={15} aria-hidden="true" />{testingConnection ? "Testing…" : "Test connection"}</button>{connectionResult && <span role="status">{connectionResult}</span>}</div>
               <label className="llm-toggle"><input type="checkbox" checked={draft.active} onChange={(event) => setDraft({ ...draft, active: event.target.checked })} /><span><strong>Provider active</strong><small>Active providers can be selected for model calls.</small></span></label>
               {formError && <div className="llm-form-error" role="alert">{formError}</div>}
-              <footer><button type="button" className="button button-outline" disabled={saving} onClick={() => setEditor(null)}>Cancel</button><button type="submit" className="button button-primary" disabled={saving}>{saving && <LoaderCircle size={15} className="llm-spin" aria-hidden="true" />}{saving ? "Saving…" : "Save provider"}</button></footer>
+              <footer><button type="button" className="button button-outline" disabled={saving} onClick={closeEditor}>Cancel</button><button type="submit" className="button button-primary" disabled={saving || testingConnection}>{saving && <LoaderCircle size={15} className="llm-spin" aria-hidden="true" />}{saving ? "Saving…" : "Save provider"}</button></footer>
             </form>
           </section>
         </div>
