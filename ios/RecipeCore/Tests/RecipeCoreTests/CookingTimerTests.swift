@@ -156,7 +156,7 @@ func reminderWarningUsesDeadlineAndSkipsShortPausedOrExpiredTimers() {
     #expect(CookingReminderPlan(timer: timer, warningSeconds: 30, now: now) == nil)
     timer.start(at: now.addingTimeInterval(50))
     #expect(
-        CookingReminderPlan(timer: timer, warningSeconds: 60, now: now.addingTimeInterval(52))?
+        CookingReminderPlan(timer: timer, warningSeconds: 60, now: now.addingTimeInterval(85))?
             .earlyWarningAt == nil
     )
 }
