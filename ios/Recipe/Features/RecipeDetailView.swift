@@ -521,8 +521,10 @@ struct RecipeDetailView: View {
         ToolbarItemGroup(placement: .topBarTrailing) {
             if let recipe = store.recipe(id: recipeID) {
                 Button {
-                    do { try store.toggleFavorite(id: recipeID) } catch {
-                        feedbackMessage = error.localizedDescription
+                    RecipePerformanceSignposts.measure("Favorite Write") {
+                        do { try store.toggleFavorite(id: recipeID) } catch {
+                            feedbackMessage = error.localizedDescription
+                        }
                     }
                 } label: {
                     Image(systemName: recipe.isFavorite ? "heart.fill" : "heart")

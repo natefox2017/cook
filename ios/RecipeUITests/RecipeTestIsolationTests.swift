@@ -10,6 +10,52 @@ import XCTest
 @testable import Recipe
 
 final class RecipeTestIsolationTests: XCTestCase {
+    #if DEBUG
+        @MainActor
+        func testPerformanceFixtureGenerationIsDeterministic() {
+            let first = RecipePerformanceFixtureConfiguration.snapshot(seed: 137, recipeCount: 25)
+            let repeated = RecipePerformanceFixtureConfiguration.snapshot(seed: 137, recipeCount: 25)
+            let otherSeed = RecipePerformanceFixtureConfiguration.snapshot(seed: 138, recipeCount: 25)
+
+            XCTAssertEqual(first, repeated)
+            XCTAssertNotEqual(first, otherSeed)
+        }
+
+        @MainActor
+        func testPerformanceFixtureRequiresUITestingAndUsesSeparatePath() throws {
+            let performanceArguments = [
+                RecipePerformanceFixtureConfiguration.launchArgument,
+                "--uitesting-performance-count=500",
+            ]
+            XCTAssertNil(
+                RecipePerformanceFixtureConfiguration.parse(arguments: performanceArguments)
+            )
+
+            let configuration = try XCTUnwrap(
+                RecipePerformanceFixtureConfiguration.parse(
+                    arguments: ["--uitesting"] + performanceArguments
+                )
+            )
+            let fixtureURL = configuration.fileURL.standardizedFileURL
+            let supportDirectory = URL.applicationSupportDirectory
+            let productionDirectory = supportDirectory.appendingPathComponent(
+                "Recipe",
+                isDirectory: true
+            )
+            let legacyDirectory = supportDirectory.appendingPathComponent(
+                "Cook",
+                isDirectory: true
+            )
+            let productionURL = productionDirectory.appendingPathComponent("library.json")
+            XCTAssertTrue(fixtureURL.pathComponents.contains("RecipeUITestPerformance"))
+            XCTAssertNotEqual(fixtureURL, productionURL)
+            XCTAssertFalse(
+                fixtureURL.path.hasPrefix(productionDirectory.path + "/")
+            )
+            XCTAssertFalse(fixtureURL.path.hasPrefix(legacyDirectory.path + "/"))
+        }
+    #endif
+
     func testClearingUITestSessionsPreservesNormalAndLegacySessions() throws {
         let suiteName = "recipe.test.isolation.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))

@@ -286,7 +286,9 @@ struct RecipeEditorView: View {
             if recipe.importRecord != nil {
                 recipe.importRecord?.reviewedAt = .now
             }
-            try store.upsert(recipe)
+            try RecipePerformanceSignposts.measure("Recipe Write") {
+                try store.upsert(recipe)
+            }
             dismiss()
         } catch { errorMessage = error.localizedDescription }
     }
