@@ -107,7 +107,7 @@ private struct RecipeRootView: View {
     @State private var selectedTab: RecipeTab = .recipes
     @State private var shareInbox = RecipeShareInboxCoordinator()
     @State private var isAccountPresented = false
-    @State private var accountDetent: PresentationDetent = .medium
+    @State private var accountDetent: PresentationDetent = .large
 
     let isUITesting: Bool
     let bypassOnboarding: Bool
@@ -259,7 +259,7 @@ private struct RecipeRootView: View {
     }
 
     private func presentAccount() {
-        accountDetent = .medium
+        accountDetent = .large
         isAccountPresented = true
     }
 
