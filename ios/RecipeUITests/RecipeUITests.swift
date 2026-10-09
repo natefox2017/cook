@@ -235,6 +235,58 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testManualTimerCanBeRenamedWithoutStoppingIt() {
+        let app = launchSeededApp()
+        defer {
+            app.terminate()
+        }
+
+        let recipe = app.buttons["recipe.C0010000-0000-4000-8000-000000000005"]
+        reveal(recipe, in: app, maximumSwipes: 4)
+        recipe.tap()
+        let startCooking = app.buttons["startCooking"]
+        waitUntilReady(startCooking)
+        startCooking.tap()
+
+        let timers = app.buttons["cookingTimersButton"]
+        waitUntilReady(timers)
+        timers.tap()
+        let addTimer = app.buttons["Add"]
+        waitUntilReady(addTimer)
+        addTimer.tap()
+
+        let name = app.textFields["Name"]
+        waitUntilReady(name)
+        name.tap()
+        name.typeText("Kitchen QA")
+        app.navigationBars.buttons["Start"].tap()
+
+        let manualTimer = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "cookingTimerRename.")
+        ).firstMatch
+        waitUntilReady(manualTimer)
+        let timerIdentifier = manualTimer.identifier
+        manualTimer.tap()
+
+        let renameAlert = app.alerts["Rename Timer"]
+        XCTAssertTrue(renameAlert.waitForExistence(timeout: 8))
+        let renameField = renameAlert.textFields["Timer label"]
+        XCTAssertEqual(renameField.value as? String, "Kitchen QA")
+        renameField.tap()
+        let existingName = renameField.value as? String ?? ""
+        renameField.typeText(
+            String(repeating: XCUIKeyboardKey.delete.rawValue, count: existingName.count)
+                + "  Renamed QA  "
+        )
+        renameAlert.buttons["Save"].tap()
+
+        let renamedTimer = app.buttons[timerIdentifier]
+        XCTAssertTrue(renamedTimer.waitForExistence(timeout: 8))
+        XCTAssertEqual(renamedTimer.value as? String, "Renamed QA")
+        XCTAssertTrue(app.buttons["Pause"].exists)
+    }
+
+    @MainActor
     func testRecipeCanBeAddedDirectlyToMealPlan() {
         let app = launchSeededApp()
         defer {
