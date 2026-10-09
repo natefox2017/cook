@@ -6,7 +6,8 @@ import SwiftUI
 
 struct CollectionsView: View {
     @Environment(RecipeStore.self) private var store
-    @AppStorage("recipe.collections") private var legacyEncoded = ""
+    @AppStorage(RecipeUITestNamespace.preferenceKey("recipe.collections"))
+    private var legacyEncoded = ""
     @State private var newName = ""
     @State private var editingCollection: RecipeCollection?
     @State private var pendingDelete: RecipeCollection?

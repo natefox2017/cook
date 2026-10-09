@@ -13,7 +13,8 @@ struct MealPlanView: View {
 
     @Environment(RecipeStore.self) private var store
     @Environment(\.locale) private var locale
-    @AppStorage("recipe.meal.weekStart") private var weekStart = "System Default"
+    @AppStorage(RecipeUITestNamespace.preferenceKey("recipe.meal.weekStart"))
+    private var weekStart = "System Default"
     @State private var selectedDate = Date()
     @State private var recipePicker: MealPlanPickerPresentation?
     @State private var mealToDelete: MealPlanEntry?

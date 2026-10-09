@@ -6,7 +6,8 @@ import SwiftUI
 
 struct GroceriesView: View {
     @Environment(RecipeStore.self) private var store
-    @AppStorage("recipe.grocery.sources") private var showRecipeNames = true
+    @AppStorage(RecipeUITestNamespace.preferenceKey("recipe.grocery.sources"))
+    private var showRecipeNames = true
     @State private var filter: GroceryFilter = .all
     @State private var collapsedCategories: Set<String> = []
     @State private var editor: GroceryEditorPresentation?

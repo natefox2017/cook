@@ -625,7 +625,8 @@ private struct RecipeIngredientsSelectionView: View {
     let recipeID: UUID
     let initialServings: Int
     let onAdded: (Int) -> Void
-    @AppStorage("recipe.grocery.consolidate") private var consolidate = true
+    @AppStorage(RecipeUITestNamespace.preferenceKey("recipe.grocery.consolidate"))
+    private var consolidate = true
     @Environment(RecipeStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var servings = 1
