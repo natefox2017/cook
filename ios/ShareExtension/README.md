@@ -18,10 +18,12 @@ Unacknowledged receipts survive host cancellation, extension process exit, app r
 
 ## Apple Developer signing still required
 
-The host and extension must be signed by the **same Apple Developer Team** with the App Group `group.com.modelhub.cook` provisioned to **both** App IDs:
+The host and extension must be signed by the **same Apple Developer Team** with the App Group `group.com.shopkivoo.recipe` provisioned to **both** App IDs:
 
-- Host: `com.modelhub.cook`, `ios/Recipe/Recipe.entitlements`
-- Extension: `com.modelhub.cook.ShareExtension`, `ios/ShareExtension/ShareExtension.entitlements`
+- Host: `com.shopkivoo.recipe`, `ios/Recipe/Recipe.entitlements`
+- Extension: `com.shopkivoo.recipe.ShareExtension`, `ios/ShareExtension/ShareExtension.entitlements`
+
+The new App IDs and App Group must be registered and provisioned in the Apple Developer account before signing. Changing the App Group identifier does not migrate files or defaults from the old `group.com.modelhub.cook` container.
 
 `DEVELOPMENT_TEAM` in the checked-in Xcode project is intentionally blank. A non-signing simulator build is **not** evidence of a working App Group on a device. Validate signing, profiles, app-group container and .appex installation on the actual developer account before release.
 
