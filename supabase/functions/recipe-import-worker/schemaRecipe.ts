@@ -29,6 +29,15 @@ const MAX_JSON_LD_SCRIPTS = 50;
 const MAX_JSON_LD_NODES = 2_000;
 const MAX_JSON_LD_DEPTH = 64;
 
+export interface RecipeImportCandidate {
+  candidate_id: string;
+  title: string | null;
+  ingredients: string[];
+  steps: string[];
+  evidence_ids: string[];
+  review_fields: string[];
+}
+
 export interface ParsedWebRecipe {
   recipe_id: string;
   status: "ready" | "needs_review";
@@ -44,6 +53,7 @@ export interface ParsedWebRecipe {
   fields: Record<string, EvidenceField>;
   evidence: Array<Record<string, unknown>>;
   review_fields: string[];
+  candidate_recipes?: RecipeImportCandidate[];
 }
 
 function isObject(value: unknown): value is RecipeNode {
@@ -157,6 +167,58 @@ function instructionValues(value: unknown): string[] {
   return [];
 }
 
+
+const MAX_RECIPE_CANDIDATES = 8;
+
+/** Stable source-derived ID; index disambiguates duplicate dishes in one page. */
+function candidateID(node: RecipeNode, index: number): string {
+  const basis = JSON.stringify([
+    textValue(node.name),
+    ingredientValues(node.recipeIngredient),
+    instructionValues(node.recipeInstructions),
+  ]);
+  // FNV-1a over JSON-LD source evidence. Not an authentication token.
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < basis.length; i++) {
+    hash ^= basis.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return `candidate-${index + 1}-${hash.toString(16).padStart(8, "0")}`;
+}
+
+function recipeCandidates(
+  nodes: RecipeNode[], timestamp: string
+): { candidates: RecipeImportCandidate[]; evidence: Array<Record<string, unknown>> } {
+  const evidence: Array<Record<string, unknown>> = [];
+  const candidates = nodes.slice(0, MAX_RECIPE_CANDIDATES).map((node, index) => {
+    const title = textValue(node.name);
+    const ingredients = ingredientValues(node.recipeIngredient).slice(0, 80);
+    const steps = instructionValues(node.recipeInstructions).slice(0, 80);
+    const evidenceID = crypto.randomUUID();
+    evidence.push({
+      id: evidenceID,
+      source_type: "webpage_structured_data",
+      origin: "extracted",
+      excerpt: JSON.stringify(node).slice(0, 9_700),
+      confidence: 1,
+      captured_at: timestamp,
+    });
+    const review: string[] = [];
+    if (!title) review.push("title");
+    if (ingredients.length === 0) review.push("ingredients");
+    if (steps.length === 0) review.push("steps");
+    return {
+      candidate_id: candidateID(node, index),
+      title,
+      ingredients,
+      steps,
+      evidence_ids: [evidenceID],
+      review_fields: review,
+    };
+  });
+  return { candidates, evidence };
+}
+
 export function parseSchemaOrgRecipePage(input: {
   id: string;
   html: string;
@@ -171,6 +233,7 @@ export function parseSchemaOrgRecipePage(input: {
   const fields: Record<string, EvidenceField> = {};
   const reviewFields = new Set<string>();
   let authorName: string | null = null;
+  const multi = nodes.length > 1 ? recipeCandidates(nodes, timestamp) : null;
 
   const excerpt = nodes.length > 1
     ? `Multiple Recipe JSON-LD candidates (${nodes.length}): ${
@@ -207,6 +270,9 @@ export function parseSchemaOrgRecipePage(input: {
 
   if (nodes.length > 1) {
     reviewFields.add("recipe_selection");
+    if (nodes.length > MAX_RECIPE_CANDIDATES) {
+      reviewFields.add("recipe_selection_truncated");
+    }
     reviewFields.add("title");
     reviewFields.add("ingredients");
     reviewFields.add("steps");
@@ -255,8 +321,9 @@ export function parseSchemaOrgRecipePage(input: {
       source_title: pageName ?? social.title,
     },
     fields,
-    evidence,
+    evidence: multi ? [...evidence, ...multi.evidence] : evidence,
     review_fields: [...reviewFields],
+    ...(multi ? { candidate_recipes: multi.candidates } : {}),
   };
 }
 
