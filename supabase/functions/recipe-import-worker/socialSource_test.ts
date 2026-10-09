@@ -2,7 +2,9 @@
 // Purpose: Verifies publicly readable metadata and safe social URL identifiers.
 
 import { publicSocialSourceIdentity } from "./socialSource.ts";
-import { incompleteWebRecipe, parseSchemaOrgRecipePage } from "./schemaRecipe.ts";
+import { attachPageTextEvidence, incompleteWebRecipe, parseSchemaOrgRecipePage } from "./schemaRecipe.ts";
+
+import { extractPublicPageText } from "./pageContent.ts";
 
 function check(value: unknown): asserts value {
   if (!value) throw Error("Public source regression");
@@ -35,6 +37,7 @@ Deno.test("spoofing, non-HTTPS, opaque and invalid URLs never gain an ID", () =>
     "http://youtube.com/watch?v=AbC_123-xYz",
     "https://user:password@youtube.com/watch?v=AbC_123-xYz",
     "https://youtu.be/invalid",
+    "https://youtube.com/watch/other?v=AbC_123-xYz",
     "https://instagram.com.evil.invalid/reel/Cr8_XyZ90",
     "https://vm.tiktok.com/unknown",
     "https://example.org/cooking",
@@ -56,4 +59,60 @@ Deno.test("HTML author and title are retained, not invented recipe fields", () =
   check(parsed.source.external_content_id === "Cr8_XyZ90");
   check(parsed.status === "needs_review");
   check(Object.keys(parsed.fields).length === 0);
+});
+
+Deno.test("social identity and existing public caption evidence survive together", async () => {
+  const originalURL = "https://youtu.be/AbC_123-xYz";
+  const canonicalURL = "https://www.youtube.com/watch?v=AbC_123-xYz";
+  const html = `<html><head>
+    <meta name="twitter:title" content="Public soup clip">
+    <meta name="twitter:creator" content="@visiblechef">
+    <meta property="og:description" content="Salt to taste. Steps unavailable.">
+    </head><body></body></html>`;
+  const parsed = parseSchemaOrgRecipePage({
+    id: crypto.randomUUID(), html,
+    source: { originalURL, canonicalURL, platformHint: "shared" },
+  });
+  const result = attachPageTextEvidence(parsed, await extractPublicPageText(html, canonicalURL));
+  check(result.source.external_content_id === "AbC_123-xYz");
+  check(result.source.original_url === originalURL && result.source.canonical_url === canonicalURL);
+  check(result.source.platform === "youtube");
+  check(result.source.author_name === "@visiblechef");
+  check(result.source.source_title === "Public soup clip");
+  check(result.evidence.some((item) => item.source_type === "caption" &&
+    String(item.excerpt).includes(canonicalURL) && String(item.excerpt).includes("Salt to taste")));
+  check(result.status === "needs_review" && Object.keys(result.fields).length === 0);
+});
+
+Deno.test("structured recipe author wins without losing social identity or raw quantity", () => {
+  const url = "https://instagram.com/reel/Cr8_XyZ90";
+  const parsed = parseSchemaOrgRecipePage({
+    id: crypto.randomUUID(),
+    html: `<meta name="author" content="Page creator">
+      <meta name="twitter:creator" content="@socialcreator">
+      <script type="application/ld+json">${JSON.stringify({
+        "@type": "Recipe", name: "Soup", author: { name: "Recipe author" },
+        recipeIngredient: ["Salt to taste"], recipeInstructions: ["Simmer gently"],
+      })}</script>`,
+    source: { originalURL: url, canonicalURL: url, platformHint: null },
+  });
+  check(parsed.source.author_name === "Recipe author");
+  check(parsed.source.external_content_id === "Cr8_XyZ90");
+  check(parsed.status === "ready");
+  check(parsed.fields["ingredients[0].amount"].raw_value === "Salt to taste");
+  check(parsed.fields["ingredients[0].amount"].normalized_value === null);
+});
+
+Deno.test("redirect identity follows fetched canonical host and spoofed pages gain no social caption", async () => {
+  const originalURL = "https://youtube.com/watch?v=AbC_123-xYz";
+  const canonicalURL = "https://youtube.com.evil.invalid/watch?v=AbC_123-xYz";
+  const html = '<meta property="og:description" content="No trusted caption">';
+  const parsed = parseSchemaOrgRecipePage({
+    id: crypto.randomUUID(), html,
+    source: { originalURL, canonicalURL, platformHint: null },
+  });
+  const result = attachPageTextEvidence(parsed, await extractPublicPageText(html, canonicalURL));
+  check(result.source.external_content_id === null && result.source.platform === null);
+  check(result.status === "needs_review");
+  check(!result.evidence.some((item) => item.source_type === "caption"));
 });

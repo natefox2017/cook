@@ -17,7 +17,7 @@ export function publicSocialSourceIdentity(raw: string):
     return { platform: "youtube", id: path[0] };
   }
   if (isHost("youtube.com")) {
-    const id = path[0] === "watch" ? u.searchParams.get("v")
+    const id = u.pathname === "/watch" ? u.searchParams.get("v")
       : path.length === 2 && ["shorts", "live", "embed"].includes(path[0])
       ? path[1] : null;
     if (id && yt.test(id)) return { platform: "youtube", id };
