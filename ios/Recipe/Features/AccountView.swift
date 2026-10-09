@@ -3,6 +3,7 @@
 
 import AuthenticationServices
 import Foundation
+import RecipeCore
 import SwiftUI
 
 @MainActor

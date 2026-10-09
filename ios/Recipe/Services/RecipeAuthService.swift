@@ -5,6 +5,7 @@ import AuthenticationServices
 import CryptoKit
 import Foundation
 import Observation
+import RecipeCore
 import Supabase
 
 enum RecipeAuthState: Equatable, Sendable {
