@@ -13,7 +13,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testRecipeIngredientsBecomeRealGroceryItems() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
 
         attachScreenshot("Recipe library", app: app)
         openSamplePasta(in: app)
@@ -58,7 +60,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testManuallyCreatedRecipeCanBeFoundBySearch() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
         let recipeTitle = "Tomato Toast Smoke Test"
 
         app.buttons["addRecipeButton"].tap()
@@ -122,7 +126,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testCookingTimerNavigationAndCompletion() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
         openSamplePasta(in: app)
         app.buttons["startCooking"].tap()
 
@@ -167,7 +173,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testComplexCookingStepShowsIngredientsAndMultipleTimers() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
 
         let recipe = app.buttons["recipe.C0010000-0000-4000-8000-000000000005"]
         reveal(recipe, in: app, maximumSwipes: 4)
@@ -229,7 +237,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testRecipeCanBeAddedDirectlyToMealPlan() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
         openSamplePasta(in: app)
 
         let options = app.buttons["Recipe Options"]
@@ -257,7 +267,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testRecipeCanBelongToLocalCollection() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
 
         let profile = app.tabBars.buttons["Profile"]
         waitUntilReady(profile)
@@ -326,7 +338,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testRootTabsUseNativeTitlesAndSecondaryPagesHideTabBar() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
 
         // Test the hierarchy, not hard-coded pixel coordinates. The native
         // navigation bar owns its title and safe-area placement on each iOS.
@@ -374,7 +388,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testAddRecipeSheetUsesSingleNativeTitleWithoutTagline() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
 
         app.buttons["addRecipeButton"].tap()
         XCTAssertTrue(app.navigationBars["Add Recipe"].waitForExistence(timeout: 8))
@@ -392,7 +408,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testProfileLayoutAndPrimaryActionsAreVisible() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
 
         let profile = app.tabBars.buttons["Profile"]
         waitUntilReady(profile)
@@ -409,7 +427,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testAccountScreenShowsAvailableSignInOptions() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
 
         let profile = app.tabBars.buttons["Profile"]
         waitUntilReady(profile)
@@ -446,7 +466,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testCookingIngredientCheckoffPersistsInSession() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
         openSamplePasta(in: app)
         app.buttons["startCooking"].tap()
         waitUntilReady(app.buttons["Ingredients"])
@@ -467,7 +489,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testExportFormatsAreAvailableInBothEntryPoints() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
 
         let profile = app.tabBars.buttons["Profile"]
         waitUntilReady(profile)
@@ -489,7 +513,9 @@ final class RecipeUITests: XCTestCase {
 
         app.terminate()
         let settingsApp = launchSeededApp()
-        defer { settingsApp.terminate() }
+        defer {
+            settingsApp.terminate()
+        }
 
         let profileTab = settingsApp.tabBars.buttons["Profile"]
         waitUntilReady(profileTab)
@@ -522,7 +548,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testSubscriptionOpensFromProfileAndSettings() {
         let app = launchSeededApp()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
 
         let profile = app.tabBars.buttons["Profile"]
         waitUntilReady(profile)
@@ -550,12 +578,107 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testOnboardingPaywallFreeAndClosePaths() {
+        let app = launchOnboardingApp(productIDs: "")
+        defer {
+            app.terminate()
+        }
+        waitUntilReady(app.buttons["onboarding.skip"])
+        app.buttons["onboarding.skip"].tap()
+        waitUntilReady(app.buttons["onboarding.plan.free"])
+        let continueFree = app.buttons["onboarding.purchase"]
+        XCTAssertTrue(continueFree.waitForExistence(timeout: 8))
+        XCTAssertEqual(continueFree.label, "Subscribe")
+        XCTAssertFalse(continueFree.isEnabled)
+        let annual = app.buttons["subscription.plan.annual.unavailable"]
+        let monthly = app.buttons["subscription.plan.monthly.unavailable"]
+        XCTAssertTrue(annual.isSelected)
+        XCTAssertGreaterThan(annual.frame.minY, monthly.frame.minY)
+        XCTAssertTrue(app.buttons["onboarding.close"].isHittable)
+        XCTAssertTrue(app.buttons["subscription.restore"].isHittable)
+        attachScreenshot("Product Design subscription - actual unavailable plans", app: app)
+        app.buttons["onboarding.plan.free"].tap()
+        waitUntilReady(app.buttons["addRecipeButton"])
+
+        app.terminate()
+        app.launch()
+        waitUntilReady(app.buttons["onboarding.skip"])
+        app.buttons["onboarding.skip"].tap()
+        waitUntilReady(app.buttons["onboarding.close"])
+        app.buttons["onboarding.close"].tap()
+        waitUntilReady(app.buttons["addRecipeButton"])
+
+        app.terminate()
+        app.launchArguments = [
+            "--uitesting", "--uitesting-onboarding", "--uitesting-locale", "zh-Hans",
+        ]
+        app.launch()
+        waitUntilReady(app.buttons["onboarding.skip"])
+        app.buttons["onboarding.skip"].tap()
+        XCTAssertTrue(app.buttons["onboarding.purchase"].waitForExistence(timeout: 8))
+        attachScreenshot("Product Design subscription - Chinese layout smoke", app: app)
+    }
+
+    @MainActor
+    func testOnboardingPaywallAccessibilitySizeKeepsFreeExitReachable() {
+        let app = launchOnboardingApp(productIDs: "", accessibilitySize: true)
+        defer {
+            app.terminate()
+        }
+        waitUntilReady(app.buttons["onboarding.skip"])
+        app.buttons["onboarding.skip"].tap()
+        let action = app.buttons["onboarding.plan.free"]
+        reveal(action, in: app, maximumSwipes: 12)
+        XCTAssertTrue(action.isHittable)
+        attachScreenshot("Product Design subscription - accessibility size", app: app)
+        action.tap()
+        waitUntilReady(app.buttons["addRecipeButton"])
+    }
+
+    @MainActor
+    func testOnboardingLocalStoreKitPurchaseContinuesWithoutSecondPurchase() async throws {
+        let session = try makeStoreKitTestSession()
+        defer {
+            reset(session)
+        }
+        let app = launchOnboardingApp(productIDs: Self.localStoreKitProductID)
+        defer {
+            app.terminate()
+        }
+        waitUntilReady(app.buttons["onboarding.skip"])
+        app.buttons["onboarding.skip"].tap()
+        let monthly = app.buttons["subscription.plan.\(Self.localStoreKitProductID)"]
+        waitUntilReady(monthly)
+        monthly.tap()
+        let action = app.buttons["onboarding.purchase"]
+        waitUntilReady(action)
+        XCTAssertEqual(action.label, "Subscribe")
+        XCTAssertTrue(app.staticTexts["Auto-renews until canceled in the App Store."].exists)
+        attachScreenshot("Product Design subscription - local StoreKit fixture only", app: app)
+
+        let annual = app.buttons["subscription.plan.annual.unavailable"]
+        annual.tap()
+        XCTAssertFalse(action.isEnabled)
+        monthly.tap()
+        action.tap()
+        XCTAssertTrue(app.staticTexts["Subscription active"].waitForExistence(timeout: 12))
+        XCTAssertEqual(action.label, "Continue")
+        action.tap()
+        waitUntilReady(app.buttons["addRecipeButton"])
+        XCTAssertEqual(session.allTransactions().count, 1)
+    }
+
+    @MainActor
     func testLocalStoreKitPurchaseAndRestoreWithoutAppStoreAccount() async throws {
         let session = try makeStoreKitTestSession()
-        defer { reset(session) }
+        defer {
+            reset(session)
+        }
 
         let app = launchSeededApp(storeKitTestProductID: Self.localStoreKitProductID)
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
         openSubscription(in: app)
 
         let restore = app.buttons["subscription.restore"]
@@ -574,6 +697,9 @@ final class RecipeUITests: XCTestCase {
         let localProduct = app.buttons["subscription.plan.\(Self.localStoreKitProductID)"]
         waitUntilReady(localProduct)
         localProduct.tap()
+        let purchase = app.buttons["subscription.purchase"]
+        waitUntilReady(purchase)
+        purchase.tap()
 
         XCTAssertTrue(app.staticTexts["Subscription active"].waitForExistence(timeout: 8))
         XCTAssertEqual(session.allTransactions().count, 1)
@@ -582,14 +708,18 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testLocalStoreKitLoadFailureKeepsRetryAndRestoreAvailable() async throws {
         let session = try makeStoreKitTestSession()
-        defer { reset(session) }
+        defer {
+            reset(session)
+        }
         try await session.setSimulatedError(
             .generic(.networkError(URLError(.notConnectedToInternet))),
             forAPI: .loadProducts
         )
 
         let app = launchSeededApp(storeKitTestProductID: Self.localStoreKitProductID)
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
         openSubscription(in: app)
 
         XCTAssertTrue(
@@ -619,7 +749,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testLocalStoreKitLoadFailurePreservesVerifiedEntitlement() async throws {
         let session = try makeStoreKitTestSession()
-        defer { reset(session) }
+        defer {
+            reset(session)
+        }
         _ = try await session.buyProduct(identifier: Self.localStoreKitProductID)
         try await session.setSimulatedError(
             .generic(.networkError(URLError(.notConnectedToInternet))),
@@ -627,7 +759,9 @@ final class RecipeUITests: XCTestCase {
         )
 
         let app = launchSeededApp(storeKitTestProductID: Self.localStoreKitProductID)
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
         openSubscription(in: app)
 
         XCTAssertTrue(app.staticTexts["Subscription active"].waitForExistence(timeout: 8))
@@ -637,7 +771,9 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     func testRestoreExplainsWhenSubscriptionProductsAreUnconfigured() {
         let app = launchSeededApp(storeKitTestProductID: "")
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
         openSubscription(in: app)
 
         let restore = app.buttons["subscription.restore"]
@@ -663,7 +799,9 @@ final class RecipeUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--uitesting-locale", "zh-Hans"]
         app.launch()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
 
         // The selected locale is explicit so the result does not depend on simulator settings.
         XCTAssertTrue(app.tabBars.buttons["食谱"].waitForExistence(timeout: 10))
@@ -801,6 +939,22 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    private func launchOnboardingApp(productIDs: String, accessibilitySize: Bool = false)
+        -> XCUIApplication
+    {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--uitesting-onboarding", "--uitesting-locale", "en"]
+        if accessibilitySize {
+            app.launchArguments += [
+                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
+            ]
+        }
+        app.launchEnvironment["RECIPE_STOREKIT_TEST_PRODUCT_IDS"] = productIDs
+        app.launch()
+        return app
+    }
+
+    @MainActor
     private func launchSeededApp(storeKitTestProductID: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--uitesting-locale", "en"]
@@ -925,7 +1079,9 @@ final class RecipeUITests: XCTestCase {
         }
 
         for _ in 0..<4 {
-            if element.exists && element.isHittable { break }
+            if element.exists && element.isHittable {
+                break
+            }
             let candidates =
                 app.collectionViews.allElementsBoundByIndex
                 + app.tables.allElementsBoundByIndex
@@ -959,7 +1115,9 @@ final class RecipeUITests: XCTestCase {
         maximumSwipes: Int, file: StaticString = #filePath, line: UInt = #line
     ) {
         for _ in 0..<maximumSwipes {
-            if element.exists && element.isHittable { break }
+            if element.exists && element.isHittable {
+                break
+            }
             if let scrollView, scrollView.exists {
                 scrollView.swipeUp()
             } else if app.collectionViews.firstMatch.exists {

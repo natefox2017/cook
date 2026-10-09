@@ -11,7 +11,6 @@ struct AccountView: View {
     let onExpand: () -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var auth = RecipeAuthService.shared
     @State private var isEmailExpanded = false
@@ -56,8 +55,13 @@ struct AccountView: View {
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 44, height: 44)
+                        .foregroundStyle(RecipeTheme.accentForeground)
+                        .frame(width: 56, height: 44)
+                        .background(RecipeTheme.card, in: Capsule())
+                        .overlay {
+                            Capsule()
+                                .strokeBorder(Color.secondary.opacity(0.16), lineWidth: 1)
+                        }
                         .contentShape(Rectangle())
                 }
                 .accessibilityLabel("Close")
@@ -85,8 +89,8 @@ struct AccountView: View {
 
     private var signedOutView: some View {
         ScrollView {
-            VStack(spacing: RecipeSpacing.small) {
-                header("Welcome to RecipePouch", symbol: "leaf.fill")
+            VStack(spacing: RecipeSpacing.large) {
+                header("Welcome to RecipePouch", symbol: "leaf.fill", level: .hero)
 
                 VStack(spacing: RecipeSpacing.xSmall) {
                     SignInWithAppleButton(.signIn) { request in
@@ -97,11 +101,15 @@ struct AccountView: View {
                     } onCompletion: { result in
                         handleAppleResult(result)
                     }
-                    // Preserve the system button's localized Apple artwork and contrast.
-                    .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .whiteOutline)
+                    // Keep Apple's localized native label and artwork, with the shared outline.
+                    .signInWithAppleButtonStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(accountButtonBorderColor, lineWidth: 1)
+                    }
                     .disabled(isAuthenticating)
                     .accessibilityIdentifier("account.apple")
 
@@ -128,16 +136,24 @@ struct AccountView: View {
                             isEmailExpanded = true
                             onExpand()
                         } label: {
-                            Label("Continue with email", systemImage: "envelope")
-                                .font(
-                                    RecipeTheme.text(16, weight: .semibold, relativeTo: .headline)
-                                )
-                                .frame(maxWidth: .infinity, minHeight: 50)
-                                .foregroundStyle(RecipeTheme.accentForeground)
-                                .background(
-                                    RecipeTheme.accent.opacity(0.09),
-                                    in: RoundedRectangle(cornerRadius: 15)
-                                )
+                            HStack(spacing: 12) {
+                                Image(systemName: "envelope")
+                                    .font(.system(size: 20, weight: .regular))
+                                    .accessibilityHidden(true)
+
+                                Text("Continue with email")
+                                    .font(.system(.body, weight: .medium))
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                            .foregroundStyle(RecipeTheme.accentForeground)
+                            .background(
+                                RecipeTheme.accent.opacity(0.11),
+                                in: RoundedRectangle(cornerRadius: 14)
+                            )
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 14)
+                                    .strokeBorder(accountButtonBorderColor, lineWidth: 1)
+                            }
                         }
                         .buttonStyle(.plain)
                         .disabled(isAuthenticating)
@@ -154,17 +170,14 @@ struct AccountView: View {
             .frame(maxWidth: 520)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, RecipeSpacing.pageInset)
-            .padding(.top, RecipeSpacing.xSmall)
+            .padding(.top, RecipeSpacing.large)
             .padding(.bottom, 20)
         }
         .scrollDismissesKeyboard(.interactively)
     }
 
-    /// Reuses Google's four-color G branding while matching Apple's button geometry.
-    /// Brand-specific fill, border and text colors intentionally remain distinct.
+    /// Reuses Google's four-color G while sharing the other sign-in buttons' geometry.
     private var googleSignInButton: some View {
-        let isDark = colorScheme == .dark
-
         return Button {
             signInWithGoogle()
         } label: {
@@ -174,42 +187,30 @@ struct AccountView: View {
                     .renderingMode(.original)
                     .interpolation(.high)
                     .frame(width: 20, height: 20)
-                    .padding(3)
-                    .background(.white, in: RoundedRectangle(cornerRadius: 5))
                     .accessibilityHidden(true)
 
                 Text(LocalizedStringKey("Sign in with Google"))
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(.body, weight: .medium))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
             }
             .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, minHeight: 50)
-            .foregroundStyle(
-                isDark
-                    ? Color(red: 227.0 / 255, green: 227.0 / 255, blue: 227.0 / 255)
-                    : Color(red: 31.0 / 255, green: 31.0 / 255, blue: 31.0 / 255)
-            )
-            .background(
-                isDark
-                    ? Color(red: 19.0 / 255, green: 19.0 / 255, blue: 20.0 / 255)
-                    : .white,
-                in: RoundedRectangle(cornerRadius: 14)
-            )
+            .foregroundStyle(Color(red: 31.0 / 255, green: 31.0 / 255, blue: 31.0 / 255))
+            .background(.white, in: RoundedRectangle(cornerRadius: 14))
             .overlay {
                 RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(
-                        isDark
-                            ? Color(red: 142.0 / 255, green: 145.0 / 255, blue: 143.0 / 255)
-                            : Color(red: 116.0 / 255, green: 119.0 / 255, blue: 117.0 / 255),
-                        lineWidth: 1
-                    )
+                    .strokeBorder(accountButtonBorderColor, lineWidth: 1)
             }
             .opacity(isAuthenticating ? 0.55 : 1)
         }
         .buttonStyle(.plain)
         .disabled(isAuthenticating)
         .accessibilityIdentifier("account.google")
+    }
+
+    private var accountButtonBorderColor: Color {
+        Color(red: 116.0 / 255, green: 119.0 / 255, blue: 117.0 / 255)
     }
 
     private var emailForm: some View {
@@ -439,7 +440,8 @@ struct AccountView: View {
     private func header(
         _ title: LocalizedStringKey,
         symbol: String,
-        subtitle: LocalizedStringKey? = nil
+        subtitle: LocalizedStringKey? = nil,
+        level: RecipeHeadingLevel = .title
     ) -> some View {
         VStack(spacing: RecipeSpacing.xSmall) {
             Image(systemName: symbol)
@@ -450,7 +452,7 @@ struct AccountView: View {
                 .accessibilityHidden(true)
 
             Text(title)
-                .font(RecipeTheme.heading(.title))
+                .font(RecipeTheme.heading(level))
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 

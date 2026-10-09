@@ -8,25 +8,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch"
+            "value": "Recipe Pals"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch"
+            "value": "私人菜谱"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch"
+            "value": "私人菜譜"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch"
+            "value": "Recipe Pals"
           }
         }
       }
