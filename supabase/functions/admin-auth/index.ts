@@ -181,8 +181,13 @@ Deno.serve(async (req) => {
           });
 
           if (error) {
-            log("warn", "admin_bootstrap_failed", { message: error.message });
-            throw publicAdminBootstrapError(error.message ?? "");
+            const publicError = publicAdminBootstrapError(error.message ?? "");
+            // Privileged SQL diagnostics must stay out of both client replies and logs.
+            log("warn", "admin_bootstrap_failed", {
+              code: publicError.code,
+              status: publicError.status,
+            });
+            throw publicError;
           }
 
           const row = Array.isArray(data) ? data[0] : data;
