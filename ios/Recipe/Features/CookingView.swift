@@ -1,7 +1,10 @@
 // Developer: gengyun
 // Purpose: Implements the focused cooking workspace, session persistence, ingredients, and timers.
 
+import AVFoundation
+import Combine
 import RecipeCore
+import Speech
 import SwiftUI
 import UIKit
 import UserNotifications
@@ -17,6 +20,7 @@ struct CookingView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
+    @StateObject private var voice = CookingVoiceController()
     @State private var session = PersistedCookingSession()
     @State private var didRestoreSession = false
     @State private var requiresSessionRecovery = false
@@ -83,6 +87,12 @@ struct CookingView: View {
             .navigationTitle("Cooking Mode")
             .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar { cookingToolbar }
+            .onChange(of: voice.commandRevision) { _, _ in
+                if let command = voice.lastCommand { handleVoiceCommand(command) }
+            }
+            .onChange(of: session.isComplete) { _, complete in
+                if complete { voice.stop() }
+            }
             .sheet(isPresented: $isShowingIngredients) { ingredientSheet }
             .sheet(item: $parameterInfo) { info in RecipeParameterSheet(info: info) }
             .sheet(isPresented: $isShowingTimers) { timersSheet }
@@ -128,7 +138,10 @@ struct CookingView: View {
         .onDisappear(perform: disappear)
         .onChange(of: scenePhase) { _, phase in
             updateScreenAwake()
-            if phase != .active { persistSession() }
+            if phase != .active {
+                voice.stop()
+                persistSession()
+            }
         }
         .onChange(of: store.settings.keepScreenAwake) { _, _ in updateScreenAwake() }
         .onChange(of: store.settings.timerNotifications) { _, _ in synchronizeNotifications() }
@@ -136,6 +149,7 @@ struct CookingView: View {
         .onChange(of: completionSoundEnabled) { _, _ in synchronizeNotifications() }
         .onChange(of: recipe?.id) { _, id in
             if id == nil {
+                voice.stop()
                 for timerID in session.timers.keys { cancelNotification(for: timerID) }
                 Self.discardSession(recipeID: recipeID)
                 if let originalIdleTimerDisabled {
@@ -166,6 +180,17 @@ struct CookingView: View {
                 .foregroundStyle(.secondary)
 
                 progress(index: index, count: recipe.steps.count)
+
+                if voice.isListening {
+                    Label("Listening for Next, Previous or Repeat", systemImage: "waveform")
+                        .font(RecipeTheme.text(13, relativeTo: .footnote))
+                        .foregroundStyle(RecipeTheme.accentForeground)
+                        .accessibilityIdentifier("cookingVoiceListening")
+                } else if !voice.status.isEmpty {
+                    Text(voice.status)
+                        .font(RecipeTheme.text(12, relativeTo: .caption))
+                        .foregroundStyle(.secondary)
+                }
 
                 VStack(alignment: .leading, spacing: RecipeSpacing.small) {
                     HStack(alignment: .firstTextBaseline) {
@@ -354,7 +379,7 @@ struct CookingView: View {
 
         return layout {
             Button {
-                if index > 0 { selectStep(recipe.steps[index - 1].id) }
+                moveToPreviousStep(recipe)
             } label: {
                 Label("Previous", systemImage: "arrow.left")
                     .frame(maxWidth: .infinity, minHeight: 44)
@@ -364,12 +389,7 @@ struct CookingView: View {
             .accessibilityIdentifier("previousStep")
 
             Button {
-                if index + 1 < recipe.steps.count {
-                    session.completedStepIDs.insert(step.id)
-                    selectStep(recipe.steps[index + 1].id)
-                } else {
-                    requestFinish(stepID: step.id)
-                }
+                moveToNextStep(recipe)
             } label: {
                 HStack {
                     Text(
@@ -527,6 +547,20 @@ struct CookingView: View {
         }
 
         ToolbarItemGroup(placement: .topBarTrailing) {
+            Button {
+                if voice.isListening {
+                    voice.stop()
+                } else {
+                    Task { await voice.start() }
+                }
+            } label: {
+                Label(
+                    voice.isListening ? "Stop voice control" : "Hands-free voice control",
+                    systemImage: voice.isListening ? "mic.fill" : "mic.slash")
+            }
+            .disabled(recipe?.steps.isEmpty != false || session.isComplete || requiresSessionRecovery)
+            .accessibilityIdentifier("cookingVoiceToggle")
+
             Button {
                 isShowingTimers = true
             } label: {
@@ -879,6 +913,7 @@ struct CookingView: View {
     }
 
     private func disappear() {
+        voice.stop()
         persistSession()
 
         if !requiresSessionRecovery, let currentServings = session.servings {
@@ -910,6 +945,39 @@ struct CookingView: View {
     private func selectStep(_ id: UUID) {
         session.stepID = id
         persistSession()
+    }
+
+    // Physical buttons and voice use exactly the same navigation/persistence semantics.
+    private func moveToPreviousStep(_ recipe: Recipe) {
+        let index = stepIndex(in: recipe)
+        if index > 0 { selectStep(recipe.steps[index - 1].id) }
+    }
+
+    private func moveToNextStep(_ recipe: Recipe) {
+        let index = stepIndex(in: recipe)
+        let step = recipe.steps[index]
+        if index + 1 < recipe.steps.count {
+            session.completedStepIDs.insert(step.id)
+            selectStep(recipe.steps[index + 1].id)
+        } else {
+            requestFinish(stepID: step.id)
+        }
+    }
+
+    private func handleVoiceCommand(_ command: CookingVoiceCommand) {
+        guard let recipe, !recipe.steps.isEmpty, !session.isComplete,
+            !requiresSessionRecovery
+        else { return }
+        switch command {
+        case .next:
+            moveToNextStep(recipe)
+        case .previous:
+            moveToPreviousStep(recipe)
+        case .repeatStep:
+            voice.readAloud(recipe.steps[stepIndex(in: recipe)].instruction)
+        case .stop:
+            voice.stop()
+        }
     }
 
     private func timerState(for definition: RecipeStepTimer) -> CookingTimer {
@@ -1503,5 +1571,203 @@ private enum CookingClockFormatter {
             )
         }
         return String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+}
+
+
+/// Opt-in foreground-only on-device speech control. No recording is stored/uploaded.
+@MainActor
+private final class CookingVoiceController: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
+    @Published private(set) var isListening = false
+    @Published private(set) var status = ""
+    @Published private(set) var commandRevision = 0
+    private(set) var lastCommand: CookingVoiceCommand?
+
+    private var recognition: SFSpeechRecognizer?
+    private let engine = AVAudioEngine()
+    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var recognitionTask: SFSpeechRecognitionTask?
+    private var pendingCandidate: Task<Void, Never>?
+    private var cycle: UUID?
+    private var tapInstalled = false
+    private var wantsListening = false
+    private let speaker = AVSpeechSynthesizer()
+
+    override init() {
+        super.init()
+        speaker.delegate = self
+    }
+
+    func start() async {
+        guard !wantsListening else { return }
+        let authorization = await withCheckedContinuation {
+            (continuation: CheckedContinuation<SFSpeechRecognizerAuthorizationStatus, Never>) in
+            SFSpeechRecognizer.requestAuthorization {
+                continuation.resume(returning: $0)
+            }
+        }
+        guard authorization == .authorized else {
+            status = "Enable speech recognition in iOS Settings to use hands-free control."
+            return
+        }
+        let micGranted = await withCheckedContinuation {
+            (continuation: CheckedContinuation<Bool, Never>) in
+            AVAudioSession.sharedInstance().requestRecordPermission {
+                continuation.resume(returning: $0)
+            }
+        }
+        guard micGranted else {
+            status = "Microphone access is off. Step buttons still work."
+            return
+        }
+        guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US")),
+            recognizer.isAvailable, recognizer.supportsOnDeviceRecognition
+        else {
+            status = "On-device English voice control is unavailable on this iPhone."
+            return
+        }
+        recognition = recognizer
+        do {
+            try AVAudioSession.sharedInstance().setCategory(
+                .playAndRecord, mode: .measurement,
+                options: [.defaultToSpeaker, .duckOthers])
+            try AVAudioSession.sharedInstance().setActive(true)
+            wantsListening = true
+            isListening = true
+            status = ""
+            try beginCycle()
+        } catch {
+            stop()
+            status = "Could not start voice control. Use the step buttons."
+        }
+    }
+
+    private func beginCycle() throws {
+        guard wantsListening, let recognition else { return }
+        let token = UUID()
+        cycle = token
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        request.requiresOnDeviceRecognition = true
+        request.shouldReportPartialResults = true
+        recognitionRequest = request
+
+        let node = engine.inputNode
+        let format = node.outputFormat(forBus: 0)
+        node.installTap(onBus: 0, bufferSize: 1024, format: format) {
+            [weak request] buffer, _ in
+            request?.append(buffer)
+        }
+        tapInstalled = true
+        recognitionTask = recognition.recognitionTask(with: request) {
+            [weak self] result, error in
+            if let result {
+                let transcript = result.bestTranscription.formattedString
+                let isFinal = result.isFinal
+                Task { @MainActor [weak self] in
+                    self?.receiveCycleResult(
+                        token: token, transcript: transcript, isFinal: isFinal)
+                }
+            } else if error != nil {
+                Task { @MainActor [weak self] in
+                    guard self?.cycle == token else { return }
+                    self?.stop()
+                    self?.status = "Voice control stopped. Tap the microphone to restart."
+                }
+            }
+        }
+        engine.prepare()
+        try engine.start()
+    }
+
+    // A stable partial command is useful for speech recognition that never
+    // marks a continuous microphone request as final. A subsequent longer
+    // utterance cancels this candidate before it changes the cooking step.
+    private func receiveCycleResult(
+        token: UUID, transcript: String, isFinal: Bool
+    ) {
+        guard cycle == token, wantsListening else { return }
+        pendingCandidate?.cancel()
+        pendingCandidate = nil
+        guard isFinal || CookingVoiceCommandParser.parse(transcript) != nil else {
+            return
+        }
+        if isFinal {
+            completeCycle(token: token, transcript: transcript)
+            return
+        }
+        pendingCandidate = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(650))
+            guard !Task.isCancelled else { return }
+            self?.completeCycle(token: token, transcript: transcript)
+        }
+    }
+
+    private func endCycle() {
+        pendingCandidate?.cancel()
+        pendingCandidate = nil
+        cycle = nil
+        if engine.isRunning { engine.stop() }
+        if tapInstalled {
+            engine.inputNode.removeTap(onBus: 0)
+            tapInstalled = false
+        }
+        recognitionRequest?.endAudio()
+        recognitionTask?.cancel()
+        recognitionRequest = nil
+        recognitionTask = nil
+    }
+
+    private func completeCycle(token: UUID, transcript: String) {
+        guard cycle == token, wantsListening else { return }
+        endCycle()
+        if let command = CookingVoiceCommandParser.parse(transcript) {
+            lastCommand = command
+            commandRevision += 1
+            if command == .stop { stop(); return }
+            if command == .repeatStep { return }  // Wait for the TTS delegate.
+        }
+        resumeAfterShortPause()
+    }
+
+    private func resumeAfterShortPause() {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(350))
+            guard wantsListening, !speaker.isSpeaking, cycle == nil else { return }
+            do {
+                try beginCycle()
+            } catch {
+                stop()
+                status = "Voice control interrupted. Use the step buttons."
+            }
+        }
+    }
+
+    func readAloud(_ text: String) {
+        guard wantsListening, !text.isEmpty else { return }
+        endCycle()
+        isListening = true
+        status = ""
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        speaker.speak(utterance)
+    }
+
+    nonisolated func speechSynthesizer(
+        _ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance
+    ) {
+        Task { @MainActor in
+            if wantsListening { resumeAfterShortPause() }
+        }
+    }
+
+    func stop() {
+        wantsListening = false
+        isListening = false
+        endCycle()
+        if speaker.isSpeaking { speaker.stopSpeaking(at: .immediate) }
+        recognition = nil
+        try? AVAudioSession.sharedInstance().setActive(
+            false, options: .notifyOthersOnDeactivation)
+        status = ""
     }
 }

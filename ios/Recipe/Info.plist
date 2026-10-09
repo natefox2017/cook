@@ -48,6 +48,10 @@
     <string>$(COOK_SUBSCRIPTION_PRODUCT_IDS)</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Allow voice commands in Cooking Mode after you turn on hands-free control. Audio is processed on this device.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Recognize optional Next, Previous, and Repeat commands while Cooking Mode is open.</string>
     <key>NSCameraUsageDescription</key>
     <string>Photograph a recipe to read its text and save it to your recipe library.</string>
     <key>UIApplicationSceneManifest</key>

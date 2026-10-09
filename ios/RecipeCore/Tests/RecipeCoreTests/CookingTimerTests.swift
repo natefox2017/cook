@@ -169,3 +169,17 @@ func recipeTemperatureComparisonRequiresExplicitNumericSource() {
     #expect(RecipeTemperatureConversion.alternateUnit(for: "180°C / 350°F") == nil)
     #expect(RecipeTemperatureConversion.alternateUnit(for: "until golden") == nil)
 }
+
+@Test
+func voiceCommandsRejectConversationalAndPartialPhrases() {
+    #expect(CookingVoiceCommandParser.parse("Next") == .next)
+    #expect(CookingVoiceCommandParser.parse("next step!") == .next)
+    #expect(CookingVoiceCommandParser.parse("Previous") == .previous)
+    #expect(CookingVoiceCommandParser.parse("privious") == .previous)
+    #expect(CookingVoiceCommandParser.parse("Read step") == .repeatStep)
+    #expect(CookingVoiceCommandParser.parse("Stop listening") == .stop)
+    #expect(CookingVoiceCommandParser.parse("Go to the next recipe") == nil)
+    #expect(CookingVoiceCommandParser.parse("I heard next") == nil)
+    #expect(CookingVoiceCommandParser.parse("not next") == nil)
+    #expect(CookingVoiceCommandParser.parse("") == nil)
+}
