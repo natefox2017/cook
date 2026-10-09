@@ -70,3 +70,7 @@ Never infer a unique person from IP/UA/device fingerprint/cross-app graph. See [
 ## Source-only Web visitor implementation (2026-10-10)
 
 A small dependency-free SSR reader has been added under `web/recipe-share/`. With an injected mock public snapshot, Node tests verify HTML escaping, strict private-field rejection, guest readability, revoked-share unavailability, and no fake App Store CTA. Without the server-supplied authorized public API, it returns 503. `noindex`, CSP and no-store headers are default. This component **does not deploy** a Web domain, share database, revocation service, OG asset hosting, App Store listing or Universal Links. See #242/#243/#250/#251 for real-staging and launch gates.
+
+## Optional referral-code validation module (2026-10-10, source only)
+
+`web/recipe-share/src/referrals.mjs` now defines first-party anonymous aggregate-event validation and an **explicitly consented pending invitation-claim contract**. It rejects caller-supplied email/IP/UA/device data, unrecognized events, short/malformed tokens, forged/not-yet-verified inviter codes, self-referrals and repeated claims. It does not identify a person from an App Store click, issue codes, persist event counters, collect cookies or grant any reward. A future authenticated backend must verify inviter ownership and expiry, dedupe rate-limited server-side events, secure claims with RLS and a data-retention policy. Do not enable tracking before local/privacy-staging verification (#245/#250) or payouts before a separate user decision (#246).
