@@ -1041,8 +1041,8 @@ struct RecipeParameterSheet: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
-                ForEach(Array(info.lines.enumerated()), id: \.offset) { _, line in
-                    Text(line)
+                ForEach(Array(info.lines.enumerated()), id: \.offset) { item in
+                    Text(item.element)
                         .font(RecipeTheme.text(16, relativeTo: .body))
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
