@@ -86,12 +86,17 @@ Read the relevant documents before substantial product or architecture changes:
 - Keep UI changes consistent with `docs/DESIGN_SYSTEM.md` and the existing app.
 - User-facing copy follows product language/localization rules. Source identifiers and technical documentation use consistent Recipe naming.
 
-## Language During Development
+## Language and Region During Development
 
-- Until the user explicitly approves multilingual release, default to English for all user-facing RecipePouch UI regardless of the iPhone's preferred language.
-- Keep four-language String Catalogs intact. Only explicit UI-locale smoke-test launch arguments may select a non-English locale.
-- When computing displayed strings, use a `LocalizedStringResource` with the app's explicit locale. A bare `String(localized:)` can fall back to the device language even when SwiftUI's locale is overridden.
-- Do not globally override system `AppleLanguages` or remove translation resources as a test shortcut.
+- Keep English as the first-launch UI language regardless of the phone's language until multilingual release is approved; an explicit selection in Settings overrides that default.
+- Language and country/region are independent preferences. Language selects UI strings; region controls locale-aware dates and numbers. Never change Apple's system-wide `AppleLanguages`.
+- The main app stores `recipe.preferences.language` and `recipe.preferences.region` in standard defaults and mirrors changes into `group.com.shopkivoo.recipe` for the Share Extension.
+- The app and Share Extension use Xcode String Catalogs. Keep translations in sync, including localized InfoPlist display names and camera permission copy.
+- New user-facing text needs a String Catalog key for every shipping locale. Do not release a partially translated locale or fake completeness by copying English into untranslated entries.
+- For SwiftUI views, inherit the root's environment locale. For computed text or service errors, pass `LocalizedStringResource(..., locale: RecipeLanguage.active)`; bare `String(localized:)` can incorrectly use the device language.
+- Preserve format placeholders and plural rules. Run `python3 scripts/audit_localizations.py` regularly and require `--strict` for final localization acceptance.
+- UI tests retain `--uitesting-locale` for explicit smoke-test language; `--uitesting-allow-language-preferences` enables coverage of manual selection, and `--uitesting-reset-locale-preferences` resets saved choices.
+- See `docs/LOCALIZATION.md` for the currently complete and incomplete language catalogs.
 
 ## CI Policy
 
