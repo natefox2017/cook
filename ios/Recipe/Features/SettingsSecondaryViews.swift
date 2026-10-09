@@ -111,7 +111,12 @@ struct DataPrivacySettingsView: View {
                             cloudSync: cloudSync
                         )
                         exportDocument = RecipeExportDocument(data: Data())
-                        message = "Local RecipePouch data deleted."
+                        message = String(
+                            localized: LocalizedStringResource(
+                                "Local RecipePouch data deleted.",
+                                locale: RecipeLanguage.active
+                            )
+                        )
                     } catch {
                         message = error.localizedDescription
                     }
