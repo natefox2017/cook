@@ -15875,6 +15875,1708 @@
           }
         }
       }
+    },
+    "6-digit code": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 位验证码"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 位驗證碼"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6桁の認証コード"
+          }
+        }
+      }
+    },
+    "Resend Code": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新发送验证码"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新傳送驗證碼"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "認証コードを再送信"
+          }
+        }
+      }
+    },
+    "Change Email": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更换邮箱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "變更電子郵件"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メールアドレスを変更"
+          }
+        }
+      }
+    },
+    "Use an email code instead": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "改用邮箱验证码"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "改用電子郵件驗證碼"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メール認証コードを使用"
+          }
+        }
+      }
+    },
+    "Use a password instead": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "改用密码"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "改用密碼"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パスワードを使用"
+          }
+        }
+      }
+    },
+    "Enter the code sent to %@.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入发送至 %@ 的验证码。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "輸入傳送至 %@ 的驗證碼。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ に送信された認証コードを入力してください。"
+          }
+        }
+      }
+    },
+    "No favorites yet": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有收藏"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無收藏"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お気に入りはまだありません"
+          }
+        }
+      }
+    },
+    "Collection unavailable": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分类合集不可用"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分類收藏集無法使用"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクションを利用できません"
+          }
+        }
+      }
+    },
+    "No recipes yet": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピがまだありません"
+          }
+        }
+      }
+    },
+    "Add recipes from this collection or from any recipe page.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可以从任意食谱页面将食谱加入这个合集。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可從任何食譜頁面將食譜加入此收藏集。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピ画面からこのコレクションに追加できます。"
+          }
+        }
+      }
+    },
+    "Try another search.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "换个关键词试试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請試試其他搜尋字詞。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "別のキーワードで検索してください。"
+          }
+        }
+      }
+    },
+    "Search this collection": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索这个合集"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜尋此收藏集"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このコレクションを検索"
+          }
+        }
+      }
+    },
+    "Search recipes": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜尋食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピを検索"
+          }
+        }
+      }
+    },
+    "No cooking steps yet": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有烹饪步骤"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無烹飪步驟"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理手順がまだありません"
+          }
+        }
+      }
+    },
+    "Return to the recipe and add its steps to start cooking.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回食谱添加步骤后即可开始烹饪。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回食譜新增步驟後即可開始烹飪。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピに戻って手順を追加してください。"
+          }
+        }
+      }
+    },
+    "Next Step": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次の手順"
+          }
+        }
+      }
+    },
+    "Done & Next": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成并继续"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成並繼續"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完了して次へ"
+          }
+        }
+      }
+    },
+    "Your cooking progress needs attention": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹饪进度需要处理"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹飪進度需要處理"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理の進行状況を確認してください"
+          }
+        }
+      }
+    },
+    "The saved session could not be read. Its original data has been kept. Start a new session to cook this recipe again.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取上次的烹饪进度，原始数据已保留。请开始新的烹饪。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法讀取上次的烹飪進度，原始資料已保留。請開始新的烹飪。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前回の調理状況を読み込めませんでした。元のデータは保持されています。新しいセッションを開始してください。"
+          }
+        }
+      }
+    },
+    "Kitchen timer": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "厨房计时器"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "廚房計時器"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キッチンタイマー"
+          }
+        }
+      }
+    },
+    "Step timer": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步骤计时器"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步驟計時器"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手順のタイマー"
+          }
+        }
+      }
+    },
+    "Cooking timer": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹饪计时器"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹飪計時器"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理タイマー"
+          }
+        }
+      }
+    },
+    "Cooking portions": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹饪份数"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹飪份數"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理する人数分"
+          }
+        }
+      }
+    },
+    "Original recipe amounts": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食谱原始用量"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食譜原始用量"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピの元の分量"
+          }
+        }
+      }
+    },
+    "Continue when you’re ready. The next step is still up to you.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备好后再继续下一步。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備好後再繼續下一步。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備ができたら次の手順に進んでください。"
+          }
+        }
+      }
+    },
+    "Your timer keeps time when you leave this screen.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "离开此页面后，计时器仍会继续运行。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "離開此頁面後，計時器仍會繼續運作。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この画面を離れてもタイマーは動き続けます。"
+          }
+        }
+      }
+    },
+    "Your timer progress is saved. Keep RecipePouch open to see when time is up.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "计时进度已保存。请保持 RecipePouch 打开，以查看计时结束提醒。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "計時進度已儲存。請保持 RecipePouch 開啟，以查看計時結束提醒。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タイマーの進行状況を保存しました。終了を確認するには RecipePouch を開いたままにしてください。"
+          }
+        }
+      }
+    },
+    "Your next shop starts here": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从这里开始购物清单"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "從這裡開始購物清單"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "買い物リストを始めましょう"
+          }
+        }
+      }
+    },
+    "Add ingredients from a recipe, or make a list of your own.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从食谱添加食材，或自行创建清单。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "從食譜加入食材，或自行建立清單。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピから材料を追加するか、自分でリストを作成できます。"
+          }
+        }
+      }
+    },
+    "Add an item": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加项目"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增項目"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "項目を追加"
+          }
+        }
+      }
+    },
+    "All picked up": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部买齐了"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部買齊了"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべて購入済み"
+          }
+        }
+      }
+    },
+    "Nothing checked off yet": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有已购项目"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無已購項目"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購入済みの項目はありません"
+          }
+        }
+      }
+    },
+    "Everything on your list is bought. You can add an item or view the full list.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清单上的东西都已买齐。可以继续添加或查看全部项目。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清單上的東西都已買齊。可繼續新增或查看所有項目。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リストの項目はすべて購入済みです。項目を追加するか、全件を表示できます。"
+          }
+        }
+      }
+    },
+    "Tap the circle beside an item as you shop.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "购物时点击项目旁的圆圈，将其标记为已购。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購物時點選項目旁的圓圈，將其標記為已購。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "買い物中に項目の横の丸をタップして購入済みにできます。"
+          }
+        }
+      }
+    },
+    "Show all items": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示全部项目"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "顯示所有項目"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべての項目を表示"
+          }
+        }
+      }
+    },
+    "Please try again.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請重試。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "もう一度お試しください。"
+          }
+        }
+      }
+    },
+    "From %@": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "来自 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "來自 %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ から"
+          }
+        }
+      }
+    },
+    "Add Grocery Item": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加购物项目"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增購物項目"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "買い物項目を追加"
+          }
+        }
+      }
+    },
+    "Edit Grocery Item": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "编辑购物项目"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "編輯購物項目"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "買い物項目を編集"
+          }
+        }
+      }
+    },
+    "This week": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本周"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本週"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今週"
+          }
+        }
+      }
+    },
+    "Save a recipe first": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先保存食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請先儲存食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "まずレシピを保存してください"
+          }
+        }
+      }
+    },
+    "Your saved recipes will appear here, ready to add to your week.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存的食谱会显示在这里，方便加入每周计划。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已儲存的食譜會顯示在這裡，方便加入每週計畫。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存したレシピがここに表示され、週間プランに追加できます。"
+          }
+        }
+      }
+    },
+    "No matching recipes": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有匹配的食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沒有符合的食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一致するレシピはありません"
+          }
+        }
+      }
+    },
+    "Try another recipe name.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "换个食谱名称试试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請試試其他食譜名稱。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "別のレシピ名でお試しください。"
+          }
+        }
+      }
+    },
+    "Find a saved recipe": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查找已保存的食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尋找已儲存的食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存済みのレシピを探す"
+          }
+        }
+      }
+    },
+    "Recipe unavailable": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食谱不可用"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食譜無法使用"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピを利用できません"
+          }
+        }
+      }
+    },
+    "Kitchen Notes": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "厨房笔记"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "廚房筆記"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "料理メモ"
+          }
+        }
+      }
+    },
+    "Original Text": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原始文本"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原始文字"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元のテキスト"
+          }
+        }
+      }
+    },
+    "Open original recipe": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开原始食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟原始食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元のレシピを開く"
+          }
+        }
+      }
+    },
+    "Add to Favorites": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加入收藏"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加入收藏"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お気に入りに追加"
+          }
+        }
+      }
+    },
+    "Remove from Favorites": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消收藏"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消收藏"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お気に入りから削除"
+          }
+        }
+      }
+    },
+    "Select All": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全选"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全選"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべて選択"
+          }
+        }
+      }
+    },
+    "Deselect All": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消全选"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消全選"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択をすべて解除"
+          }
+        }
+      }
+    },
+    "Compatible amounts combine safely. Unclear amounts stay as written.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "兼容的食材用量会合并，不明确的用量保持原样。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "相容的食材用量會合併，不明確的用量維持原樣。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "組み合わせ可能な分量は統合し、不明確な分量は元のまま残します。"
+          }
+        }
+      }
+    },
+    "Each selected ingredient becomes a separate item. Existing items are unchanged.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每种选中的食材单独加入，现有项目不会更改。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每種選取的食材會個別加入，現有項目不變。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択した材料をそれぞれ別項目として追加し、既存の項目は変更しません。"
+          }
+        }
+      }
+    },
+    "Prep time (minutes)": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备时间（分钟）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備時間（分鐘）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備時間（分）"
+          }
+        }
+      }
+    },
+    "Cook time (minutes)": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹饪时间（分钟）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹飪時間（分鐘）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理時間（分）"
+          }
+        }
+      }
+    },
+    "Edit recipe": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "编辑食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "編輯食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピを編集"
+          }
+        }
+      }
+    },
+    "New recipe": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しいレシピ"
+          }
+        }
+      }
+    },
+    "Save draft": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存草稿"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "儲存草稿"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下書きを保存"
+          }
+        }
+      }
+    },
+    "Ingredients used in this step": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此步骤使用的食材"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此步驟使用的食材"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この手順で使う材料"
+          }
+        }
+      }
+    },
+    "Your favorites start here": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从这里开始收藏"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "從這裡開始收藏"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お気に入りを登録しましょう"
+          }
+        }
+      }
+    },
+    "Everything looks ready": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一切都已准备好"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一切都已準備就緒"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべて準備できています"
+          }
+        }
+      }
+    },
+    "No recipes in this category": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此分类暂无食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此分類尚無食譜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このカテゴリにはレシピがありません"
+          }
+        }
+      }
+    },
+    "Tap the heart on a recipe to keep your go-to dishes together.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击食谱上的爱心，将常做的菜收藏在一起。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點選食譜上的愛心，將常做的料理收藏在一起。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピのハートをタップして、よく作る料理をまとめましょう。"
+          }
+        }
+      }
+    },
+    "Recipes with missing ingredients or steps will appear here.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缺少食材或步骤的食谱会显示在这里。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缺少食材或步驟的食譜會顯示在這裡。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "材料や手順が不足しているレシピがここに表示されます。"
+          }
+        }
+      }
+    },
+    "Choose another category or add a recipe to your collection.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择其他分类，或在合集里添加食谱。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請選擇其他分類，或在收藏集中新增食譜。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "別のカテゴリを選ぶか、コレクションにレシピを追加してください。"
+          }
+        }
+      }
+    },
+    "Recently Saved": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近保存"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近儲存"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近保存した順"
+          }
+        }
+      }
+    },
+    "Name, A–Z": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名称 A–Z"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名稱 A–Z"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名前 A～Z"
+          }
+        }
+      }
+    },
+    "Cooking Time": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹饪时间"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烹飪時間"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理時間"
+          }
+        }
+      }
+    },
+    "Source unavailable": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "来源不可用"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "來源無法使用"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ソースを利用できません"
+          }
+        }
+      }
+    },
+    "RecipePouch couldn't read your saved library. The file has been left unchanged.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch 无法读取已保存的食谱库，原始文件未被修改。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch 無法讀取已儲存的食譜庫，原始檔案未被修改。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存済みのレシピライブラリを読み込めませんでした。元のファイルは変更されていません。"
+          }
+        }
+      }
+    },
+    "Copyright The Lora Project Authors. Licensed under the SIL Open Font License 1.1.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版权所有：The Lora Project Authors。根据 SIL Open Font License 1.1 授权。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "著作權所有：The Lora Project Authors。依 SIL Open Font License 1.1 授權。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "著作権者：The Lora Project Authors。SIL Open Font License 1.1 に基づいてライセンスされています。"
+          }
+        }
+      }
+    },
+    "SwiftUI, StoreKit, AuthenticationServices, Vision, and related Apple frameworks are used under Apple platform terms.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SwiftUI、StoreKit、AuthenticationServices、Vision 等 Apple 框架依照 Apple 平台条款使用。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SwiftUI、StoreKit、AuthenticationServices、Vision 等 Apple 框架依照 Apple 平台條款使用。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SwiftUI、StoreKit、AuthenticationServices、Vision などの Apple フレームワークは Apple のプラットフォーム条件に従って使用しています。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
