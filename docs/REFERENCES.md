@@ -83,3 +83,24 @@ Queues：
 产品边界：这些都是**功能设计参考**，不代表 Recipe Pals 已经实现。参数信息来自可验证的食谱字段，精确 `°C ↔ °F` 与同维度单位换算可以计算；模糊用量、重量↔容量、营养数值没有证据不可自动填充。
 
 下一步具体开发与验收定义：[Timer sounds #231](https://github.com/natefox2017/cook/issues/231)、[Voice controls #232](https://github.com/natefox2017/cook/issues/232)、[Tap-to-explain #233](https://github.com/natefox2017/cook/issues/233)。
+
+## Deployed recipe product research for 2026-10-09 AI / Sharing / Detail additions
+
+| Shipped source | Feature that can be verified | Product implication |
+| --- | --- | --- |
+| [Samsung Food recipe sharing, official 2026](https://support.samsungfood.com/hc/en-us/articles/18588679568532-How-to-Share-Your-Saved-Recipes-with-Anyone) | Copy link, email, SMS, WhatsApp and web viewable without app/login | Native share sheet with **clickable link as primary**; shareable poster/QR as bonus |
+| [Samsung Food creator/right restrictions](https://support.samsungfood.com/hc/en-us/articles/18365296571412-Getting-Started-with-Samsung-Food-Communities) | Original content restrictions for Community reposts | Private by default, check authorization before publishing imported recipe instructions/images |
+| [Samsung Food recipe page](https://support.samsungfood.com/hc/en-us/articles/18588916048276-Recipe-Page-101) | Hero, creator, prep/cook/servings, ingredient/step/nutrition, Save/Plan/Share | Detail must prioritize usable metadata and actions, hide unavailable fields |
+| [ReciMe product](https://recime.app/help/en/articles/11594896-qu-est-ce-que-recime) | Import, scale, cook, meal planning, nutrition | Keep 1-tap import/cook continuity; no need to invent a community |
+| [Honeydew AI Edit](https://honeydewcook.com/support/en/using-the-app/ai-edit/) | Plain text edits and before/after save/discard | User approves AI ingredient substitutions; preserve prior version |
+| [Paprika iOS](https://paprikaapp.com/help/ios/) | Ingredient conversions, timers in directions, prep/cook and notes | Reuse current timers/scaling; #233 handles contextual parameter tap |
+
+### QR and installation measurement: source boundaries
+
+- [Ipsos US QR-menu experience](https://www.ipsos.com/en-us/qr-code-menus-are-growing-even-less-popular): 65% have used restaurant QR menus but preference is much lower. QR understanding is **not proof of best performance as a share link**, so provide clickable URL as primary.
+- [YouGov US 2025–26 OOH advertising](https://yougov.com/en-us/articles/55200-ooh-effectiveness-americans-frequently-notice-out-of-home-advertising-many-act-on-what-they-see): 12% reported QR/NFC action in outdoor-ad context, not general QR usage.
+- [Apple Universal Links](https://developer.apple.com/documentation/xcode/allowing-apps-and-websites-to-link-to-your-content) and [Smart App Banners](https://developer.apple.com/documentation/webkit/promoting-apps-with-smart-app-banners): installed app deep link vs browser landing, not automatic store-install referral attribution.
+- [App Store Connect campaign analytics](https://developer.apple.com/help/app-store-connect-analytics/acquisition/campaign-links/): privacy-limited **aggregate** campaign metrics; not proof of specific invitee identity.
+- [Apple privacy/fingerprinting](https://developer.apple.com/app-store/user-privacy-and-data-use/): no device fingerprinting or hidden cross-site person linking.
+
+Full plans: [AI](PRODUCT/AI_RECIPE_EXPERIENCE_2026-10-09.md), [Share → Web → Growth](PRODUCT/RECIPE_PUBLIC_SHARING_V1.md), [Recipe detail audit](PRODUCT/RECIPE_DETAIL_COMPETITOR_AUDIT_2026-10-09.md).
