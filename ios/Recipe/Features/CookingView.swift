@@ -32,6 +32,8 @@ struct CookingView: View {
     @State private var errorMessage: String?
     @State private var originalIdleTimerDisabled: Bool?
     @State private var notificationTasks: [UUID: Task<Void, Never>] = [:]
+    // A revision prevents an older async request from canceling a newer timer alert.
+    @State private var notificationTaskRevisions: [UUID: UUID] = [:]
 
     private var recipe: Recipe? { store.recipe(id: recipeID) }
     private var sessionKey: String { "recipe.cookingSession.\(recipeID.uuidString)" }
@@ -1093,9 +1095,25 @@ struct CookingView: View {
     }
 
     private func cancelNotification(for timerID: UUID) {
-        notificationTasks[timerID]?.cancel()
-        notificationTasks[timerID] = nil
+        let pendingTask = notificationTasks[timerID]
+        pendingTask?.cancel()
         TimerNotifications.cancel(id: notificationID(for: timerID))
+
+        guard let pendingTask else {
+            notificationTaskRevisions[timerID] = nil
+            return
+        }
+
+        let cancellationRevision = UUID()
+        notificationTaskRevisions[timerID] = cancellationRevision
+        Task { @MainActor in
+            await pendingTask.value
+            guard notificationTaskRevisions[timerID] == cancellationRevision else {
+                return
+            }
+            notificationTasks[timerID] = nil
+            notificationTaskRevisions[timerID] = nil
+        }
     }
 
     private func scheduleNotification(for active: PersistedActiveTimer) {
@@ -1106,11 +1124,23 @@ struct CookingView: View {
 
         let previous = notificationTasks[active.id]
         previous?.cancel()
+        let requestRevision = UUID()
+        notificationTaskRevisions[active.id] = requestRevision
         let id = notificationID(for: active.id)
 
-        notificationTasks[active.id] = Task { @MainActor in
+        let task = Task { @MainActor in
             await previous?.value
-            guard !Task.isCancelled else { return }
+            defer {
+                if notificationTaskRevisions[active.id] == requestRevision {
+                    notificationTasks[active.id] = nil
+                    notificationTaskRevisions[active.id] = nil
+                }
+            }
+            guard !Task.isCancelled,
+                notificationTaskRevisions[active.id] == requestRevision
+            else {
+                return
+            }
 
             do {
                 let seconds = active.timer.remaining(at: .now)
@@ -1121,11 +1151,16 @@ struct CookingView: View {
                     seconds: seconds
                 )
 
-                if Task.isCancelled || !store.settings.timerNotifications {
+                if Task.isCancelled
+                    || notificationTaskRevisions[active.id] != requestRevision
+                    || !store.settings.timerNotifications
+                {
                     TimerNotifications.cancel(id: id)
                 }
             } catch {
-                if !Task.isCancelled {
+                if !Task.isCancelled
+                    && notificationTaskRevisions[active.id] == requestRevision
+                {
                     errorMessage = String(
                         localized: LocalizedStringResource(
                             "The timer is running, but its notification could not be scheduled. \(error.localizedDescription)",
@@ -1133,6 +1168,7 @@ struct CookingView: View {
                 }
             }
         }
+        notificationTasks[active.id] = task
     }
 
     private func synchronizeNotifications() {

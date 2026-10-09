@@ -91,3 +91,34 @@ func pausedTimerStaysPausedWhileSiblingExpiresAcrossRestoration() throws {
     restored[0].start(at: start.addingTimeInterval(1_000))
     #expect(restored[0].deadline == start.addingTimeInterval(1_040))
 }
+
+@Test
+func legacyCookingTimerJSONKeepsPausedRemainingTime() throws {
+    let data = Data(
+        #"{"durationSeconds":60,"remainingSeconds":42}"#.utf8
+    )
+
+    let restored = try JSONDecoder().decode(CookingTimer.self, from: data)
+
+    #expect(!restored.isRunning)
+    #expect(restored.remainingSeconds == 42)
+}
+
+@Test
+func legacyRecipeStepDurationKeepsItsStepIDAsTimerID() throws {
+    let stepID = UUID(uuidString: "C0050000-0000-4000-8000-000000000001")!
+    let json = """
+        {
+            "id": "\(stepID.uuidString)",
+            "title": "Boil",
+            "instruction": "Boil water.",
+            "durationSeconds": 300
+        }
+        """
+
+    let restored = try JSONDecoder().decode(RecipeStep.self, from: Data(json.utf8))
+
+    #expect(restored.timers.count == 1)
+    #expect(restored.timers[0].id == stepID)
+    #expect(restored.timers[0].durationSeconds == 300)
+}
