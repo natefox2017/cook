@@ -1,119 +1,138 @@
 // Developer: gengyun
-// Purpose: Validate and preview AI-suggested recipe edits without mutating the user's original.
+// Purpose: Validates user-reviewable AI recipe edit proposals before changing recipes.
 
 import Foundation
 
-/// The only fields a recipe-editing provider is allowed to propose changing.
-/// This intentionally excludes provenance, privacy, notes, timers and source media.
-public enum RecipeEditOperation: Codable, Equatable, Sendable {
-    case replaceIngredient(id: UUID, name: String, amountText: String?)
-    case editStep(id: UUID, instruction: String)
-    case setServings(Int)
-    case editSummary(String)
+public enum RecipeEditChange: Codable, Equatable, Hashable, Sendable {
+    case ingredientName(id: UUID, original: String, proposed: String)
+    case ingredientAmount(id: UUID, original: String, proposed: String)
+    case stepInstruction(id: UUID, original: String, proposed: String)
+
+    fileprivate var pathKey: String {
+        switch self {
+        case .ingredientName(let id, _, _): "ingredient:\(id):name"
+        case .ingredientAmount(let id, _, _): "ingredient:\(id):amount"
+        case .stepInstruction(let id, _, _): "step:\(id):instruction"
+        }
+    }
 }
 
 public enum RecipeEditProposalError: Error, Equatable, Sendable {
-    case wrongRecipe
     case staleRecipe
-    case invalidOperation
-    case missingIngredient
-    case missingStep
+    case emptyProposal
+    case duplicatedPath
+    case missingField
+    case sourceChanged
+    case invalidReplacement
 }
 
-/// A proposal is an untrusted suggestion until the user explicitly accepts its preview.
+public struct RecipeEditPreview: Equatable, Sendable {
+    public let before: Recipe
+    public let after: Recipe
+    public let reasons: [String]
+    public let warnings: [String]
+
+    public var hasChanges: Bool { before != after }
+}
+
+/// A proposed edit has no side effects; the user must approve before store.upsert.
 public struct RecipeEditProposal: Codable, Equatable, Sendable {
-    public let id: UUID
     public let recipeID: UUID
-    public let expectedUpdatedAt: Date
-    public let explanation: String
-    public let operations: [RecipeEditOperation]
+    public let basedOnUpdate: Date
+    public let changes: [RecipeEditChange]
+    public let reasons: [String]
+    public let warnings: [String]
 
     public init(
-        id: UUID = UUID(), recipeID: UUID, expectedUpdatedAt: Date,
-        explanation: String, operations: [RecipeEditOperation]
+        recipeID: UUID, basedOnUpdate: Date, changes: [RecipeEditChange],
+        reasons: [String] = [], warnings: [String] = []
     ) {
-        self.id = id
         self.recipeID = recipeID
-        self.expectedUpdatedAt = expectedUpdatedAt
-        self.explanation = explanation
-        self.operations = operations
+        self.basedOnUpdate = basedOnUpdate
+        self.changes = changes
+        self.reasons = reasons
+        self.warnings = warnings
     }
 
-    /// Returns an in-memory copy. Callers must display a diff before they persist it.
-    /// Exact source amounts are never guessed: explicit changes are parsed conservatively.
-    public func preview(on recipe: Recipe, at date: Date = .now) throws -> Recipe {
-        guard recipe.id == recipeID else { throw RecipeEditProposalError.wrongRecipe }
-        guard recipe.updatedAt == expectedUpdatedAt else {
+    public func preview(on original: Recipe) throws -> RecipeEditPreview {
+        guard original.id == recipeID, original.updatedAt == basedOnUpdate else {
             throw RecipeEditProposalError.staleRecipe
         }
-        guard !operations.isEmpty, operations.count <= 20,
-            explanation.count <= 3_000
-        else { throw RecipeEditProposalError.invalidOperation }
-
-        var changed = recipe
-        for operation in operations {
-            switch operation {
-            case let .replaceIngredient(id, rawName, rawAmount):
-                guard let index = changed.ingredients.firstIndex(where: { $0.id == id }) else {
-                    throw RecipeEditProposalError.missingIngredient
+        guard !changes.isEmpty else { throw RecipeEditProposalError.emptyProposal }
+        var visited = Set<String>()
+        var candidate = original
+        for change in changes {
+            guard visited.insert(change.pathKey).inserted else {
+                throw RecipeEditProposalError.duplicatedPath
+            }
+            switch change {
+            case .ingredientName(let id, let old, let next):
+                guard let index = candidate.ingredients.firstIndex(where: { $0.id == id }) else {
+                    throw RecipeEditProposalError.missingField
                 }
-                let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !name.isEmpty, name.count <= 160,
-                    (rawAmount?.count ?? 0) <= 120
-                else { throw RecipeEditProposalError.invalidOperation }
-                let original = changed.ingredients[index]
-                if let rawAmount {
-                    let replacement = RecipeIngredient.from(
-                        name: name, amountText: rawAmount,
-                        category: original.category
-                    )
-                    // The original ingredient ID must survive links to Cooking steps.
-                    changed.ingredients[index].name = replacement.name
-                    changed.ingredients[index].amountText = replacement.amountText
-                    changed.ingredients[index].quantity = replacement.quantity
-                    changed.ingredients[index].unit = replacement.unit
-                } else {
-                    changed.ingredients[index].name = name
+                guard candidate.ingredients[index].name == old else {
+                    throw RecipeEditProposalError.sourceChanged
                 }
-
-            case let .editStep(id, rawInstruction):
-                guard let index = changed.steps.firstIndex(where: { $0.id == id }) else {
-                    throw RecipeEditProposalError.missingStep
+                guard Self.safeText(next, maximum: 240) else {
+                    throw RecipeEditProposalError.invalidReplacement
                 }
-                let instruction = rawInstruction.trimmingCharacters(
-                    in: .whitespacesAndNewlines)
-                guard !instruction.isEmpty, instruction.count <= 5_000 else {
-                    throw RecipeEditProposalError.invalidOperation
+                candidate.ingredients[index].name = next
+            case .ingredientAmount(let id, let old, let next):
+                guard let index = candidate.ingredients.firstIndex(where: { $0.id == id }) else {
+                    throw RecipeEditProposalError.missingField
                 }
-                changed.steps[index].instruction = instruction
-
-            case let .setServings(value):
-                guard (1...100).contains(value) else {
-                    throw RecipeEditProposalError.invalidOperation
+                guard candidate.ingredients[index].amountText == old else {
+                    throw RecipeEditProposalError.sourceChanged
                 }
-                // Display amounts use the existing exact servings ratio, not model guesses.
-                changed.servings = value
-
-            case let .editSummary(rawSummary):
-                let summary = rawSummary.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard summary.count <= 2_000 else {
-                    throw RecipeEditProposalError.invalidOperation
+                guard Self.safeText(next, maximum: 240) else {
+                    throw RecipeEditProposalError.invalidReplacement
                 }
-                changed.summary = summary
+                // Never infer grams/density from a natural-language amount:
+                // the structured quantity is reset until safely parsed/confirmed.
+                let originalCategory = candidate.ingredients[index].category
+                candidate.ingredients[index] = RecipeIngredient.from(
+                    name: candidate.ingredients[index].name,
+                    amountText: next, category: originalCategory
+                )
+                candidate.ingredients[index].id = id
+            case .stepInstruction(let id, let old, let next):
+                guard let index = candidate.steps.firstIndex(where: { $0.id == id }) else {
+                    throw RecipeEditProposalError.missingField
+                }
+                guard candidate.steps[index].instruction == old else {
+                    throw RecipeEditProposalError.sourceChanged
+                }
+                guard Self.safeText(next, maximum: 8_000) else {
+                    throw RecipeEditProposalError.invalidReplacement
+                }
+                candidate.steps[index].instruction = next
+                // Timers and structured temperatures are intentionally unchanged:
+                // the user must separately review any proposed cooking changes.
             }
         }
-        changed.updatedAt = date
-        return changed
+        guard candidate != original else {
+            throw RecipeEditProposalError.emptyProposal
+        }
+        return RecipeEditPreview(
+            before: original, after: candidate, reasons: reasons, warnings: warnings)
     }
 
-    /// Creates a detached private variant; preview and original remain unchanged.
-    public func privateVariant(
-        of recipe: Recipe, at date: Date = .now, id: UUID = UUID()
+    /// Call only after explicit user approval; the caller owns persistence and undo.
+    public func approvedRecipe(
+        from current: Recipe, at savedAt: Date = .now, asVariant: Bool = false
     ) throws -> Recipe {
-        var variant = try preview(on: recipe, at: date)
-        variant.id = id
-        variant.createdAt = date
-        variant.isFavorite = false
-        return variant
+        var recipe = try preview(on: current).after
+        recipe.updatedAt = savedAt
+        if asVariant {
+            recipe.id = UUID()
+            recipe.createdAt = savedAt
+        }
+        return recipe
+    }
+
+    private static func safeText(_ input: String, maximum: Int) -> Bool {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmed.isEmpty && trimmed.count <= maximum
+            && !input.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) })
     }
 }
