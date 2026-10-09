@@ -36,3 +36,32 @@ export async function withAdminBootstrapAuthorization<T>(
 
   return handleAuthorizedRequest();
 }
+
+/**
+ * Preserve actionable bootstrap errors without exposing internal Postgres or
+ * privileged RPC diagnostics to an unauthenticated bootstrap caller.
+ */
+export function publicAdminBootstrapError(message: string): AppError {
+  if (message.includes("current default password")) {
+    return new AppError(
+      "unauthorized",
+      "Current default password is incorrect",
+      401,
+    );
+  }
+  if (message.includes("strength")) {
+    return new AppError(
+      "validation_error",
+      "newPassword does not meet strength policy",
+      400,
+    );
+  }
+  if (message.includes("not available")) {
+    return new AppError(
+      "conflict",
+      "Bootstrap is not available for this environment",
+      409,
+    );
+  }
+  return new AppError("internal_error", "Bootstrap failed", 500);
+}
