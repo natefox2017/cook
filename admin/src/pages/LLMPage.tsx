@@ -65,8 +65,30 @@ function formatDate(value: string) {
     : new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(date);
 }
 
-function emptyUsage(usage: LLMUsage | null) {
-  return !usage || usage.totals.requests === 0;
+function validUsage(usage: LLMUsage | null): usage is LLMUsage {
+  if (
+    !usage || !usage.totals || !Array.isArray(usage.series) ||
+    !Array.isArray(usage.byModel)
+  ) return false;
+
+  const validTotals = [
+    usage.totals.requests,
+    usage.totals.inputTokens,
+    usage.totals.outputTokens,
+    usage.totals.totalTokens,
+  ].every(Number.isFinite);
+  const validSeries = usage.series.every((row) =>
+    row && typeof row.date === "string" &&
+    [row.requests, row.inputTokens, row.outputTokens, row.totalTokens].every(
+      Number.isFinite,
+    )
+  );
+  const validModels = usage.byModel.every((row) =>
+    row && typeof row.provider === "string" && typeof row.model === "string" &&
+    [row.requests, row.totalTokens].every(Number.isFinite)
+  );
+
+  return validTotals && validSeries && validModels;
 }
 
 function ErrorNotice({ message, onRetry }: { message: string; onRetry: () => void }) {
@@ -195,7 +217,8 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
     }
   }
 
-  const hasUsage = !emptyUsage(usage);
+  const usageIsValid = validUsage(usage);
+  const hasUsage = usageIsValid && usage.totals.requests > 0;
 
   return (
     <main className="llm-page">
@@ -228,6 +251,8 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
         </div>
         {loading ? (
           <div className="llm-loading"><LoaderCircle size={18} className="llm-spin" aria-hidden="true" /> Loading usage…</div>
+        ) : !usageIsValid ? (
+          <ErrorNotice message="The usage service returned incomplete data." onRetry={() => void load()} />
         ) : hasUsage && usage ? (
           <>
             <div className="llm-metric-grid">
