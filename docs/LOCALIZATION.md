@@ -1,10 +1,12 @@
+> **Latest source audit (2026-10-09):** `ios/Recipe/Resources/Localizable.xcstrings` has **808 source keys** with zh-Hans/zh-Hant/ja localizations; Share Extension has 14. The older 670-key count and prior RecipePouch screenshots below are historical acceptance records, **not the current source contract**. English remains the default during testing; StoreKit and user-authored content are outside translated fixed UI labels.
+
 # Localization
 
 Updated: 2026-10-09
 
 ## Runtime policy
 
-- **Temporary test-stage setting (2026-10-08):** RecipePouch app UI is forced to English (en), regardless of the iPhone's preferred language. This applies to the SwiftUI environment and computed strings resolved with `LocalizedStringResource(locale:)`.
+- **Temporary test-stage setting (2026-10-08):** Recipe Pals app UI is forced to English (en), regardless of the iPhone's preferred language. This applies to the SwiftUI environment and computed strings resolved with `LocalizedStringResource(locale:)`.
 - Explicit `--uitesting-locale en|zh-Hans|zh-Hant|ja` is retained solely for localization smoke tests; ordinary UI tests and normal app launches default to English.
 - The Share Extension uses its own English locale. Core display errors remain in English during the test stage.
 - **Before international launch:** deliberately remove this test-stage restriction and restore system-language selection for the app, Core, and Share Extension after multi-language visual QA.
@@ -17,7 +19,7 @@ Initial targets: English (en), Simplified Chinese (zh-Hans), Traditional Chinese
 ## 2026-10-08 localization and concise-copy maintenance
 
 - The main app must use a localized key when a shared SwiftUI row receives product copy through a runtime `String`. Raw `Text(title)` or `Button(mode.rawValue)` is not equivalent to a localizable literal. Use `LocalizedStringKey` for fixed UI copy and `String(localized:)` when a computed String is required. Keep user-authored recipe names, email addresses, account data and StoreKit product metadata unchanged.
-- Profile uses short navigation titles **Account** and **Premium** without a repeated RecipePouch prefix. The uncustomized kitchen name is localized. Additional account, recipe editor, grocery, cooking and onboarding dynamic labels were routed through the catalogs.
+- Profile uses short navigation titles **Account** and **Premium** without a repeated Recipe Pals prefix. The uncustomized kitchen name is localized. Additional account, recipe editor, grocery, cooking and onboarding dynamic labels were routed through the catalogs.
 - Redundant informational footnotes, duplicate read-only settings rows and long marketing subtitles were removed from common screens. Necessary statuses are short, ideally one line; preserve important data-deletion warnings, privacy notices and App Store renewal disclosure rather than obscuring essential terms.
 - The Share Extension now has its **own** catalog, `ios/ShareExtension/Localizable.xcstrings` (11 source keys, zh-Hans/zh-Hant/ja), included in the `RecipeShare` target's Resources phase. The app catalog alone does not localize this separate extension bundle.
 - UI assertions cover localized Profile defaults, Account and Premium menu labels in the four shipping locales and retain stable accessibility identifiers. This code-only pass verified catalog JSON completeness and static Swift delimiter balance; **Xcode build, iPhone/simulator screenshots, VoiceOver and exhaustive view-state runtime tests have not been executed in this environment**. Complete these before release.
@@ -45,7 +47,7 @@ Initial targets: English (en), Simplified Chinese (zh-Hans), Traditional Chinese
 
 **The four-language catalog is implemented, with full-page acceptance still in progress.**
 
-- `ios/Recipe/Resources/Localizable.xcstrings` contains **670 source keys**; each key has zh-Hans, zh-Hant and ja values, including plural variants. The keys cover Recipes, recipe details/editing, import, Collections, groceries, meal planning, cooking, profile, Settings, account, subscription, cloud sync, privacy and help. English uses source values as the fallback. `InfoPlist.xcstrings` contains the camera permission string and app display/name values for all four locales.
+- `ios/Recipe/Resources/Localizable.xcstrings` contains **808 source keys**; each key has zh-Hans, zh-Hant and ja values, including plural variants. The keys cover Recipes, recipe details/editing, import, Collections, groceries, meal planning, cooking, profile, Settings, account, subscription, cloud sync, privacy and help. English uses source values as the fallback. `InfoPlist.xcstrings` contains the camera permission string and app display/name values for all four locales.
 - Both catalogs are registered in the **Recipe** app target. Xcode 27 built the target successfully for the iOS 27 simulator, compiling its String Catalogs. The Xcode localization export extracted additional literals and surfaced 111 non-literal extraction warnings; a source scan localized concrete dynamic/composed copy and user-visible service/core errors. Keep reviewing new UI copy as adjacent features change.
 - `ios/Recipe/Info.plist` advertises only en, zh-Hans, zh-Hant and ja. es/fr/de/ko/pt-BR remain planned and are intentionally not advertised.
 - UI tests keep English by default. The locale smoke explicitly passes `--uitesting-locale` for four deterministic locales. `RecipeApp.appLocale` is temporarily pinned to English in normal launches. Locale smoke tests must explicitly opt in; switching languages while running has not been verified.

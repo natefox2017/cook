@@ -1,10 +1,12 @@
 name: PR Auto Merge
 
-# Runs the trusted workflow from main without checking out PR code.
+# Runs trusted code from main. PR source is only read as inert data.
 on:
   pull_request_target:
     branches: [main]
-    types: [opened, reopened, synchronize, ready_for_review]
+    types: [opened, reopened, synchronize, ready_for_review, edited, labeled]
+  pull_request_review:
+    types: [submitted, dismissed]
 
 permissions:
   contents: write
@@ -16,13 +18,12 @@ concurrency:
 
 jobs:
   merge:
-    name: Squash ready PR
-    if: >-
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.head.repo.full_name == github.repository
+    name: Squash eligible PR
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     steps:
-      - name: Merge eligible pull request
+      - name: Resolve readiness and review gates
+        id: ready
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -31,58 +32,185 @@ jobs:
           EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
+          echo "eligible=false" >> "$GITHUB_OUTPUT"
 
-          # Check conflict-free mergeability, not mergeStateStatus: the in-progress
-          # workflow itself can make mergeStateStatus UNSTABLE.
-          for attempt in 1 2 3 4 5; do
-            pr="$(gh pr view "$PR_NUMBER" --json state,isDraft,headRefOid,reviewDecision,mergeable)"
-            mergeability="$(jq -r '.mergeable' <<<"$pr")"
-            if [ "$mergeability" != "UNKNOWN" ]; then
-              break
+          pr="$(gh pr view "$PR_NUMBER" --json state,isDraft,body,labels,headRefOid,reviewDecision,mergeable)"
+          if [ "$(jq -r '.state' <<<"$pr")" != "OPEN" ]; then
+            echo "PR is no longer open."
+            exit 0
+          fi
+          if [ "$(jq -r '.headRefOid' <<<"$pr")" != "$EVENT_HEAD_SHA" ]; then
+            echo "PR head changed since the event; a newer run must inspect it."
+            exit 0
+          fi
+
+          # Ordinary finished PRs merge without any click. Drafts are never
+          # published merely because they have commits; require author opt-in.
+          if [ "$(jq -r '.isDraft' <<<"$pr")" = "true" ]; then
+            opted_in="$(jq -r '((.body // "") | contains("<!-- auto-ready: complete -->")) or ([.labels[]?.name] | index("auto-ready") != null)' <<<"$pr")"
+            if [ "$opted_in" != "true" ]; then
+              echo "Draft still in progress. Create a normal PR when finished, or add an auto-ready marker."
+              exit 0
             fi
-            sleep 3
+            gh pr ready "$PR_NUMBER"
+            pr="$(gh pr view "$PR_NUMBER" --json state,isDraft,body,labels,headRefOid,reviewDecision,mergeable)"
+          fi
+
+          for attempt in $(seq 1 12); do
+            pr="$(gh pr view "$PR_NUMBER" --json state,isDraft,body,labels,headRefOid,reviewDecision,mergeable)"
+            [ "$(jq -r '.mergeable' <<<"$pr")" != "UNKNOWN" ] && break
+            sleep 5
           done
 
           if [ "$(jq -r '.state' <<<"$pr")" != "OPEN" ] ||
-             [ "$(jq -r '.isDraft' <<<"$pr")" != "false" ]; then
-            echo "PR is not open and ready; skipping."
+             [ "$(jq -r '.isDraft' <<<"$pr")" != "false" ] ||
+             [ "$(jq -r '.headRefOid' <<<"$pr")" != "$EVENT_HEAD_SHA" ]; then
+            echo "PR closed, is draft or its head changed; skip."
             exit 0
           fi
 
-          head_sha="$(jq -r '.headRefOid' <<<"$pr")"
-          if [ "$head_sha" != "$EVENT_HEAD_SHA" ]; then
-            echo "PR head changed after this event; skipping stale merge."
+          review="$(jq -r '.reviewDecision // ""' <<<"$pr")"
+          if [ "$review" = "CHANGES_REQUESTED" ] || [ "$review" = "REVIEW_REQUIRED" ]; then
+            echo "The requested review is not yet satisfied."
             exit 0
           fi
 
-          review_decision="$(jq -r '.reviewDecision // ""' <<<"$pr")"
-          if [ "$review_decision" = "CHANGES_REQUESTED" ] ||
-             [ "$review_decision" = "REVIEW_REQUIRED" ]; then
-            echo "Review must be completed before merging."
-            exit 0
-          fi
-
-          # Keep the former ruleset's unresolved-review-thread safety gate.
           threads="$(gh api graphql \
             -f query='query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { reviewThreads(first: 100) { nodes { isResolved } pageInfo { hasNextPage } } } } }' \
-            -f owner="${GH_REPO%%/*}" \
-            -f name="${GH_REPO#*/}" \
+            -f owner="$(cut -d/ -f1 <<<"$GH_REPO")" \
+            -f name="$(cut -d/ -f2 <<<"$GH_REPO")" \
             -F number="$PR_NUMBER" \
             --jq '.data.repository.pullRequest.reviewThreads')"
           if [ "$threads" = "null" ]; then
-            echo "Unable to inspect review threads; refusing to merge." >&2
+            echo "Cannot inspect PR review threads." >&2
             exit 1
           fi
           if jq -e '.pageInfo.hasNextPage or ([.nodes[].isResolved] | any(. == false))' <<<"$threads" > /dev/null; then
-            echo "PR has unresolved or uninspected review threads; skipping."
+            echo "Unresolved or uninspected review threads: do not merge."
             exit 0
           fi
-
-          if [ "$mergeability" != "MERGEABLE" ]; then
-            echo "PR is $mergeability, not MERGEABLE; skipping."
+          if [ "$(jq -r '.mergeable' <<<"$pr")" != "MERGEABLE" ]; then
+            echo "PR is not conflict-free; no automatic merge."
             exit 0
           fi
+          echo "head_sha=$EVENT_HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "eligible=true" >> "$GITHUB_OUTPUT"
 
-          # Immediate API merge works on private GitHub Free repositories.
-          # Do not use 'gh pr merge --auto': that feature requires paid branch protection.
-          gh pr merge "$PR_NUMBER" --squash --match-head-commit "$head_sha"
+      - name: Protect approved app contracts before merging
+        if: steps.ready.outputs.eligible == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ steps.ready.outputs.head_sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          # Only execute the validator from the trusted BASE commit. NEVER run
+          # code from PR head under this write-enabled pull_request_target token.
+          dir="$(mktemp -d)"
+          trap 'rm -rf "$dir"' EXIT
+          fetch_source() {
+            local path="$1" ref="$2"
+            mkdir -p "$dir/$(dirname "$path")"
+            gh api "repos/$GH_REPO/contents/$path?ref=$ref" --jq '.content' \
+              | base64 --decode > "$dir/$path"
+          }
+
+          fetch_source "scripts/check_ios_branding.py" "$BASE_SHA"
+          for path in \
+            ios/Recipe/Features/FirstLaunchView.swift \
+            ios/Recipe/Features/SubscriptionView.swift \
+            ios/Recipe/Info.plist \
+            ios/Recipe/Resources/InfoPlist.xcstrings \
+            ios/ShareExtension/Info.plist \
+            ios/ShareExtension/InfoPlist.xcstrings; do
+            fetch_source "$path" "$HEAD_SHA"
+          done
+
+          # Strings in the PR patch are inspected as data, not shell source.
+          gh api --paginate "repos/$GH_REPO/pulls/$PR_NUMBER/files?per_page=100" \
+            --jq '.[] | {filename,patch} | tojson' > "$dir/changed.jsonl"
+
+          python3 "$dir/scripts/check_ios_branding.py" "$dir"
+          python3 - "$dir" <<'PY'
+          import json
+          import pathlib
+          import re
+          import sys
+
+          root = pathlib.Path(sys.argv[1])
+          first = (root / "ios/Recipe/Features/FirstLaunchView.swift").read_text()
+          premium = (root / "ios/Recipe/Features/SubscriptionView.swift").read_text()
+          errors = []
+
+          cases = {
+              "case 0": ('imageName: "OnboardingAI"', 'title: "Create with AI"',
+                         'Tell AI what you’re craving'),
+              "case 1": ('imageName: "OnboardingShrimpPasta"', 'title: "Save recipe links"'),
+              "case 2": ('imageName: "OnboardingSocial"', 'title: "Import social recipes"'),
+          }
+          for index, (name, expected) in enumerate(cases.items()):
+              following = f"case {index + 1}:" if index < 2 else "default:"
+              segment = re.search(
+                  r"\b" + re.escape(name) + r":(.*?)\b" + re.escape(following),
+                  first, flags=re.DOTALL,
+              )
+              if not segment or not all(phrase in segment.group(1) for phrase in expected):
+                  errors.append(f"Approved first-launch story changed: {name}")
+          if 'Save recipes your way' in first:
+              errors.append("Superseded onboarding copy reintroduced.")
+          for phrase in (
+              'Text("Recipe Pals Premium")',
+              'premiumFeature("sparkles", title: "Create with AI")',
+              'paidPlanChoice(for: .monthly)',
+              'paidPlanChoice(for: .yearly)',
+              'selectedPeriod: SubscriptionBillingPeriod? = .yearly',
+          ):
+              if phrase not in premium:
+                  errors.append(f"Approved Premium contract changed: {phrase}")
+
+          patch_file = root / "changed.jsonl"
+          for line in patch_file.read_text().splitlines():
+              change = json.loads(line)
+              name = change.get("filename", "")
+              if not name.startswith("ios/") or not name.endswith((".swift", ".xcstrings", ".strings")):
+                  continue
+              for added in (change.get("patch") or "").splitlines():
+                  if not added.startswith("+") or added.startswith("+++"):
+                      continue
+                  if "Save recipes your way" in added:
+                      errors.append(f"{name}: old onboarding slogan added")
+                  if "RecipePouch" not in added:
+                      continue
+                  compat = (
+                      name == "ios/RecipeCore/Sources/RecipeCore/RecipeLocalEraseMarker.swift"
+                      and "RecipePouch.localErasePending.v1" in added
+                  ) or (
+                      name == "ios/ShareExtension/ShareViewController.swift"
+                      and "RecipePouch.ShareExtension" in added
+                  )
+                  if not compat:
+                      errors.append(f"{name}: obsolete user-facing RecipePouch text added")
+
+          if errors:
+              for item in errors:
+                  print("APP CONTRACT FAILURE:", item, file=sys.stderr)
+              sys.exit(1)
+          print("Approved first-launch, Premium and changed iOS copy: PASS")
+          PY
+
+      - name: Squash merge the verified head
+        if: steps.ready.outputs.eligible == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ steps.ready.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          # A direct merge is supported on GitHub Free private repositories;
+          # native 'gh pr merge --auto' is not required.
+          gh pr merge "$PR_NUMBER" --squash --match-head-commit "$HEAD_SHA"

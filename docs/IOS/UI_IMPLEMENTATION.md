@@ -2,9 +2,11 @@
 
 ## Scope and authorization
 
+> **2026-10-09 current UI contract:** first-launch page 1 is AI-first (`OnboardingAI`, `Create with AI`); Premium has a left-aligned AI feature and uses Recipe Pals naming. PR #226 restored this after PR #223 temporarily replaced it. New implementation must not rely on stale draft/screenshots without reading the current main and approved UI records.
+
 The user requested: “你帮我把 ui 界面功能写好提交上去”. This authorizes implementing and submitting this UI work. It does not retrospectively approve every historical design frame or authorize merging unrelated pending PRs.
 
-The current implementation uses the `Recipe` technical project/module naming and the RecipePouch product brand, with Recipes / Plan / Groceries / Profile navigation. It reuses PR #10's IngredientAmount implementation and tests. The historical three-tab proposal was superseded by the four-tab native navigation; the extra recommendation home was not added.
+The current implementation uses the `Recipe` technical project/module naming and the **Recipe Pals** user-facing product brand, with Recipes / Plan / Groceries / Profile navigation. It reuses PR #10's IngredientAmount implementation and tests. The historical three-tab proposal was superseded by the four-tab native navigation; the extra recommendation home was not added.
 
 Historical PENDING rows remain unchanged. This PR provides the concrete implementation for review; future visual changes continue to use the existing design process.
 

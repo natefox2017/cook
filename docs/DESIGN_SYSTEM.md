@@ -78,7 +78,7 @@ iOS 使用 SwiftUI 与 Apple Human Interface Guidelines。
 
 ## 6. UI typography and spacing contract (2026-10-09)
 
-This contract applies to RecipePouch SwiftUI screens. Keep the implemented
+This contract applies to Recipe Pals SwiftUI screens. Keep the implemented
 **Lora** font and green palette; do not reinstate older exploratory fonts.
 
 - **Navigation titles:** let the native iOS navigation bar and safe area

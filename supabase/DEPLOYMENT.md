@@ -1,4 +1,4 @@
-# RecipePouch Supabase release and verification
+# Recipe Pals Supabase release and verification
 
 > Deployments of production database migrations and functions are gated by
 > [#140](https://github.com/natefox2017/cook/issues/140),

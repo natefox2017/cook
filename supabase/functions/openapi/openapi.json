@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "RecipePouch Edge API — Repository Replacement",
+    "title": "Recipe Pals Edge API — Repository Replacement",
     "version": "2026-10-09.2",
     "description": "Repository-scoped replacement contract assembled from implemented Edge Function handlers. It is not a parity reconstruction of the unavailable production OpenAPI v23. The existing handler contract is sourced from current main. Six admin-ai operations freeze the current admin UI types and PR #211 handler contract; they do not assert production deployment parity.",
     "x_contract_kind": "repository-current-handler-and-frozen-admin-ai-contract",

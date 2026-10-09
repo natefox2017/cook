@@ -78,6 +78,11 @@ Read the relevant documents before substantial product or architecture changes:
 ## Change Workflow
 
 - Keep `main` PR-only. Use a focused branch for implementation.
+- **Before a PR, rebase/merge the current `origin/main`** and compare against the latest accepted onboarding, branding, navigation and purchase contracts. Do not restore older screen implementations from an old branch merely to resolve conflicts.
+- **Create a regular (non-Draft) PR after the task is complete.** Our trusted GitHub Actions workflow merges ordinary clean same-repo PRs automatically, with no GitHub UI click. Do not ask the user to press **Ready for review** for completed work.
+- Draft PRs are only for genuine work in progress. If a completed PR was already opened as Draft, append the exact completion marker `<!-- auto-ready: complete -->` to its PR body, or apply the `auto-ready` label; the workflow promotes it and merges it without a manual UI click. Do not set either marker before work is complete.
+- Do not overwrite an approved design with copy/layout taken from stale history. The first onboarding story remains **OnboardingAI / Create with AI** and Premium retains the AI feature row unless the user expressly approves a change. The merge workflow blocks those regressions and obsolete user-facing RecipePouch naming.
+
 - GitHub Issues are the project task entry point. Keep issue status aligned with the actual merged code.
 - Freeze shared API/schema decisions before parallel work; avoid simultaneous edits to the same core file.
 - Inspect the current implementation before changing it. Do not apply review comments mechanically.
@@ -96,8 +101,8 @@ Read the relevant documents before substantial product or architecture changes:
 ## CI Policy
 
 - Keep CI intentionally minimal.
-- The private GitHub Free repository uses one lightweight `pull_request_target` workflow to directly squash-merge open, ready, clean same-repository PRs. Never use `gh pr merge --auto`, which depends on paid native auto-merge protection.
-- Keep Draft PRs, change requests, unresolved review threads, and unmergeable PRs out of automatic merges. Do not check out or execute PR code with the write-enabled merge token.
+- The private GitHub Free repository uses one lightweight trusted merge workflow to squash-merge eligible normal PRs directly; marked-complete Drafts may be promoted automatically. Never use `gh pr merge --auto`, which depends on paid native auto-merge protection.
+- Keep unmarked Draft PRs, change requests, unresolved review threads, and unmergeable PRs out of automatic merges. Do not check out or execute PR code with the write-enabled merge token. The merge workflow validates approved UI and naming contracts by treating PR-head files as **untrusted data** and executing only trusted-base validators.
 - Do not reintroduce per-PR Xcode builds, simulator runs, Swift tests, or documentation CI unless the user explicitly requests them.
 - Required status names may remain as compatibility gates, but they must not pretend to validate work they do not actually validate.
 - Run substantive build/tests manually when needed and report exactly what was executed.
