@@ -903,7 +903,7 @@ final class RecipeUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["用 AI 创作"].waitForExistence(timeout: 8))
         waitUntilReady(app.buttons["onboarding.skip"])
         app.buttons["onboarding.skip"].tap()
-        XCTAssertTrue(app.staticTexts["Recipe Pals 高级版"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["私人菜谱高级版"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["onboarding.purchase"].waitForExistence(timeout: 8))
         attachScreenshot("Product Design subscription - Chinese layout smoke", app: app)
     }
