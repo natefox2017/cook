@@ -201,11 +201,13 @@ public enum SampleRecipes {
                 ingredients: [roastChicken, potatoes, oliveOil, lemon, garlic],
                 steps: [
                     RecipeStep(
+                        id: UUID(uuidString: "C0050000-0000-4000-8000-000000000001")!,
                         title: "Preheat",
                         instruction: "Heat the oven to 220°C while you prepare the tray.",
                         temperature: CookingTemperature(text: "220°C")
                     ),
                     RecipeStep(
+                        id: UUID(uuidString: "C0050000-0000-4000-8000-000000000002")!,
                         title: "Season chicken",
                         instruction:
                             "Toss the chicken with half the olive oil, garlic and a squeeze of lemon. Let it stand for 10 minutes.",
@@ -219,12 +221,14 @@ public enum SampleRecipes {
                         ]
                     ),
                     RecipeStep(
+                        id: UUID(uuidString: "C0050000-0000-4000-8000-000000000003")!,
                         title: "Prepare potatoes",
                         instruction:
                             "Halve the potatoes and toss with the remaining olive oil. Season to taste.",
                         linkedIngredientIDs: [potatoes.id, oliveOil.id]
                     ),
                     RecipeStep(
+                        id: UUID(uuidString: "C0050000-0000-4000-8000-000000000004")!,
                         title: "Start roasting",
                         instruction:
                             "Arrange the chicken and potatoes on the hot tray and roast at 220°C for 20 minutes.",
@@ -244,6 +248,7 @@ public enum SampleRecipes {
                         ]
                     ),
                     RecipeStep(
+                        id: UUID(uuidString: "C0050000-0000-4000-8000-000000000005")!,
                         title: "Turn and finish",
                         instruction:
                             "Turn the potatoes, spoon the pan juices over the chicken, then roast for 15 minutes more. Check doneness rather than relying on time alone.",
@@ -258,6 +263,7 @@ public enum SampleRecipes {
                         ]
                     ),
                     RecipeStep(
+                        id: UUID(uuidString: "C0050000-0000-4000-8000-000000000006")!,
                         title: "Rest",
                         instruction:
                             "Move the chicken to a board and rest for 5 minutes before serving.",
@@ -271,11 +277,13 @@ public enum SampleRecipes {
                         ]
                     ),
                     RecipeStep(
+                        id: UUID(uuidString: "C0050000-0000-4000-8000-000000000007")!,
                         title: "Finish tray",
                         instruction: "Taste the potatoes and pan juices. Add lemon only as needed.",
                         linkedIngredientIDs: [potatoes.id, lemon.id]
                     ),
                     RecipeStep(
+                        id: UUID(uuidString: "C0050000-0000-4000-8000-000000000008")!,
                         title: "Serve",
                         instruction:
                             "Slice the chicken and serve with the potatoes and pan juices.",

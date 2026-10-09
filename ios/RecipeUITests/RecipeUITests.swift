@@ -235,6 +235,58 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testManualTimerCanBeRenamedWithoutStoppingIt() {
+        let app = launchSeededApp()
+        defer {
+            app.terminate()
+        }
+
+        let recipe = app.buttons["recipe.C0010000-0000-4000-8000-000000000005"]
+        reveal(recipe, in: app, maximumSwipes: 4)
+        recipe.tap()
+        let startCooking = app.buttons["startCooking"]
+        waitUntilReady(startCooking)
+        startCooking.tap()
+
+        let timers = app.buttons["cookingTimersButton"]
+        waitUntilReady(timers)
+        timers.tap()
+        let addTimer = app.buttons["Add"]
+        waitUntilReady(addTimer)
+        addTimer.tap()
+
+        let name = app.textFields["Name"]
+        waitUntilReady(name)
+        name.tap()
+        name.typeText("Kitchen QA")
+        app.navigationBars.buttons["Start"].tap()
+
+        let manualTimer = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "cookingTimerRename.")
+        ).firstMatch
+        waitUntilReady(manualTimer)
+        let timerIdentifier = manualTimer.identifier
+        manualTimer.tap()
+
+        let renameAlert = app.alerts["Rename Timer"]
+        XCTAssertTrue(renameAlert.waitForExistence(timeout: 8))
+        let renameField = renameAlert.textFields["Timer label"]
+        XCTAssertEqual(renameField.value as? String, "Kitchen QA")
+        renameField.tap()
+        let existingName = renameField.value as? String ?? ""
+        renameField.typeText(
+            String(repeating: XCUIKeyboardKey.delete.rawValue, count: existingName.count)
+                + "  Renamed QA  "
+        )
+        renameAlert.buttons["Save"].tap()
+
+        let renamedTimer = app.buttons[timerIdentifier]
+        XCTAssertTrue(renamedTimer.waitForExistence(timeout: 8))
+        XCTAssertEqual(renamedTimer.value as? String, "Renamed QA")
+        XCTAssertTrue(app.buttons["Pause"].exists)
+    }
+
+    @MainActor
     func testRecipeCanBeAddedDirectlyToMealPlan() {
         let app = launchSeededApp()
         defer {
@@ -500,7 +552,9 @@ final class RecipeUITests: XCTestCase {
         assertCookingStep("Step 2 of 3", in: app)
 
         app.terminate()
-        app.launchArguments.removeAll { $0 == "--uitesting-reset-cooking-sessions" }
+        app.launchArguments.removeAll {
+            $0 == "--uitesting-reset-cooking-sessions"
+        }
         app.launch()
         waitUntilReady(app.buttons["addRecipeButton"])
         openSamplePasta(in: app)
@@ -737,6 +791,67 @@ final class RecipeUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Subscription active"].waitForExistence(timeout: 8))
         XCTAssertEqual(session.allTransactions().count, 1)
+    }
+
+    @MainActor
+    func testFormalMonthlyAndAnnualPlansHaveNoTrialWithDefaultBuildConfiguration() throws {
+        let session = try makeStoreKitTestSession()
+        session.locale = Locale(identifier: "en_US")
+        session.storefront = "USA"
+        defer {
+            reset(session)
+        }
+
+        // These are local transactions using the formal IDs, not ASC Sandbox purchases.
+        for productID in [
+            "com.shopkivoo.recipe.pro.monthly",
+            "com.shopkivoo.recipe.pro.yearly",
+        ] {
+            session.clearTransactions()
+            let app = launchSeededApp()
+            openSubscription(in: app)
+
+            let monthly = app.buttons["subscription.plan.com.shopkivoo.recipe.pro.monthly"]
+            let annual = app.buttons["subscription.plan.com.shopkivoo.recipe.pro.yearly"]
+            XCTAssertTrue(monthly.waitForExistence(timeout: 8))
+            XCTAssertTrue(annual.waitForExistence(timeout: 8))
+            XCTAssertTrue(app.staticTexts["$4.99"].exists)
+            XCTAssertTrue(app.staticTexts["$39.99"].exists)
+            XCTAssertFalse(app.staticTexts["$5.99"].exists)
+            XCTAssertFalse(app.buttons["Start Free Trial"].exists)
+
+            let plan = app.buttons["subscription.plan.\(productID)"]
+            plan.tap()
+            let purchase = app.buttons["subscription.purchase"]
+            XCTAssertEqual(purchase.label, "Subscribe")
+            XCTAssertTrue(purchase.isEnabled)
+            attachScreenshot("Formal IDs, local StoreKit, no introductory offer", app: app)
+            purchase.tap()
+            XCTAssertTrue(app.staticTexts["Subscription active"].waitForExistence(timeout: 8))
+            XCTAssertEqual(session.allTransactions().count, 1)
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testFormalDefaultBuildPreservesLegacySubscriptionAndLifetimeEntitlements() async throws {
+        let session = try makeStoreKitTestSession()
+        defer {
+            reset(session)
+        }
+
+        for productID in [
+            "com.natefox.cookapp.pro.monthly",
+            "com.natefox.cookapp.lifetime",
+        ] {
+            session.clearTransactions()
+            _ = try await session.buyProduct(identifier: productID)
+            let app = launchSeededApp()
+            openSubscription(in: app)
+            XCTAssertTrue(app.staticTexts["Subscription active"].waitForExistence(timeout: 8))
+            XCTAssertFalse(app.buttons["subscription.purchase"].exists)
+            app.terminate()
+        }
     }
 
     @MainActor

@@ -122,3 +122,18 @@ func legacyRecipeStepDurationKeepsItsStepIDAsTimerID() throws {
     #expect(restored.timers[0].id == stepID)
     #expect(restored.timers[0].durationSeconds == 300)
 }
+
+@Test
+func roastChickenSampleStepIDsAreDeterministic() throws {
+    let firstRecipe = try #require(
+        SampleRecipes.recipes.first { $0.id == SampleRecipes.roastChickenID }
+    )
+    let secondRecipe = try #require(
+        SampleRecipes.recipes.first { $0.id == SampleRecipes.roastChickenID }
+    )
+    let firstStepIDs = firstRecipe.steps.map(\.id)
+
+    #expect(firstStepIDs.count == 8)
+    #expect(Set(firstStepIDs).count == firstStepIDs.count)
+    #expect(secondRecipe.steps.map(\.id) == firstStepIDs)
+}
