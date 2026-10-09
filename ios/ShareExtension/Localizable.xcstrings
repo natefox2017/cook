@@ -283,13 +283,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请向 私人菜谱分享公开的 HTTPS 链接、可读取文本、图片或 PDF。"
+            "value": "请向私人菜谱分享公开的 HTTPS 链接、可读取文本、图片或 PDF。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "請向 私人菜譜分享公開的 HTTPS 連結、可讀取文字、圖片或 PDF。"
+            "value": "請向私人菜譜分享公開的 HTTPS 連結、可讀取文字、圖片或 PDF。"
           }
         },
         "ja": {
