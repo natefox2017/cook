@@ -118,6 +118,11 @@ for the next signed real-device run. Its Run action selects
 Its test action retains Run argument/environment inheritance; the plan starts the host with
 `--uitesting` and selects only `RecipeSubscriptionStoreTests` in the existing
 hosted target. The normal `Recipe` scheme is unchanged for actual ASC testing.
+`SKTestSession` still initializes inside each testcase after host initialization;
+this change does not move it ahead of the host. The intended ordering is Xcode
+syncing the Run action's active fixture before launching the host, followed by
+the testcase resetting and controlling that environment. The ordering depends
+on actual Xcode/device synchronization and is not proven by scheme XML alone.
 
 ```sh
 xcodebuild -project ios/Recipe.xcodeproj -scheme RecipeStoreKit \
