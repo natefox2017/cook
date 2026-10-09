@@ -1105,6 +1105,59 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testManualLanguageAndCountrySelectionsPersistAcrossLaunches() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--uitesting",
+            "--uitesting-allow-language-preferences",
+        ]
+        app.launch()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        XCTAssertTrue(profile.waitForExistence(timeout: 8))
+        profile.tap()
+
+        let settings = app.buttons["Settings"]
+        waitUntilReady(settings)
+        settings.tap()
+
+        let language = app.buttons["settings.language"]
+        XCTAssertTrue(language.waitForExistence(timeout: 8))
+        language.tap()
+
+        let german = app.buttons["settings.language.de"]
+        XCTAssertTrue(german.waitForExistence(timeout: 8))
+        german.tap()
+        XCTAssertTrue(app.navigationBars["Sprache"].waitForExistence(timeout: 8))
+
+        let back = app.navigationBars["Sprache"].buttons.firstMatch
+        waitUntilReady(back)
+        back.tap()
+
+        let region = app.buttons["settings.region"]
+        XCTAssertTrue(region.waitForExistence(timeout: 8))
+        region.tap()
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 8))
+        search.tap()
+        search.typeText("GB")
+        let greatBritain = app.buttons["settings.region.GB"]
+        XCTAssertTrue(greatBritain.waitForExistence(timeout: 8))
+        greatBritain.tap()
+
+        app.terminate()
+        app.launch()
+
+        // A country selection must not change the UI language.
+        XCTAssertTrue(app.tabBars.buttons["Rezepte"].waitForExistence(timeout: 8))
+        let germanProfile = app.tabBars.buttons["Profil"]
+        XCTAssertTrue(germanProfile.waitForExistence(timeout: 8))
+        germanProfile.tap()
+        XCTAssertTrue(app.buttons["Einstellungen"].exists)
+    }
+
+    @MainActor
     func testSimplifiedChineseLocaleDisplaysLocalizedUI() {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--uitesting-locale", "zh-Hans"]
