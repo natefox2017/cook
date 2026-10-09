@@ -68,6 +68,39 @@ Exit：
 
 **兼容性：** 保留多 timer、绝对 deadline、步骤进度/食谱数据、现有四 Tab、免费路径与后端接口。声音遵守 iOS 通知/静音；语音只在 Cooking 前台显式授权监听；参数卡只转换可证明的量，不能猜重量/热量。多语言命令与说明对接 [#230](https://github.com/natefox2017/cook/issues/230)，测试阶段不改变默认英文策略。
 
+### Phase 4.2：可验证的 AI 食谱生成与修改（新增开发，非已完成）
+
+优先依据已上线 **ReciMe 一键导入 + Honeydew AI Edit** 的重复产品实践，而不是沿用旧试验性流程。详见 [AI 体验方案](PRODUCT/AI_RECIPE_EXPERIENCE_2026-10-09.md)。
+
+| 优先级 | Issue | 交付边界 |
+| --- | --- | --- |
+| P0 | [#238 对话式 AI 食谱草稿](https://github.com/natefox2017/cook/issues/238) | 导入后根据证据生成草稿，必要时仅追问缺项；同意后入私人库/人工继续编辑 |
+| P0 | [#241 食材智能替换与版本对比](https://github.com/natefox2017/cook/issues/241) | AI 提议修改、预览/应用/保存变体/撤销；无证据不得伪造含量 |
+| P1 | [#239 合法视频音频/字幕/关键帧](https://github.com/natefox2017/cook/issues/239) | 公开/授权来源分层提取，保留时间戳证据；登录墙/DRM 不绕过 |
+| P1 | [#240 一来源识别多道菜](https://github.com/natefox2017/cook/issues/240) | 只在多个候选有证据时展示选择，幂等拆分入库 |
+
+依赖：#239 遵循 #238 的 evidence 合同，#240 可先使用一页多道 JSON-LD 数据、稍后加入视频段落；#241 不必等待所有平台视频支持。**用户保存和用户确认的内容优先于 AI，完整导入不强制用户聊天。**
+
+### Phase 4.3：食谱详情专业化（新增开发，非已完成）
+
+对照已上线 Samsung Food / ReciMe / Paprika 的页面，而不是堆更多小字。详见 [详情对比审查](PRODUCT/RECIPE_DETAIL_COMPETITOR_AUDIT_2026-10-09.md)。
+
+- P0 [#247 补充可选元数据与兼容模型](https://github.com/natefox2017/cook/issues/247)：难度、菜系、标签、食材分组、厨具、步骤图片、可信营养等；缺失不猜。
+- P0 [#248 专业详情 UI 和功能入口](https://github.com/natefox2017/cook/issues/248)：第一屏重点信息、可读步骤、AI Edit、Share，保持 Cooking 固定 CTA。
+- 已规划 [#233 参数信息弹层](https://github.com/natefox2017/cook/issues/233)、[#231 计时音效](https://github.com/natefox2017/cook/issues/231)、[#232 语音控制](https://github.com/natefox2017/cook/issues/232) 原 Issue 继续；禁止重复另实现。
+
+### Phase 4.4：用户授权分享 → 精美图片 → 公开 Web → 邀请增长（新增开发，非社区）
+
+参考 [Samsung Food 以**链接/短信/邮件/社交**分享、无账号可读网页](https://support.samsungfood.com/hc/en-us/articles/18588679568532-How-to-Share-Your-Saved-Recipes-with-Anyone)，分享图片二维码为辅助入口。详见 [公开分享与归因决策](PRODUCT/RECIPE_PUBLIC_SHARING_V1.md)。
+
+1. P0 [#242 私人默认、授权发布、公开快照、撤回](https://github.com/natefox2017/cook/issues/242)：**必须先完成**，强制版权/图片授权边界。
+2. P0 [#243 无需安装的 Web 食谱详情、做菜步骤、App CTA](https://github.com/natefox2017/cook/issues/243)：依赖 #242，域名真实确认后加 Universal Links 和 Smart App Banner。
+3. P0 [#244 食谱长图、多尺寸模板、二维码、系统分享](https://github.com/natefox2017/cook/issues/244)：依赖 #242/243；iPhone 同屏收图时可点击链接，不强制扫描二维码。
+4. P1 [#245 首方事件和显式邀请码归因](https://github.com/natefox2017/cook/issues/245)：先测聚合访问/CTA，再由用户自愿绑定邀请人；App Store 转跳不保证逐人归因。
+5. P2 [#246 邀请奖励/反作弊](https://github.com/natefox2017/cook/issues/246)：**后续单独审批**成本、资格、Apple 规则后才能发奖励；扫码/安装点击不能直接算成功邀请。
+
+**优先交付的闭环**：用户从私有 Recipe Detail 明确发布 → URL 不登录可看授权步骤 → 分享长图/二维码 → 访客可选择下载；后续才做归因和奖励。默认不公开、不自动发送邮件、不创建 Feed/点赞/关注。上述均为规划任务，不代表代码或真机测试已经完成。
+
 ## Phase 5：购物与简单计划
 - shopping list
 - 安全数量合并
@@ -86,6 +119,5 @@ Exit：
 - Android
 - Mac/iPad 专门布局
 - 家庭协作
-- 公开分享
-- 社区/Feed
+- 默认公开的菜谱社区 / Feed（独立决定，当前未批准）
 - 推荐系统
