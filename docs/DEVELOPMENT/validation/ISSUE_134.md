@@ -27,7 +27,7 @@ used. CI configuration is unchanged.
 - `supabase/functions/health/auth_test.ts` is outside #134's documented
   import/worker suite selection and was not run. The opt-in worker live-network
   test remained ignored.
-- **#134 remains OPEN.** The listed local suites passed, but this is not hosted
+- **#134 is now CLOSED for its recorded isolated local-suite scope.** The listed local suites passed, but this is not hosted
   integration or production acceptance and does not cover the omitted legacy
   migration suites.
 

@@ -1,23 +1,22 @@
 # Secondary Page Coverage
 
-Updated: 2026-10-08
+Updated with 2026-10-09 source-of-truth correction. The implemented views below describe the **existing client**, not completed hosted integration or the newly planned AI/share features. Release evidence: #251.
 
 This document is the UI completeness checklist for the current codebase. Production services are intentionally allowed to remain unconfigured until the later production test pass.
 
 ## First launch
 
-- Welcome / value proposition — implemented.
-- First-use recipe saving guide — implemented and reusable from Profile.
-- Optional Premium plan step — implemented with App Store product data, Restore Purchases, legal links, and a visible Continue Free path.
-- Production follows the device locale; UI automation remains English and bypasses first launch.
+- Approved **AI-first three-image onboarding** exists: Create with AI → Save recipe links → Import social recipes (PR #226); this marketing screen **does not prove independent AI generation** exists (#238).
+- First-use guide remains separately accessible from Profile; optional Premium plan with StoreKit/Restore/Continue Free remains implemented.
+- **Current QA** normal app starts in English regardless of device locale; `--uitesting-locale` tests translations. Manual language/country and eventual device-language fallback are **OPEN #230**, not presently shipped.
 
 ## Profile / Settings
 
 - Profile overview — implemented.
 - Edit local profile — implemented.
 - Settings hub — implemented.
-- RecipePouch Account — implemented UI + Supabase Auth actions: sign in/sign up/forgot password/password recovery/Sign in with Apple/sign out; provider delivery still requires production verification.
-- Subscription — implemented UI + StoreKit 2 service: configured auto-renewable products, purchase, verified trial/active/grace/expired/revoked status, explicit restore and Apple management; real App Store products and Sandbox acceptance remain deferred.
+- Recipe Pals Account — implemented UI + Supabase Auth actions: sign in/sign up/forgot password/password recovery/Sign in with Apple/sign out; provider delivery still requires production verification.
+- Subscription — implemented UI + StoreKit 2 service: configured auto-renewable products, purchase, verified trial/active/grace/expired/revoked status, explicit restore and Apple management; formal monthly/annual product IDs are set in Xcode (#210), but actual ASC Sandbox purchase/restore remains OPEN #132.
 - Cloud Sync — implemented settings/status/mode page; production Supabase connection deferred.
 - Notifications — implemented.
 - Appearance — implemented.
