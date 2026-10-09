@@ -55,6 +55,24 @@ class LocalizationAuditTests(unittest.TestCase):
                 self.assertEqual(audit.run(strict=False), 0)
                 self.assertEqual(audit.run(strict=True), 1)
 
+    def test_extension_inherits_app_locales_when_plist_omits_languages(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            app = root / "app.plist"
+            extension = root / "extension.plist"
+            app.write_bytes(plistlib.dumps({"CFBundleLocalizations": ["en", "de"]}))
+            extension.write_bytes(plistlib.dumps({"CFBundleDisplayName": "Recipe Pals"}))
+            catalog = root / "strings.xcstrings"
+            catalog.write_text(json.dumps({
+                "sourceLanguage": "en",
+                "strings": {"Share recipe": {"localizations": {}}},
+            }), encoding="utf-8")
+            with (
+                patch.object(audit, "PLISTS", (app, extension)),
+                patch.object(audit, "CATALOGS", (("Share Extension", catalog),)),
+            ):
+                self.assertEqual(audit.run(strict=True), 1)
+
     def test_strict_accepts_a_fully_translated_catalog(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
