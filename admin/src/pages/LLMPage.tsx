@@ -29,6 +29,7 @@ import {
   YAxis,
 } from "recharts";
 import { adminApi, handleExpiredSession } from "../api";
+import { AdminSelect } from "../components/AdminSelect";
 import type { AdminRole, LLMProvider, LLMProviderInput, LLMUsage, LLMUsageRange } from "../types";
 import "./LLMPage.css";
 
@@ -295,12 +296,13 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
           <p className="muted">Configure OpenAI-compatible endpoints and monitor model usage.</p>
         </div>
         <div className="llm-heading-actions">
-          <label className="llm-range-select">
-            <span>Usage range</span>
-            <select className="admin-select" value={range} onChange={(event) => setRange(event.target.value as LLMUsageRange)}>
-              {ranges.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-          </label>
+          <AdminSelect
+            className="llm-range-select"
+            label="Usage range"
+            value={range}
+            onValueChange={(value) => setRange(value as LLMUsageRange)}
+            options={ranges}
+          />
           <button type="button" className="button button-outline" onClick={() => void load()} disabled={loading}>
             <RefreshCw size={15} aria-hidden="true" className={loading ? "llm-spin" : ""} /> Refresh
           </button>

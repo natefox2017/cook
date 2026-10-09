@@ -14,19 +14,8 @@
 .llm-heading .muted { font-size: 12px; }
 .llm-heading-actions { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 8px; }
 .llm-heading-actions .button { min-height: 36px; }
-.llm-range-select { display: grid; gap: 4px; color: var(--muted); font-size: 10px; font-weight: 600; }
-.llm-range-select select {
-  min-width: 110px;
-  height: 40px;
-  padding: 0 34px 0 10px;
-  color: #48524b;
-  border: 1px solid var(--border-strong);
-  border-radius: 7px;
-  background-color: #fff;
-  font-size: 11px;
-  outline: none;
-}
-.llm-range-select select:focus-visible,
+.llm-range-select { color: var(--muted); font-size: 10px; font-weight: 600; }
+.llm-range-select .admin-select-trigger { min-width: 126px; height: 36px; }
 .llm-field input:focus-visible { border-color: #72b887; outline: 3px solid #2284481a; outline-offset: 1px; }
 .llm-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 
@@ -134,7 +123,7 @@
   .llm-heading { align-items: flex-start; flex-direction: column; }
   .llm-heading-actions { width: 100%; flex-wrap: wrap; }
   .llm-range-select { flex: 1 1 130px; }
-  .llm-range-select select { width: 100%; }
+  .llm-range-select .admin-select-trigger { width: 100%; min-width: 0; }
   .llm-usage-grid { grid-template-columns: 1fr; }
   .llm-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

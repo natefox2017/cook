@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Search, X } from "lucide-react";
 import { adminApi, handleExpiredSession } from "../api";
+import { AdminSelect } from "../components/AdminSelect";
 import type { AdminUser, AdminUserDetail, AdminUserPage } from "../types";
 import "./UsersPage.css";
 
@@ -260,9 +261,13 @@ function Filter({ label, value, onChange, options }: {
   onChange: (value: string) => void;
   options: Array<[string, string]>;
 }) {
-  return <label className="users-filter"><span>{label}</span><select className="admin-select" aria-label={label} value={value} onChange={(event) => onChange(event.target.value)}>
-    {options.map(([option, text]) => <option key={option} value={option}>{text}</option>)}
-  </select></label>;
+  return <AdminSelect
+    className="users-filter"
+    label={label}
+    value={value}
+    onValueChange={onChange}
+    options={options.map(([option, text]) => ({ value: option, label: text }))}
+  />;
 }
 
 function UserDetails({ user }: { user: AdminUser | AdminUserDetail }) {
