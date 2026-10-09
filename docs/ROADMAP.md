@@ -54,6 +54,20 @@ Exit：
 - 计时器
 - 食材/步骤联动
 
+### Phase 4.1：下一步 Cooking 交互增强（待开发）
+
+这组任务来自已上线食谱产品中反复出现的使用做法，而非沿用项目以前堆出的开发顺序：**Paprika** 的料理计时器/音效/点击时间、**ReciMe** 的食材/温度点击详情、**Crouton / Tamarin** 的单步骤免手操作。详细竞品出处见 [REFERENCES.md](REFERENCES.md#cooking-体验下一阶段参考产品)。
+
+| 优先级 | 开发 Issue | 用户实际得到的能力 | 当前缺口 |
+| --- | --- | --- | --- |
+| P0 | [#231 Timer sounds](https://github.com/natefox2017/cook/issues/231) | 倒计时接近结束时短促提醒、到点明显提示音；前台与后台统一通知、不双响 | 现有 `TimerNotifications` 只在到点使用系统默认声音 |
+| P0 | [#233 Tap parameter details](https://github.com/natefox2017/cook/issues/233) | 点击食材查看当前份量，点击温度查看 °C/°F，点击时长查看/启动对应计时 | `RecipeDetailView` 的 instruction/temperature/timer 信息多为静态 Text/Label |
+| P1 | [#232 Hands-free voice controls](https://github.com/natefox2017/cook/issues/232) | Cooking Mode 内主动开麦后，`Next / Previous / Repeat` 语音切步骤/朗读步骤 | 只有触控按钮，没有语音识别及权限状态 |
+
+**交付边界与顺序：** #231 和 #233 可分支并行；#232 在设计音频生命周期时对齐 #231 的 AVAudioSession 策略。每项按 Issue 范围单独 PR、各自验收后合并，避免多名开发者同时重写 `CookingView.swift`。**以上目前仅建任务，未实现、未通过设备验收。**
+
+**兼容性：** 保留多 timer、绝对 deadline、步骤进度/食谱数据、现有四 Tab、免费路径与后端接口。声音遵守 iOS 通知/静音；语音只在 Cooking 前台显式授权监听；参数卡只转换可证明的量，不能猜重量/热量。多语言命令与说明对接 [#230](https://github.com/natefox2017/cook/issues/230)，测试阶段不改变默认英文策略。
+
 ## Phase 5：购物与简单计划
 - shopping list
 - 安全数量合并
