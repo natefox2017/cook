@@ -51,6 +51,16 @@ Bearer-only integrations; it does not claim that the sender enabled HMAC.
 Enable/rotate the provider signing configuration only in an approved window.
 See [RevenueCat's authorization and signature contract](https://www.revenuecat.com/docs/integrations/webhooks).
 
+Rechecked on 2026-10-09: the official documentation describes native, optional
+HMAC signing on a RevenueCat webhook integration. This implementation uses that
+provider contract: `t=<unix_timestamp>,v1=<hmac_sha256_hex>` over
+`<timestamp>.` followed by the unmodified request body bytes. It does not require
+a custom signing relay. RevenueCat documents fresh signatures on every retry;
+the five-minute tolerance applies to delivery time, not the event's age.
+Documentation support is not evidence that our actual dashboard integration
+has signing enabled. Setting the server signing secret while the sender remains
+unsigned makes **every otherwise valid delivery fail with 401**.
+
 Input is bounded at 64 KiB before JSON parsing. Malformed JSON/event shape and
 missing usable event IDs are rejected. Date overflow becomes unavailable date
 metadata instead of crashing. Unknown event types and TEST/ALIAS/TRANSFER keep
@@ -141,11 +151,19 @@ paying account, subscription or payment row was written.
 3. Deploy this complete module with the recorded frozen dependencies and
    `verify_jwt=false`. The coordinator's release manifest must include the
    migration prerequisite and module hashes. Provider credentials remain in
-   Supabase Secrets; never add their values to a release manifest.
+   Supabase Secrets; never add their values to a release manifest. Initially
+   leave `REVENUECAT_WEBHOOK_SIGNING_SECRET` unset to preserve Bearer-only direct
+   delivery unless signing is already verified on the actual integration.
 4. First validate an isolated staging endpoint with disposable identities and
    approved sandbox events. In production, use an explicitly approved test-event
-   scope; monitor response codes and duplicate/owner conflicts. HMAC requires
-   a separate provider/server signing-secret coordination step.
+   scope; monitor response codes and duplicate/owner conflicts. For a separate
+   approved HMAC cutover, verify the actual dashboard signing control and real
+   signed delivery on the isolated endpoint first. Enable provider signing,
+   then configure its exact signing secret on the server in the controlled
+   window, retaining Bearer authentication throughout. Once configured, missing
+   signatures must remain rejected rather than falling back to Bearer-only.
+   RevenueCat documents immediate invalidation of the old secret on rotation;
+   coordinate that switch and verify successful retries of failed deliveries.
 5. On handler regression, restore the previous reviewed function artifact and
    its configuration while **retaining the owner-binding migration**. The
    archived source helps recover the v3 implementation but is not a recoverable
