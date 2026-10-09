@@ -1,14 +1,16 @@
+> **Contract version/status clarification (2026-10-09):** This document dates to the original 2026-10-08 Auth/StoreKit sync flow and is retained for its identity and privacy rules, **not a current provider/ASC availability check**. The user-facing name is Recipe Pals. Formal monthly/yearly client IDs were configured in PR #210; actual StoreKit Sandbox is OPEN #132, Auth #131, Sync #133. Premium gating described below is **a proposal until the product policy is explicitly approved**, not a currently enforced quota. AI-powered editing, private-by-default public share and invite rewards are planned separately in #238–#248; do not derive access/paywall promises from this old proposal.
+
 # Account, Sync & Subscription Contract
 
 Updated: 2026-10-08
 
 ## Account model
 
-RecipePouch needs one application account identity for cloud data. Supported V1 sign-in:
+Recipe Pals needs one application account identity for cloud data. Supported V1 sign-in:
 - Sign in with Apple.
 - Email + password: sign up, sign in, forgot/reset password.
 
-Do not infer that an App Store purchase identity is the same thing as a RecipePouch account. ReciMe explicitly documents that subscription method and sign-in method can differ. A restore can recover an App Store entitlement but cannot recover recipes from the wrong RecipePouch account.
+Do not infer that an App Store purchase identity is the same thing as a Recipe Pals account. ReciMe explicitly documents that subscription method and sign-in method can differ. A restore can recover an App Store entitlement but cannot recover recipes from the wrong Recipe Pals account.
 
 ### Session states
 - signedOut
@@ -42,7 +44,7 @@ Required account actions:
 
 - The Supabase `cookapp` project is active. Production was verified to contain the owner-scoped `user_snapshots` table plus revision/CAS migrations through `20261008030120`.
 - Production has applied `20261008050000_restrict_user_snapshot_writes_to_rpc.sql`. Live metadata confirms RLS is enabled, `authenticated` has SELECT but no direct INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER, and `anon` has no SELECT; only `authenticated` can execute the owner-checked revision RPC. The production migration history contains two records with this same name, so resolve that duplicate history only if a future migration operation reports a conflict; do not rewrite production history speculatively.
-- The client persists the last successfully synchronized snapshot per account under Application Support and records which RecipePouch account the local library is linked to. Switching accounts never silently uploads another account's local library.
+- The client persists the last successfully synchronized snapshot per account under Application Support and records which Recipe Pals account the local library is linked to. Switching accounts never silently uploads another account's local library.
 - Reconnect/foreground refresh uses a three-way merge: last synchronized base + local + newest cloud snapshot. Remote-only and local-only changes merge automatically; true concurrent edits remain explicit conflicts.
 - Collection membership conflicts use both Collection and Recipe identifiers. Same normalized Collection names and same meal-plan slots are surfaced as resolvable domain conflicts rather than generic validation errors.
 - Automatic, Wi-Fi Only, and Manual modes update the live coordinator. Foregrounding or refreshing the same signed-in account checks for newer revisions.
@@ -133,7 +135,7 @@ Subscription:
 - restore with no matching purchase;
 - expired/revoked entitlement;
 - Manage Subscription;
-- RecipePouch account mismatch does not imply recipes were restored.
+- Recipe Pals account mismatch does not imply recipes were restored.
 
 Sync:
 - first upload;

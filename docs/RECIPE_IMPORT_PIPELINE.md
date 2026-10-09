@@ -1,3 +1,5 @@
+> **2026-10-09 source/status clarification:** The upper stages are the intended end-to-end design, **not a deployed ASR/video/AI promise**. Current worker source includes public JSON-LD/page text, owner-scoped UTF-8 artifact extraction and a **disabled-by-default** authorized OCR integration. The owner newly approved **planned** AI dialog/media/multidish #238–#240; controlled staging is #250 and final selected-scope release #251. Old canceled import #135/#138/#141 remain closed not_planned.
+
 # Recipe Import Pipeline
 
 ## 1. 目标
@@ -113,7 +115,7 @@ Worker 所有写入都必须允许安全重试。
 ## 9. 导入协议与部署边界（2026-10-08）
 
 - 协议参考 [API_CONTRACT.md](API_CONTRACT.md) / [import-v1.openapi.json](schemas/import-v1.openapi.json) / [import-v1.schema.json](schemas/import-v1.schema.json)。
-- Share Extension 写入本地可恢复 receipt 并返回宿主 App；不能把 `Saved to RecipePouch` 误认为 Supabase 已接受。App 后续转送，服务端确认后才更新 receipt 的 `acknowledged_job_id`。
+- Share Extension 写入本地可恢复 receipt 并返回宿主 App；不能把 `Saved to Recipe Pals` 误认为 Supabase 已接受。App 后续转送，服务端确认后才更新 receipt 的 `acknowledged_job_id`。
 - `received` 表示服务器持久化任务；`queued` 表示消息入队确认。worker 才进入 extracting/parsing/validating，成功后 job=completed，结果 recipe=ready 或 needs_review；两条状态轴不可混用。
 - 发生认证丢失、网络失败、队列未确认、重试或账户切换时，保留原始 receipt/source/evidence，不静默丢弃、不跨 owner 转移。
 - URL 输入保留用户提交的 `original_url`；只有实际解析到来源页面后才记录 `canonical_url`。网页正文或结构化数据分别标记 `article_body` / `webpage_structured_data`，字段引用其 evidence ID；裸文本输入保留原文，不能伪造网页 URL。
@@ -135,18 +137,18 @@ Worker 所有写入都必须允许安全重试。
 | --- | --- | --- |
 | 公开 HTTPS 食谱页 | 手动导入或分享 URL；本地和 worker 保留来源 URL，worker 读取安全可访问的结构化数据、正文和公开字幕证据 | 字段证据充分时可保存；缺失或不确定字段进入 `needs_review` |
 | 文字 | 手动粘贴或分享；本地/worker 只解析有明确标题、食材、步骤语义的文字 | 原文保留；不猜精确用量 |
-| 图片 | 手动添加可使用现有本地 Vision OCR；分享图片作为私有 artifact 上传并关联 job | 分享队列当前不运行 OCR/图像识别；保存原件并以 `needs_review` 等待补充 |
-| PDF/文字文件 | 手动添加可使用现有 PDFKit/UTF-8 文本读取；分享 PDF/文字文件作为私有 artifact 上传并关联 job | 分享队列不提取附件文字；保存原件并以 `needs_review` 等待补充 |
+| 图片 | 手动添加已有本地 Vision OCR；Share Controller 有图片接收路径，私有 artifact 由后端按 owner 处理，分享页 activation 目前主要声明 URL/text | Worker **含受配置门控的 OCR 源码**，默认未批准 provider 时不得外送图片；没有真实 provider/staging 验收不得声称成功识别 |
+| PDF/文字文件 | 手动添加已有 PDFKit/UTF-8 读取；分享附件需先经 host 接收/上传和 owner 校验 | Worker 已有 **UTF-8 text/plain 源码解析**；PDF/扫描件走已批准适用的能力或保留附件及 needs_review；当前不能把代码等同部署验收 |
 | 视频、音频、登录墙或需客户端渲染的页面 | 当前后台队列不下载媒体、不绕过访问控制 | 保留可用的来源信息并提示补充；不声称完成媒体解析 |
 
-分享附件的上传 intent 两小时失效，已确认 artifact 保留七天。附件 API 提供 owner-scoped 删除操作，但当前 App 没有单个附件的删除入口；到期清理函数需要由受信任的项目 scheduler 每日调用。
-- 本路径不做 ASR、OCR、模型补全、视频二进制抓取或平台登录。源码支持不证明线上 DNS/TLS/redirect 行为、VTT 来源可访问性或端到端 Share 交接。
+分享附件的上传 intent 两小时失效，artifact 合同保留七天。附件 API 提供 owner-scoped 删除操作，**RecipeDetailView 已有 Delete Original Attachment 入口**；生产清理调度和 Storage/权限实际有效性仍需独立验证。
+- **当前默认路径**不做授权视频下载/ASR/通用 AI 多轮补全，不绕过平台登录或 DRM；OCR 是默认禁用的可选代码路径，并非已验收外部服务。源码支持不证明线上 DNS/TLS/redirect、VTT、OCR 或端到端 Share 交接。新增合法媒体/AI 对话/多菜按 #238–#240 与 #250 实施。
 
 ## 12. 原始附件删除与保留边界
 
 - Recipe Detail 的来源区允许二次确认删除个人私有图片/文件原件；该操作与删除 Recipe 分离。API 只按 JWT 所属 owner 和 artifact UUID 定位私有对象，不接受客户端自选 Storage path。账户切换时不在新账户的本地库记录删除成功。
 - 删除成功将服务端 artifact 标记为 `expired`，新的签名下载请求不能再成功；原始 Job 与字段 evidence 仍保留，旧版本快照继续可读。客户端在 `RecipeImportRecord.sourceArtifactDeletedAt` 存储本地 tombstone，避免误展示已删除原件入口；未含此字段的旧快照默认为未删除。
-- 上传意向过期为 2 小时，可用附件有效期为 7 天；到期服务端清理 endpoint 每日由受信任的调度器调用一次，密钥使用 `RECIPE_IMPORT_ARTIFACT_CLEANUP_SECRET` 环境配置，不能提交至仓库。部署/真实 Storage 验证见 #141 / #135，代码合并不代表已在生产生效。
+- 上传意向过期为 2 小时，可用附件有效期为 7 天；到期服务端清理 endpoint 每日由受信任的调度器调用一次，密钥使用 `RECIPE_IMPORT_ARTIFACT_CLEANUP_SECRET` 环境配置，不能提交至仓库。旧部署/真实 Storage 验证票 #141 / #135 已关闭为 not_planned；**新批准功能**必须走 #250 受控 staging。代码合并不代表已在生产生效。
 
 ## 13. 可选的私有图片/扫描 PDF OCR（#117 阶段实现）
 
@@ -154,4 +156,4 @@ Worker 所有写入都必须允许安全重试。
 - 默认**禁用任何 OCR 外部发送**。只有项目持有人明确批准服务及个人数据处理后，才可在服务端配置 `RECIPE_IMPORT_OCR_APPROVED=true`、`RECIPE_IMPORT_OCR_PROVIDER_URL`、`RECIPE_IMPORT_OCR_APPROVED_HOST`、`RECIPE_IMPORT_OCR_API_KEY`。URL 必须为 HTTPS，主机与独立 allowlist 精确匹配，禁止重定向；禁止把 key 写入 iOS、Git、Issue 或日志。
 - OCR Provider 应接收 `application/octet-stream` 请求，附带 `X-OCR-Content-Type`、`X-OCR-Max-Pages` 和 `X-OCR-Max-Pixels-Per-Page` 边界，返回 JSON `{ "pages": [{ "page_number": 1, "text": "...", "confidence": 0.98, "pixel_count": 1500000 }] }`；配置的服务必须在解码前执行页数/像素/时间上限。生产启用前还必须确认服务的访问政策、数据保留、区域合规与成本。
 - 接入结果按 `ocr` evidence 记录页码、来源 artifact UUID、原文 excerpt 和 confidence；低于 0.85 的字段强制 review，含糊用量不填规范化数值。空文本、异常响应、配额不足、服务超时或未配置 Provider 均保留私有原件并进入 `needs_review`，不伪装为识别成功。
-- 仓库 mock fixture 只说明契约/安全边界；未运行真实 OCR 供应商、未部署 Edge/Storage/Queue，相关线上测试仍由 #135/#138/#141 承接。
+- 仓库 mock fixture 只说明契约/安全边界；未运行真实 OCR 供应商、未证明 Edge/Storage/Queue 部署；旧 #135/#138/#141 已关闭 not_planned，新批准功能按 #250 验证。

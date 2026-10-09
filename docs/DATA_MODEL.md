@@ -147,3 +147,15 @@ Collection 是用户自定义的平级食谱册。Favorites 仍由 Recipe.isFavo
 - v1 文件缺少这两个字段时按空数组读取，不伪造历史 membership。
 - 下一次成功保存或导出使用 v2。
 - 旧 `cook.collections` 仅迁移 Collection 名称；没有证据的 recipe membership 不推断。
+
+## Planned extensions (2026-10-09, **NOT YET FROZEN OR IMPLEMENTED**)
+
+The historical V1 field list above records the existing private/import domain. Do **not** retrofit production migrations or public Web by reading this proposal as deployed schema:
+
+- [#247 Recipe metadata](https://github.com/natefox2017/cook/issues/247): optional difficulty/cuisine/dietary tags, equipment, ingredient section IDs, yield, rights-qualified step media, preparation tips and **provenance-backed** nutrition. Maintain Codable/old snapshots and linked ingredient IDs; no inferred calorie/allergen guarantees.
+- [#238/#241 AI proposal](https://github.com/natefox2017/cook/issues/238): a separate owner-scoped source/job/AI-session and reviewed edit proposal contract; record `extracted`, `AI_suggested`, `user_confirmed`, source evidence and expected revision. Do not persist unapproved model output as verified original facts.
+- [#240 multiple candidates](https://github.com/natefox2017/cook/issues/240): one source may identify multiple Recipe candidates with distinct stable IDs and evidence spans. Avoid reusing source fingerprints as child IDs.
+- [#242 sharing](https://github.com/natefox2017/cook/issues/242): **new isolated public snapshot schema** for individually authorized, versioned, revocable and privacy-filtered recipe fields; public request never serializes the private `Recipe`/`user_snapshots` wholesale. No automatic public profile/feed.
+- [#245 invitations](https://github.com/natefox2017/cook/issues/245): retain first-party aggregate page/CTA events separately from an optional explicitly claimed invitation; no per-user installation inference from App Store clicks.
+
+The shared field changes must be frozen and backward-compatible before parallel UI/worker implementation. Controlled staging is [#250](https://github.com/natefox2017/cook/issues/250) and a user-selected release scope gets [#251](https://github.com/natefox2017/cook/issues/251) verification.

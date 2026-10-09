@@ -1,6 +1,6 @@
 # UI Design Approvals
 
-本表用于记录 UI 方向和决策，不构成开发门禁；当前任务中用户的明确指令优先。
+本表用于记录 UI 方向和决策，不构成开发门禁；当前任务中用户的明确指令优先。**审批状态 ≠ 功能是否已实现或真机是否验收。** 例如 UI-002/003 的旧设计图仍 PENDING，但对应 SwiftUI 页面已经存在；不得据 PENDING 重写页面。2026-10-09 新需求只确认了功能方向，详见下表 SCOPED（不虚报为最终视觉 APPROVED）。
 
 | ID | 页面/状态 | 设计资源 | 状态 | 备注 |
 |---|---|---|---|---|
@@ -31,8 +31,23 @@
 
 | UI-022 | Recipe Pals 登录页品牌与控件修正 | 已批准 AppIcon.png + RecipeTheme + 用户登录页截图 | APPROVED | 2026-10-09 用户明确要求直接修正 logo、标题、按钮及右上角关闭图标；使用锅形品牌图标、Recipe Pals 标题、Lora 与 #42A85A 邮箱主按钮，Apple/Google 使用白色胶囊控件并保留官方标识，关闭入口为灰色叉号；不改认证契约 |
 
+## 2026-10-09 新功能设计方向（SCOPED，尚无已验收定版视觉）
+
+| ID | 页面/状态 | 依据 | 状态 | 实现与验收边界 |
+| --- | --- | --- | --- | --- |
+| UI-023 | AI 识别链接与对话完善草稿 | [#238](https://github.com/natefox2017/cook/issues/238) + [AI 体验方案](PRODUCT/AI_RECIPE_EXPERIENCE_2026-10-09.md) | SCOPED | 自动完成优先，信息不足才追问，保留人工编辑；未实现 |
+| UI-024 | AI 替换食材与前后版本对比 | [#241](https://github.com/natefox2017/cook/issues/241) | SCOPED | 允许接受/拒绝/复制新菜谱；不能改写用户确认的原始事实 |
+| UI-025 | 多食谱候选选择 | [#240](https://github.com/natefox2017/cook/issues/240) | SCOPED | 只有多菜证据足够才显示，不侵入单菜快速流程 |
+| UI-026 | 食谱详情专业字段与信息层级 | [#247](https://github.com/natefox2017/cook/issues/247)、[#248](https://github.com/natefox2017/cook/issues/248)、已有 [#233](https://github.com/natefox2017/cook/issues/233) | SCOPED | 延伸既有 UI，新增可选字段/弹层，信息无证据则隐藏 |
+| UI-027 | 用户自主公开食谱入口 | [#242](https://github.com/natefox2017/cook/issues/242) | SCOPED | Private 默认、授权与撤回，不属于社区公开 Feed |
+| UI-028 | 匿名可读单食谱 Web 页和 App 下载 CTA | [#243](https://github.com/natefox2017/cook/issues/243) | SCOPED | 只有真实域名与可公开快照可用后才能上线 |
+| UI-029 | 长图海报、二维码与原生分享菜单 | [#244](https://github.com/natefox2017/cook/issues/244) | SCOPED | 图 + 可点击链接双入口，二维码不强制扫码 |
+| UI-030 | Cooking 倒计时音效与按需语音控制 | [#231](https://github.com/natefox2017/cook/issues/231)、[#232](https://github.com/natefox2017/cook/issues/232) | SCOPED | 不常驻麦克风；声音遵循系统策略；不抢占现有计时/操作 |
+
 ## 状态定义
 - PENDING：尚无明确 UI 决策记录
 - APPROVED：用户已明确同意或直接要求执行对应方向
 - REJECTED：需重做
 - SUPERSEDED：已被同名新设计替换
+
+- SCOPED：用户明确要求加入功能并允许规划开发，但尚无经过实机验收的新增页面设计；具体以关联 Issue/现有设计规范为准，不构成必须先画图才能开发的门禁。

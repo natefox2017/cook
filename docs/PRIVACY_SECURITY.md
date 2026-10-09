@@ -24,7 +24,7 @@
 - delete-on-account-delete
 - troubleshooting retention
 
-Recipe import 原始附件在上传未完成时保留最多 2 小时；确认上传后保留 7 天，到期由受 secret 保护的清理函数经 Storage API 删除对象并保留最小 `expired` 元数据。附件 API 提供 owner-scoped 删除操作，但当前 App 没有单个附件的删除入口；删除账户时会清理 `recipe-import-artifacts` bucket。图片/PDF 分享导入只保留私有原件并返回 `needs_review`，当前不做 OCR/ASR/视频解析，也不声称已解析附件。
+Recipe import 原始附件在上传未完成时保留最多 2 小时；确认上传后保留 7 天，到期由受 secret 保护的清理函数经 Storage API 删除对象并保留最小 `expired` 元数据。附件 API 提供 owner-scoped 删除操作，**目前 Recipe Detail 已有“Delete Original Attachment”原件删除入口**；删除账户时必须清理 `recipe-import-artifacts` bucket。图片/扫描 PDF 可能经**显式批准且默认禁用**的 OCR provider 处理，未经授权不能外送；未配置/未验收时仍需保留来源与 `needs_review`。视频音轨/关键帧解析仍是 #239 的计划能力，不能冒称上线。
 
 ## 3. 权限
 
@@ -57,3 +57,11 @@ URL 抓取必须：
 Recipe 保存的是用户个人整理后的食谱数据。
 必须保留 original source URL 与可取得的作者/平台信息，避免把第三方内容伪装成平台原创。
 不得默认重新公开发布第三方内容。
+
+## 7. 新增用户授权公开分享（**规划中，尚未部署**）
+
+- 原有私有 Recipe/notes/account/source artifacts **默认不公开**；用户必须明确选择单个 Recipe 的可公开字段范围和许可。新公开只读快照与私有 RLS 库隔离；撤销/删除后 URL、OG 预览、图片/CDN 必须停止公开。
+- 第三方未经授权食谱步骤/摄影不可自动全文重发；只在用户持有必要权利时公开，其他情况用授权范围内摘要与可信来源链接，不得 AI 伪造出处。见 [#242](https://github.com/natefox2017/cook/issues/242)、[#243](https://github.com/natefox2017/cook/issues/243)、[专门分享方案](PRODUCT/RECIPE_PUBLIC_SHARING_V1.md)。
+- 分享长图与二维码编码的目标必须是已获同意的 HTTPS 公共页面；同一设备可点击链接为首选，不强制扫码。Web 浏览不用登录，不因拒绝安装而隐藏用户已授权步骤。
+- 邀请统计只记录有保留期限的**聚合**访问/点击；实名邀请关系需要被邀请者**自愿确认**，不得从 IP、设备指纹或未授权 Apple 安装数据恢复身份。不自动群发营销邮件或发奖励；#245/**未来** #246 另行治理。
+- 公开站点、第三方 AI 处理、健康/营养数据及奖励激励上线前逐项完成地区隐私/版权、App Store 审查和 [#250 staging](https://github.com/natefox2017/cook/issues/250) / [#251 发布验收](https://github.com/natefox2017/cook/issues/251)，并更新用户隐私说明、删除/export 范围。
