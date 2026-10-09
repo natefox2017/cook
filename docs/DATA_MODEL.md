@@ -172,3 +172,9 @@ Editor UI exposes editable safe fields in a separate patch. Public sharing must
 not expose private step-image paths, notes or user data (#242). Step-image asset
 upload and trusted nutrition-provider workflows are **not provided by this
 schema-only implementation**; no public page or production database was changed.
+
+## Safe generated recipe edit proposals — source contract
+
+`RecipeEditProposal` and `RecipeEditOperation` are owner-preview data structures for planned #241. Proposals are **untrusted**, bound to a recipe ID and expected updatedAt revision; the whitelist permits changing ingredient name/explicit raw amount, step instruction, servings and summary only. They cannot alter original source, owner, privacy, timers, photos, or personal notes. Validation rejects stale changes, unknown IDs, empty names/steps and excessive payloads. `preview` produces an in-memory copy; `privateVariant` copies to a new private Recipe ID. No proposal is saved or applied until an explicit native UI confirmation is implemented.
+
+AI provider / account-scoped session, user review UI, undo and production tests remain unimplemented, under #238/#241/#250/#251. Do not imply this source-only contract is a deployed AI editor.
