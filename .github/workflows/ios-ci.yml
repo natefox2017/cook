@@ -32,11 +32,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          # GitHub may still be computing mergeability immediately after an event.
+          # Check conflict-free mergeability, not mergeStateStatus: the in-progress
+          # workflow itself can make mergeStateStatus UNSTABLE.
           for attempt in 1 2 3 4 5; do
-            pr="$(gh pr view "$PR_NUMBER" --json state,isDraft,headRefOid,reviewDecision,mergeStateStatus)"
-            merge_state="$(jq -r '.mergeStateStatus' <<<"$pr")"
-            if [ "$merge_state" != "UNKNOWN" ]; then
+            pr="$(gh pr view "$PR_NUMBER" --json state,isDraft,headRefOid,reviewDecision,mergeable)"
+            mergeability="$(jq -r '.mergeable' <<<"$pr")"
+            if [ "$mergeability" != "UNKNOWN" ]; then
               break
             fi
             sleep 3
@@ -77,8 +78,8 @@ jobs:
             exit 0
           fi
 
-          if [ "$merge_state" != "CLEAN" ]; then
-            echo "PR merge state is $merge_state, not CLEAN; skipping."
+          if [ "$mergeability" != "MERGEABLE" ]; then
+            echo "PR is $mergeability, not MERGEABLE; skipping."
             exit 0
           fi
 
