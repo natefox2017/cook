@@ -42,3 +42,10 @@ This is a targeted prevention of **known source regressions**, not a proof that 
 ## Completed-Draft automatic promotion smoke test
 
 This documentation update is deliberately proposed as a **completed Draft PR with the explicit author completion marker**. It is a bounded end-to-end test of the trusted GitHub Actions workflow introduced by #235; it does not change app/runtime code or require an iPhone. Acceptance is observable GitHub Events history containing a bot-initiated `ready_for_review`, then `merged` by `github-actions[bot]`, with the matching Actions run green and correct merge head SHA. A Draft remaining open means the workflow must be debugged, not reported as working.
+
+### Verified automation result (GitHub evidence, 2026-10-09 UTC)
+
+- [PR #236](https://github.com/natefox2017/cook/pull/236) was **created as Draft at 15:03:40** from the latest main with the explicit author-complete marker. No owner Ready or Merge click was performed.
+- GitHub Events records `ready_for_review` by `github-actions[bot]` **15:03:50**, then `merged` by the same bot **15:03:58**. Merge SHA `b0dbf1d844608ea8dce9820caa3fbdab4b1afce3`; verified against main and the PR head `19c58b71a3e62658d772cb4a8f317e1e4c8841c4`.
+- [Actions run #37948869300](https://github.com/natefox2017/cook/actions/runs/37948869300) reports all three meaningful steps successful: readiness promotion/review gates, trusted-source app naming/AI-first validation, and exact-head squash merge. Log outputs: `iOS app and Share Extension bundle names match Recipe Pals in all four locales.` and `Approved first-launch, Premium and changed iOS copy: PASS`.
+- This proves **one** completed-Draft promotion and merge under the new workflow, not every future PR, Xcode compilation or physical-device validation. Ordinary completed PRs have already auto-merged under the old workflow and are checked separately under the new one.
