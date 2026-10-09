@@ -383,7 +383,8 @@ public enum RecipeShareImportWorkflow {
             title: title
         )
         if receipt.inputType == .text,
-           ingredients.isEmpty || steps.isEmpty {
+            ingredients.isEmpty || steps.isEmpty
+        {
             let sourceRecipe = RecipeDocumentParser.recipe(
                 fromText: source,
                 title: title
