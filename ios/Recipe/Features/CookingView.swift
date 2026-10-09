@@ -209,6 +209,7 @@ struct CookingView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("Show temperature conversion")
+                    .accessibilityIdentifier("cookingStepTemperatureInfo")
                 }
 
                 stepIngredients(step, recipe: recipe)
@@ -334,6 +335,7 @@ struct CookingView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Show ingredient amount details")
+                        .accessibilityIdentifier("cookingIngredientInfo.\(ingredient.id.uuidString)")
                     }
                 }
             }
@@ -1394,6 +1396,7 @@ private struct CookingStepTimerPanel: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("Show timer details")
+                    .accessibilityIdentifier("cookingTimerInfo")
                     Spacer()
                     Text(durationText(timer.durationSeconds))
                         .font(RecipeTheme.text(12, relativeTo: .caption))
