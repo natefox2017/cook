@@ -16,19 +16,24 @@ select ok(to_regclass('public.payment_transactions_purchase_event_id_idx') is no
 select ok(to_regclass('public.store_integrations_secret_ref_idx') is not null,
   'store integrations secret reference has a covering index');
 
-select ok((select proconfig @> array['search_path=']::text[]
+select ok((select (proconfig @> array['search_path=']::text[] or
+      proconfig @> array['search_path=""']::text[])
     from pg_proc where oid='public.touch_subscription_plans_updated_at()'::regprocedure),
   'subscription plan trigger has an immutable lookup path');
-select ok((select proconfig @> array['search_path=']::text[]
+select ok((select (proconfig @> array['search_path=']::text[] or
+      proconfig @> array['search_path=""']::text[])
     from pg_proc where oid='public.touch_runtime_config_updated_at()'::regprocedure),
   'runtime config trigger has an immutable lookup path');
-select ok((select proconfig @> array['search_path=']::text[]
+select ok((select (proconfig @> array['search_path=']::text[] or
+      proconfig @> array['search_path=""']::text[])
     from pg_proc where oid='public.touch_payment_transactions_updated_at()'::regprocedure),
   'payment transaction trigger has an immutable lookup path');
-select ok((select proconfig @> array['search_path=']::text[]
+select ok((select (proconfig @> array['search_path=']::text[] or
+      proconfig @> array['search_path=""']::text[])
     from pg_proc where oid='public.map_commerce_store(text)'::regprocedure),
   'commerce store mapping has an immutable lookup path');
-select ok((select proconfig @> array['search_path=']::text[]
+select ok((select (proconfig @> array['search_path=']::text[] or
+      proconfig @> array['search_path=""']::text[])
     from pg_proc where oid='public.map_commerce_platform(text)'::regprocedure),
   'commerce platform mapping has an immutable lookup path');
 

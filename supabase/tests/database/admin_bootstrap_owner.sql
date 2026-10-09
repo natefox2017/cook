@@ -9,7 +9,7 @@ insert into public.admin_accounts (
 ) values (
     '11111111-1111-4111-8111-111111111111',
     'seed-admin',
-    public.crypt('SeedPassword123', 'fixture-salt'),
+    extensions.crypt('SeedPassword123', extensions.gen_salt('bf')),
     'admin',
     true,
     true
@@ -21,11 +21,12 @@ select is(
     'bootstrap status is uninitialized before seed conversion'
 );
 
-insert into public.admin_sessions (id, admin_id, token_hash)
+insert into public.admin_sessions (id, admin_id, token_hash, expires_at)
 values (
     '22222222-2222-4222-8222-222222222222',
     '11111111-1111-4111-8111-111111111111',
-    'fixture-token-hash'
+    'fixture-token-hash',
+    '2099-01-01 00:00:00+00'::timestamptz
 );
 
 select lives_ok(
