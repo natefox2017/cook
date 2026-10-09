@@ -222,7 +222,7 @@ struct GettingStartedGuideContent: View {
             VStack(spacing: 0) {
                 guideStep(
                     1, icon: "square.and.arrow.up",
-                    title: "Share to RecipePouch",
+                    title: "Share to Recipe Pals",
                     detail: "Share a recipe from another app."
                 )
                 Divider().padding(.leading, 56)

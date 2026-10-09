@@ -61,9 +61,9 @@ public enum RecipeShareInboxError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .appGroupUnavailable:
-            RecipeLanguage.localized("RecipePouch's shared storage is not available. Check App Group signing.")
+            RecipeLanguage.localized("Recipe Pals’ shared storage is not available. Check App Group signing.")
         case .invalidInput:
-            RecipeLanguage.localized("Share a public HTTPS link, readable text, image, or PDF to RecipePouch.")
+            RecipeLanguage.localized("Share a public HTTPS link, readable text, image, or PDF to Recipe Pals.")
         case .sourceMissing:
             RecipeLanguage.localized("The original shared source is missing. Share it again.")
         }

@@ -525,7 +525,7 @@ struct AccountView: View {
             return (
                 String(
                     localized: LocalizedStringResource(
-                        "Check \(address) to verify your account, then return to RecipePouch.",
+                        "Check \(address) to verify your account, then return to Recipe Pals.",
                         locale: RecipeLanguage.active)),
                 false
             )

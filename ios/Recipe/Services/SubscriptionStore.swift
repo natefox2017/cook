@@ -172,11 +172,11 @@ final class SubscriptionStore {
             try await AppStore.sync()
             await refreshEntitlements()
             if state.hasEntitlement {
-                message = RecipeLanguage.localized("Your active RecipePouch subscription has been restored.")
+                message = RecipeLanguage.localized("Your active Recipe Pals subscription has been restored.")
             } else if case .unavailable(let reason) = state {
                 message = reason
             } else {
-                message = RecipeLanguage.localized("No active RecipePouch subscription was found for this App Store account.")
+                message = RecipeLanguage.localized("No active Recipe Pals subscription was found for this App Store account.")
             }
         } catch {
             message = error.localizedDescription

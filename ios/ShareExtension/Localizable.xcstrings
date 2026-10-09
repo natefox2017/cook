@@ -254,48 +254,48 @@
         }
       }
     },
-    "RecipePouch's shared storage is not available. Check App Group signing.": {
+    "Recipe Pals’ shared storage is not available. Check App Group signing.": {
       "comment": "Shared storage errors resolved from RecipeCore.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 无法访问共享存储，请检查 App Group 签名配置。"
+            "value": "私人菜谱无法访问共享存储，请检查 App Group 签名配置。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 無法存取共享儲存空間，請檢查 App Group 簽署設定。"
+            "value": "私人菜譜無法存取共享儲存空間，請檢查 App Group 簽署設定。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch の共有ストレージにアクセスできません。App Group の署名設定を確認してください。"
+            "value": "Recipe Pals の共有ストレージにアクセスできません。App Group の署名設定を確認してください。"
           }
         }
       }
     },
-    "Share a public HTTPS link, readable text, image, or PDF to RecipePouch.": {
+    "Share a public HTTPS link, readable text, image, or PDF to Recipe Pals.": {
       "comment": "Shared storage errors resolved from RecipeCore.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请向 RecipePouch 分享公开的 HTTPS 链接、可读取文本、图片或 PDF。"
+            "value": "请向私人菜谱分享公开的 HTTPS 链接、可读取文本、图片或 PDF。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "請向 RecipePouch 分享公開的 HTTPS 連結、可讀取文字、圖片或 PDF。"
+            "value": "請向私人菜譜分享公開的 HTTPS 連結、可讀取文字、圖片或 PDF。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "公開 HTTPS リンク、読み取り可能なテキスト、画像、PDF を RecipePouch に共有してください。"
+            "value": "公開 HTTPS リンク、読み取り可能なテキスト、画像、PDF を Recipe Pals に共有してください。"
           }
         }
       }

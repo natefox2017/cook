@@ -475,7 +475,7 @@ private struct RecipeRootView: View {
                         title: "Your saved library needs attention",
                         message:
                             RecipeLanguage.localized(
-                                "RecipePouch couldn't read your saved library. The file has been left unchanged."
+                                "Recipe Pals couldn't read your saved library. The file has been left unchanged."
                             ) + "\n\n" + message,
                         systemImage: "externaldrive.badge.exclamationmark",
                         actionTitle: "Try again",
@@ -485,7 +485,7 @@ private struct RecipeRootView: View {
                         messageLineLimit: nil
                     )
                     .padding()
-                    .navigationTitle("RecipePouch")
+                    .navigationTitle("Recipe Pals")
                     .background(RecipeTheme.canvas)
                 }
             } else if !hasCompletedOnboarding && !bypassOnboarding {
@@ -656,7 +656,7 @@ private struct FirstLaunchGateView: View {
         Group {
             switch decision {
             case .checking:
-                ProgressView("Preparing RecipePouch…")
+                ProgressView("Preparing Recipe Pals…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(RecipeTheme.canvas)
                     .task {

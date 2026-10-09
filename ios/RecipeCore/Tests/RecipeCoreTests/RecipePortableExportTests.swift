@@ -96,7 +96,7 @@ import Testing
     let html = try #require(String(data: data, encoding: .utf8))
 
     #expect(html.contains("No saved recipes in this export."))
-    #expect(html.contains("RecipePouch Recipes"))
+    #expect(html.contains("Recipe Pals Recipes"))
     #expect(!html.contains("<article"))
 }
 

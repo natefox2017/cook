@@ -710,7 +710,7 @@ final class RecipeUITests: XCTestCase {
         XCTAssertTrue(confirm.waitForExistence(timeout: 5), app.debugDescription)
         confirm.tap()
         XCTAssertTrue(
-            app.staticTexts["Local RecipePouch data deleted."].waitForExistence(timeout: 8),
+            app.staticTexts["Local Recipe Pals data deleted."].waitForExistence(timeout: 8),
             app.debugDescription
         )
         app.terminate()
@@ -782,11 +782,11 @@ final class RecipeUITests: XCTestCase {
         let delete = app.buttons["profile.delete-data"]
         reveal(delete, in: app, maximumSwipes: 5)
         delete.tap()
-        let confirm = app.buttons["Delete All RecipePouch Data"]
+        let confirm = app.buttons["Delete All Recipe Pals Data"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 5), app.debugDescription)
         confirm.tap()
         XCTAssertTrue(
-            app.staticTexts["Local RecipePouch data deleted."].waitForExistence(timeout: 8),
+            app.staticTexts["Local Recipe Pals data deleted."].waitForExistence(timeout: 8),
             app.debugDescription
         )
     }
@@ -903,7 +903,7 @@ final class RecipeUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["用 AI 创作"].waitForExistence(timeout: 8))
         waitUntilReady(app.buttons["onboarding.skip"])
         app.buttons["onboarding.skip"].tap()
-        XCTAssertTrue(app.staticTexts["Recipe Pals 高级版"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["私人菜谱高级版"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["onboarding.purchase"].waitForExistence(timeout: 8))
         attachScreenshot("Product Design subscription - Chinese layout smoke", app: app)
     }
@@ -978,7 +978,7 @@ final class RecipeUITests: XCTestCase {
         XCTAssertTrue(restoreMessage.waitForExistence(timeout: 8))
         XCTAssertTrue(
             restoreMessage.staticTexts[
-                "No active RecipePouch subscription was found for this App Store account."
+                "No active Recipe Pals subscription was found for this App Store account."
             ].exists
         )
         restoreMessage.buttons["OK"].tap()
@@ -1084,7 +1084,7 @@ final class RecipeUITests: XCTestCase {
         XCTAssertTrue(restoreMessage.waitForExistence(timeout: 8))
         XCTAssertFalse(
             restoreMessage.staticTexts[
-                "No active RecipePouch subscription was found for this App Store account."
+                "No active Recipe Pals subscription was found for this App Store account."
             ].exists
         )
         restoreMessage.buttons["OK"].tap()
@@ -1139,7 +1139,7 @@ final class RecipeUITests: XCTestCase {
         )
         XCTAssertFalse(
             restoreMessage.staticTexts[
-                "No active RecipePouch subscription was found for this App Store account."
+                "No active Recipe Pals subscription was found for this App Store account."
             ].exists
         )
     }

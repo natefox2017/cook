@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Presents the RecipePouch settings hub and local preference screens.
+// Purpose: Presents the Recipe Pals settings hub and local preference screens.
 
 import RecipeCore
 import SwiftUI
@@ -75,7 +75,7 @@ struct SettingsHubView: View {
                 NavigationLink {
                     AboutSettingsView()
                 } label: {
-                    SettingsRow("About RecipePouch", "info.circle")
+                    SettingsRow("About Recipe Pals", "info.circle")
                 }
             }
         }
@@ -165,7 +165,7 @@ struct CloudSyncSettingsView: View {
                 Text(
                     String(
                         localized: LocalizedStringResource(
-                            "Choose how to connect this iPhone’s local library to your RecipePouch account.",
+                            "Choose how to connect this iPhone’s local library to your Recipe Pals account.",
                             locale: RecipeLanguage.active)))
 
                 LabeledContent(

@@ -8,11 +8,11 @@ import Testing
 
 @Test
 func fileExportSuccessRequiresPickerCompletion() {
-    let selectedURL = URL(fileURLWithPath: "/tmp/RecipePouch-Recipes.json")
+    let selectedURL = URL(fileURLWithPath: "/tmp/RecipePals-Recipes.json")
 
     #expect(
         RecipeFileExportResult(.success(selectedURL))
-            == .saved(filename: "RecipePouch-Recipes.json")
+            == .saved(filename: "RecipePals-Recipes.json")
     )
 }
 
