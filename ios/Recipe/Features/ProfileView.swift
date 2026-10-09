@@ -445,6 +445,8 @@ struct NotificationPreferencesView: View {
     @State private var authorization: UNAuthorizationStatus = .notDetermined
     @State private var hasLoaded = false
     @State private var requestsPermission = false
+    @AppStorage("recipe.timer.warningLeadSeconds") private var warningLeadSeconds = 30
+    @AppStorage("recipe.timer.finishSound") private var completionSoundEnabled = true
     @State private var errorMessage: String?
 
     private var isAuthorized: Bool {
@@ -494,6 +496,12 @@ struct NotificationPreferencesView: View {
                             get: { store.settings.timerNotifications },
                             set: { value in setTimerReminders(value) }
                         ))
+                    Picker("Early warning", selection: $warningLeadSeconds) {
+                        Text("Off").tag(0)
+                        Text("30 seconds").tag(30)
+                        Text("1 minute").tag(60)
+                    }
+                    Toggle("Play completion sound", isOn: $completionSoundEnabled)
                 } else if authorization == .notDetermined {
                     Button("Allow Timer Reminders") {
                         Task { await requestPermission() }
@@ -515,6 +523,8 @@ struct NotificationPreferencesView: View {
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .tint(RecipeTheme.accent)
         .task { await refreshPermission() }
+        .onChange(of: warningLeadSeconds) { _, _ in refreshScheduledSounds() }
+        .onChange(of: completionSoundEnabled) { _, _ in refreshScheduledSounds() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await refreshPermission() } }
         }
@@ -555,6 +565,15 @@ struct NotificationPreferencesView: View {
             if isAuthorized { setTimerReminders(true) }
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    private func refreshScheduledSounds() {
+        guard isAuthorized && store.settings.timerNotifications else { return }
+        Task {
+            await TimerNotifications.refreshScheduledPreferences(
+                warningSeconds: warningLeadSeconds,
+                completionSoundEnabled: completionSoundEnabled)
         }
     }
 
