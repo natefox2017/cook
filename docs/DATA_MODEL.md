@@ -159,3 +159,16 @@ The historical V1 field list above records the existing private/import domain. D
 - [#245 invitations](https://github.com/natefox2017/cook/issues/245): retain first-party aggregate page/CTA events separately from an optional explicitly claimed invitation; no per-user installation inference from App Store clicks.
 
 The shared field changes must be frozen and backward-compatible before parallel UI/worker implementation. Controlled staging is [#250](https://github.com/natefox2017/cook/issues/250) and a user-selected release scope gets [#251](https://github.com/natefox2017/cook/issues/251) verification.
+
+## Nullable recipe metadata (2026-10-10, code introduced by #247)
+
+The Recipe model gains optional difficulty, cuisine, dietary tags, equipment,
+ingredient sections by stable ingredient IDs, private step image references,
+preparation tips, storage notes, yield description, author credit and attributed
+per-serving nutrition. Nil defaults are backward-compatible with existing JSON
+and owner-scoped sync snapshots. Unknown nutrient numbers are absent, not zero.
+
+Editor UI exposes editable safe fields in a separate patch. Public sharing must
+not expose private step-image paths, notes or user data (#242). Step-image asset
+upload and trusted nutrition-provider workflows are **not provided by this
+schema-only implementation**; no public page or production database was changed.

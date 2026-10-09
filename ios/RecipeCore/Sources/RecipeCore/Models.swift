@@ -35,6 +35,70 @@ public enum AppAppearance: String, Codable, CaseIterable, Identifiable, Sendable
     public var id: String { rawValue }
 }
 
+
+public enum RecipeDifficulty: String, Codable, CaseIterable, Identifiable, Sendable {
+    case easy = "Easy"
+    case medium = "Medium"
+    case hard = "Hard"
+    public var id: String { rawValue }
+}
+
+/// Section IDs refer to original ingredients instead of duplicating quantities.
+public struct RecipeIngredientSection: Codable, Hashable, Identifiable, Sendable {
+    public var id: UUID
+    public var title: String
+    public var ingredientIDs: [UUID]
+
+    public init(id: UUID = UUID(), title: String, ingredientIDs: [UUID]) {
+        self.id = id
+        self.title = title
+        self.ingredientIDs = ingredientIDs
+    }
+}
+
+/// Private owner-scoped image metadata; never publicly expose storage paths.
+public struct RecipeStepImageReference: Codable, Hashable, Identifiable, Sendable {
+    public var id: UUID
+    public var stepID: UUID
+    public var privateAssetPath: String
+    public var credit: String?
+    public var license: String?
+
+    public init(
+        id: UUID = UUID(), stepID: UUID, privateAssetPath: String,
+        credit: String? = nil, license: String? = nil
+    ) {
+        self.id = id
+        self.stepID = stepID
+        self.privateAssetPath = privateAssetPath
+        self.credit = credit
+        self.license = license
+    }
+}
+
+/// Nullable verified values per serving; an absent nutrient is not zero.
+public struct RecipeNutrition: Codable, Hashable, Sendable {
+    public var caloriesKcal: Decimal?
+    public var proteinGrams: Decimal?
+    public var carbohydratesGrams: Decimal?
+    public var fatGrams: Decimal?
+    public var perServings: Int?
+    public var source: String
+
+    public init(
+        caloriesKcal: Decimal? = nil, proteinGrams: Decimal? = nil,
+        carbohydratesGrams: Decimal? = nil, fatGrams: Decimal? = nil,
+        perServings: Int? = nil, source: String
+    ) {
+        self.caloriesKcal = caloriesKcal
+        self.proteinGrams = proteinGrams
+        self.carbohydratesGrams = carbohydratesGrams
+        self.fatGrams = fatGrams
+        self.perServings = perServings
+        self.source = source
+    }
+}
+
 public struct Recipe: Identifiable, Codable, Hashable, Sendable {
     public var id: UUID
     public var title: String
@@ -53,6 +117,18 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
     public var coverAsset: String?
     public var isFavorite: Bool
     public var notes: String
+    // Optional additions retain synthesized Codable compatibility with older recipes.
+    public var difficulty: RecipeDifficulty?
+    public var cuisine: String?
+    public var dietaryTags: [String]?
+    public var equipment: [String]?
+    public var ingredientSections: [RecipeIngredientSection]?
+    public var stepImages: [RecipeStepImageReference]?
+    public var preparationTips: String?
+    public var storageNotes: String?
+    public var yieldDescription: String?
+    public var authorCredit: String?
+    public var nutrition: RecipeNutrition?
     public var createdAt: Date
     public var updatedAt: Date
 
@@ -65,6 +141,13 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
         importRecord: RecipeImportRecord? = nil,
         coverData: Data? = nil, coverAsset: String? = nil,
         isFavorite: Bool = false, notes: String = "",
+        difficulty: RecipeDifficulty? = nil, cuisine: String? = nil,
+        dietaryTags: [String]? = nil, equipment: [String]? = nil,
+        ingredientSections: [RecipeIngredientSection]? = nil,
+        stepImages: [RecipeStepImageReference]? = nil,
+        preparationTips: String? = nil, storageNotes: String? = nil,
+        yieldDescription: String? = nil, authorCredit: String? = nil,
+        nutrition: RecipeNutrition? = nil,
         createdAt: Date = .now, updatedAt: Date = .now
     ) {
         self.id = id
@@ -84,6 +167,17 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
         self.coverAsset = coverAsset
         self.isFavorite = isFavorite
         self.notes = notes
+        self.difficulty = difficulty
+        self.cuisine = cuisine
+        self.dietaryTags = dietaryTags
+        self.equipment = equipment
+        self.ingredientSections = ingredientSections
+        self.stepImages = stepImages
+        self.preparationTips = preparationTips
+        self.storageNotes = storageNotes
+        self.yieldDescription = yieldDescription
+        self.authorCredit = authorCredit
+        self.nutrition = nutrition
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

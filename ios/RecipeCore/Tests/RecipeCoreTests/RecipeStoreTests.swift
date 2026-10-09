@@ -866,3 +866,39 @@ func localOnlyClearDoesNotCreateCloudDeletionTombstones() throws {
     #expect(!restarted.hasUserData)
     #expect(try restarted.exportCloudSnapshot().deletedEntities?.isEmpty == true)
 }
+
+@Test
+func optionalMetadataSurvivesLegacyAndNewRecipeRoundTrips() throws {
+    let step = RecipeStep(instruction: "Bake for 15 minutes.")
+    let ingredient = RecipeIngredient.from(name: "Flour", amountText: "100 g")
+    var recipe = Recipe(
+        title: "Loaf", ingredients: [ingredient], steps: [step],
+        sourceURL: "https://example.com/loaf"
+    )
+    let oldData = try JSONEncoder().encode(recipe)
+    let restored = try JSONDecoder().decode(Recipe.self, from: oldData)
+    #expect(restored == recipe)
+    #expect(restored.nutrition == nil)
+    #expect(restored.ingredientSections == nil)
+    #expect(restored.difficulty == nil)
+
+    recipe.difficulty = .medium
+    recipe.cuisine = "French"
+    recipe.dietaryTags = ["Vegetarian"]
+    recipe.equipment = ["Oven"]
+    recipe.ingredientSections = [
+        RecipeIngredientSection(title: "Dough", ingredientIDs: [ingredient.id])
+    ]
+    recipe.stepImages = [
+        RecipeStepImageReference(
+            stepID: step.id, privateAssetPath: "private/recipe/test.jpg",
+            credit: "Recipe owner", license: "Original")
+    ]
+    recipe.nutrition = RecipeNutrition(
+        caloriesKcal: 240, proteinGrams: 7, perServings: 1, source: "Owner calculation")
+    let changed = try JSONDecoder().decode(Recipe.self, from: JSONEncoder().encode(recipe))
+    #expect(changed == recipe)
+    #expect(changed.stepImages?.first?.privateAssetPath == "private/recipe/test.jpg")
+    #expect(changed.nutrition?.caloriesKcal == Decimal(240))
+    #expect(changed.ingredientSections?.first?.ingredientIDs == [ingredient.id])
+}
