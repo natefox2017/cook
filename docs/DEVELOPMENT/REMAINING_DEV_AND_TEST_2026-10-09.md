@@ -4,7 +4,7 @@
 
 ## Accounting rules
 
-- The authoritative backlog is the **seven open Issues** below. At the audit snapshot there are **zero open PRs**. Closed import/Share delivery Issues must **not** be reopened or treated as a release blocker without a new user decision.
+- **Historical test snapshot:** The seven Issues in the table below were the audit's unresolved verification scope, **not a live count of open GitHub Issues**. At that audit snapshot there were zero open PRs. The live source of truth for newly requested development is GitHub Issues plus [ROADMAP.md](../ROADMAP.md). Closed import/Share delivery Issues must **not** be reopened or treated as release blockers without a new user decision.
 - **CODE MERGED** means the relevant implementation exists on `main`. A source file, a passing compile, a minimal GitHub merge check, or a mock/fixture test never means the physical-device or hosted acceptance passed.
 - Reuse recorded PASS evidence only for its exact commit/environment/scope. Do not repeat passed tests without a relevant code/config change. Missing evidence stays NOT RUN, PARTIAL or BLOCKED; keep the TEST Issue open.
 - The current acceptance scope uses the user's **existing iPhone**, normal text size and isolated QA data. No second device, simulator substitute, production synthetic payment/delete, secret disclosure or unapproved backend configuration change.
@@ -18,6 +18,18 @@
 | [#137 Performance](https://github.com/natefox2017/cook/issues/137) | Deterministic 100/1000/5000 fixture and signposts, four hosted fixture checks; CLI p50/p95 and single 5k Instruments startup observation recorded | See [remaining capture plan](../performance/ISSUE_137.md): interactive search/save/favorite/grocery/collections/100-scroll, offline launch, full cold start, Memory Graph/peak RSS and comparable p50/p95 |
 | [#155 Supabase Edge](https://github.com/natefox2017/cook/issues/155) | Seven target function sources/version provenance, local Edge/PostgREST/database tests and approved SQL/function deployment recorded in issue | Supabase/RevenueCat webhook secret **configuration by authorized owner**, controlled hosted identities/roles and replay, actual StoreKit→RevenueCat events, final source→build→deployed artifact index. No production mutation authorized by this audit |
 | [#189 UI Runner](https://github.com/natefox2017/cook/issues/189) | Xcode target linkage resolved; separate hosted suites 4/4 and 4/4 recorded; existing app UI test `testComplexCookingStepShowsIngredientsAndMultipleTimers` exists | New evidence-driven Runner→IDE proxy/config Code 74 diagnosis; only after a changed precondition, actual UI Runner test execution on the current iPhone. Hosted results do **not** imply UI Runner PASS |
+
+## New user-requested development after the snapshot (not yet implemented)
+
+On 2026-10-09 the user requested new cooking interaction work. These are **new development deliverables**, not previously failed tests and not a reason to reopen completed #47. Detailed product evidence is in [REFERENCES.md](../REFERENCES.md#cooking-体验下一阶段参考产品).
+
+| New issue | Scope and dependency | Actual status |
+| --- | --- | --- |
+| [#231](https://github.com/natefox2017/cook/issues/231) | P0. Near-end + completion sound cues, per-timer scheduling and cancellation, foreground/background settings; base timer core already merged under #47. | OPEN · scoped only; code/device acceptance not run |
+| [#233](https://github.com/natefox2017/cook/issues/233) | P0. Click ingredient quantity, temperature and duration for native contextual sheets and safe conversions in Recipe Detail/Cooking. | OPEN · scoped only; code/device acceptance not run |
+| [#232](https://github.com/natefox2017/cook/issues/232) | P1. Opt-in Cooking Mode voice Next/Previous/Repeat, privacy and permission handling; coordinate audio with #231. | OPEN · scoped only; code/device acceptance not run |
+
+Localization expansion and manual language/country selection are separately tracked under [#230](https://github.com/natefox2017/cook/issues/230). Do not merge a feature PR merely because the lightweight merge workflow is green; require the specific functional checks and device evidence in each Issue. Do not duplicate the already-recorded basic Cooking acceptance in #136.
 
 ## Coverage inventory and exact follow-up
 
