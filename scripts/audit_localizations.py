@@ -28,7 +28,7 @@ PLISTS = (
     ROOT / "ios/ShareExtension/Info.plist",
 )
 # Literal placeholders must be preserved in localized text, including plural forms.
-PLACEHOLDER = re.compile(r"%(?:\\d+\\$)?(?:lld|llu|ld|lu|d|u|@|s|f|g)")
+PLACEHOLDER = re.compile(r"%(?:\d+\$)?(?:lld|llu|ld|lu|d|u|@|s|f|g)")
 
 
 def placeholders(text: str) -> list[str]:
@@ -63,7 +63,7 @@ def run(strict: bool) -> int:
         strings = catalog["strings"]
         locales = languages_by_target[0 if label.startswith("Recipe") else 1]
         source = catalog["sourceLanguage"]
-        print(f"\\n{label}: {len(strings)} entries")
+        print(f"\n{label}: {len(strings)} entries")
         for language in sorted(locales):
             if language == source:
                 print(f"  {language}: source language (complete by key fallback)")
