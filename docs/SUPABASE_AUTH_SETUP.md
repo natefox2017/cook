@@ -36,6 +36,10 @@ its Xcode target, ensure the provisioning profile carries that capability, and
 configure the corresponding Apple provider in Supabase Auth. Keep any Apple
 private key and provider secrets in provider configuration; never add them to
 the app.
+For this native-only ID-token flow, Supabase Apple Client IDs must include
+`com.shopkivoo.recipe`. A Services ID, `.p8` and client secret are required only
+for a separate web OAuth flow, not the current native action. See the
+[native Swift configuration](https://supabase.com/docs/guides/auth/social-login/auth-apple#configuration-swift-native).
 The native account screen is wired to the Auth service. A visible Apple button
 does not mean the provider is enabled; the live project state below currently
 blocks Apple sign-in.
@@ -88,16 +92,21 @@ This follows:
 
 ## Live provider check
 
-Checked 2026-10-08 against project `cookapp` (`semsjyrqjnumpvanibip`): the
+Checked 2026-10-09 against project `cookapp` (`semsjyrqjnumpvanibip`): the
 project reports `ACTIVE_HEALTHY`. Its public Auth settings report email
-authentication enabled, email auto-confirm disabled, and the Apple provider
-disabled. New email accounts therefore require confirmation, but successful
-message delivery has not been tested. The settings endpoint returned a null
+authentication enabled, email auto-confirm disabled, and both Apple and Google
+providers disabled. New email accounts therefore require confirmation, but successful
+message delivery has not been tested. The settings endpoint does not expose the
 redirect allowlist, so the exact `cook://auth/callback` allowlist entry is not
 verified. No Apple provider secret or email credential is stored in the iOS
 client; the target contains the Sign in with Apple entitlement, while the
-Apple Developer capability and provisioning profile have not been checked.
+local signed provisioning profile was verified to contain team `WT475Q2P69`,
+the current App ID, Apple capability, App Group and the supplied iPhone.
 
 This is configuration evidence only. No test account was created and no email,
 Apple credential, recovery link, or password was submitted. Real provider flows,
 Keychain restore, and cold/warm callback handling remain unverified.
+
+The separate local GoTrue/PostgREST email and snapshot harness and the exact
+remaining external setup actions are documented in
+[Auth, StoreKit and sync readiness](AUTH_STOREKIT_SYNC_READINESS.md).
