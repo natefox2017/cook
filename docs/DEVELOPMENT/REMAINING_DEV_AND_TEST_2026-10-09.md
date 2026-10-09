@@ -1,6 +1,6 @@
 # Recipe Pals — Remaining Issue and Test Matrix
 
-> Reconciled on 2026-10-09 against `main@18541b1bba9e380b7e295686d60f112a0d26521b` (PR #225). This replaces the stale *open-issue predictions* previously in this file; Git history retains that historical roadmap.
+> Reconciled on 2026-10-09 against `main@4e26fe74c7ef1db4fe39867a0d8ca07d0ac98c4b` (PR #226; review also covers PR #225). This replaces the stale *open-issue predictions* previously in this file; Git history retains that historical roadmap.
 
 ## Accounting rules
 
@@ -33,7 +33,7 @@
 
 - [PR #225](https://github.com/natefox2017/cook/pull/225) changed app and Share Extension `CFBundleName` / `CFBundleDisplayName` plus four locales, and added a static branding validator. This is **code delivered**, but the previously observed Settings notification title still needs a **freshly installed physical-device build**, screenshot, and exact bundle/build version. If it remains stale, investigate the actual installed bundle/extension/localized InfoPlist identity and OS state rather than assuming a cache explanation.
 - [PR #224](https://github.com/natefox2017/cook/pull/224) changed navigation destination strategy and root-tab visibility. Existing `testRootTabsUseNativeTitlesAndSecondaryPagesHideTabBar` must be executed on the merged code once the UI Runner issue is resolved; a green auto-merge status does not cover nested navigation.
-- [PR #223](https://github.com/natefox2017/cook/pull/223) changed the **first onboarding heading** from `Create with AI` to `Save recipes your way`, while keeping `OnboardingAI` artwork. The user specifically reported that first-page AI guidance was the approved version. The existing `testOnboardingPaywallFreeAndClosePaths` only tests Skip/Free/Close, not the first-screen heading or approved paywall visuals. **Do not mark UI/design acceptance PASS** without resolving this content discrepancy and running a focused signed-device test. Prior [#183](https://github.com/natefox2017/cook/issues/183) is a *closed code issue*, not proof that the latest user-accepted visual is still present.
+- [PR #223](https://github.com/natefox2017/cook/pull/223) briefly replaced the approved first-screen AI copy. **Superseded by merged [PR #226](https://github.com/natefox2017/cook/pull/226)**: first page again says `Create with AI`, the Premium feature row is AI-first, and four-language catalog keys are restored. PR #226 also adds `testOnboardingPreservesApprovedAIStoryAndPaywall` and strengthens a Chinese onboarding/paywall UI assertion; these are **regression tests added to source, not signed-device runs**. The existing UI Runner initialization #189 and visual acceptance still apply. Closed [#183](https://github.com/natefox2017/cook/issues/183) documents the code delivery, not an iPhone screenshot PASS.
 
 ## Required evidence per missing test
 
