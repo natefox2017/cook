@@ -99,17 +99,22 @@ struct RecipesView: View {
         .navigationBarTitleDisplayMode(titleDisplayMode)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Add Recipe", systemImage: "plus") { isAdding = true }
-                    .accessibilityIdentifier("addRecipeButton")
+                Button("Add Recipe", systemImage: "plus") {
+                    isAdding = true
+                }
+                .accessibilityIdentifier("addRecipeButton")
             }
         }
-        .navigationDestination(for: UUID.self) { RecipeDetailView(recipeID: $0) }
-        .sheet(isPresented: $isAdding) { AddRecipeView() }
+        .sheet(isPresented: $isAdding) {
+            AddRecipeView()
+        }
         .sheet(isPresented: $showsPendingShares) {
             PendingSharesView()
         }
         .alert("Unable to Update Recipe", isPresented: errorPresented) {
-            Button("OK", role: .cancel) { errorMessage = nil }
+            Button("OK", role: .cancel) {
+                errorMessage = nil
+            }
         } message: {
             Text(errorMessage ?? "")
         }
@@ -197,10 +202,14 @@ struct RecipesView: View {
                     message: "Save a recipe from a link, photo, or your own kitchen notes.",
                     systemImage: "book.closed",
                     actionTitle: "Add Your First Recipe",
-                    action: { isAdding = true }
+                    action: {
+                        isAdding = true
+                    }
                 )
                 Button("Try sample recipes") {
-                    do { try store.loadSampleRecipes() } catch {
+                    do {
+                        try store.loadSampleRecipes()
+                    } catch {
                         errorMessage = error.localizedDescription
                     }
                 }
@@ -344,7 +353,16 @@ struct RecipesView: View {
     }
 
     private var errorPresented: Binding<Bool> {
-        Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+        Binding(
+            get: {
+                errorMessage != nil
+            },
+            set: { isPresented in
+                if !isPresented {
+                    errorMessage = nil
+                }
+            }
+        )
     }
 
 }
@@ -356,7 +374,11 @@ private struct RecipeLibraryCard: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            NavigationLink(value: recipe.id) {
+            // Keep view-based pushes intact when this library is opened from Profile.
+            // Pushing a value here would pop the existing view destinations first.
+            NavigationLink {
+                RecipeDetailView(recipeID: recipe.id)
+            } label: {
                 VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                     GeometryReader { geometry in
                         RecipeImage(recipe: recipe, height: geometry.size.height)
@@ -422,7 +444,9 @@ private struct RecipeLibraryCard: View {
 
 private enum RecipeLibraryFilter: Hashable, Identifiable, CaseIterable {
     case all, meals, breakfast, desserts, drinks, sides, favorites, needsReview
-    var id: Self { self }
+    var id: Self {
+        self
+    }
 
     var title: String {
         switch self {
@@ -471,7 +495,9 @@ private enum RecipeLibrarySort: String, CaseIterable, Identifiable {
     case recent = "Recently Saved"
     case alphabetical = "Name, A–Z"
     case quickest = "Cooking Time"
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 }
 
 private struct PendingSharesView: View {
@@ -495,10 +521,14 @@ private struct PendingSharesView: View {
             .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button("Done") {
+                        dismiss()
+                    }
                 }
             }
-            .onAppear { inbox.refresh() }
+            .onAppear {
+                inbox.refresh()
+            }
         }
     }
 }
@@ -537,7 +567,8 @@ private struct PendingShareRow: View {
         }
         .task {
             if receipt.inputType == .url || receipt.inputType == .text {
-                originalSource = inbox.source(for: receipt)
+                originalSource =
+                    inbox.source(for: receipt)
                     ?? RecipeLanguage.localized("Source unavailable")
             }
         }
