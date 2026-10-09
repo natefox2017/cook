@@ -13,7 +13,7 @@ integrities are pinned in `package-lock.json`, from the official npm registry.
 ```sh
 cd supabase/tests/isolated
 npm ci --ignore-scripts
-npm test
+NODE_OPTIONS=--max-old-space-size=256 npm test
 ```
 
 Installation needs registry access; test execution is offline. Do not pass a

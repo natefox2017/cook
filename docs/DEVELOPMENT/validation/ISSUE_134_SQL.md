@@ -18,11 +18,15 @@ returns `42501`; grants and production migrations are unchanged.
 ## Final clean-install results
 
 - **PASS:** `npm ci --ignore-scripts` from the committed exact-version lock.
-- **PASS:** `npm test`: **84/84 pgTAP assertions** across 3 suites.
+- **PASS:** `NODE_OPTIONS=--max-old-space-size=256 npm test`: **84/84 pgTAP assertions** across 3 suites.
   - 20 legacy function privilege assertions (signature-only fixture bodies).
   - 40 real queue/owner/idempotency/worker attempt/retry assertions.
   - 24 snapshot CAS and private artifact/owner/expiry/anonymous-role assertions.
 - **PASS:** `git diff --check`.
+- An unrestricted-heap clean-install rerun was killed by the host before TAP
+  output. Retrying with the Node heap bounded to 256 MiB completed all 84
+  assertions; the earlier complete run also passed. This is not a production
+  memory benchmark.
 - **NOT RUN:** actual Supabase Auth/Storage HTTP, external endpoints, legacy
   backend business logic, two-session contention, production or deployment.
 
