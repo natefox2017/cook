@@ -6,6 +6,10 @@
 # Authenticated status: no remote runtime module imports.
 verify_jwt = true
 
+[functions.openapi]
+# The bundled repository-scoped API contract is public and contains no secrets.
+verify_jwt = false
+
 [functions.delete-account]
 # Account deletion always requires a verified Supabase Auth user JWT.
 verify_jwt = true
