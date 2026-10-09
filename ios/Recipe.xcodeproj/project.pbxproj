@@ -128,6 +128,8 @@
             target = "B3000000000000000000000E";
             targetProxy = "B30000000000000000000012";
         };
+        A23100000000000000000001 = { isa = PBXFileReference; lastKnownFileType = audio.wav; path = "Recipe/Resources/Sounds/timer-warning.wav"; sourceTree = "<group>"; };
+        A23100000000000000000002 = { isa = PBXBuildFile; fileRef = "A23100000000000000000001"; };
         C62600000000000000000001 = { isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = "Recipe/Resources/Localizable.xcstrings"; sourceTree = "<group>"; };
         C62600000000000000000002 = { isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = "Recipe/Resources/InfoPlist.xcstrings"; sourceTree = "<group>"; };
         C62600000000000000000003 = { isa = PBXBuildFile; fileRef = "C62600000000000000000001"; };
@@ -381,7 +383,7 @@
 		7299DDF9E5A6F115AC358FCF = {
 			isa = "PBXResourcesBuildPhase";
 			buildActionMask = 2147483647;
-			files = ("044ABDC09B927641F43BEF9C", "4886C7D26647AC1098D8C80C", "C4B7BCC6EB23B96DB35FEEE9", "D684CE5DC372862F50CB57A9", "C62600000000000000000003", "C62600000000000000000004",);
+			files = ("044ABDC09B927641F43BEF9C", "4886C7D26647AC1098D8C80C", "C4B7BCC6EB23B96DB35FEEE9", "D684CE5DC372862F50CB57A9", "C62600000000000000000003", "C62600000000000000000004", "A23100000000000000000002",);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A47173FBEEEF97CA26286972 = {

@@ -34,6 +34,8 @@ struct CookingView: View {
     @State private var manualTimerMinutes = 5
     @State private var errorMessage: String?
     @State private var originalIdleTimerDisabled: Bool?
+    @AppStorage("recipe.timer.warningLeadSeconds") private var warningLeadSeconds = 30
+    @AppStorage("recipe.timer.finishSound") private var completionSoundEnabled = true
 
     private var recipe: Recipe? { store.recipe(id: recipeID) }
     private var sessionKey: String {
@@ -128,6 +130,8 @@ struct CookingView: View {
         }
         .onChange(of: store.settings.keepScreenAwake) { _, _ in updateScreenAwake() }
         .onChange(of: store.settings.timerNotifications) { _, _ in synchronizeNotifications() }
+        .onChange(of: warningLeadSeconds) { _, _ in synchronizeNotifications() }
+        .onChange(of: completionSoundEnabled) { _, _ in synchronizeNotifications() }
         .onChange(of: recipe?.id) { _, id in
             if id == nil {
                 for timerID in session.timers.keys { cancelNotification(for: timerID) }
@@ -1016,6 +1020,7 @@ struct CookingView: View {
         active.label = label
         session.timers[id] = active
         persistSession()
+        if active.timer.isRunning { scheduleNotification(for: active) }
         resetManualTimerRenameDraft()
     }
 
@@ -1180,12 +1185,13 @@ struct CookingView: View {
         else { return }
 
         let id = notificationID(for: active.id)
-        let seconds = active.timer.remaining(at: .now)
-        guard seconds > 0 else { return }
+        guard let deadline = active.timer.deadline else { return }
         let scheduleTask = TimerNotifications.schedule(
             id: id,
             title: active.label.isEmpty ? "Cooking timer" : active.label,
-            seconds: seconds
+            deadline: deadline,
+            warningSeconds: warningLeadSeconds,
+            completionSoundEnabled: completionSoundEnabled
         )
         Task { @MainActor in
             do {

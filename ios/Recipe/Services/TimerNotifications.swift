@@ -15,7 +15,12 @@ enum TimerNotifications {
         UNUserNotificationCenter.current().delegate = presentationDelegate
     }
 
-    static func schedule(id: String, title: String, seconds: Int) -> Task<Void, Error> {
+    private static func warningID(for id: String) -> String { id + ".early" }
+
+    static func schedule(
+        id: String, title: String, deadline: Date,
+        warningSeconds: Int = 30, completionSoundEnabled: Bool = true
+    ) -> Task<Void, Error> {
         enqueue(id: id) {
             let center = UNUserNotificationCenter.current()
             let settings = await center.notificationSettings()
@@ -23,16 +28,80 @@ enum TimerNotifications {
             else {
                 throw TimerNotificationError.notAuthorized
             }
-            let content = UNMutableNotificationContent()
-            content.title = String(
+            let relatedIDs = [id, warningID(for: id)]
+            center.removePendingNotificationRequests(withIdentifiers: relatedIDs)
+            center.removeDeliveredNotifications(withIdentifiers: relatedIDs)
+
+            // Use the absolute deadline, not the duration before awaiting authorization.
+            let now = Date.now
+            guard deadline > now else { return }
+            if warningSeconds > 0,
+                deadline.timeIntervalSince(now) > Double(warningSeconds + 1)
+            {
+                let soon = UNMutableNotificationContent()
+                soon.title = String(
+                    localized: LocalizedStringResource(
+                        "Timer almost done", locale: RecipeLanguage.active))
+                soon.body = title
+                soon.sound = UNNotificationSound(
+                    named: UNNotificationSoundName("timer-warning.wav"))
+                let delay = deadline.addingTimeInterval(-TimeInterval(warningSeconds))
+                    .timeIntervalSinceNow
+                if delay > 0 {
+                    try await center.add(
+                        UNNotificationRequest(
+                            identifier: warningID(for: id),
+                            content: soon,
+                            trigger: UNTimeIntervalNotificationTrigger(
+                                timeInterval: max(1, delay), repeats: false)
+                        )
+                    )
+                }
+            }
+            let done = UNMutableNotificationContent()
+            done.title = String(
                 localized: LocalizedStringResource(
                     "Your cooking timer is ready", locale: RecipeLanguage.active))
-            content.body = title
-            content.sound = .default
-            let trigger = UNTimeIntervalNotificationTrigger(
-                timeInterval: TimeInterval(max(1, seconds)), repeats: false)
-            try await center.add(
-                UNNotificationRequest(identifier: id, content: content, trigger: trigger))
+            done.body = title
+            done.sound = completionSoundEnabled ? .default : nil
+            do {
+                try await center.add(
+                    UNNotificationRequest(
+                        identifier: id, content: done,
+                        trigger: UNTimeIntervalNotificationTrigger(
+                            timeInterval: max(1, deadline.timeIntervalSinceNow),
+                            repeats: false)
+                    )
+                )
+            } catch {
+                center.removePendingNotificationRequests(withIdentifiers: relatedIDs)
+                throw error
+            }
+        }
+    }
+
+    /// Preferences can change from Profile while the Cooking screen is dismissed.
+    static func refreshScheduledPreferences(
+        warningSeconds: Int, completionSoundEnabled: Bool
+    ) async {
+        let pending = await UNUserNotificationCenter.current().pendingNotificationRequests()
+        let completionRequests = pending.filter { request in
+            (request.identifier.hasPrefix("cook.timer.")
+                || request.identifier.hasPrefix("recipe.uitesting.timer."))
+                && !request.identifier.hasSuffix(".early")
+        }
+        for request in completionRequests {
+            guard let trigger = request.trigger as? UNTimeIntervalNotificationTrigger,
+                let deadline = trigger.nextTriggerDate(), deadline > .now
+            else {
+                continue
+            }
+            let task = schedule(
+                id: request.identifier, title: request.content.body,
+                deadline: deadline, warningSeconds: warningSeconds,
+                completionSoundEnabled: completionSoundEnabled
+            )
+            _ = try? await task.value
         }
     }
 
@@ -55,7 +124,9 @@ enum TimerNotifications {
             prefixes.contains { id.hasPrefix($0) }
         }
 
-        let cancellationTasks = identifiers.map { id in
+        let cancellationTasks = Set(identifiers.map { id in
+            id.hasSuffix(".early") ? String(id.dropLast(".early".count)) : id
+        }).map { id in
             enqueueCancellation(id: id)
         }
         for task in cancellationTasks {
@@ -66,8 +137,9 @@ enum TimerNotifications {
     private static func enqueueCancellation(id: String) -> Task<Void, Error> {
         enqueue(id: id) {
             let center = UNUserNotificationCenter.current()
-            center.removePendingNotificationRequests(withIdentifiers: [id])
-            center.removeDeliveredNotifications(withIdentifiers: [id])
+            let relatedIDs = [id, warningID(for: id)]
+            center.removePendingNotificationRequests(withIdentifiers: relatedIDs)
+            center.removeDeliveredNotifications(withIdentifiers: relatedIDs)
         }
     }
 

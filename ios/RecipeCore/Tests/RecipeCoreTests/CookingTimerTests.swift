@@ -137,3 +137,26 @@ func roastChickenSampleStepIDsAreDeterministic() throws {
     #expect(Set(firstStepIDs).count == firstStepIDs.count)
     #expect(secondRecipe.steps.map(\.id) == firstStepIDs)
 }
+
+@Test
+func reminderWarningUsesDeadlineAndSkipsShortPausedOrExpiredTimers() {
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
+    var timer = CookingTimer(durationSeconds: 120)
+    timer.start(at: now)
+    let plan = CookingReminderPlan(timer: timer, warningSeconds: 30, now: now)
+    #expect(plan?.deadline == now.addingTimeInterval(120))
+    #expect(plan?.earlyWarningAt == now.addingTimeInterval(90))
+    #expect(
+        CookingReminderPlan(
+            timer: timer, warningSeconds: 30, now: now.addingTimeInterval(92)
+        )?.earlyWarningAt == nil
+    )
+    #expect(CookingReminderPlan(timer: timer, warningSeconds: 0, now: now)?.earlyWarningAt == nil)
+    timer.pause(at: now.addingTimeInterval(40))
+    #expect(CookingReminderPlan(timer: timer, warningSeconds: 30, now: now) == nil)
+    timer.start(at: now.addingTimeInterval(50))
+    #expect(
+        CookingReminderPlan(timer: timer, warningSeconds: 60, now: now.addingTimeInterval(85))?
+            .earlyWarningAt == nil
+    )
+}
