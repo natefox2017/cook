@@ -66,3 +66,7 @@ Never infer a unique person from IP/UA/device fingerprint/cross-app graph. See [
 ## QR poster building block — 2026-10-10 (not published yet)
 
 `RecipeSharePosterRenderer` can render an opt-in, rights-filtered `PublicRecipeSnapshot` into 1080×1920/1080×2400 native SwiftUI graphics using Core Image QR with error correction H and a white quiet zone. The source URL must pass `RecipePublicShareURL.isValid`: external HTTPS domain and opaque `/r/<slug>` path, with no credentials. Photos require independent rights confirmation. User sharing buttons remain unavailable until #242/243 issue a real, revocable public URL; staging/real-device export and QR-decoding checks still belong to #244/#250/#251. Do not publish guessed screenshots or source-site media.
+
+## Source-only Web visitor implementation (2026-10-10)
+
+A small dependency-free SSR reader has been added under `web/recipe-share/`. With an injected mock public snapshot, Node tests verify HTML escaping, strict private-field rejection, guest readability, revoked-share unavailability, and no fake App Store CTA. Without the server-supplied authorized public API, it returns 503. `noindex`, CSP and no-store headers are default. This component **does not deploy** a Web domain, share database, revocation service, OG asset hosting, App Store listing or Universal Links. See #242/#243/#250/#251 for real-staging and launch gates.
