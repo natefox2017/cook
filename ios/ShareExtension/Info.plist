@@ -10,6 +10,20 @@
     <string>$(MARKETING_VERSION)</string>
     <key>CFBundleVersion</key>
     <string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>zh-Hans</string>
+        <string>zh-Hant</string>
+        <string>ja</string>
+        <string>de</string>
+        <string>fr</string>
+        <string>es</string>
+        <string>it</string>
+        <string>pt</string>
+        <string>nl</string>
+        <string>ko</string>
+    </array>
     <key>CFBundleDisplayName</key>
     <string>Recipe Pals</string>
     <key>CFBundleName</key>
