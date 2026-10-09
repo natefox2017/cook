@@ -39,14 +39,14 @@ public enum RecipeLanguage {
 
     /// ISO 3166 countries and territories, not languages or macro-regions.
     /// This covers European and American markets as well as Japan and South Korea.
-    public static var countryIdentifiers: [String] {
+    public static let countryIdentifiers: [String] = {
         Locale.Region.isoRegions.map(\.identifier)
             .filter { code in
                 code.count == 2 &&
                     code.unicodeScalars.allSatisfy { CharacterSet.uppercaseLetters.contains($0) }
             }
             .sorted()
-    }
+    }()
 
     /// Same locale calculation used by the app's reactive AppStorage values.
     public static func configuredLocale(language: String, region: String) -> Locale {
