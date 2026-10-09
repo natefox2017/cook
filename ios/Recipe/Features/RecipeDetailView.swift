@@ -18,6 +18,7 @@ struct RecipeDetailView: View {
     @State private var cookingStartStepID: UUID?
     @State private var isChoosingIngredients = false
     @State private var isDeleting = false
+    @State private var parameterInfo: RecipeParameterInfo?
     @State private var feedbackMessage: String?
     @State private var addedIngredientCount: Int?
     @State private var isPlanningMeal = false
@@ -48,6 +49,9 @@ struct RecipeDetailView: View {
         .sheet(isPresented: $isPlanningMeal) { RecipeMealPlanSheet(recipeID: recipeID) }
         .sheet(isPresented: $isManagingCollections) {
             RecipeCollectionMembershipSheet(recipeID: recipeID)
+        }
+        .sheet(item: $parameterInfo) { info in
+            RecipeParameterSheet(info: info)
         }
         .sheet(isPresented: $isChoosingIngredients, onDismiss: showAddedFeedback) {
             RecipeIngredientsSelectionView(recipeID: recipeID, initialServings: servings) {
@@ -234,9 +238,17 @@ struct RecipeDetailView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(recipe.ingredients) { ingredient in
-                        RecipeIngredientLine(
-                            ingredient: ingredient, servings: servings,
-                            originalServings: recipe.servings)
+                        Button {
+                            parameterInfo = .ingredient(
+                                ingredient, servings: servings, originalServings: recipe.servings)
+                        } label: {
+                            RecipeIngredientLine(
+                                ingredient: ingredient, servings: servings,
+                                originalServings: recipe.servings)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Show ingredient amount details")
                         if ingredient.id != recipe.ingredients.last?.id { Divider() }
                     }
                 }
@@ -297,17 +309,27 @@ struct RecipeDetailView: View {
                                     )
                                     .foregroundStyle(RecipeTheme.accentForeground)
                                 ForEach(linkedIngredients) { ingredient in
-                                    HStack(alignment: .firstTextBaseline) {
-                                        Text(ingredient.name)
-                                        Spacer(minLength: 8)
-                                        Text(
-                                            ingredient.displayAmount(
-                                                servings: servings,
-                                                originalServings: recipe.servings)
-                                        )
-                                        .foregroundStyle(.secondary)
+                                    Button {
+                                        parameterInfo = .ingredient(
+                                            ingredient, servings: servings,
+                                            originalServings: recipe.servings)
+                                    } label: {
+                                        HStack(alignment: .firstTextBaseline) {
+                                            Text(ingredient.name)
+                                            Spacer(minLength: 8)
+                                            Text(
+                                                ingredient.displayAmount(
+                                                    servings: servings,
+                                                    originalServings: recipe.servings)
+                                            ).foregroundStyle(.secondary)
+                                            Image(systemName: "info.circle")
+                                                .accessibilityHidden(true)
+                                        }
+                                        .font(RecipeTheme.text(14, relativeTo: .subheadline))
+                                        .frame(minHeight: 44)
                                     }
-                                    .font(RecipeTheme.text(14, relativeTo: .subheadline))
+                                    .buttonStyle(.plain)
+                                    .accessibilityHint("Show ingredient amount details")
                                 }
                             }
                             .padding(12)
@@ -345,18 +367,32 @@ struct RecipeDetailView: View {
     @ViewBuilder
     private func stepSignals(_ step: RecipeStep) -> some View {
         if let temperature = step.temperature, !temperature.text.isEmpty {
-            Label(temperature.text, systemImage: "thermometer.medium")
-                .font(RecipeTheme.text(13, weight: .semibold, relativeTo: .footnote))
-                .foregroundStyle(RecipeTheme.accentForeground)
+            Button {
+                parameterInfo = .temperature(temperature)
+            } label: {
+                Label(temperature.text, systemImage: "thermometer.medium")
+                    .font(RecipeTheme.text(13, weight: .semibold, relativeTo: .footnote))
+                    .foregroundStyle(RecipeTheme.accentForeground)
+                    .frame(minHeight: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Show temperature conversion")
         }
         ForEach(step.timers) { timer in
             let duration = timerDurationLabel(timer.durationSeconds)
-            Label(
-                timer.label.isEmpty ? duration : "\(timer.label) · \(duration)",
-                systemImage: "timer"
-            )
-            .font(RecipeTheme.text(13, weight: .semibold, relativeTo: .footnote))
-            .foregroundStyle(RecipeTheme.accentForeground)
+            Button {
+                parameterInfo = .timer(timer)
+            } label: {
+                Label(
+                    timer.label.isEmpty ? duration : "\(timer.label) · \(duration)",
+                    systemImage: "timer"
+                )
+                .font(RecipeTheme.text(13, weight: .semibold, relativeTo: .footnote))
+                .foregroundStyle(RecipeTheme.accentForeground)
+                .frame(minHeight: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Show timer details")
         }
     }
 
@@ -953,5 +989,77 @@ private struct RecipeMealPlanSheet: View {
                 Text(errorMessage ?? "Please try again.")
             }
         }
+    }
+}
+
+
+/// Reuses original recipe fields; unavailable measurements remain unknown.
+struct RecipeParameterInfo: Identifiable {
+    let id = UUID()
+    let title: String
+    let lines: [String]
+
+    static func ingredient(
+        _ ingredient: RecipeIngredient, servings: Int?, originalServings: Int?
+    ) -> RecipeParameterInfo {
+        let amount = ingredient.displayAmount(
+            servings: servings, originalServings: originalServings)
+        var lines = [
+            amount.isEmpty ? "Amount not specified" : "Current amount: \(amount)"
+        ]
+        if !ingredient.amountText.isEmpty, ingredient.amountText != amount {
+            lines.append("Source amount: \(ingredient.amountText)")
+        }
+        if ingredient.quantity == nil {
+            lines.append("Keep the original quantity when an exact value is unknown.")
+        }
+        return RecipeParameterInfo(title: ingredient.name, lines: lines)
+    }
+
+    static func temperature(_ temperature: CookingTemperature) -> RecipeParameterInfo {
+        var lines = [temperature.text]
+        if let alternate = RecipeTemperatureConversion.alternateUnit(for: temperature.text) {
+            lines.append("Converted: \(alternate)")
+        }
+        return RecipeParameterInfo(title: "Temperature", lines: lines)
+    }
+
+    static func timer(_ timer: RecipeStepTimer) -> RecipeParameterInfo {
+        let amount = Duration.seconds(timer.durationSeconds).formatted(
+            .units(width: .wide, maximumUnitCount: 2))
+        return RecipeParameterInfo(
+            title: timer.label.isEmpty ? "Step timer" : timer.label,
+            lines: ["Duration: \(amount)", "Start Cooking from this step to use the timer."]
+        )
+    }
+}
+
+struct RecipeParameterSheet: View {
+    let info: RecipeParameterInfo
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
+                ForEach(Array(info.lines.enumerated()), id: \.offset) { _, line in
+                    Text(line)
+                        .font(RecipeTheme.text(16, relativeTo: .body))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(RecipeSpacing.pageInset)
+            .background(RecipeTheme.canvas)
+            .navigationTitle(info.title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.height(260), .medium])
+        .presentationDragIndicator(.visible)
     }
 }
