@@ -20,11 +20,13 @@ export interface PrivateArtifactRow {
   expires_at: string;
 }
 
+// A rejected row may still have a valid shape (for example, another owner).
+// This is an authorization check, not a bidirectional type predicate.
 export function isOwnerScopedAvailableArtifact(
   row: PrivateArtifactRow | null,
   request: { ownerID: string; artifactID: string | null; inputType: "image" | "file" },
   at: number = Date.now(),
-): row is PrivateArtifactRow {
+): boolean {
   if (!row || !request.artifactID) return false;
   const expiry = Date.parse(row.expires_at);
   return row.id === request.artifactID &&
