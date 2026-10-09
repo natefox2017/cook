@@ -22,7 +22,7 @@ final class RecipeAuthServiceTests: XCTestCase {
 
     func testCloudUploadRequiresAccountDownloadAndConflictResolution() {
         // A download in progress or failed download must not silently
-        // upload a locally linked library to another RecipePouch account.
+        // upload a locally linked library to another Recipe Pals account.
         XCTAssertFalse(CloudSyncCoordinatorState.syncing.permitsUpload)
         XCTAssertFalse(CloudSyncCoordinatorState.error("offline").permitsUpload)
         XCTAssertFalse(CloudSyncCoordinatorState.conflicts([]).permitsUpload)

@@ -496,25 +496,25 @@
         }
       }
     },
-    "About RecipePouch": {
+    "About Recipe Pals": {
       "extractionState": "stale",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch について"
+            "value": "Recipe Pals について"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "关于 RecipePouch"
+            "value": "关于 私人菜谱"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "關於 RecipePouch"
+            "value": "關於 私人菜譜"
           }
         }
       }
@@ -2117,24 +2117,24 @@
         }
       }
     },
-    "Delete RecipePouch Account & Cloud Data": {
+    "Delete Recipe Pals Account & Cloud Data": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouchアカウントとクラウドデータを削除"
+            "value": "Recipe Palsアカウントとクラウドデータを削除"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "删除 RecipePouch 账号及云端数据"
+            "value": "删除 私人菜谱账号及云端数据"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "刪除 RecipePouch 帳號與雲端資料"
+            "value": "刪除 私人菜譜帳號與雲端資料"
           }
         }
       }
@@ -4504,25 +4504,25 @@
         }
       }
     },
-    "Preparing RecipePouch…": {
+    "Preparing Recipe Pals…": {
       "extractionState": "stale",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouchを準備しています…"
+            "value": "Recipe Palsを準備しています…"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "正在准备 RecipePouch…"
+            "value": "正在准备 私人菜谱…"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "正在準備 RecipePouch…"
+            "value": "正在準備 私人菜譜…"
           }
         }
       }
@@ -4914,46 +4914,46 @@
         }
       }
     },
-    "RecipePouch": {
+    "Recipe Pals": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch"
+            "value": "Recipe Pals"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch"
+            "value": "私人菜谱"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch"
+            "value": "私人菜譜"
           }
         }
       }
     },
-    "RecipePouch Account": {
+    "Recipe Pals Account": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch アカウント"
+            "value": "Recipe Pals アカウント"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 账号"
+            "value": "私人菜谱账号"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 帳號"
+            "value": "私人菜譜帳號"
           }
         }
       }
@@ -7194,25 +7194,25 @@
         }
       }
     },
-    "What RecipePouch Stores": {
+    "What Recipe Pals Stores": {
       "extractionState": "stale",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouchが保存するデータ"
+            "value": "Recipe Palsが保存するデータ"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 保存哪些数据"
+            "value": "私人菜谱保存哪些数据"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 儲存哪些資料"
+            "value": "私人菜譜儲存哪些資料"
           }
         }
       }
@@ -7286,7 +7286,7 @@
         }
       }
     },
-    "You can keep using RecipePouch for free and check again later.": {
+    "You can keep using Recipe Pals for free and check again later.": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -7297,13 +7297,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "您仍可免费使用 RecipePouch，稍后再查看。"
+            "value": "您仍可免费使用 私人菜谱，稍后再查看。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "您仍可免費使用 RecipePouch，稍後再查看。"
+            "value": "您仍可免費使用 私人菜譜，稍後再查看。"
           }
         }
       }
@@ -7677,24 +7677,24 @@
         }
       }
     },
-    "An exported JSON file contains a copy of your local RecipePouch data, including any name, email, source text, or notes you saved. You choose where the file is saved.": {
+    "An exported JSON file contains a copy of your local Recipe Pals data, including any name, email, source text, or notes you saved. You choose where the file is saved.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "导出的 JSON 文件包含本机 RecipePouch 数据副本，包括你保存的姓名、电子邮件、来源文本和备注。文件保存位置由你选择。"
+            "value": "导出的 JSON 文件包含本机 私人菜谱数据副本，包括你保存的姓名、电子邮件、来源文本和备注。文件保存位置由你选择。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "匯出的 JSON 檔案包含本機 RecipePouch 資料副本，包括你儲存的姓名、電子郵件、來源文字和備註。檔案儲存位置由你選擇。"
+            "value": "匯出的 JSON 檔案包含本機 私人菜譜資料副本，包括你儲存的姓名、電子郵件、來源文字和備註。檔案儲存位置由你選擇。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "エクスポートされる JSON ファイルには、保存した名前、メールアドレス、ソーステキスト、メモを含む RecipePouch のローカルデータが複製されます。保存先は自分で選べます。"
+            "value": "エクスポートされる JSON ファイルには、保存した名前、メールアドレス、ソーステキスト、メモを含む Recipe Pals のローカルデータが複製されます。保存先は自分で選べます。"
           }
         }
       }
@@ -7721,24 +7721,24 @@
         }
       }
     },
-    "Apple sign-in uses the native Apple authorization sheet, then exchanges the verified identity token with RecipePouch’s Supabase Auth project.": {
+    "Apple sign-in uses the native Apple authorization sheet, then exchanges the verified identity token with Recipe Pals’ Supabase Auth project.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用 Apple 原生授权页登录后，RecipePouch 会将已验证的身份令牌发送到 Supabase Auth 项目进行交换。"
+            "value": "使用 Apple 原生授权页登录后，私人菜谱会将已验证的身份令牌发送到 Supabase Auth 项目进行交换。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用 Apple 原生授權頁登入後，RecipePouch 會將已驗證的身分權杖傳送至 Supabase Auth 專案進行交換。"
+            "value": "使用 Apple 原生授權頁登入後，私人菜譜會將已驗證的身分權杖傳送至 Supabase Auth 專案進行交換。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Appleのネイティブ認証シートでサインインし、検証済みのIDトークンをRecipePouchのSupabase Authプロジェクトと交換します。"
+            "value": "Appleのネイティブ認証シートでサインインし、検証済みのIDトークンをRecipe PalsのSupabase Authプロジェクトと交換します。"
           }
         }
       }
@@ -7811,24 +7811,24 @@
         }
       }
     },
-    "Delete All Local Data removes the RecipePouch library and preferences from this iPhone after confirmation. Copies you exported separately are not deleted.": {
+    "Delete All Local Data removes the Recipe Pals library and preferences from this iPhone after confirmation. Copies you exported separately are not deleted.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "确认后，“删除所有本机数据”会从这部 iPhone 移除 RecipePouch 食谱库和偏好设置。单独导出的副本不会删除。"
+            "value": "确认后，“删除所有本机数据”会从这部 iPhone 移除 私人菜谱食谱库和偏好设置。单独导出的副本不会删除。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "確認後，「刪除所有本機資料」會從這部 iPhone 移除 RecipePouch 食譜庫和偏好設定。另行匯出的副本不會刪除。"
+            "value": "確認後，「刪除所有本機資料」會從這部 iPhone 移除 私人菜譜食譜庫和偏好設定。另行匯出的副本不會刪除。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "確認後、「すべてのローカルデータを削除」により、このiPhoneからRecipePouchのライブラリと設定が削除されます。別途エクスポートしたコピーは削除されません。"
+            "value": "確認後、「すべてのローカルデータを削除」により、このiPhoneからRecipe Palsのライブラリと設定が削除されます。別途エクスポートしたコピーは削除されません。"
           }
         }
       }
@@ -8078,47 +8078,47 @@
         }
       }
     },
-    "RecipePouch cloud sync is not configured in this build.": {
+    "Recipe Pals cloud sync is not configured in this build.": {
       "extractionState": "stale",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このビルドではRecipePouchのクラウド同期が設定されていません。"
+            "value": "このビルドではRecipe Palsのクラウド同期が設定されていません。"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此版本未配置 RecipePouch 云端同步。"
+            "value": "此版本未配置 私人菜谱云端同步。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "此版本未設定 RecipePouch 雲端同步。"
+            "value": "此版本未設定 私人菜譜雲端同步。"
           }
         }
       }
     },
-    "RecipePouch does not upload this library unless cloud sync is enabled for a signed-in account. Opening a source link takes you to the source website, where that site’s own practices apply.": {
+    "Recipe Pals does not upload this library unless cloud sync is enabled for a signed-in account. Opening a source link takes you to the source website, where that site’s own practices apply.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "除非登录账号并启用云端同步，否则 RecipePouch 不会上传此食谱库。打开来源链接会跳转到来源网站，该网站自身的隐私和使用规则仍然适用。"
+            "value": "除非登录账号并启用云端同步，否则 私人菜谱不会上传此食谱库。打开来源链接会跳转到来源网站，该网站自身的隐私和使用规则仍然适用。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "除非登入帳號並啟用雲端同步，否則 RecipePouch 不會上傳此食譜庫。開啟來源連結會前往來源網站，該網站本身的隱私和使用規則仍然適用。"
+            "value": "除非登入帳號並啟用雲端同步，否則 私人菜譜不會上傳此食譜庫。開啟來源連結會前往來源網站，該網站本身的隱私和使用規則仍然適用。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "サインインしてクラウド同期を有効にしない限り、RecipePouchがこのライブラリをアップロードすることはありません。ソースリンクを開くと元のサイトに移動し、そのサイト独自の規約が適用されます。"
+            "value": "サインインしてクラウド同期を有効にしない限り、Recipe Palsがこのライブラリをアップロードすることはありません。ソースリンクを開くと元のサイトに移動し、そのサイト独自の規約が適用されます。"
           }
         }
       }
@@ -8167,25 +8167,25 @@
         }
       }
     },
-    "Sign out of your RecipePouch account before deleting only this iPhone's data. Your cloud library will stay intact.": {
+    "Sign out of your Recipe Pals account before deleting only this iPhone's data. Your cloud library will stay intact.": {
       "extractionState": "stale",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このiPhoneのデータだけを削除する前に、RecipePouchアカウントからサインアウトしてください。クラウドライブラリはそのまま残ります。"
+            "value": "このiPhoneのデータだけを削除する前に、Recipe Palsアカウントからサインアウトしてください。クラウドライブラリはそのまま残ります。"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "如需仅删除这部 iPhone 上的数据，请先退出 RecipePouch 账号。云端食谱库会保留。"
+            "value": "如需仅删除这部 iPhone 上的数据，请先退出 私人菜谱账号。云端食谱库会保留。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "如需僅刪除這部 iPhone 上的資料，請先登出 RecipePouch 帳號。雲端食譜庫會保留。"
+            "value": "如需僅刪除這部 iPhone 上的資料，請先登出 私人菜譜帳號。雲端食譜庫會保留。"
           }
         }
       }
@@ -8240,24 +8240,24 @@
         }
       }
     },
-    "The normal path is Share → RecipePouch. You can also paste a link, use a photo, paste text, import a document, or create a recipe manually.": {
+    "The normal path is Share → Recipe Pals. You can also paste a link, use a photo, paste text, import a document, or create a recipe manually.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "通常流程是通过系统分享发送到 RecipePouch。你也可以粘贴链接、使用照片、粘贴文本、导入文档或手动创建食谱。"
+            "value": "通常流程是通过系统分享发送到 私人菜谱。你也可以粘贴链接、使用照片、粘贴文本、导入文档或手动创建食谱。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "一般流程是透過系統分享傳送至 RecipePouch。你也可以貼上連結、使用照片、貼上文字、匯入文件或手動建立食譜。"
+            "value": "一般流程是透過系統分享傳送至 私人菜譜。你也可以貼上連結、使用照片、貼上文字、匯入文件或手動建立食譜。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "通常は共有メニューからRecipePouchに送ります。リンクや写真、テキスト、書類を取り込んだり、レシピを手動で作成したりすることもできます。"
+            "value": "通常は共有メニューからRecipe Palsに送ります。リンクや写真、テキスト、書類を取り込んだり、レシピを手動で作成したりすることもできます。"
           }
         }
       }
@@ -8268,19 +8268,19 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "タイマーは動作中です。RecipePouchを閉じた後も通知を受け取るには、Profileで通知を有効にしてください。"
+            "value": "タイマーは動作中です。Recipe Palsを閉じた後も通知を受け取るには、Profileで通知を有効にしてください。"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "计时器正在运行。若要在关闭 RecipePouch 后也收到提醒，请在“个人中心”启用通知。"
+            "value": "计时器正在运行。若要在关闭 私人菜谱后也收到提醒，请在“个人中心”启用通知。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "計時器正在執行。若要在關閉 RecipePouch 後也收到提醒，請在「個人中心」啟用通知。"
+            "value": "計時器正在執行。若要在關閉 私人菜譜後也收到提醒，請在「個人中心」啟用通知。"
           }
         }
       }
@@ -8358,24 +8358,24 @@
         }
       }
     },
-    "Local RecipePouch data deleted.": {
+    "Local Recipe Pals data deleted.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 本地数据已删除。"
+            "value": "私人菜谱本地数据已删除。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 本機資料已刪除。"
+            "value": "私人菜譜本機資料已刪除。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch のローカルデータを削除しました。"
+            "value": "Recipe Pals のローカルデータを削除しました。"
           }
         }
       }
@@ -8589,24 +8589,24 @@
         }
       }
     },
-    "Your RecipePouch account identifies future private cloud data. It is separate from the Apple ID that owns an App Store subscription.": {
+    "Your Recipe Pals account identifies future private cloud data. It is separate from the Apple ID that owns an App Store subscription.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 账号用于标识今后的私有云端数据，与拥有 App Store 订阅的 Apple ID 相互独立。"
+            "value": "私人菜谱账号用于标识今后的私有云端数据，与拥有 App Store 订阅的 Apple ID 相互独立。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 帳號用來識別未來的私有雲端資料，與擁有 App Store 訂閱的 Apple ID 彼此獨立。"
+            "value": "私人菜譜帳號用來識別未來的私有雲端資料，與擁有 App Store 訂閱的 Apple ID 彼此獨立。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouchアカウントは今後のプライベートなクラウドデータを識別します。App Storeのサブスクリプションを所有するApple IDとは別です。"
+            "value": "Recipe Palsアカウントは今後のプライベートなクラウドデータを識別します。App Storeのサブスクリプションを所有するApple IDとは別です。"
           }
         }
       }
@@ -8766,24 +8766,24 @@
         }
       }
     },
-    "From a recipe or social app, use Share and choose RecipePouch. The share extension receives it quickly so you can return to the source app. If sharing is unavailable, use Add Recipe to paste a link, add text or an image, or create a recipe manually.": {
+    "From a recipe or social app, use Share and choose Recipe Pals. The share extension receives it quickly so you can return to the source app. If sharing is unavailable, use Add Recipe to paste a link, add text or an image, or create a recipe manually.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在食谱或社交 App 中打开系统分享并选择 RecipePouch。分享扩展会快速接收内容，让你返回来源 App。如果无法分享，可使用“添加食谱”粘贴链接、添加文本或图片，或手动创建食谱。"
+            "value": "在食谱或社交 App 中打开系统分享并选择 私人菜谱。分享扩展会快速接收内容，让你返回来源 App。如果无法分享，可使用“添加食谱”粘贴链接、添加文本或图片，或手动创建食谱。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "在食譜或社群 App 中開啟系統分享並選擇 RecipePouch。分享延伸功能會快速接收內容，讓你返回來源 App。如果無法分享，可使用「新增食譜」貼上連結、新增文字或照片，或手動建立食譜。"
+            "value": "在食譜或社群 App 中開啟系統分享並選擇 私人菜譜。分享延伸功能會快速接收內容，讓你返回來源 App。如果無法分享，可使用「新增食譜」貼上連結、新增文字或照片，或手動建立食譜。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "レシピやSNSアプリの共有メニューからRecipePouchを選びます。共有機能がすぐに受け取るので、元のアプリに戻れます。共有できない場合は「レシピを追加」からリンク、テキスト、画像を追加するか、手動で作成してください。"
+            "value": "レシピやSNSアプリの共有メニューからRecipe Palsを選びます。共有機能がすぐに受け取るので、元のアプリに戻れます。共有できない場合は「レシピを追加」からリンク、テキスト、画像を追加するか、手動で作成してください。"
           }
         }
       }
@@ -8810,46 +8810,46 @@
         }
       }
     },
-    "RecipePouch account and cloud data deleted. Local data on this iPhone was kept.": {
+    "Recipe Pals account and cloud data deleted. Local data on this iPhone was kept.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 账号和云端数据已删除。这部 iPhone 上的本机数据已保留。"
+            "value": "私人菜谱账号和云端数据已删除。这部 iPhone 上的本机数据已保留。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 帳號和雲端資料已刪除。這部 iPhone 上的本機資料已保留。"
+            "value": "私人菜譜帳號和雲端資料已刪除。這部 iPhone 上的本機資料已保留。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouchアカウントとクラウドデータを削除しました。このiPhoneのローカルデータは保持されています。"
+            "value": "Recipe Palsアカウントとクラウドデータを削除しました。このiPhoneのローカルデータは保持されています。"
           }
         }
       }
     },
-    "This deletes the signed-in RecipePouch account and cloud data. Local data on this iPhone stays until you delete it separately. This does not cancel an App Store subscription.": {
+    "This deletes the signed-in Recipe Pals account and cloud data. Local data on this iPhone stays until you delete it separately. This does not cancel an App Store subscription.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "这会删除已登录的 RecipePouch 账号和云端数据。此 iPhone 上的本机数据会保留，直到你单独删除。此操作不会取消 App Store 订阅。"
+            "value": "这会删除已登录的 私人菜谱账号和云端数据。此 iPhone 上的本机数据会保留，直到你单独删除。此操作不会取消 App Store 订阅。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "這會刪除已登入的 RecipePouch 帳號和雲端資料。此 iPhone 上的本機資料會保留，直到你另外刪除。此操作不會取消 App Store 訂閱。"
+            "value": "這會刪除已登入的 私人菜譜帳號和雲端資料。此 iPhone 上的本機資料會保留，直到你另外刪除。此操作不會取消 App Store 訂閱。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "サインイン中のRecipePouchアカウントとクラウドデータを削除します。このiPhoneのローカルデータは別途削除するまで残ります。App Storeのサブスクリプションは解約されません。"
+            "value": "サインイン中のRecipe Palsアカウントとクラウドデータを削除します。このiPhoneのローカルデータは別途削除するまで残ります。App Storeのサブスクリプションは解約されません。"
           }
         }
       }
@@ -8876,112 +8876,112 @@
         }
       }
     },
-    "RecipePouch is designed as a private recipe utility. It does not publish your recipes to a public feed.": {
+    "Recipe Pals is designed as a private recipe utility. It does not publish your recipes to a public feed.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 是一款私人的食谱管理工具，不会将你的食谱发布到公开动态。"
+            "value": "私人菜谱是一款私人的食谱管理工具，不会将你的食谱发布到公开动态。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 是一款私人的食譜管理工具，不會將你的食譜發布到公開動態。"
+            "value": "私人菜譜是一款私人的食譜管理工具，不會將你的食譜發布到公開動態。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouchはプライベートなレシピ管理ツールとして設計されており、レシピを公開フィードに投稿しません。"
+            "value": "Recipe Palsはプライベートなレシピ管理ツールとして設計されており、レシピを公開フィードに投稿しません。"
           }
         }
       }
     },
-    "Automated imports may send source material to RecipePouch’s backend only when processing is required. Provider secrets remain server-side.": {
+    "Automated imports may send source material to Recipe Pals’ backend only when processing is required. Provider secrets remain server-side.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "仅在需要处理时，自动导入才会将来源内容发送到 RecipePouch 后端。服务提供方密钥仅保留在服务器端。"
+            "value": "仅在需要处理时，自动导入才会将来源内容发送到 私人菜谱后端。服务提供方密钥仅保留在服务器端。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "僅在需要處理時，自動匯入才會將來源內容傳送至 RecipePouch 後端。服務提供方金鑰僅保留在伺服器端。"
+            "value": "僅在需要處理時，自動匯入才會將來源內容傳送至 私人菜譜後端。服務提供方金鑰僅保留在伺服器端。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "自動取り込みでは、処理が必要な場合に限りソース情報をRecipePouchのバックエンドに送信します。プロバイダーの秘密情報はサーバー側に保管されます。"
+            "value": "自動取り込みでは、処理が必要な場合に限りソース情報をRecipe Palsのバックエンドに送信します。プロバイダーの秘密情報はサーバー側に保管されます。"
           }
         }
       }
     },
-    "App Store purchases are managed by Apple. Your App Store purchase identity and RecipePouch account are treated as separate identities.": {
+    "App Store purchases are managed by Apple. Your App Store purchase identity and Recipe Pals account are treated as separate identities.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "App Store 购买项目由 Apple 管理。App Store 购买身份与 RecipePouch 账号彼此独立。"
+            "value": "App Store 购买项目由 Apple 管理。App Store 购买身份与 私人菜谱账号彼此独立。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "App Store 購買項目由 Apple 管理。App Store 購買身分與 RecipePouch 帳號彼此獨立。"
+            "value": "App Store 購買項目由 Apple 管理。App Store 購買身分與 私人菜譜帳號彼此獨立。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "App Storeの購入はAppleが管理します。App Storeの購入に使うアカウントとRecipePouchアカウントは別々に扱われます。"
+            "value": "App Storeの購入はAppleが管理します。App Storeの購入に使うアカウントとRecipe Palsアカウントは別々に扱われます。"
           }
         }
       }
     },
-    "You can export local data and request deletion of your RecipePouch account data from Settings.": {
+    "You can export local data and request deletion of your Recipe Pals account data from Settings.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "你可以在“设置”中导出本机数据，并申请删除 RecipePouch 账号数据。"
+            "value": "你可以在“设置”中导出本机数据，并申请删除 私人菜谱账号数据。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "你可以在「設定」中匯出本機資料，並申請刪除 RecipePouch 帳號資料。"
+            "value": "你可以在「設定」中匯出本機資料，並申請刪除 私人菜譜帳號資料。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Settingsからローカルデータをエクスポートし、RecipePouchアカウントデータの削除を申請できます。"
+            "value": "Settingsからローカルデータをエクスポートし、Recipe Palsアカウントデータの削除を申請できます。"
           }
         }
       }
     },
-    "Choose how to connect this iPhone’s local library to your RecipePouch account.": {
+    "Choose how to connect this iPhone’s local library to your Recipe Pals account.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "选择如何将这部 iPhone 上的本机食谱库连接到 RecipePouch 账号。"
+            "value": "选择如何将这部 iPhone 上的本机食谱库连接到 私人菜谱账号。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "選擇如何將這部 iPhone 上的本機食譜庫連結至 RecipePouch 帳號。"
+            "value": "選擇如何將這部 iPhone 上的本機食譜庫連結至 私人菜譜帳號。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このiPhoneのローカルライブラリをRecipePouchアカウントに接続する方法を選んでください。"
+            "value": "このiPhoneのローカルライブラリをRecipe Palsアカウントに接続する方法を選んでください。"
           }
         }
       }
@@ -10065,68 +10065,68 @@
         }
       }
     },
-    "Delete All RecipePouch Data": {
+    "Delete All Recipe Pals Data": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "删除所有 RecipePouch 数据"
+            "value": "删除所有 私人菜谱数据"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "刪除所有 RecipePouch 資料"
+            "value": "刪除所有 私人菜譜資料"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouchのすべてのデータを削除"
+            "value": "Recipe Palsのすべてのデータを削除"
           }
         }
       }
     },
-    "Delete RecipePouch account?": {
+    "Delete Recipe Pals account?": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "删除 RecipePouch 账号？"
+            "value": "删除 私人菜谱账号？"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "刪除 RecipePouch 帳號？"
+            "value": "刪除 私人菜譜帳號？"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouchアカウントを削除しますか？"
+            "value": "Recipe Palsアカウントを削除しますか？"
           }
         }
       }
     },
-    "Delete all local RecipePouch data?": {
+    "Delete all local Recipe Pals data?": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "删除所有 RecipePouch 本机数据？"
+            "value": "删除所有 私人菜谱本机数据？"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "刪除所有 RecipePouch 本機資料？"
+            "value": "刪除所有 私人菜譜本機資料？"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouchのローカルデータをすべて削除しますか？"
+            "value": "Recipe Palsのローカルデータをすべて削除しますか？"
           }
         }
       }
@@ -10703,24 +10703,24 @@
         }
       }
     },
-    "Using RecipePouch": {
+    "Using Recipe Pals": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用 RecipePouch"
+            "value": "使用 私人菜谱"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用 RecipePouch"
+            "value": "使用 私人菜譜"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouchの使い方"
+            "value": "Recipe Palsの使い方"
           }
         }
       }
@@ -11209,24 +11209,24 @@
         }
       }
     },
-    "Check %@ to verify your account, then return to RecipePouch.": {
+    "Check %@ to verify your account, then return to Recipe Pals.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请查看 %@ 验证账号，然后返回 RecipePouch。"
+            "value": "请查看 %@ 验证账号，然后返回 私人菜谱。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "請查看 %@ 驗證帳號，然後返回 RecipePouch。"
+            "value": "請查看 %@ 驗證帳號，然後返回 私人菜譜。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@を確認してアカウントを認証し、RecipePouchに戻ってください。"
+            "value": "%@を確認してアカウントを認証し、Recipe Palsに戻ってください。"
           }
         }
       }
@@ -13514,25 +13514,25 @@
         }
       }
     },
-    "Share to RecipePouch": {
+    "Share to Recipe Pals": {
       "comment": "Concise UI copy and dynamic display text.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "分享至 RecipePouch"
+            "value": "分享至 私人菜谱"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "分享至 RecipePouch"
+            "value": "分享至 私人菜譜"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch に共有"
+            "value": "Recipe Pals に共有"
           }
         }
       }
@@ -14158,24 +14158,24 @@
         }
       }
     },
-    "Welcome to RecipePouch": {
+    "Welcome to Recipe Pals": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouchへようこそ"
+            "value": "Recipe Palsへようこそ"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "欢迎使用 RecipePouch"
+            "value": "欢迎使用 私人菜谱"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "歡迎使用 RecipePouch"
+            "value": "歡迎使用 私人菜譜"
           }
         }
       }
@@ -16518,25 +16518,25 @@
         }
       }
     },
-    "Your timer progress is saved. Keep RecipePouch open to see when time is up.": {
+    "Your timer progress is saved. Keep Recipe Pals open to see when time is up.": {
       "comment": "User-facing Recipe iOS copy.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "计时进度已保存。请保持 RecipePouch 打开，以查看计时结束提醒。"
+            "value": "计时进度已保存。请保持 私人菜谱打开，以查看计时结束提醒。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "計時進度已儲存。請保持 RecipePouch 開啟，以查看計時結束提醒。"
+            "value": "計時進度已儲存。請保持 私人菜譜開啟，以查看計時結束提醒。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "タイマーの進行状況を保存しました。終了を確認するには RecipePouch を開いたままにしてください。"
+            "value": "タイマーの進行状況を保存しました。終了を確認するには Recipe Pals を開いたままにしてください。"
           }
         }
       }
@@ -17553,19 +17553,19 @@
         }
       }
     },
-    "RecipePouch couldn't read your saved library. The file has been left unchanged.": {
+    "Recipe Pals couldn't read your saved library. The file has been left unchanged.": {
       "comment": "User-facing Recipe iOS copy.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 无法读取已保存的食谱库，原始文件未被修改。"
+            "value": "私人菜谱无法读取已保存的食谱库，原始文件未被修改。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 無法讀取已儲存的食譜庫，原始檔案未被修改。"
+            "value": "私人菜譜無法讀取已儲存的食譜庫，原始檔案未被修改。"
           }
         },
         "ja": {
@@ -17622,48 +17622,48 @@
         }
       }
     },
-    "RecipePouch's shared storage is not available. Check App Group signing.": {
+    "Recipe Pals’ shared storage is not available. Check App Group signing.": {
       "comment": "Localized shared/core/service message.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 无法访问共享存储，请检查 App Group 签名配置。"
+            "value": "私人菜谱无法访问共享存储，请检查 App Group 签名配置。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 無法存取共享儲存空間，請檢查 App Group 簽署設定。"
+            "value": "私人菜譜無法存取共享儲存空間，請檢查 App Group 簽署設定。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch の共有ストレージにアクセスできません。App Group の署名設定を確認してください。"
+            "value": "Recipe Pals の共有ストレージにアクセスできません。App Group の署名設定を確認してください。"
           }
         }
       }
     },
-    "Share a public HTTPS link, readable text, image, or PDF to RecipePouch.": {
+    "Share a public HTTPS link, readable text, image, or PDF to Recipe Pals.": {
       "comment": "Localized shared/core/service message.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请向 RecipePouch 分享公开的 HTTPS 链接、可读取文本、图片或 PDF。"
+            "value": "请向 私人菜谱分享公开的 HTTPS 链接、可读取文本、图片或 PDF。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "請向 RecipePouch 分享公開的 HTTPS 連結、可讀取文字、圖片或 PDF。"
+            "value": "請向 私人菜譜分享公開的 HTTPS 連結、可讀取文字、圖片或 PDF。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "公開 HTTPS リンク、読み取り可能なテキスト、画像、PDF を RecipePouch に共有してください。"
+            "value": "公開 HTTPS リンク、読み取り可能なテキスト、画像、PDF を Recipe Pals に共有してください。"
           }
         }
       }
@@ -17944,25 +17944,25 @@
         }
       }
     },
-    "The RecipePouch import service is not configured.": {
+    "The Recipe Pals import service is not configured.": {
       "comment": "Localized shared/core/service message.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 导入服务尚未配置。"
+            "value": "私人菜谱导入服务尚未配置。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 匯入服務尚未設定。"
+            "value": "私人菜譜匯入服務尚未設定。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch のインポートサービスが設定されていません。"
+            "value": "Recipe Pals のインポートサービスが設定されていません。"
           }
         }
       }
@@ -18174,48 +18174,48 @@
         }
       }
     },
-    "Your active RecipePouch subscription has been restored.": {
+    "Your active Recipe Pals subscription has been restored.": {
       "comment": "Localized shared/core/service message.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已恢复有效的 RecipePouch 订阅。"
+            "value": "已恢复有效的 私人菜谱订阅。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "已恢復有效的 RecipePouch 訂閱。"
+            "value": "已恢復有效的 私人菜譜訂閱。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "有効な RecipePouch サブスクリプションを復元しました。"
+            "value": "有効な Recipe Pals サブスクリプションを復元しました。"
           }
         }
       }
     },
-    "No active RecipePouch subscription was found for this App Store account.": {
+    "No active Recipe Pals subscription was found for this App Store account.": {
       "comment": "Localized shared/core/service message.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此 App Store 账号没有有效的 RecipePouch 订阅。"
+            "value": "此 App Store 账号没有有效的 私人菜谱订阅。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "此 App Store 帳號沒有有效的 RecipePouch 訂閱。"
+            "value": "此 App Store 帳號沒有有效的 私人菜譜訂閱。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "この App Store アカウントに有効な RecipePouch サブスクリプションはありません。"
+            "value": "この App Store アカウントに有効な Recipe Pals サブスクリプションはありません。"
           }
         }
       }
@@ -18749,48 +18749,48 @@
         }
       }
     },
-    "RecipePouch import": {
+    "Recipe Pals import": {
       "comment": "User-facing label or system-generated source metadata.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 导入"
+            "value": "私人菜谱导入"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 匯入"
+            "value": "私人菜譜匯入"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch からのインポート"
+            "value": "Recipe Pals からのインポート"
           }
         }
       }
     },
-    "RecipePouch Recipes": {
+    "Recipe Pals Recipes": {
       "comment": "Visible label or status in standalone HTML exports.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 食谱"
+            "value": "私人菜谱食谱"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 食譜"
+            "value": "私人菜譜食譜"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch レシピ"
+            "value": "Recipe Pals レシピ"
           }
         }
       }

@@ -1,3 +1,3 @@
-/* RecipePouch brand overrides for technical Recipe string keys. */
-"Recipe Premium" = "RecipePouch Premium";
-"You can keep using Recipe for free and check again later." = "You can keep using RecipePouch for free and check again later.";
+/* Recipe Pals brand overrides for technical Recipe string keys. */
+"Recipe Premium" = "Recipe Pals Premium";
+"You can keep using Recipe for free and check again later." = "You can keep using Recipe Pals for free and check again later.";
