@@ -1,10 +1,11 @@
 # Actual isolated SQL execution — #134
 
-Executed 2026-10-09 UTC, Linux x86_64, Node 24.19.0, PostgreSQL 18.3 in
-PGlite 0.5.8, pgTAP 1.3.5, PGMQ 1.11.1. Base: `main@55ac164`.
-Tested source commit: `f6627af` (later commits update evidence only).
+Re-executed 2026-10-09 on macOS arm64 with Node 24.21.0 against
+`origin/main` / `HEAD` at `21866ec99bb9081e9f4312cde488ad63276ba7b6`.
+The disposable database is PostgreSQL 18.3 in PGlite 0.5.8, with pgTAP 1.3.5
+and PGMQ 1.11.1. No database URL or credential is accepted by the harness.
 
-## First real run and fix
+## Historical first run and fix
 
 Unchanged ACL suite: **20/20 PASS**. Unchanged queue suite: **38/39 PASS**.
 Assertion 19 expected `23505 CLIENT_REQUEST_ID_CONFLICT` for a changed source,
@@ -16,7 +17,7 @@ URL constant and changing only source content. The original conflict assertion
 is preserved. A separate real invocation asserts the obsolete endpoint still
 returns `42501`; grants and production migrations are unchanged.
 
-## Final clean-install results
+## Latest clean-install results
 
 - **PASS:** `npm ci --ignore-scripts` from the committed exact-version lock.
 - **PASS:** `NODE_OPTIONS=--max-old-space-size=256 npm test`: **85/85 pgTAP assertions** across 3 suites.
@@ -24,16 +25,13 @@ returns `42501`; grants and production migrations are unchanged.
   - 40 real queue/owner/idempotency/worker attempt/retry assertions.
   - 25 snapshot CAS and private artifact/owner/expiry/anonymous-role assertions.
 - **PASS:** `git diff --check`.
-- Several shared-host reruns were killed before TAP output (with and without
-  a bounded Node heap). No OOM cause was established. A final single-process
-  run after other heavy work naturally finished completed all 85 assertions in
-  4.3 seconds, exit 0. Earlier source passed 84 assertions. This is not a
-  production memory benchmark.
+- The latest clean-install run completed in one process with exit 0. This is
+  isolated database evidence, not a production memory benchmark.
 - **NOT RUN:** actual Supabase Auth/Storage HTTP, external endpoints, legacy
   backend business logic, two-session contention, production or deployment.
 
-[Full stdout](issue-134-sql.log). Commands and exact synthetic-platform / omitted
-legacy-migration boundaries are documented in
+[Full stdout](issue-134-sql.log), including `npm ci --ignore-scripts`.
+Commands and exact synthetic-platform / omitted legacy-migration boundaries are documented in
 [the isolated harness](../../../supabase/tests/isolated/README.md).
 
 This removes the earlier blanket “no local SQL runtime” blocker for the listed
