@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { KeyRound, LoaderCircle, RefreshCw, ShieldCheck, Smartphone, Trash2 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { adminApi, handleExpiredSession } from "../api";
 import type { AdminFactorState, AdminLoginEvent } from "../types";
 import { createPasskey } from "./webauthn";
@@ -16,7 +17,7 @@ export function AdminSecurityPage({ token, onAuthExpired }: AdminSecurityPagePro
   const [events, setEvents] = useState<AdminLoginEvent[]>([]);
   const [pendingTotp, setPendingTotp] = useState<PendingTotp | null>(null);
   const [totpCode, setTotpCode] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
+  const [disablingTotp, setDisablingTotp] = useState(false);
   const [passkeyName, setPasskeyName] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
@@ -84,7 +85,7 @@ export function AdminSecurityPage({ token, onAuthExpired }: AdminSecurityPagePro
   }
 
   async function beginTotp() {
-    await run("totp-setup", async () => setPendingTotp(await adminApi.setupTotp(token, currentPassword)));
+    await run("totp-setup", async () => setPendingTotp(await adminApi.setupTotp(token)));
   }
 
   async function enableTotp(event: FormEvent<HTMLFormElement>) {
@@ -92,7 +93,6 @@ export function AdminSecurityPage({ token, onAuthExpired }: AdminSecurityPagePro
     await run("totp-verify", async () => {
       await adminApi.verifyTotp(token, totpCode.trim());
       setPendingTotp(null);
-      setCurrentPassword("");
       setTotpCode("");
       setNotice("Authenticator app enabled.");
       await load();
@@ -102,9 +102,9 @@ export function AdminSecurityPage({ token, onAuthExpired }: AdminSecurityPagePro
   async function removeTotp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await run("totp-remove", async () => {
-      await adminApi.removeTotp(token, currentPassword, totpCode.trim());
-      setCurrentPassword("");
+      await adminApi.removeTotp(token, totpCode.trim());
       setTotpCode("");
+      setDisablingTotp(false);
       setNotice("Authenticator app removed.");
       await load();
     });
@@ -112,10 +112,9 @@ export function AdminSecurityPage({ token, onAuthExpired }: AdminSecurityPagePro
 
   async function addPasskey() {
     await run("passkey-add", async () => {
-      const { challengeId, options } = await adminApi.passkeyRegistrationOptions(token, currentPassword);
+      const { challengeId, options } = await adminApi.passkeyRegistrationOptions(token);
       const response = await createPasskey(options);
       await adminApi.verifyPasskeyRegistration(token, challengeId, response, passkeyName.trim() || "Passkey");
-      setCurrentPassword("");
       setPasskeyName("");
       setNotice("Passkey added.");
       await load();
@@ -124,13 +123,8 @@ export function AdminSecurityPage({ token, onAuthExpired }: AdminSecurityPagePro
 
   async function removePasskey(credentialId: string) {
     if (!window.confirm("Remove this passkey from the administrator account?")) return;
-    if (!currentPassword) {
-      setError("Enter your current password before removing a passkey.");
-      return;
-    }
     await run(`passkey-remove-${credentialId}`, async () => {
-      await adminApi.removePasskey(token, credentialId, currentPassword);
-      setCurrentPassword("");
+      await adminApi.removePasskey(token, credentialId);
       setNotice("Passkey removed.");
       await load();
     });
@@ -142,7 +136,7 @@ export function AdminSecurityPage({ token, onAuthExpired }: AdminSecurityPagePro
         <div>
           <p className="eyebrow">ADMINISTRATION</p>
           <h1>Security</h1>
-          <p className="muted">Add a second factor to protect this administrator account.</p>
+          <p className="muted">Manage two-step verification and passkeys.</p>
         </div>
         <button type="button" className="button button-outline" onClick={refresh} disabled={loading}>
           <RefreshCw size={15} className={loading ? "spin" : ""} aria-hidden="true" /> Refresh
@@ -155,12 +149,6 @@ export function AdminSecurityPage({ token, onAuthExpired }: AdminSecurityPagePro
         <div className="security-loading"><LoaderCircle size={17} className="spin" aria-hidden="true" /> Loading security settings…</div>
       ) : factors && (
         <>
-          <section className="security-card card security-password-card" aria-labelledby="security-password-title">
-            <div><h2 id="security-password-title">Confirm changes</h2><p>Enter your current password to add or remove an authentication factor.</p></div>
-            <label htmlFor="factor-current-password">Current password</label>
-            <input id="factor-current-password" type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} />
-          </section>
-
           <section className="security-card card" aria-labelledby="security-totp-title">
             <div className="security-card-heading">
               <span className="security-icon"><Smartphone size={18} aria-hidden="true" /></span>
@@ -169,27 +157,40 @@ export function AdminSecurityPage({ token, onAuthExpired }: AdminSecurityPagePro
             </div>
             {pendingTotp ? (
               <form className="security-form" onSubmit={enableTotp}>
-                <p>Enter this key in your authenticator app, then verify a current six-digit code.</p>
-                <label htmlFor="totp-secret">Setup key</label>
-                <code id="totp-secret" className="security-secret">{pendingTotp.secret}</code>
-                <label htmlFor="totp-setup-code">Verification code</label>
-                <input id="totp-setup-code" autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={totpCode} onChange={(event) => setTotpCode(event.target.value)} required />
+                <div className="security-totp-setup">
+                  <div className="security-qr"><QRCodeSVG value={pendingTotp.otpauthUri} size={184} title="Authenticator setup QR code" /></div>
+                  <div className="security-totp-details">
+                    <p>Scan this QR code with your authenticator app, then enter its six-digit code.</p>
+                    <label htmlFor="totp-secret">Setup key</label>
+                    <code id="totp-secret" className="security-secret">{pendingTotp.secret}</code>
+                    <label htmlFor="totp-setup-code">Verification code</label>
+                    <input id="totp-setup-code" autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={totpCode} onChange={(event) => setTotpCode(event.target.value)} required />
+                    <div className="security-actions">
+                      <button className="button button-primary" disabled={busy !== ""}>{busy === "totp-verify" ? "Verifying…" : "Verify and enable"}</button>
+                      <button className="button button-ghost" type="button" onClick={() => { setPendingTotp(null); setTotpCode(""); }}>Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            ) : factors.totp.enabled && disablingTotp ? (
+              <form className="security-form security-remove-form" onSubmit={removeTotp}>
+                <p>Enter a current authenticator code to turn off two-step verification.</p>
+                <label htmlFor="totp-remove-code">Authenticator code</label>
+                <input id="totp-remove-code" autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={totpCode} onChange={(event) => setTotpCode(event.target.value)} required />
                 <div className="security-actions">
-                  <button className="button button-primary" disabled={busy !== ""}>{busy === "totp-verify" ? "Verifying…" : "Verify and enable"}</button>
-                  <button className="button button-ghost" type="button" onClick={() => { setPendingTotp(null); setTotpCode(""); }}>Cancel</button>
+                  <button type="submit" className="button button-outline" disabled={busy !== ""}><Trash2 size={14} aria-hidden="true" /> Turn off</button>
+                  <button type="button" className="button button-ghost" onClick={() => { setDisablingTotp(false); setTotpCode(""); }}>Cancel</button>
                 </div>
               </form>
             ) : factors.totp.enabled ? (
-              <form className="security-form security-remove-form" onSubmit={removeTotp}>
-                <p>Confirm your password and a current authenticator code to remove this factor.</p>
-                <label htmlFor="totp-remove-code">Authenticator code</label>
-                <input id="totp-remove-code" autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={totpCode} onChange={(event) => setTotpCode(event.target.value)} required />
-                <button type="submit" className="button button-outline" disabled={busy !== ""}><Trash2 size={14} aria-hidden="true" /> Remove authenticator app</button>
-              </form>
+              <div className="security-card-footer">
+                <p>Two-step verification is on. Sign-in requires your password and authenticator code.</p>
+                <button type="button" className="button button-outline" onClick={() => setDisablingTotp(true)}>Turn off two-step verification</button>
+              </div>
             ) : (
               <div className="security-card-footer">
-                <p>Codes refresh every 30 seconds. Setup stays pending until the first code is verified.</p>
-                <button type="button" className="button button-primary" onClick={() => void beginTotp()} disabled={busy !== "" || !currentPassword}>{busy === "totp-setup" ? "Preparing…" : "Set up authenticator app"}</button>
+                <p>Two-step verification is off. Scan a QR code to link your authenticator app.</p>
+                <button type="button" className="button button-primary" onClick={() => void beginTotp()} disabled={busy !== ""}>{busy === "totp-setup" ? "Preparing…" : "Turn on two-step verification"}</button>
               </div>
             )}
           </section>
@@ -213,7 +214,7 @@ export function AdminSecurityPage({ token, onAuthExpired }: AdminSecurityPagePro
             <div className="security-card-footer security-passkey-footer">
               <label htmlFor="passkey-name">Passkey name</label>
               <input id="passkey-name" value={passkeyName} maxLength={80} placeholder="For example, MacBook Touch ID" onChange={(event) => setPasskeyName(event.target.value)} />
-              <button type="button" className="button button-primary" disabled={busy !== "" || !currentPassword} onClick={() => void addPasskey()}>{busy === "passkey-add" ? "Waiting for device…" : "Add passkey"}</button>
+              <button type="button" className="button button-primary" disabled={busy !== ""} onClick={() => void addPasskey()}>{busy === "passkey-add" ? "Waiting for device…" : "Add passkey"}</button>
             </div>
           </section>
 

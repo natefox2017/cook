@@ -291,6 +291,7 @@ function App() {
       setRestoring(false);
       return;
     }
+    setSession(saved);
     adminApi.session(saved.token).then(({ admin }) => setSession({ ...saved, admin })).catch(() => clearSession()).finally(() => setRestoring(false));
   }, [clearSession]);
 
@@ -310,7 +311,7 @@ function App() {
     clearSession();
   }, [clearSession, session]);
 
-  if (restoring) return <div className="boot-screen"><span className="spinner" /> Checking admin session…</div>;
+  if (restoring && !session) return <div className="boot-screen"><span className="spinner" /> Checking admin session…</div>;
   if (!session) return <AdminLogin onLogin={acceptSession} allowBootstrap={allowBootstrap} />;
   if (session.admin.mustChangePassword) return <ChangePassword session={session} onUpdated={acceptSession} />;
   return <AppShell session={session} onLogout={logout} onAuthExpired={clearSession} />;
