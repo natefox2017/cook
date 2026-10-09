@@ -555,8 +555,11 @@ public final class RecipeStore {
         guard let fileURL else { return }
         do {
             let data = try Data(contentsOf: fileURL)
-            let loaded = try JSONDecoder().decode(LibrarySnapshot.self, from: data)
+            var loaded = try JSONDecoder().decode(LibrarySnapshot.self, from: data)
             try validate(loaded)
+            if migrateKnownSampleCover(in: &loaded) {
+                try encoded(loaded).write(to: fileURL, options: .atomic)
+            }
             publish(loaded)
             loadError = nil
         } catch {
@@ -571,6 +574,21 @@ public final class RecipeStore {
                 loadError = error.localizedDescription
             }
         }
+    }
+
+    private func migrateKnownSampleCover(in snapshot: inout LibrarySnapshot) -> Bool {
+        guard
+            let index = snapshot.recipes.firstIndex(where: {
+                $0.id == SampleRecipes.roastChickenID
+                    && $0.coverAsset == "salmon"
+                    && $0.coverData == nil
+            })
+        else {
+            return false
+        }
+
+        snapshot.recipes[index].coverAsset = "chicken"
+        return true
     }
 
     /// Erase this device's library without creating cloud deletion tombstones.

@@ -39,6 +39,89 @@ func libraryStartsEmptyAndSamplesAreExplicitAndIdempotent() throws {
 }
 
 @Test @MainActor
+func storedRoastChickenSampleCoverMigratesWithoutChangingUserEdits() throws {
+    let url = try libraryURL()
+    defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+    let store = RecipeStore(fileURL: url)
+    var savedChicken = try #require(
+        SampleRecipes.recipes.first { $0.id == SampleRecipes.roastChickenID }
+    )
+    savedChicken.title = "My roast chicken"
+    savedChicken.notes = "Extra crispy potatoes"
+    savedChicken.isFavorite = true
+    savedChicken.ingredients[0].amountText = "700 g"
+    savedChicken.coverAsset = "salmon"
+    try store.upsert(savedChicken)
+
+    var otherRecipe = exampleRecipe()
+    otherRecipe.coverAsset = "salmon"
+    try store.upsert(otherRecipe)
+
+    let beforeMigration = try #require(store.recipe(id: savedChicken.id))
+    let savedOtherRecipe = try #require(store.recipe(id: otherRecipe.id))
+    var expectedChicken = beforeMigration
+    expectedChicken.coverAsset = "chicken"
+
+    let migrated = RecipeStore(fileURL: url)
+    #expect(migrated.recipe(id: savedChicken.id) == expectedChicken)
+    #expect(migrated.recipe(id: otherRecipe.id) == savedOtherRecipe)
+
+    let reloaded = RecipeStore(fileURL: url)
+    #expect(reloaded.recipe(id: savedChicken.id) == expectedChicken)
+    #expect(reloaded.recipe(id: otherRecipe.id) == savedOtherRecipe)
+}
+
+@Test @MainActor
+func storedRoastChickenSampleWithCustomCoverIsPreserved() throws {
+    let url = try libraryURL()
+    defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+    let store = RecipeStore(fileURL: url)
+    var savedChicken = try #require(
+        SampleRecipes.recipes.first { $0.id == SampleRecipes.roastChickenID }
+    )
+    savedChicken.coverAsset = "salmon"
+    savedChicken.coverData = Data([0xCA, 0xFE])
+    try store.upsert(savedChicken)
+    let beforeReload = try #require(store.recipe(id: savedChicken.id))
+
+    let reloaded = RecipeStore(fileURL: url)
+    #expect(reloaded.recipe(id: savedChicken.id) == beforeReload)
+}
+
+@Test @MainActor
+func failedSampleCoverMigrationPreservesTheOriginalFileAndDoesNotPublish() throws {
+    let url = try libraryURL()
+    let directory = url.deletingLastPathComponent()
+    defer {
+        try? FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: directory.path
+        )
+        try? FileManager.default.removeItem(at: directory)
+    }
+
+    let store = RecipeStore(fileURL: url)
+    var savedChicken = try #require(
+        SampleRecipes.recipes.first { $0.id == SampleRecipes.roastChickenID }
+    )
+    savedChicken.coverAsset = "salmon"
+    try store.upsert(savedChicken)
+    let originalFile = try Data(contentsOf: url)
+
+    try FileManager.default.setAttributes(
+        [.posixPermissions: 0o555],
+        ofItemAtPath: directory.path
+    )
+
+    let reloaded = RecipeStore(fileURL: url)
+    #expect(reloaded.loadError != nil)
+    #expect(reloaded.recipe(id: savedChicken.id) == nil)
+    #expect(try Data(contentsOf: url) == originalFile)
+}
+
+@Test @MainActor
 func deletionsAndResetRemainInCloudSnapshotAfterReload() throws {
     let url = try libraryURL()
     defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
