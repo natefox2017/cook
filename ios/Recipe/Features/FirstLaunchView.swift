@@ -16,118 +16,168 @@ struct FirstLaunchFlowView: View {
                 Group {
                     switch step {
                     case 0:
-                        FirstLaunchWelcomePage()
+                        FirstLaunchStoryPage(
+                            imageName: "OnboardingAI",
+                            imageAccessibilityLabel:
+                                "A finished lemon and herb roast chicken recipe.",
+                            title: "Create with AI",
+                            subtitle:
+                                "Tell AI what you’re craving or list the ingredients you have. Start with a recipe idea.",
+                            actionTitle: "Next",
+                            page: 0,
+                            onNext: advance,
+                            onSkip: showPaywall
+                        )
                     case 1:
-                        ScrollView {
-                            GettingStartedGuideContent()
-                                .padding(.horizontal, RecipeSpacing.pageInset)
-                                .padding(.top, RecipeSpacing.xSmall)
-                                .padding(.bottom, 28)
-                        }
+                        FirstLaunchStoryPage(
+                            imageName: "OnboardingShrimpPasta",
+                            imageAccessibilityLabel: "A bowl of shrimp pasta saved as a recipe.",
+                            title: "Save recipe links",
+                            subtitle:
+                                "Paste a recipe link to bring its ingredients and steps into your collection.",
+                            actionTitle: "Next",
+                            page: 1,
+                            onNext: advance,
+                            onSkip: showPaywall
+                        )
+                    case 2:
+                        FirstLaunchStoryPage(
+                            imageName: "OnboardingSocial",
+                            imageAccessibilityLabel: "A cook sharing a recipe video from a phone.",
+                            title: "Import social recipes",
+                            subtitle:
+                                "Share a recipe from Instagram, TikTok, or YouTube to save it.",
+                            actionTitle: "See Plans",
+                            page: 2,
+                            onNext: advance,
+                            onSkip: showPaywall
+                        )
                     default:
-                        ScrollView {
-                            PremiumPaywallContent(
-                                context: .onboarding,
-                                onContinue: onComplete,
-                                onManageSubscription: nil
-                            )
-                            .padding(.horizontal, RecipeSpacing.pageInset)
-                            .padding(.vertical, 16)
-                        }
+                        PremiumPaywallContent(
+                            context: .onboarding,
+                            onContinue: onComplete,
+                            onManageSubscription: nil
+                        )
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .trailing)))
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if step < 2 {
-                    VStack(spacing: RecipeSpacing.xSmall) {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                step += 1
-                            }
-                        } label: {
-                            Text(LocalizedStringKey(step == 0 ? "Get Started" : "See Plans"))
-                        }
-                        .buttonStyle(PrimaryButtonStyle())
-                        .accessibilityIdentifier("onboarding.primary")
-
-                    }
-                    .padding(.horizontal, RecipeSpacing.pageInset)
-                    .padding(.top, 12)
-                    .padding(.bottom, 8)
-                    .background(.ultraThinMaterial)
-                }
-            }
-            .toolbar {
-                if step < 2 {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Skip") { onComplete() }
-                            .accessibilityIdentifier("onboarding.skip")
-                    }
-                }
-            }
-            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
+            .toolbar(.hidden, for: .navigationBar)
         }
         .tint(RecipeTheme.accent)
     }
-}
 
-private struct FirstLaunchWelcomePage: View {
-    var body: some View {
-        ScrollView {
-            VStack(spacing: RecipeSpacing.large) {
-                Spacer(minLength: 18)
+    private func advance() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            step += 1
+        }
+    }
 
-                ZStack {
-                    Circle()
-                        .fill(RecipeTheme.accent.opacity(0.12))
-                        .frame(width: 116, height: 116)
-                    Image(systemName: "leaf.fill")
-                        .font(.system(size: 50, weight: .light))
-                        .foregroundStyle(RecipeTheme.accentForeground)
-                }
-                .accessibilityHidden(true)
-
-                Text("Keep every recipe in one place")
-                    .font(RecipeTheme.heading(.hero))
-                    .multilineTextAlignment(.center)
-
-                VStack(spacing: RecipeSpacing.small) {
-                    FirstLaunchValueRow(icon: "link", title: "Save from anywhere")
-                    FirstLaunchValueRow(icon: "checklist", title: "Cook without clutter")
-                    FirstLaunchValueRow(icon: "calendar.badge.plus", title: "Plan and shop")
-                }
-            }
-            .padding(.horizontal, RecipeSpacing.pageInset)
-            .padding(.bottom, 30)
+    private func showPaywall() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            step = 3
         }
     }
 }
 
-private struct FirstLaunchValueRow: View {
-    let icon: String
-    let title: String
+private struct FirstLaunchStoryPage: View {
+    let imageName: String
+    let imageAccessibilityLabel: LocalizedStringKey
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey
+    let actionTitle: LocalizedStringKey
+    let page: Int
+    let onNext: () -> Void
+    let onSkip: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: icon)
-                .font(.system(size: 21, weight: .medium))
-                .foregroundStyle(RecipeTheme.accentForeground)
-                .frame(width: 42, height: 42)
-                .background(
-                    RecipeTheme.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 13)
-                )
-                .accessibilityHidden(true)
+        GeometryReader { geometry in
+            ZStack {
+                GeometryReader { imageGeometry in
+                    Image(imageName)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(
+                            width: imageGeometry.size.width,
+                            height: imageGeometry.size.height
+                        )
+                        .clipped()
+                        .overlay {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .black.opacity(0.32), location: 0),
+                                    .init(color: .clear, location: 0.30),
+                                    .init(color: .black.opacity(0.10), location: 0.48),
+                                    .init(color: .black.opacity(0.84), location: 1),
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        }
+                        .accessibilityLabel(Text(imageAccessibilityLabel))
+                }
+                .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
-                Text(LocalizedStringKey(title))
-                    .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .trailing, spacing: RecipeSpacing.small) {
+                        Button("Skip", action: onSkip)
+                            .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 18)
+                            .frame(minHeight: 44)
+                            .background(.black.opacity(0.28), in: Capsule())
+                            .accessibilityIdentifier("onboarding.skip")
+
+                        pageProgress
+                            .frame(maxWidth: .infinity)
+                    }
+
+                    Spacer(minLength: 24)
+
+                    VStack(alignment: .leading, spacing: RecipeSpacing.small) {
+                        Text(title)
+                            .font(RecipeTheme.heading(.title))
+                            .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.25), radius: 12, y: 2)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+
+                        Text(subtitle)
+                            .font(RecipeTheme.body())
+                            .foregroundStyle(.white.opacity(0.94))
+                            .shadow(color: .black.opacity(0.4), radius: 8, y: 1)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Button(action: onNext) {
+                            Text(actionTitle)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .padding(.top, RecipeSpacing.small)
+                        .accessibilityIdentifier("onboarding.primary")
+                    }
+                    .padding(.bottom, RecipeSpacing.small)
+                }
+                .padding(.horizontal, RecipeSpacing.pageInset)
+                .padding(.top, max(8, geometry.safeAreaInsets.top))
+                .padding(.bottom, max(12, geometry.safeAreaInsets.bottom))
             }
-
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.black)
+        .preferredColorScheme(.dark)
+    }
+
+    private var pageProgress: some View {
+        HStack(spacing: RecipeSpacing.xSmall) {
+            ForEach(0..<3, id: \.self) { index in
+                Capsule()
+                    .fill(.white.opacity(index <= page ? 1 : 0.38))
+                    .frame(height: 3)
+            }
+        }
+        .accessibilityElement()
+        .accessibilityLabel(Text("Onboarding page \(page + 1) of 3"))
     }
 }
 
@@ -193,7 +243,7 @@ struct GettingStartedGuideContent: View {
 
             VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                 HStack(spacing: 4) {
-                    Text(number, format: .number)
+                    Text("\(number).")
                     Text(LocalizedStringKey(title))
                 }
                 .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
