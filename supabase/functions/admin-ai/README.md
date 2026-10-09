@@ -1,71 +1,101 @@
 # Admin AI Edge Function
 
-This is a replacement implementation based on the current `admin/src/api.ts`,
-`admin/src/types.ts`, `admin/src/pages/LLMPage.tsx`, and the read-only live
-database catalog captured in
-`supabase/ISSUE_155_EDGE_FUNCTION_SOURCE_MANIFEST.md`. It is not recovered
-source and does not claim deployed bundle SHA parity.
+This replacement follows the current admin UI provider fields and the verified
+schema recorded in `supabase/ISSUE_155_EDGE_FUNCTION_SOURCE_MANIFEST.md`. It is
+not recovered source or deployed bundle parity. No production deployment,
+production secret inspection, or production data change is part of this work.
 
-The handler supports owner/admin sessions, provider listing, safe usage
-aggregation, one-time HTTPS provider probes, and limited provider metadata
-updates. Provider secrets are never selected, returned, or logged. A supplied
-key for create/update is rejected because the old encryption format and key
-custody cannot be recovered. Testing an existing saved key is unavailable for
-the same reason. Empty-key edits preserve `secret_ref` and the existing secret
-ciphertext, nonce, and key version. The provider name, base URL, and enabled
-state can be updated on the provider row. Model changes remain rejected because
-the UI's single model field cannot safely update the live multi-model and route
-relationships.
+## HTTP contract
 
-Provider deletion always returns 409 before creating a service-role client.
-Count-then-delete checks have a race with concurrent inserts, while the live
-foreign keys can cascade models and health rows or detach usage and route
-references. Disable a provider with `active: false` until an approved atomic
-history guard exists. `ai_usage_events` is read with only live columns;
-cached-input tokens remain `null` because production has no such column. No
-schema, migration, `_shared` module, production data, or secret is changed by
-this function.
+All six operations require a valid custom admin session with `owner` or `admin`
+role. End-user JWTs do not substitute for admin sessions.
 
-## Secret protocol status
+| Method | Path                        | Request / response                                                                                 |
+| ------ | --------------------------- | -------------------------------------------------------------------------------------------------- |
+| GET    | `/providers`                | `{data: Provider[]}`                                                                               |
+| POST   | `/providers`                | Provider input, including a nonempty `apiKey`; returns Provider                                    |
+| PUT    | `/providers/{id}`           | Provider input; blank `apiKey` preserves the existing reference; returns Provider                  |
+| DELETE | `/providers/{id}`           | Returns `{ok:true}` only when unreferenced                                                         |
+| POST   | `/providers/test`           | One-time Provider input with a key, or `{providerId}`; returns `{ok:true}` or `{ok:false,message}` |
+| GET    | `/usage?range=7d\|30d\|90d` | Existing bounded usage totals, series and model aggregation                                        |
 
-The live catalog has `ai_secrets`, with unique `secret_ref`, opaque `ciphertext`
-and `nonce` text columns, and integer `key_version` defaulting to 1. It does not
-have `ai_provider_secrets`. The deployed wrapper names `COOKAPP_AI_MASTER_KEY`,
-but its implementation source is unavailable, so its key encoding/derivation,
-ciphertext and nonce encoding, authentication tag layout, AAD, key-version
-meaning, and rotation rules are unknown. The import worker's OCR key is a
-separate function environment variable. The repository AES-GCM helper is for
-admin TOTP and uses different storage and key custody; it must not be reused for
-provider keys.
+Provider input remains `name/baseUrl/model/apiKey/active`. Provider output
+remains `id/name/baseUrl/model/active/apiKeyConfigured/updatedAt`, without
+secret fields. A saved probe always reads its URL and selected model from the
+database and ignores caller URL, model and key overrides. The probe checks the
+provider's `/models` endpoint; it does not verify generation by the selected
+model.
 
-The following is a proposed, unapproved v2 contract, not deployed behavior:
+A provider's one existing model may be renamed only when unreferenced,
+preserving its model ID. Multiple models, route primary/fallback references,
+usage provider, model/final-model/attempted-model references, or matching audit
+history prohibit model changes. Metadata and active edits remain possible using
+the currently selected model. Model selection is enabled first, then creation
+time, then ID.
 
-- Keep using `ai_secrets`; do not create a parallel secret table.
-- Use a separate function secret `COOKAPP_AI_SECRET_KEY_V2` containing a
-  base64url-encoded 32-byte key. Decode it to the 256-bit AES key.
-- Encrypt with WebCrypto AES-256-GCM, a fresh random 12-byte nonce encoded as
-  base64url, and AAD `ai-secrets:v2:${secret_ref}`. Store the base64url
-  WebCrypto ciphertext including its authentication tag in `ciphertext`, the
-  nonce in `nonce`, and `key_version = 2`.
-- Decrypt v2 only. Preserve v1 rows byte-for-byte and return an explicit
-  unsupported-version error for v1 until the original source and key protocol
-  are recovered. Do not infer or convert the wrapper's `COOKAPP_AI_MASTER_KEY`
-  format.
-- Create or rotate a key inside one database transaction: insert the new
-  `ai_secrets` row and update the provider's `secret_ref` atomically. Retain the
-  prior secret row unless a separate cleanup operation proves it is unreferenced
-  and is authorized.
-- Provider plus initial model creation also needs an atomic database operation
-  and a frozen mapping for existing route/fallback behavior before enabling
-  create or model updates.
-- Keep deletion disabled unless an approved database function performs the
-  reference checks and delete under transaction locks, including route primary
-  and fallback references, usage, models, health, and secret references.
+The two service-role-only, security-invoker RPCs in
+`20261009160000_admin_ai_provider_transactions.sql` save and delete atomically.
+They explicitly set an empty search path. Related table writes are serialized
+with short transaction locks so array/JSON reference insertions cannot race the
+check. Secret insertion, provider creation/update and initial model creation
+roll back together on failure. Delete removes only an unreferenced provider and
+its models/health; it retains every secret and never rewrites route or history
+rows. Array/JSON/audit UUID matching is conservative and case-insensitive.
 
-Freeze and review this protocol and its database transaction contract before
-implementing saved-key writes or probes. No production key presence or value was
-queried.
+Errors use the existing AppError envelope: 400 invalid inputs, 401 invalid
+sessions, 403 denied roles, 404 missing providers, 409 model/history conflicts
+or unsupported secret versions, and sanitized 503 configuration/database/secret
+failures. No upstream response body or internal database error is returned or
+logged. Usage retains the existing nullable cached-token response; this change
+does not add cache-token aggregation.
 
-Provider probes require a caller-supplied key, public HTTPS host, default port,
-public DNS answers pinned to the connection, no redirects, and an eight-second
-timeout. The response body is discarded. No provider probe writes health state.
+## Approved v2 secret protocol
+
+Only explicit nonblank new keys write the new protocol. Existing `ai_secrets`
+columns and RLS stay unchanged; no parallel secret table is created.
+
+- `COOKAPP_AI_SECRET_KEY_V2`: canonical unpadded base64url 32-byte AES-256 key.
+- Fresh opaque UUID `secret_ref` for every create/rotation.
+- WebCrypto AES-256-GCM, random 12-byte nonce, 128-bit tag.
+- AAD: `ai-secrets:v2:${secret_ref}`.
+- Unpadded base64url ciphertext including the WebCrypto tag and base64url nonce;
+  `key_version = 2`.
+- Blank edits preserve the old reference and ciphertext byte-for-byte. Explicit
+  replacements insert fresh rows and retain the old rows, including v1.
+- Saved v1/unknown-version probes return an explicit 409 unsupported-version
+  error. The unavailable `COOKAPP_AI_MASTER_KEY` format is never inferred or
+  converted. The external legacy worker resolver has not been adapted or tested
+  for v2; rollout must account for that dependency separately.
+
+Both probe modes require public HTTPS DNS names on default port 443, reject
+credentials/query/fragment/private addresses, pin public DNS answers to the TLS
+connection, follow no redirects, discard response bodies and have an
+eight-second network timeout. Probes do not persist the caller's key or update
+health state.
+
+## Local verification
+
+```sh
+deno test --allow-env --allow-net --frozen --config supabase/functions/admin-ai/deno.json supabase/functions/admin-ai/
+deno check --frozen --config supabase/functions/admin-ai/deno.json supabase/functions/admin-ai/index.ts
+python3 supabase/functions/admin-ai/tests/run_local.py
+```
+
+The Python harness creates a disposable Supabase CLI project under root `.tmp/`,
+uses ports 57820–57829, replays the full 17-migration baseline plus this
+migration, runs 44 pgTAP assertions, and serves the actual Edge handler with
+synthetic admin sessions and keys. It tests real role/RPC denials,
+create/update/rotation/delete, v1 preservation, saved URL overrides, and
+concurrent fallback/attempted-history insertions. Logs and a source-hashed
+report remain in `.tmp/`; only its own stack is stopped and deleted. Ports must
+be available. `--existing` is for iteration against an already isolated fixture
+project, not a production or shared stack.
+
+The public example.com probes are negative checks with synthetic credentials; no
+successful commercial provider authentication, generation, external worker
+compatibility, or production acceptance is claimed. CLI database lint also flags
+two preexisting legacy queue functions: `recipe_import_queue_read` returns an
+integer where its declared second result is bigint; `recipe_import_enqueue`
+references the absent modern `recipe_import_jobs.error_code` column. Neither
+legacy definition is changed here. The modern `recipe_import_v1` queue's runtime
+results are separate evidence from these legacy lint findings.

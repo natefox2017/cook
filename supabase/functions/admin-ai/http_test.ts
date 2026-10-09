@@ -82,7 +82,7 @@ Deno.test("AI endpoints require owner or admin before service access", async () 
   }
 });
 
-Deno.test("provider create refuses to persist plaintext or unknown-format keys", async () => {
+Deno.test("provider create fails closed when the v2 key is unconfigured", async () => {
   const fixture = dependencies();
   const response = await handleRequest(
     new Request(
@@ -140,99 +140,116 @@ Deno.test("provider test never persists or echoes the one-time key", async () =>
   assertEquals(fixture.serviceClientCalls(), 0);
 });
 
-Deno.test("provider deletion is rejected before service-role access", async () => {
-  const fixture = dependencies();
+const id = "11111111-1111-4111-8111-111111111111";
+Deno.test("provider deletion maps transaction reference rejection to 409", async () => {
+  const fixture = dependencies(() => ({
+    rpc: async () => ({
+      data: null,
+      error: { code: "PT409", message: "sensitive internal detail" },
+    }),
+  }));
   const response = await handleRequest(
-    new Request(
-      "http://127.0.0.1/functions/v1/admin-ai/providers/provider-1",
-      { method: "DELETE", headers: { Authorization: "Bearer owner" } },
-    ),
+    new Request(`http://localhost/admin-ai/providers/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: "Bearer owner" },
+    }),
     fixture,
   );
-
   assertEquals(response.status, 409);
-  assertEquals(fixture.serviceClientCalls(), 0);
+  assertEquals(
+    (await response.text()).includes("sensitive internal detail"),
+    false,
+  );
 });
-
-Deno.test("provider active state can change without touching secret storage", async () => {
-  const original = {
-    id: "provider-1",
-    name: "Example",
-    base_url: "https://example.com/v1",
-    secret_ref: "opaque-ref",
-    enabled: true,
-    updated_at: "2026-10-09T00:00:00Z",
-  };
-  const model = {
-    id: "model-1",
-    provider_id: "provider-1",
-    upstream_model_id: "model-x",
-    display_name: "Model X",
-    enabled: true,
-    created_at: "2026-10-09T00:00:00Z",
-  };
-  let updatedFields: Record<string, unknown> | null = null;
-  const accessedTables = new Set<string>();
-  const serviceClient = () => ({
-    from(table: string) {
-      accessedTables.add(table);
-      const query = {
-        select: () => query,
-        eq: () => query,
-        order: () => query,
-        update: (fields: Record<string, unknown>) => {
-          updatedFields = fields;
-          return query;
-        },
-        maybeSingle: async () => ({
-          data: table === "ai_providers"
-            ? { ...original, ...(updatedFields ?? {}) }
-            : null,
-          error: null,
-        }),
-        then: (
-          resolve: (value: { data: unknown[]; error: null }) => unknown,
-          reject?: (reason: unknown) => unknown,
-        ) =>
-          Promise.resolve({
-            data: table === "ai_models" ? [model] : [],
-            error: null,
-          }).then(resolve, reject),
-      };
-      return query;
+Deno.test("blank-key edits send no secret envelope to the atomic RPC", async () => {
+  let parameters: Record<string, unknown> = {};
+  const fixture = dependencies(() => ({
+    rpc: async (_name: string, args: Record<string, unknown>) => {
+      parameters = args;
+      return { data: { active: false, apiKeyConfigured: true }, error: null };
     },
-  });
-  const fixture = dependencies(serviceClient);
+  }));
   const response = await handleRequest(
-    new Request(
-      "http://127.0.0.1/functions/v1/admin-ai/providers/provider-1",
-      {
-        method: "PUT",
-        headers: {
-          Authorization: "Bearer owner",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: "Example",
-          baseUrl: "https://example.com/v1",
-          model: "model-x",
-          apiKey: "",
-          active: false,
-        }),
-      },
-    ),
+    new Request(`http://localhost/admin-ai/providers/${id}`, {
+      method: "PUT",
+      headers: { Authorization: "Bearer owner" },
+      body: JSON.stringify({
+        name: "Example",
+        baseUrl: "https://example.com/v1",
+        model: "model-x",
+        apiKey: "",
+        active: false,
+      }),
+    }),
     fixture,
   );
-  const body = await response.json();
-
   assertEquals(response.status, 200);
-  assertEquals(body.active, false);
-  assertEquals(body.apiKeyConfigured, true);
-  assertEquals(updatedFields, {
-    name: "Example",
-    base_url: "https://example.com/v1",
-    enabled: false,
-  });
-  assertEquals("secret_ref" in (updatedFields ?? {}), false);
-  assertEquals(accessedTables.has("ai_secrets"), false);
+  assertEquals(parameters.p_secret, null);
+  assertEquals(parameters.p_active, false);
+});
+Deno.test("saved-key probes ignore caller endpoint, model, and key overrides", async () => {
+  const { encryptAISecret } = await import("../_shared/ai-secret.ts");
+  const key = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+  const oldKey = Deno.env.get("COOKAPP_AI_SECRET_KEY_V2");
+  Deno.env.set("COOKAPP_AI_SECRET_KEY_V2", key);
+  try {
+    const secret = await encryptAISecret("saved-synthetic-key", key);
+    const fixture = dependencies(() => ({
+      from(table: string) {
+        const query = {
+          select: () => query,
+          eq: () => query,
+          order: () => query,
+          maybeSingle: async () => ({
+            data: table === "ai_secrets" ? secret : {
+              id,
+              base_url: "https://example.com/v1",
+              secret_ref: secret.secret_ref,
+            },
+            error: null,
+          }),
+          then: (resolve: (value: unknown) => unknown) =>
+            Promise.resolve({
+              data: [{
+                id,
+                provider_id: id,
+                upstream_model_id: "saved-model",
+                enabled: true,
+                created_at: "2026-01-01",
+              }],
+              error: null,
+            }).then(resolve),
+        };
+        return query;
+      },
+    }));
+    let observed: unknown[] = [];
+    fixture.testProvider = async (...args: unknown[]) => {
+      observed = args;
+      return true;
+    };
+    const response = await handleRequest(
+      new Request("http://localhost/admin-ai/providers/test", {
+        method: "POST",
+        headers: { Authorization: "Bearer owner" },
+        body: JSON.stringify({
+          providerId: id,
+          baseUrl: "https://attacker.example",
+          model: "attacker-model",
+          apiKey: "caller-key",
+        }),
+      }),
+      fixture,
+    );
+    assertEquals(response.status, 200);
+    assertEquals(String(observed[0]), "https://example.com/v1");
+    assertEquals(observed.slice(1), ["saved-synthetic-key", "saved-model"]);
+    assertEquals(
+      (await response.text()).includes("saved-synthetic-key"),
+      false,
+    );
+  } finally {
+    if (oldKey === undefined) Deno.env.delete("COOKAPP_AI_SECRET_KEY_V2");
+    else Deno.env.set("COOKAPP_AI_SECRET_KEY_V2", oldKey);
+  }
 });

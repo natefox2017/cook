@@ -4,6 +4,11 @@
 import { request as httpsRequest } from "node:https";
 import type { LookupFunction } from "node:net";
 import ipaddr from "ipaddr.js";
+import {
+  type AISecret,
+  encryptAISecret,
+  resolveAISecret,
+} from "../_shared/ai-secret.ts";
 import { createServiceClient } from "../_shared/auth.ts";
 import { requireAdminSession } from "../_shared/admin-session.ts";
 import { requireAdminRole } from "../_shared/admin-role.ts";
@@ -29,7 +34,7 @@ type AdminClient = ReturnType<typeof createServiceClient>;
 export interface AdminAIDependencies {
   requireAdminSession: (req: Request) => Promise<AdminSession>;
   createServiceClient: () => AdminClient;
-  testProvider: (url: URL, apiKey: string) => Promise<boolean>;
+  testProvider: (url: URL, apiKey: string, model: string) => Promise<boolean>;
 }
 
 const productionDependencies: AdminAIDependencies = {
@@ -59,7 +64,7 @@ export async function handleRequest(
       return await listProviders(dependencies.createServiceClient());
     }
     if (path === "/providers" && req.method === "POST") {
-      return await createProvider(req);
+      return await saveProvider(req, null, dependencies);
     }
     if (path === "/providers/test" && req.method === "POST") {
       return await testProviderRequest(req, dependencies);
@@ -70,25 +75,30 @@ export async function handleRequest(
 
     const providerMatch = path.match(/^\/providers\/([^/]+)$/);
     if (providerMatch && req.method === "PUT") {
-      return await updateProvider(
+      return await saveProvider(
         req,
-        decodeURIComponent(providerMatch[1]),
-        dependencies.createServiceClient(),
+        providerId(decodeURIComponent(providerMatch[1])),
+        dependencies,
       );
     }
     if (providerMatch && req.method === "DELETE") {
-      throw new AppError(
-        "conflict",
-        "Provider deletion is disabled until it has an atomic history guard",
-        409,
+      const { data, error } = await dependencies.createServiceClient().rpc(
+        "admin_ai_delete_provider",
+        { p_provider_id: providerId(decodeURIComponent(providerMatch[1])) },
       );
+      if (error) throw databaseError(error.code);
+      return json(data);
     }
     if (path.startsWith("/providers") || path === "/usage") {
       throw new AppError("method_not_allowed", "Method is not supported", 405);
     }
     throw new AppError("not_found", "Endpoint not found", 404);
   } catch (error) {
-    return errorResponse(error);
+    return errorResponse(
+      error instanceof AppError
+        ? error
+        : unavailable("Admin AI request failed"),
+    );
   }
 }
 
@@ -124,70 +134,64 @@ async function listProviders(admin: AdminClient): Promise<Response> {
   });
 }
 
-async function createProvider(req: Request): Promise<Response> {
-  const input = parseBody(await readJson(req));
-  const provider = parseProviderInput(input);
-  if (provider.apiKey) {
-    throw unavailable("Provider key encryption is unavailable");
+function providerId(value: string): string {
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  ) {
+    throw new AppError("validation_error", "Provider ID is invalid", 400);
   }
-  throw new AppError(
-    "conflict",
-    "Provider creation is unavailable until the key storage protocol is restored",
-    409,
-  );
+  return value;
 }
 
-async function updateProvider(
-  req: Request,
-  id: string,
-  admin: AdminClient,
-): Promise<Response> {
-  const provider = parseProviderInput(parseBody(await readJson(req)));
-  if (provider.apiKey) {
-    throw unavailable("Provider key encryption is unavailable");
+function databaseError(code: string): AppError {
+  if (code === "PT404") {
+    return new AppError("not_found", "Provider not found", 404);
   }
-
-  const { data: current, error: currentError } = await admin
-    .from("ai_providers")
-    .select("id, name, base_url, secret_ref, enabled, updated_at")
-    .eq("id", id)
-    .maybeSingle();
-  if (currentError) throw unavailable("Failed to load provider");
-  if (!current) throw new AppError("not_found", "Provider not found", 404);
-
-  const { data: models, error: modelError } = await admin
-    .from("ai_models")
-    .select(
-      "id, provider_id, upstream_model_id, display_name, enabled, created_at",
-    )
-    .eq("provider_id", id)
-    .order("created_at", { ascending: true });
-  if (modelError) throw unavailable("Failed to load provider models");
-  const currentView = providerView(
-    current as ProviderRow,
-    models as ModelRow[] ?? [],
-  );
-  if (provider.model !== currentView.model) {
-    throw new AppError(
+  if (code === "PT409" || code === "23503") {
+    return new AppError(
       "conflict",
-      "Model changes are unavailable until an atomic model mapping is restored",
+      "Provider has multiple models, route references, or history references",
       409,
     );
   }
+  if (code === "22023") {
+    return new AppError("validation_error", "Invalid provider input", 400);
+  }
+  return unavailable("Provider transaction failed");
+}
 
-  const { data: updated, error: updateError } = await admin
-    .from("ai_providers")
-    .update({
-      name: provider.name,
-      base_url: provider.baseUrl,
-      enabled: provider.active,
-    })
-    .eq("id", id)
-    .select("id, name, base_url, secret_ref, enabled, updated_at")
-    .maybeSingle();
-  if (updateError) throw unavailable("Failed to update provider");
-  if (!updated) throw new AppError("not_found", "Provider not found", 404);
-  return json(providerView(updated as ProviderRow, models as ModelRow[] ?? []));
+async function saveProvider(
+  req: Request,
+  id: string | null,
+  dependencies: AdminAIDependencies,
+): Promise<Response> {
+  const provider = parseProviderInput(parseBody(await readJson(req)));
+  if (id === null && !provider.apiKey.trim()) {
+    throw new AppError(
+      "validation_error",
+      "Provider creation requires a key",
+      400,
+    );
+  }
+  // A blank edit keeps its opaque legacy reference; only explicit new keys rotate.
+  const secret = provider.apiKey.trim()
+    ? await encryptAISecret(provider.apiKey)
+    : null;
+  const { data, error } = await dependencies.createServiceClient().rpc(
+    "admin_ai_save_provider",
+    {
+      p_provider_id: id,
+      p_name: provider.name,
+      p_base_url: provider.baseUrl,
+      p_model: provider.model,
+      p_active: provider.active,
+      p_secret: secret,
+    },
+  );
+  if (error) throw databaseError(error.code);
+  return json(data);
 }
 
 async function testProviderRequest(
@@ -195,25 +199,60 @@ async function testProviderRequest(
   dependencies: AdminAIDependencies,
 ): Promise<Response> {
   const input = parseBody(await readJson(req));
-  const name = typeof input.name === "string" ? input.name.trim() : "";
-  const baseUrl = typeof input.baseUrl === "string" ? input.baseUrl.trim() : "";
-  const model = typeof input.model === "string" ? input.model.trim() : "";
-  const apiKey = typeof input.apiKey === "string" ? input.apiKey : "";
-  if (!name || !model || !baseUrl || apiKey.length > 8192) {
-    throw new AppError(
-      "validation_error",
-      "Provider name, URL, and model are required",
-      400,
-    );
+  let baseUrl: string;
+  let model: string;
+  let apiKey: string;
+  if (typeof input.providerId === "string") {
+    const id = providerId(input.providerId);
+    const admin = dependencies.createServiceClient();
+    const { data: provider, error } = await admin.from("ai_providers")
+      .select("id, name, base_url, secret_ref, enabled, updated_at").eq(
+        "id",
+        id,
+      ).maybeSingle();
+    if (error) throw unavailable("Failed to load saved provider");
+    if (!provider) throw new AppError("not_found", "Provider not found", 404);
+    const { data: models, error: modelError } = await admin.from("ai_models")
+      .select(
+        "id, provider_id, upstream_model_id, display_name, enabled, created_at",
+      )
+      .eq("provider_id", id).order("created_at", { ascending: true });
+    if (modelError) throw unavailable("Failed to load saved model");
+    // Caller URL/model/key fields cannot redirect a stored secret to another host.
+    baseUrl = provider.base_url;
+    model =
+      providerView(provider as ProviderRow, models as ModelRow[] ?? []).model;
+    if (!provider.secret_ref || !model) {
+      throw new AppError(
+        "conflict",
+        "Saved provider requires a key and model",
+        409,
+      );
+    }
+    parseProviderURL(baseUrl, true);
+    const { data: secret, error: secretError } = await admin.from("ai_secrets")
+      .select("secret_ref, ciphertext, nonce, key_version").eq(
+        "secret_ref",
+        provider.secret_ref,
+      ).maybeSingle();
+    if (secretError || !secret) throw unavailable("Saved key is unavailable");
+    apiKey = await resolveAISecret(secret as AISecret);
+  } else {
+    const name = typeof input.name === "string" ? input.name.trim() : "";
+    baseUrl = typeof input.baseUrl === "string" ? input.baseUrl.trim() : "";
+    model = typeof input.model === "string" ? input.model.trim() : "";
+    apiKey = typeof input.apiKey === "string" ? input.apiKey : "";
+    if (!name || !model || !baseUrl || !apiKey.trim() || apiKey.length > 8192) {
+      throw new AppError(
+        "validation_error",
+        "Provider name, URL, model, and key are required",
+        400,
+      );
+    }
   }
   const url = parseProviderURL(baseUrl, true);
-  if (!apiKey) {
-    throw unavailable(
-      "Testing a saved key is unavailable until its decryption protocol is restored",
-    );
-  }
   try {
-    const ok = await dependencies.testProvider(url, apiKey);
+    const ok = await dependencies.testProvider(url, apiKey, model);
     return json(
       ok ? { ok: true } : { ok: false, message: "Provider check failed" },
     );

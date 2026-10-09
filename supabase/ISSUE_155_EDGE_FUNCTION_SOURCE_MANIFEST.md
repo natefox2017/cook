@@ -134,26 +134,41 @@ The current UI contract and live catalog support safe provider listing, bounded 
 
 The complete former `admin-ai` source is still needed to resolve the provider-to-model projection, encrypted-secret write/read protocol, encryption-key custody and environment name, whether connection tests persist `ai_provider_health`, usage bucket timezone/retention semantics, route deletion policy and any provider-specific compatibility behavior. The deployed wrapper comment names `COOKAPP_AI_MASTER_KEY`; the source branch `cursor/ai-platform-core-4b9d` returned 404 and the implementation could not be recovered. The name is wrapper evidence only. Its configured presence/value, key encoding or derivation, nonce encoding, ciphertext/tag packing, AAD, key-version interpretation, reference generation and rotation rules remain unknown. The current `recipe-import-worker` OCR provider reads a separate environment-only `RECIPE_IMPORT_OCR_API_KEY` and contains no AI provider secret resolver. The repository AES-GCM helper in `admin-auth/factors.ts` is for admin TOTP with separate key custody and storage, so it is not compatible evidence and must not be reused for provider keys.
 
-### Current replacement boundary
+### Approved local replacement boundary
 
-The replacement is in `supabase/functions/admin-ai/`. It implements the current UI routes and response shapes, owner/admin authorization, provider listing without secret reads, usage aggregation over confirmed live columns, and caller-supplied one-time HTTPS probes. It keeps cached-input telemetry null because production lacks that column. No production schema, migration, or `_shared` source was changed.
+The replacement is in `supabase/functions/admin-ai/`; its current protocol and
+six HTTP operations are documented in that directory's README. It supports
+owner/admin provider CRUD, v2 key writes/rotation, saved v2 probes, and existing
+usage aggregation. It uses the new `_shared/ai-secret.ts` helper and the
+service-role-only invoker save/delete RPC migration. Secret/provider/model
+writes are atomic. Model renames preserve identity and reject multiple-model or
+historical/routing dependencies. Delete guards primary/fallback routes,
+provider/model/final/attempted usage and audit history under transaction locks;
+old secrets remain intact. Cached-token aggregation remains unchanged/null.
 
-Provider creation and any key replacement return 503 before database access because key encryption cannot be safely reconstructed. A blank-key metadata update preserves the current `secret_ref`; it may update provider name, base URL, and enabled state in one `ai_providers` row update. Model changes return 409 because the UI exposes one model while the database supports multiple models and route/fallback relationships. Deletion always returns 409 before service-role access: count-then-delete is vulnerable to concurrent inserts and cannot guard route fallback arrays atomically. Disable a provider with `active: false`. Probes without a caller-supplied key return 503; probes do not decrypt stored keys or persist health state. These are intentional gaps in the replacement contract, not claims about the former function. Do not deploy this replacement until its limited admin behavior and outstanding source/key-custody contract have been reviewed.
+The v2 contract is approved for this local implementation, not deployed:
+`COOKAPP_AI_SECRET_KEY_V2` is canonical unpadded base64url for 32 key bytes;
+AES-256-GCM uses a random 12-byte nonce, 128-bit tag and
+`ai-secrets:v2:${secret_ref}` AAD. Ciphertext plus tag and nonce use unpadded
+base64url; `key_version=2`. Each explicit key replacement inserts a new
+reference and retains old rows. Blank edits preserve v1 byte-for-byte; saved v1
+probes return 409 unsupported-version. The old master-key format remains
+unknown, and the external legacy worker has not been adapted or verified for v2.
 
-### Proposed secret protocol v2 for review only
-
-This is a compatible candidate, not an approved or deployed protocol. Keep the existing `ai_secrets` table and add no parallel secret table. Use a distinct Edge Function secret named `COOKAPP_AI_SECRET_KEY_V2`, encoded as base64url for exactly 32 key bytes, and WebCrypto AES-256-GCM. Generate a fresh 12-byte random nonce and encode it as base64url in `nonce`; encode WebCrypto's combined ciphertext and authentication tag as base64url in `ciphertext`; bind the row with AAD `ai-secrets:v2:${secret_ref}` and set `key_version = 2`. Do not depend on or infer the old `COOKAPP_AI_MASTER_KEY` format.
-
-The candidate decrypts v2 only. Existing v1 rows remain byte-for-byte untouched and saved-key operations report an explicit unsupported-version result until the legacy source and key protocol are recovered. Key creation or rotation must use one database transaction to insert a new `ai_secrets` row and update the provider `secret_ref`; retain the old row unless a separate authorized cleanup proves it is unreferenced. Provider and initial model creation also needs a transactional database operation and a frozen mapping for existing route/fallback state. Freeze and review these contracts before implementing writes.
-
-Provider deletion should remain disabled unless an approved database function checks and deletes under transaction locks, including provider models, health rows, usage events, route primary model references, route fallback arrays, and secret references. A count followed by a separate delete is not an atomic guard.
+2026-10-09 local verification: 14 Deno tests, 44 pgTAP assertions and 151 actual
+Edge HTTP assertions passed with synthetic local accounts/sessions/keys. The
+complete original 17 migrations plus the new transaction migration replayed from
+an empty isolated Supabase project. Concurrent fallback/attempted-history
+insertion tests confirmed delete waits for the writer and then returns 409. No
+successful real provider authentication/generation is claimed. Earlier
+integration results above remain historical evidence for their tested revisions.
 
 ## Staging rollout and production rollback plan
 
 1. Build a staging project from a dedicated branch deploy directory. Do not link CLI commands to production. Before deployment, inspect `Deno.env.get` and the imported shared modules to enumerate the required secret names; configure values only in the staging secret store. Never copy production secrets into local files or test output.
 2. Apply the RevenueCat event-owner binding migration in staging before testing webhook deliveries. Replay duplicate event IDs for the same owner and a conflicting owner; verify idempotency and a conflict response without changing ownership.
 3. Deploy one function at a time with the `verify_jwt` value in this manifest. Run unauthenticated, invalid-session, and each administrator-role HTTP case against staging. Verify that `operator` and `readonly` receive 403 for plan writes and financial reads, and that non-owners receive 403 from `admin-dashboard`.
-4. Compare each staged function's deployed bundle SHA and version to the reviewed source commit and record the secret names (never values), timestamp, smoke-test results, and prior production version. Stage `admin-ai` only after review explicitly accepts this conservative replacement boundary or its former source and key-custody contract are recovered.
+4. Compare each staged function's deployed bundle SHA and version to the reviewed source commit and record the secret names (never values), timestamp, smoke-test results, and prior production version. Stage `admin-ai` only after review accepts the v2 replacement and resolves external worker/key-custody compatibility for deployment.
 5. Production remains read-only until a separate, explicit release approval. If a later approved release fails, redeploy the prior reviewed source commit and matching lockfiles for that function, preserving the captured `verify_jwt` setting and server-side secret names. Record the resulting new Supabase version and bundle SHA; do not assume restoring a previous version number restores its content.
 
-No deployment, secret change, database write, migration, or Issue closure is included in this source change.
+No production deployment, production secret or data change, or Issue closure is included. The new migration has only been applied to isolated local databases.
