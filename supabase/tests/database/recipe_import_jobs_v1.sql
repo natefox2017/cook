@@ -1,7 +1,7 @@
 create extension if not exists pgtap;
 
 begin;
-select plan(39);
+select plan(40);
 
 select ok(
     to_regclass('pgmq.q_recipe_import_v1') is not null,
@@ -158,11 +158,23 @@ select throws_ok(
     $$select * from public.submit_own_recipe_import(
         'e0fb0c8c-7a27-48e7-99fd-8d62c46d4caa',
         'text',
-        'changed source'
+        'changed source',
+        'social',
+        'https://social.example/posts/123'
     )$$,
     '23505',
     'CLIENT_REQUEST_ID_CONFLICT',
     'changed source cannot reuse an idempotency key'
+);
+select throws_ok(
+    $$select * from public.submit_own_recipe_import(
+        'e0fb0c8c-7a27-48e7-99fd-8d62c46d4caa',
+        'text',
+        'changed source'
+    )$$,
+    '42501',
+    'permission denied for function submit_own_recipe_import',
+    'obsolete defaulted internal RPC remains inaccessible to authenticated users'
 );
 select is(
     (select count(*)::integer from public.recipe_import_jobs

@@ -1,0 +1,11 @@
+{
+  "name": "recipe-isolated-postgres-tests",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node run.mjs" },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@electric-sql/pglite-pgtap": "0.0.9",
+    "@electric-sql/pglite-pgmq": "0.0.6"
+  }
+}
