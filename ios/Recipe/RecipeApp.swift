@@ -289,6 +289,7 @@ enum RecipeUITestNamespace {
 struct RecipeApp: App {
     @State private var store: RecipeStore
     @State private var subscriptions = SubscriptionStore()
+    @AppStorage(RecipeLanguage.preferenceKey) private var languageOverride = ""
     @State private var cloudSync: CloudSyncCoordinator
     private let isUITesting: Bool
     private let bypassOnboarding: Bool
@@ -422,7 +423,11 @@ struct RecipeApp: App {
     }
 
     private var appLocale: Locale {
-        RecipeLanguage.active
+        RecipeLanguage.resolve(
+            arguments: ProcessInfo.processInfo.arguments,
+            supportedIdentifiers: Bundle.main.localizations,
+            selectedIdentifier: languageOverride.isEmpty ? nil : languageOverride
+        )
     }
 
     private var colorScheme: ColorScheme? {

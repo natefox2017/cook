@@ -76,3 +76,17 @@ Implementation guidance:
 - [Apple: Preparing App text for translation](https://developer.apple.com/documentation/xcode/preparing-your-apps-text-for-translation)
 
 Do not mark the additional planned languages or the current branch as fully verified until native build and per-page locale checks are complete.
+
+## Manual preferences (partial #230, 2026-10-10 source only)
+
+The Settings hub now exposes **Language & Country**. The user-selected language
+override changes the SwiftUI environment and the `RecipeLanguage.active` used by
+locally formatted alerts, preserving explicit UI-test locale flags. Ordinary
+test-stage default remains English; supported manual UI languages are limited to
+the currently bundled en, zh-Hans, zh-Hant, ja catalogs. An unsupported locale is
+never advertised as translated and safely falls back to English.
+
+The country/region preference uses ISO regions but is separate from language and
+is not a claim to change Apple/App Store billing region or content restrictions.
+Additional European, American and Korean language packs, strings translation
+quality, country-specific units/terms and real-device smoke remain **OPEN #230**.
