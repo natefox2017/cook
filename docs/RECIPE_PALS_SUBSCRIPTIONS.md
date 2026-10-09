@@ -2,8 +2,9 @@
 
 Confirmed by the coordination chat on 2026-10-09. ASC app: Recipe Pals,
 Apple ID `6820907753`, bundle `com.shopkivoo.recipe`, subscription group
-`22457671` (Recipe Pals Pro). Monthly creation was reported by the coordinator;
-annual creation and product availability still require ASC confirmation.
+`22457671` (Recipe Pals Pro). The coordinator reports monthly record
+`6820909171` and annual record `6820910384` created at the prices below;
+same-level group configuration and product availability remain to be verified.
 
 | Duration | Formal product ID | USD base price | English US display name |
 | --- | --- | --- | --- |
@@ -86,6 +87,20 @@ builds and build-for-testing compile the client/test targets; they do not run
 StoreKit transactions. The new StoreKitTest cases cover both formal IDs, no
 introductory offer, and legacy monthly/lifetime access using a local fixture;
 they are delivered for a separate signed real-device run by the coordinator.
+The existing `RecipeTests` hosted target also contains
+`RecipeSubscriptionStoreTests`: it directly checks default IDs, loaded product
+periods/prices, absent introductory offers, service purchase state and legacy
+monthly/lifetime entitlements against the same local fixture. This avoids the
+separate UI runner but still requires a signed real-device test host and local
+StoreKit testing support. The fixture is a test-target resource, not an app
+release resource. The original UI tests remain unchanged; button titles,
+visible price labels and page layout still require UI automation.
+
+The coordinator can select only the hosted cases when running on the real
+device: `-only-testing:RecipeTests/RecipeSubscriptionStoreTests`. Do not use
+generic build-for-testing results as runtime acceptance or substitute these
+fixture transactions for ASC Sandbox/TestFlight purchases.
+
 No StoreKit runtime PASS is claimed in this delivery. A simulator attempt was
 interrupted before any test case ran; its dedicated device and temporary test
 data were removed after the policy correction.
