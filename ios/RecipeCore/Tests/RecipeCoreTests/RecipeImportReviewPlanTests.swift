@@ -37,3 +37,19 @@ func completeImportOrNoFlagDoesNotInventReviewQuestions() {
         reviewFields: ["structured_data", "artifact_text"])
     #expect(RecipeImportReviewPlan.questions(from: partial).isEmpty)
 }
+
+@Test
+func oneConfirmedIngredientCannotHideOtherMissingIngredientQuestions() {
+    let result = RecipeImportJobResponse.Result(
+        recipeID: UUID(), status: "needs_review", source: .init(inputType: "text"),
+        fields: [
+            "ingredients[0].name": .init(
+                rawValue: "Flour", userConfirmed: true, origin: "user_provided"),
+            "ingredients[1].name": .init(
+                rawValue: nil, userConfirmed: false, origin: "extracted")
+        ],
+        reviewFields: ["ingredients[1].name", "steps"]
+    )
+    #expect(RecipeImportReviewPlan.questions(from: result).map(\.id) ==
+        ["ingredients", "steps"])
+}
