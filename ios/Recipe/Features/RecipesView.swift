@@ -45,14 +45,20 @@ struct RecipesView: View {
             }.sorted { lhs, rhs in
                 switch sort {
                 case .recent:
-                    if lhs.createdAt != rhs.createdAt { return lhs.createdAt > rhs.createdAt }
+                    if lhs.createdAt != rhs.createdAt {
+                        return lhs.createdAt > rhs.createdAt
+                    }
                 case .alphabetical:
                     let order = lhs.title.localizedStandardCompare(rhs.title)
-                    if order != .orderedSame { return order == .orderedAscending }
+                    if order != .orderedSame {
+                        return order == .orderedAscending
+                    }
                 case .quickest:
                     let left = lhs.totalMinutes ?? Int.max
                     let right = rhs.totalMinutes ?? Int.max
-                    if left != right { return left < right }
+                    if left != right {
+                        return left < right
+                    }
                 }
                 return lhs.id.uuidString < rhs.id.uuidString
             }
@@ -221,7 +227,9 @@ struct RecipesView: View {
                 ForEach(recipes) { recipe in
                     RecipeLibraryCard(recipe: recipe) {
                         RecipePerformanceSignposts.measure("Favorite Write") {
-                            do { try store.toggleFavorite(id: recipe.id) } catch {
+                            do {
+                                try store.toggleFavorite(id: recipe.id)
+                            } catch {
                                 errorMessage = error.localizedDescription
                             }
                         }

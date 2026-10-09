@@ -522,7 +522,9 @@ struct RecipeDetailView: View {
             if let recipe = store.recipe(id: recipeID) {
                 Button {
                     RecipePerformanceSignposts.measure("Favorite Write") {
-                        do { try store.toggleFavorite(id: recipeID) } catch {
+                        do {
+                            try store.toggleFavorite(id: recipeID)
+                        } catch {
                             feedbackMessage = error.localizedDescription
                         }
                     }
@@ -540,7 +542,9 @@ struct RecipeDetailView: View {
                     Button("Collections", systemImage: "folder.badge.plus") {
                         isManagingCollections = true
                     }
-                    Button("Edit Recipe", systemImage: "pencil") { isEditing = true }
+                    Button("Edit Recipe", systemImage: "pencil") {
+                        isEditing = true
+                    }
                     Button("Delete Recipe", systemImage: "trash", role: .destructive) {
                         isDeleting = true
                     }

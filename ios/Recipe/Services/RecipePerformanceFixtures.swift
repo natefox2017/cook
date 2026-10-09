@@ -22,13 +22,18 @@
         let includesCovers: Bool
 
         static func isRequested(arguments: [String]) -> Bool {
-            arguments.contains("--uitesting") && arguments.contains(launchArgument)
+            return arguments.contains("--uitesting")
+                && arguments.contains(launchArgument)
         }
 
         static func parse(arguments: [String]) -> Self? {
-            guard isRequested(arguments: arguments) else { return nil }
+            guard isRequested(arguments: arguments) else {
+                return nil
+            }
             let seedValue: UInt64
-            if let seedArgument = arguments.first(where: { $0.hasPrefix(seedPrefix) }) {
+            if let seedArgument = arguments.first(where: {
+                $0.hasPrefix(seedPrefix)
+            }) {
                 guard let parsedSeed = UInt64(seedArgument.dropFirst(seedPrefix.count)) else {
                     return nil
                 }
@@ -36,17 +41,33 @@
             } else {
                 seedValue = 137
             }
-            let count = arguments.first { $0.hasPrefix(countPrefix) }
-                .flatMap { Int($0.dropFirst(countPrefix.count)) }
-            guard let count, [500, 1_000, 5_000].contains(count) else { return nil }
-            let collectionCount =
-                arguments.first { $0.hasPrefix(collectionsPrefix) }
-                .flatMap { Int($0.dropFirst(collectionsPrefix.count)) } ?? 10
-            guard [10, 100].contains(collectionCount) else { return nil }
-            let coverMode =
-                arguments.first { $0.hasPrefix(coversPrefix) }
-                .map { $0.dropFirst(coversPrefix.count) } ?? "with"
-            guard coverMode == "with" || coverMode == "without" else { return nil }
+            let countArgument = arguments.first { argument in
+                argument.hasPrefix(countPrefix)
+            }
+            let count = countArgument.flatMap { argument in
+                Int(argument.dropFirst(countPrefix.count))
+            }
+            guard let count, [500, 1_000, 5_000].contains(count) else {
+                return nil
+            }
+            let collectionsArgument = arguments.first { argument in
+                argument.hasPrefix(collectionsPrefix)
+            }
+            let collectionCount = collectionsArgument.flatMap { argument in
+                Int(argument.dropFirst(collectionsPrefix.count))
+            } ?? 10
+            guard [10, 100].contains(collectionCount) else {
+                return nil
+            }
+            let coversArgument = arguments.first { argument in
+                argument.hasPrefix(coversPrefix)
+            }
+            let coverMode = coversArgument.map { argument in
+                String(argument.dropFirst(coversPrefix.count))
+            } ?? "with"
+            guard coverMode == "with" || coverMode == "without" else {
+                return nil
+            }
             return Self(
                 seed: seedValue,
                 recipeCount: count,
@@ -70,14 +91,17 @@
                 at: fileURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            if arguments.contains(Self.resetArgument), fileManager.fileExists(atPath: fileURL.path)
+            if arguments.contains(Self.resetArgument),
+                fileManager.fileExists(atPath: fileURL.path)
             {
                 try fileManager.removeItem(at: fileURL)
             }
 
             let store = RecipeStore(fileURL: fileURL)
             guard store.loadError == nil else {
-                throw RecipeStoreError.unreadableLibrary(store.loadError ?? "Unknown error")
+                throw RecipeStoreError.unreadableLibrary(
+                    store.loadError ?? "Unknown error"
+                )
             }
             if fileManager.fileExists(atPath: fileURL.path) {
                 guard store.recipes.count == recipeCount,
@@ -85,7 +109,8 @@
                     store.recipes.last?.id == Self.recipeID(seed: seed, index: recipeCount - 1)
                 else {
                     throw RecipeStoreError.invalidValue(
-                        "The performance fixture does not match its seed and count. Relaunch with \(Self.resetArgument) to recreate it."
+                        "The performance fixture does not match its seed and count. "
+                            + "Relaunch with \(Self.resetArgument) to recreate it."
                     )
                 }
             } else {
@@ -125,8 +150,13 @@
                         id: recipeID(seed: seed, index: 20_000 + index * 6 + ingredientIndex),
                         name: "Ingredient \(generator.next() % 500)",
                         amountText: "\(1 + generator.next() % 4) cups",
-                        category: [.produce, .proteins, .dairy, .pantry, .other][
-                            ingredientIndex % 5]
+                        category: [
+                            .produce,
+                            .proteins,
+                            .dairy,
+                            .pantry,
+                            .other,
+                        ][ingredientIndex % 5]
                     )
                 }
                 let steps = (0..<4).map { stepIndex in
@@ -190,7 +220,9 @@
 
         static func recipeID(seed: UInt64, index: Int) -> UUID {
             var generator = FixtureGenerator(seed: seed ^ UInt64(index) &* 0x9E37_79B9_7F4A_7C15)
-            let bytes = (0..<16).map { _ in UInt8(truncatingIfNeeded: generator.next()) }
+            let bytes = (0..<16).map { _ in
+                UInt8(truncatingIfNeeded: generator.next())
+            }
             return UUID(
                 uuid: (
                     bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
@@ -223,7 +255,11 @@
         private var state: UInt64
 
         init(seed: UInt64) {
-            state = seed == 0 ? 0xA076_1D64_78BD_642F : seed
+            if seed == 0 {
+                state = 0xA076_1D64_78BD_642F
+            } else {
+                state = seed
+            }
         }
 
         mutating func next() -> UInt64 {
@@ -237,7 +273,7 @@
     @MainActor
     enum RecipePerformanceSignposts {
         private static let signposter = OSSignposter(
-            subsystem: "com.modelhub.recipe",
+            subsystem: "com.shopkivoo.recipe",
             category: "Performance"
         )
 
@@ -251,7 +287,9 @@
             _ name: StaticString,
             _ operation: () throws -> Value
         ) rethrows -> Value {
-            guard isEnabled else { return try operation() }
+            guard isEnabled else {
+                return try operation()
+            }
             return try signposter.withIntervalSignpost(
                 name,
                 id: signposter.makeSignpostID(),
@@ -262,7 +300,9 @@
         private static var libraryScrollInterval: OSSignpostIntervalState?
 
         static func setLibraryScrollActive(_ isActive: Bool) {
-            guard isEnabled else { return }
+            guard isEnabled else {
+                return
+            }
             if isActive, libraryScrollInterval == nil {
                 let id = signposter.makeSignpostID()
                 libraryScrollInterval = signposter.beginInterval("Library Scroll", id: id)
@@ -277,10 +317,18 @@
     import RecipeCore
 
     struct RecipePerformanceFixtureConfiguration {
-        static func isRequested(arguments: [String]) -> Bool { false }
-        static func parse(arguments: [String]) -> Self? { nil }
+        static func isRequested(arguments: [String]) -> Bool {
+            return false
+        }
+
+        static func parse(arguments: [String]) -> Self? {
+            return nil
+        }
+
         @MainActor
-        func makeStore(arguments: [String]) throws -> RecipeStore { RecipeStore(fileURL: nil) }
+        func makeStore(arguments: [String]) throws -> RecipeStore {
+            return RecipeStore(fileURL: nil)
+        }
     }
 
     @MainActor
@@ -292,6 +340,8 @@
             try operation()
         }
 
-        static func setLibraryScrollActive(_ isActive: Bool) {}
+        static func setLibraryScrollActive(_ isActive: Bool) {
+            return
+        }
     }
 #endif

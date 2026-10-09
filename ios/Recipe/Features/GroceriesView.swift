@@ -199,7 +199,9 @@ struct GroceriesView: View {
         HStack(spacing: 12) {
             Button {
                 RecipePerformanceSignposts.measure("Grocery Write") {
-                    perform { try store.toggleGrocery(id: item.id) }
+                    perform {
+                        try store.toggleGrocery(id: item.id)
+                    }
                 }
             } label: {
                 Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
