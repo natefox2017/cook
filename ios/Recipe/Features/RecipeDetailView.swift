@@ -249,6 +249,7 @@ struct RecipeDetailView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint("Show ingredient amount details")
+                        .accessibilityIdentifier("recipeIngredientInfo.\(ingredient.id.uuidString)")
                         if ingredient.id != recipe.ingredients.last?.id { Divider() }
                     }
                 }
@@ -330,6 +331,7 @@ struct RecipeDetailView: View {
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityHint("Show ingredient amount details")
+                                    .accessibilityIdentifier("recipeStepIngredientInfo.\(ingredient.id.uuidString)")
                                 }
                             }
                             .padding(12)
@@ -377,6 +379,7 @@ struct RecipeDetailView: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("Show temperature conversion")
+            .accessibilityIdentifier("recipeStepTemperatureInfo")
         }
         ForEach(step.timers) { timer in
             let duration = timerDurationLabel(timer.durationSeconds)
@@ -393,6 +396,7 @@ struct RecipeDetailView: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("Show timer details")
+            .accessibilityIdentifier("recipeStepTimerInfo")
         }
     }
 
