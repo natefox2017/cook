@@ -124,6 +124,21 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testCookingVoiceToggleIsOptInAndStepButtonsRemainAvailable() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+        openSamplePasta(in: app)
+        app.buttons["startCooking"].tap()
+        let mic = app.buttons["cookingVoiceToggle"]
+        XCTAssertTrue(mic.waitForExistence(timeout: 8))
+        XCTAssertTrue(mic.isEnabled)
+        XCTAssertFalse(app.staticTexts["cookingVoiceListening"].exists)
+        XCTAssertTrue(app.buttons["previousStep"].exists)
+        XCTAssertTrue(app.buttons["nextStep"].exists)
+        // Do not turn on the microphone in automated simulator tests.
+    }
+
+    @MainActor
     func testCookingTimerNavigationAndCompletion() {
         let app = launchSeededApp()
         defer {

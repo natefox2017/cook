@@ -19645,6 +19645,213 @@
           }
         }
       }
+    },
+    "Hands-free voice control": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音声ハンズフリー操作"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免手语音控制"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免手語音控制"
+          }
+        }
+      }
+    },
+    "Stop voice control": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音声操作を停止"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止语音控制"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止語音控制"
+          }
+        }
+      }
+    },
+    "Listening for Next, Previous or Repeat": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「Next」「Previous」「Repeat」を聞き取り中"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在聆听 Next、Previous 或 Repeat"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在聆聽 Next、Previous 或 Repeat"
+          }
+        }
+      }
+    },
+    "Enable speech recognition in iOS Settings to use hands-free control.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音声操作にはiOSの設定で音声認識を許可してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在 iOS 设置中允许语音识别，以使用免手操作。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請在 iOS 設定中允許語音辨識，以使用免手操作。"
+          }
+        }
+      }
+    },
+    "Microphone access is off. Step buttons still work.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マイクが無効です。手順ボタンは引き続き使用できます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "麦克风权限未开启，仍可使用步骤按钮。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "麥克風權限未開啟，仍可使用步驟按鈕。"
+          }
+        }
+      }
+    },
+    "On-device English voice control is unavailable on this iPhone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このiPhoneでは端末内英語音声認識を利用できません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这台 iPhone 不支持设备端英文语音识别。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這台 iPhone 不支援裝置端英文語音辨識。"
+          }
+        }
+      }
+    },
+    "Could not start voice control. Use the step buttons.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音声操作を開始できません。手順ボタンを使ってください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法启动语音控制，请使用步骤按钮。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法啟動語音控制，請使用步驟按鈕。"
+          }
+        }
+      }
+    },
+    "Voice control stopped. Tap the microphone to restart.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音声操作が停止しました。再開するにはマイクをタップしてください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "语音控制已停止，点击麦克风可重新启动。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "語音控制已停止，點擊麥克風可重新啟動。"
+          }
+        }
+      }
+    },
+    "Voice control interrupted. Use the step buttons.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音声操作が中断されました。手順ボタンを使ってください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "语音控制已中断，请使用步骤按钮。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "語音控制已中斷，請使用步驟按鈕。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
