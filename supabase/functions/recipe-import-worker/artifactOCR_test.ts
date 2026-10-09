@@ -106,3 +106,38 @@ Deno.test("OCR egress is disabled without explicit approval and exact trusted ho
   values.RECIPE_IMPORT_OCR_PROVIDER_URL = "http://ocr.example.net/recognize";
   expect(configuredOCRProvider(env) === null, "Insecure HTTP OCR accepted");
 });
+
+Deno.test("approved OCR request sends only the supplied byte view", async () => {
+  const values: Record<string, string> = {
+    RECIPE_IMPORT_OCR_APPROVED: "true",
+    RECIPE_IMPORT_OCR_PROVIDER_URL: "https://ocr.example.net/recognize",
+    RECIPE_IMPORT_OCR_APPROVED_HOST: "ocr.example.net",
+    RECIPE_IMPORT_OCR_API_KEY: "synthetic-test-key",
+  };
+  const provider = configuredOCRProvider((name) => values[name]);
+  expect(provider !== null, "Approved provider was not configured");
+  const originalFetch = globalThis.fetch;
+  let sentBytes: number[] = [];
+  globalThis.fetch = async (url, options) => {
+    expect(String(url) === values.RECIPE_IMPORT_OCR_PROVIDER_URL, "Unexpected OCR endpoint");
+    expect(options?.redirect === "error", "OCR redirects must remain blocked");
+    const body = options?.body;
+    expect(body instanceof Uint8Array, "Missing OCR bytes");
+    expect(body.buffer instanceof ArrayBuffer, "Body is not ArrayBuffer-backed");
+    sentBytes = Array.from(body);
+    return Response.json({ pages: [] });
+  };
+  try {
+    const source = new Uint8Array(new SharedArrayBuffer(4));
+    source.set([99, 1, 2, 88]);
+    await provider.recognize(source.subarray(1, 3), {
+      mimeType: "image/png",
+      maxPages: 1,
+      maxPixelsPerPage: 1_000,
+      timeoutMS: 1_000,
+    });
+    expect(JSON.stringify(sentBytes) === "[1,2]", "Sent bytes outside the supplied view");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

@@ -52,7 +52,8 @@ export function configuredOCRProvider(
             "X-OCR-Max-Pages": String(controls.maxPages),
             "X-OCR-Max-Pixels-Per-Page": String(controls.maxPixelsPerPage),
           },
-          body: bytes,
+          // Copy only the supplied view into an ArrayBuffer-backed request body.
+          body: new Uint8Array(bytes),
           signal: AbortSignal.timeout(controls.timeoutMS),
         });
       } catch {
