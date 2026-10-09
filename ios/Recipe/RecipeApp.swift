@@ -324,6 +324,11 @@ struct RecipeApp: App {
             )
         }
 
+        if isUITesting && arguments.contains("--uitesting-reset-locale-preferences") {
+            defaults.set(RecipeLanguage.defaultLanguage, forKey: RecipeLanguage.languagePreferenceKey)
+            defaults.set(RecipeLanguage.automaticRegion, forKey: RecipeLanguage.regionPreferenceKey)
+        }
+
         RecipeTheme.installUIKitTypography()
 
         var bypassOnboarding = isUITesting
