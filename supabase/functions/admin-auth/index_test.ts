@@ -1,5 +1,9 @@
 import { AppError } from "../_shared/errors.ts";
-import { withAdminBootstrapAuthorization } from "../_shared/admin-bootstrap.ts";
+import {
+  publicAdminBootstrapError,
+  withAdminBootstrapAuthorization,
+} from "../_shared/admin-bootstrap.ts";
+import { errorResponse } from "../_shared/errors.ts";
 import { handleCors } from "../_shared/cors.ts";
 
 function request(headers?: HeadersInit): Request {
@@ -147,5 +151,38 @@ Deno.test("non-production bootstrap keeps the existing no-token behavior", async
   );
   if (await response.text() !== "bootstrap reached") {
     throw new Error("The non-production bootstrap handler did not run.");
+  }
+});
+
+Deno.test("bootstrap RPC errors reveal only intentional authentication and validation guidance", async () => {
+  const cases: Array<[string, string, number, string]> = [
+    ["incorrect current default password", "unauthorized", 401, "Current default password is incorrect"],
+    ["password strength requirement", "validation_error", 400, "newPassword does not meet strength policy"],
+    ["bootstrap not available", "conflict", 409, "Bootstrap is not available for this environment"],
+  ];
+  for (const [diagnostic, code, status, publicMessage] of cases) {
+    const err = publicAdminBootstrapError(diagnostic);
+    if (err.code !== code || err.status !== status || err.message !== publicMessage) {
+      throw new Error(`Unexpected public bootstrap mapping for ${code}`);
+    }
+  }
+});
+
+Deno.test("bootstrap unexpected database errors do not escape in a 4xx response", async () => {
+  const secret = "postgres foreign key failure, SQL detail user email@example.com";
+  for (const diagnostic of [secret, "", "permission denied for table admin_accounts"]) {
+    const err = publicAdminBootstrapError(diagnostic);
+    if (err.code !== "internal_error" || err.status !== 500) {
+      throw new Error("Unexpected RPC failure was not treated as an internal error");
+    }
+    const response = errorResponse(err);
+    const text = await response.text();
+    if (response.status !== 500 || text.includes(diagnostic) && diagnostic !== "" ||
+        text.includes("admin_accounts") || text.includes("email@example.com")) {
+      throw new Error("Database details escaped into bootstrap HTTP response");
+    }
+    if (!text.includes("temporarily unavailable")) {
+      throw new Error("Missing safe, actionable bootstrap error response");
+    }
   }
 });
