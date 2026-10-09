@@ -1587,6 +1587,7 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
     private let engine = AVAudioEngine()
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
+    private var pendingCandidate: Task<Void, Never>?
     private var cycle: UUID?
     private var tapInstalled = false
     private var wantsListening = false
@@ -1647,7 +1648,7 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
         cycle = token
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.requiresOnDeviceRecognition = true
-        request.shouldReportPartialResults = false
+        request.shouldReportPartialResults = true
         recognitionRequest = request
 
         let node = engine.inputNode
@@ -1659,26 +1660,51 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
         tapInstalled = true
         recognitionTask = recognition.recognitionTask(with: request) {
             [weak self] result, error in
-            guard let result, result.isFinal else {
-                if error != nil {
-                    Task { @MainActor [weak self] in
-                        guard self?.cycle == token else { return }
-                        self?.stop()
-                        self?.status = "Voice control stopped. Tap the microphone to restart."
-                    }
+            if let result {
+                let transcript = result.bestTranscription.formattedString
+                let isFinal = result.isFinal
+                Task { @MainActor [weak self] in
+                    self?.receiveCycleResult(
+                        token: token, transcript: transcript, isFinal: isFinal)
                 }
-                return
-            }
-            let transcript = result.bestTranscription.formattedString
-            Task { @MainActor [weak self] in
-                self?.completeCycle(token: token, transcript: transcript)
+            } else if error != nil {
+                Task { @MainActor [weak self] in
+                    guard self?.cycle == token else { return }
+                    self?.stop()
+                    self?.status = "Voice control stopped. Tap the microphone to restart."
+                }
             }
         }
         engine.prepare()
         try engine.start()
     }
 
+    // A stable partial command is useful for speech recognition that never
+    // marks a continuous microphone request as final. A subsequent longer
+    // utterance cancels this candidate before it changes the cooking step.
+    private func receiveCycleResult(
+        token: UUID, transcript: String, isFinal: Bool
+    ) {
+        guard cycle == token, wantsListening else { return }
+        pendingCandidate?.cancel()
+        pendingCandidate = nil
+        guard isFinal || CookingVoiceCommandParser.parse(transcript) != nil else {
+            return
+        }
+        if isFinal {
+            completeCycle(token: token, transcript: transcript)
+            return
+        }
+        pendingCandidate = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(650))
+            guard !Task.isCancelled else { return }
+            self?.completeCycle(token: token, transcript: transcript)
+        }
+    }
+
     private func endCycle() {
+        pendingCandidate?.cancel()
+        pendingCandidate = nil
         cycle = nil
         if engine.isRunning { engine.stop() }
         if tapInstalled {
