@@ -551,7 +551,9 @@ struct NotificationPreferencesView: View {
             }
             await refreshPermission()
             if isAuthorized { setTimerReminders(true) }
-        } catch { errorMessage = error.localizedDescription }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     private func setTimerReminders(_ enabled: Bool) {
@@ -567,7 +569,9 @@ struct NotificationPreferencesView: View {
                     )
                 }
             }
-        } catch { errorMessage = error.localizedDescription }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
 

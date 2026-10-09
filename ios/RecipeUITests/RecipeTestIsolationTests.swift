@@ -172,6 +172,7 @@ final class RecipeTimerNotificationTests: XCTestCase {
             timerID: timerID,
             isUITesting: true
         )
+        // This random normal-prefix ID is synthetic and cleanup targets only this test request.
         let normalID = RecipeUITestNamespace.timerNotificationID(
             recipeID: recipeID,
             timerID: timerID,
