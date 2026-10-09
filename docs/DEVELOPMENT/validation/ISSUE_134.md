@@ -1,55 +1,53 @@
 # Import regression execution — Issue #134
 
-Executed 2026-10-08 UTC on Linux x86_64, against code commit `51020c9`
-(`main@55ac164` plus the focused fixes for #164 in this PR). No production data, provider credentials, database,
-or Apple runtime was used. CI configuration is unchanged.
+## Latest main rerun
 
-## Results
+Executed 2026-10-09 on macOS arm64 against `origin/main` / `HEAD` at
+`21866ec99bb9081e9f4312cde488ad63276ba7b6`. The checkout was clean before
+execution. Python, Deno, and SQL fixtures ran locally; no production database,
+provider credential, Apple account, hosted Edge Runtime, or deployment was
+used. CI configuration is unchanged.
 
-- **PASS:** Python 3.12.14 / jsonschema 4.26.0: 25 contract fixtures
-  (12 positive, 13 negative) and all 5 OpenAPI reference unit tests.
-- **PASS:** Deno 2.9.6 / TypeScript 6.0.3: all 59 deterministic tests;
-  the opt-in public-network test was **not run** (1 ignored).
-- **PASS:** `deno check` on the actual import worker entry point.
-- **BLOCKED:** SQL ACL/RLS/queue integration: no isolated PostgreSQL/Supabase
-  runtime is configured here. Never substitute production for this check.
-- **NOT RUN:** Swift, Xcode, simulator/device, live OCR, actual Edge Runtime,
-  remote Storage and public-source integration. See #126, #135 and #138.
-- #134 remains open for SQL acceptance and any new merged test coverage.
-  Open PRs #152 and #158 were not included in this main-based checkout.
+- **PASS:** Python 3.11.16 / jsonschema 4.26.0 validated 25 import fixtures
+  (12 positive, 13 negative); all 5 OpenAPI-reference unit tests passed.
+- **PASS:** Deno 2.9.7 / TypeScript 6.0.3 ran all 61 deterministic tests in
+  the Issue #134 import/worker suite selection: 0 failed. The opt-in live
+  public-network test was **ignored** (1); no runtime network permission was
+  granted.
+- **PASS:** `deno check` on the actual `recipe-import-worker/index.ts` entry
+  point with the worker config and frozen lockfile (exit 0).
+- **PASS:** Node 24.21.0 ran all 85 pgTAP assertions against disposable
+  PostgreSQL 18.3 in PGlite 0.5.8: 20 ACL, 40 queue, and 25 snapshot/artifact
+  assertions. The harness uses synthetic Auth/Storage fixtures and cannot
+  connect to production.
+- **NOT RUN:** actual Supabase Auth/Storage HTTP, legacy private business
+  migration bodies, two-session concurrency, hosted Edge Runtime, live OCR,
+  production, and deployment. See the explicit harness limits in
+  [the isolated SQL harness](../../../supabase/tests/isolated/README.md).
+- `supabase/functions/health/auth_test.ts` is outside #134's documented
+  import/worker suite selection and was not run. The opt-in worker live-network
+  test remained ignored.
+- **#134 remains OPEN.** The listed local suites passed, but this is not hosted
+  integration or production acceptance and does not cover the omitted legacy
+  migration suites.
 
-Complete successful fixture output: [Python](issue-134-python.log) and
-[Deno](issue-134-deno.log). The synthetic failure messages printed by the
-redaction and Storage tests are expected fixtures, not live credentials/errors.
-
-## Failures found and fixed
-
-The first full type check on `main@81541bc` reported five errors before
-running tests. The final run also includes subsequently merged #162/#163:
-
-1. `approvedOCRProvider.ts`: a general `Uint8Array<ArrayBufferLike>` is not a
-   valid fetch `BodyInit`. Copying the supplied view into a new `Uint8Array`
-   creates an ArrayBuffer-backed body without including bytes outside the view.
-   A mocked request regression covers a SharedArrayBuffer-backed subview.
-2. `artifactText.ts`: a failed ownership/expiry check does not imply the row
-   lacks the `PrivateArtifactRow` shape. Its type predicate incorrectly narrowed
-   rejected rows to `never`, breaking four existing negative-case assertions.
-   Return a boolean; preserve every runtime authorization check and assertion.
-
-The first runtime pass also identified four missing fixture-read permissions in
-this invocation. The successful command below grants only the two fixture
-folders, rather than unrestricted filesystem access. No test was removed or
-weakened and no type check was skipped.
+Complete outputs: [Python](issue-134-python.log), [Deno](issue-134-deno.log),
+and [isolated SQL](issue-134-sql.log). Test-generated redaction and Storage
+failure messages are synthetic fixtures, not live secrets or service errors.
 
 ## Reproduce from the repository root
 
-Use Python with `jsonschema>=4.21` and Deno 2.9.6. Dependencies use the existing
-worker import map and frozen lockfile. The initial dependency cache fill may
-need registry access; the tests have no runtime network permission.
+The Python dependency was installed into an ignored task-local environment.
+Deno used the checked-in worker import map and frozen lockfile. SQL uses only
+the pinned dev dependencies in `supabase/tests/isolated/package-lock.json`.
+Dependency installation may require registry access; test execution itself
+does not require external service access.
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 python3 docs/import-fixtures/validate_contract.py
-PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+uv venv --python python3.11 .tmp/issue-134-20261009/python-env
+uv pip install --python .tmp/issue-134-20261009/python-env/bin/python 'jsonschema>=4.21'
+.tmp/issue-134-20261009/python-env/bin/python docs/import-fixtures/validate_contract.py
+.tmp/issue-134-20261009/python-env/bin/python -m unittest discover \
   -s docs/import-fixtures -p 'test_*.py' -v
 
 RECIPE_IMPORT_LIVE_TEST=0 deno test \
@@ -65,10 +63,26 @@ RECIPE_IMPORT_LIVE_TEST=0 deno test \
 
 deno check --config=supabase/functions/recipe-import-worker/deno.json --frozen \
   supabase/functions/recipe-import-worker/index.ts
+
+cd supabase/tests/isolated
+npm ci --ignore-scripts
+NODE_OPTIONS=--max-old-space-size=256 npm test
 ```
 
-In the test environment Deno's inherited SOCKS proxy initially refused
-connections. Pointing `ALL_PROXY`/`all_proxy` at the already configured HTTPS
-proxy and setting `DENO_CERT` to the existing `SSL_CERT_FILE` allowed the official
-registry fetches. TLS verification remained enabled; neither setting is a
-repository or production configuration requirement.
+## Previously fixed regressions
+
+The initial full worker type check on `main@81541bc` found five errors before
+tests could run. Subsequent fixes were merged before this latest-main rerun:
+
+1. `approvedOCRProvider.ts` now copies a supplied byte view into an
+   ArrayBuffer-backed fetch body without including bytes outside the view; a
+   mocked regression covers a SharedArrayBuffer-backed subview.
+2. `artifactText.ts` now returns a boolean for ownership/expiry checks rather
+   than incorrectly narrowing rejected rows to `never`; runtime authorization
+   checks and negative-case assertions remain intact.
+3. The isolated queue test now calls the current five-argument RPC for the
+   changed-source idempotency conflict and separately verifies that the
+   obsolete endpoint remains inaccessible.
+
+No test was removed or weakened. The Python, Deno, and SQL test sources and
+complete output are in the linked log files above.
