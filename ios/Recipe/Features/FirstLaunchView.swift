@@ -81,6 +81,8 @@ struct FirstLaunchFlowView: View {
 }
 
 private struct FirstLaunchStoryPage: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let imageName: String
     let imageAccessibilityLabel: LocalizedStringKey
     let title: LocalizedStringKey
@@ -118,54 +120,71 @@ private struct FirstLaunchStoryPage: View {
                 }
                 .ignoresSafeArea()
 
-                VStack(alignment: .leading, spacing: 0) {
-                    VStack(alignment: .trailing, spacing: RecipeSpacing.small) {
-                        Button("Skip", action: onSkip)
-                            .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 18)
-                            .frame(minHeight: 44)
-                            .background(.black.opacity(0.28), in: Capsule())
-                            .accessibilityIdentifier("onboarding.skip")
-
-                        pageProgress
-                            .frame(maxWidth: .infinity)
-                    }
-
-                    Spacer(minLength: 24)
-
-                    VStack(alignment: .leading, spacing: RecipeSpacing.small) {
-                        Text(title)
-                            .font(RecipeTheme.heading(.title))
-                            .foregroundStyle(.white)
-                            .shadow(color: .black.opacity(0.25), radius: 12, y: 2)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-
-                        Text(subtitle)
-                            .font(RecipeTheme.body())
-                            .foregroundStyle(.white.opacity(0.94))
-                            .shadow(color: .black.opacity(0.4), radius: 8, y: 1)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Button(action: onNext) {
-                            Text(actionTitle)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(PrimaryButtonStyle())
-                        .padding(.top, RecipeSpacing.small)
-                        .accessibilityIdentifier("onboarding.primary")
-                    }
-                    .padding(.bottom, RecipeSpacing.small)
-                }
-                .padding(.horizontal, RecipeSpacing.pageInset)
-                .padding(.top, max(8, geometry.safeAreaInsets.top))
-                .padding(.bottom, max(12, geometry.safeAreaInsets.bottom))
+                storyContent(in: geometry)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(.black)
         .preferredColorScheme(.dark)
+    }
+
+    @ViewBuilder
+    private func storyContent(in geometry: GeometryProxy) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            ScrollView {
+                storyPageContent(in: geometry)
+                    .frame(minHeight: geometry.size.height)
+            }
+        } else {
+            storyPageContent(in: geometry)
+        }
+    }
+
+    private func storyPageContent(in geometry: GeometryProxy) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .trailing, spacing: RecipeSpacing.small) {
+                Button("Skip", action: onSkip)
+                    .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 18)
+                    .frame(minHeight: 44)
+                    .background(.black.opacity(0.28), in: Capsule())
+                    .accessibilityIdentifier("onboarding.skip")
+
+                pageProgress
+                    .frame(maxWidth: .infinity)
+            }
+
+            Spacer(minLength: 24)
+
+            VStack(alignment: .leading, spacing: RecipeSpacing.small) {
+                Text(title)
+                    .font(RecipeTheme.heading(.title))
+                    .foregroundStyle(.white)
+                    .shadow(color: .black.opacity(0.25), radius: 12, y: 2)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                    .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.85)
+                    .fixedSize(horizontal: false, vertical: dynamicTypeSize.isAccessibilitySize)
+
+                Text(subtitle)
+                    .font(RecipeTheme.body())
+                    .foregroundStyle(.white.opacity(0.94))
+                    .shadow(color: .black.opacity(0.4), radius: 8, y: 1)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button(action: onNext) {
+                    Text(actionTitle)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .padding(.top, RecipeSpacing.small)
+                .accessibilityIdentifier("onboarding.primary")
+            }
+            .padding(.bottom, RecipeSpacing.small)
+        }
+        .padding(.horizontal, RecipeSpacing.pageInset)
+        .padding(.top, max(8, geometry.safeAreaInsets.top))
+        .padding(.bottom, max(12, geometry.safeAreaInsets.bottom))
     }
 
     private var pageProgress: some View {

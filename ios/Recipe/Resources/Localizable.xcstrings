@@ -4958,24 +4958,24 @@
         }
       }
     },
-    "RecipePouch Premium": {
+    "Recipe Pals Premium": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch Premium"
+            "value": "Recipe Pals Premium"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 高级版"
+            "value": "Recipe Pals 高级版"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 進階版"
+            "value": "Recipe Pals 進階版"
           }
         }
       }
