@@ -15765,6 +15765,50 @@
           }
         }
       }
+    },
+    "A roast chicken dinner.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ローストチキンの夕食。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一顿烤鸡晚餐。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一頓烤雞晚餐。"
+          }
+        }
+      }
+    },
+    "Onboarding page %@ of 3": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使い方ガイド：全3ページ中%@ページ目"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用引导：第 %@ 页，共 3 页"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用引導：第 %@ 頁，共 3 頁"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
