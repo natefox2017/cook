@@ -208,7 +208,9 @@ private struct RecipeRootView: View {
                     EmptyStateView(
                         title: "Your saved library needs attention",
                         message:
-                            "RecipePouch couldn't read your saved library. The file has been left unchanged.\n\n\(message)",
+                            RecipeLanguage.localized(
+                                "RecipePouch couldn't read your saved library. The file has been left unchanged."
+                            ) + "\n\n" + message,
                         systemImage: "externaldrive.badge.exclamationmark",
                         actionTitle: "Try again",
                         action: {

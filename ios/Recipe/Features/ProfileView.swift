@@ -110,8 +110,8 @@ struct ProfileView: View {
 
             Section {
                 NavigationLink {
-                        RecipesView(titleDisplayMode: RecipeNavigation.detailTitleMode)
-                            .toolbar(.hidden, for: .tabBar)
+                    RecipesView(titleDisplayMode: RecipeNavigation.detailTitleMode)
+                        .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(
                         title: "Saved Recipes",
@@ -205,6 +205,28 @@ struct ProfileView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("profile.export")
+                // Anchor the native popover to this row rather than the scrollable List.
+                .confirmationDialog(
+                    "Choose export format",
+                    isPresented: $choosesExportFormat,
+                    titleVisibility: .visible
+                ) {
+                    Button("Recipes (JSON)") {
+                        prepareExport(.recipesJSON)
+                    }
+                    Button("Recipes (HTML)") {
+                        prepareExport(.recipesHTML)
+                    }
+                    Button("All Local Library Data (JSON)") {
+                        prepareExport(.allLibraryJSON)
+                    }
+                    Button("Cancel", role: .cancel) {
+                    }
+                } message: {
+                    Text(
+                        "Recipe JSON/HTML includes sources and Collections but not photos. Full library JSON also includes groceries, meal plan and local preferences. This app cannot restore these exports."
+                    )
+                }
                 Button(role: .destructive) {
                     confirmsReset = true
                 } label: {
@@ -238,27 +260,6 @@ struct ProfileView: View {
             if let feedback = RecipeExportFormat.feedback(for: result) {
                 errorMessage = feedback
             }
-        }
-        .confirmationDialog(
-            "Choose export format",
-            isPresented: $choosesExportFormat,
-            titleVisibility: .visible
-        ) {
-            Button("Recipes (JSON)") {
-                prepareExport(.recipesJSON)
-            }
-            Button("Recipes (HTML)") {
-                prepareExport(.recipesHTML)
-            }
-            Button("All Local Library Data (JSON)") {
-                prepareExport(.allLibraryJSON)
-            }
-            Button("Cancel", role: .cancel) {
-            }
-        } message: {
-            Text(
-                "Recipe JSON/HTML includes sources and Collections but not photos. Full library JSON also includes groceries, meal plan and local preferences. This app cannot restore these exports."
-            )
         }
         .confirmationDialog(
             "Delete all local data?",
@@ -578,7 +579,8 @@ struct NotificationPreferencesView: View {
 @MainActor
 enum RecipeNotificationCleanup {
     static func removeTimerReminders(isUITesting: Bool = false) async {
-        let prefixes = isUITesting
+        let prefixes =
+            isUITesting
             ? ["recipe.uitesting.timer."]
             : ["cook.timer.", "recipe.timer."]
         await TimerNotifications.cancelAll(matchingPrefixes: prefixes)
@@ -602,12 +604,12 @@ enum RecipeLocalDataDeletion {
         }
 
         #if DEBUG
-        if isUITesting {
-            try store.clearLocalLibraryOnly()
-            RecipeUITestNamespace.clearPreferences(from: defaults)
-            await RecipeNotificationCleanup.removeTimerReminders(isUITesting: true)
-            return
-        }
+            if isUITesting {
+                try store.clearLocalLibraryOnly()
+                RecipeUITestNamespace.clearPreferences(from: defaults)
+                await RecipeNotificationCleanup.removeTimerReminders(isUITesting: true)
+                return
+            }
         #else
             _ = isUITesting
         #endif
@@ -784,11 +786,11 @@ enum RecipeExportFormat {
     static func feedback(for result: Result<URL, Error>) -> String? {
         switch RecipeFileExportResult(result) {
         case .saved(let filename):
-            return "Export saved as \(filename)."
+            return RecipeLanguage.localized("Export saved as %@.", filename)
         case .cancelled:
             return nil
         case .failed(let message):
-            return "Export failed: \(message)"
+            return RecipeLanguage.localized("Export failed: %@", message)
         }
     }
 }

@@ -24,6 +24,28 @@ struct DataPrivacySettingsView: View {
                 Button("Export Data") {
                     choosesExportFormat = true
                 }
+                // Anchor the native popover to this row rather than the scrollable List.
+                .confirmationDialog(
+                    "Choose export format",
+                    isPresented: $choosesExportFormat,
+                    titleVisibility: .visible
+                ) {
+                    Button("Recipes (JSON)") {
+                        prepareExport(.recipesJSON)
+                    }
+                    Button("Recipes (HTML)") {
+                        prepareExport(.recipesHTML)
+                    }
+                    Button("All Local Library Data (JSON)") {
+                        prepareExport(.allLibraryJSON)
+                    }
+                    Button("Cancel", role: .cancel) {
+                    }
+                } message: {
+                    Text(
+                        "Recipe JSON/HTML includes source text and Collections but not photos. Full library JSON includes groceries, meal plan and local preferences. No in-app restore is available."
+                    )
+                }
 
                 NavigationLink("What RecipePouch Stores") {
                     StoredDataView()
@@ -80,20 +102,6 @@ struct DataPrivacySettingsView: View {
             if let feedback = RecipeExportFormat.feedback(for: result) {
                 message = feedback
             }
-        }
-        .confirmationDialog(
-            "Choose export format",
-            isPresented: $choosesExportFormat,
-            titleVisibility: .visible
-        ) {
-            Button("Recipes (JSON)") { prepareExport(.recipesJSON) }
-            Button("Recipes (HTML)") { prepareExport(.recipesHTML) }
-            Button("All Local Library Data (JSON)") { prepareExport(.allLibraryJSON) }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(
-                "Recipe JSON/HTML includes source text and Collections but not photos. Full library JSON includes groceries, meal plan and local preferences. No in-app restore is available."
-            )
         }
         .confirmationDialog(
             "Delete all local RecipePouch data?",

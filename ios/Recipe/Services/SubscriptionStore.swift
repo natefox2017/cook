@@ -3,6 +3,7 @@
 
 import Foundation
 import Observation
+import RecipeCore
 import StoreKit
 
 enum SubscriptionState: Equatable {
@@ -29,7 +30,7 @@ enum SubscriptionState: Equatable {
 @MainActor @Observable
 final class SubscriptionStore {
     private static let unconfiguredProductsMessage =
-        "Subscription products have not been configured in App Store Connect."
+        RecipeLanguage.localized("Subscription products have not been configured in App Store Connect.")
 
     private(set) var products: [Product] = []
     private(set) var trialEligibleProductIDs = Set<String>()
@@ -43,8 +44,12 @@ final class SubscriptionStore {
     init() {
         updatesTask = Task { [weak self] in
             for await update in Transaction.updates {
-                guard let self else { return }
-                guard case .verified(let transaction) = update else { continue }
+                guard let self else {
+                    return
+                }
+                guard case .verified(let transaction) = update else {
+                    continue
+                }
                 await self.finishAfterEntitlementDelivery(
                     transaction,
                     reportUnavailable: false
@@ -53,14 +58,22 @@ final class SubscriptionStore {
         }
     }
 
-    deinit { updatesTask?.cancel() }
+    deinit {
+        updatesTask?.cancel()
+    }
 
     func load(force: Bool = false) async {
-        guard !isWorking else { return }
-        guard force || !hasLoaded else { return }
+        guard !isWorking else {
+            return
+        }
+        guard force || !hasLoaded else {
+            return
+        }
 
         isWorking = true
-        defer { isWorking = false }
+        defer {
+            isWorking = false
+        }
 
         do {
             let ids = Self.productIDs
@@ -74,14 +87,18 @@ final class SubscriptionStore {
             // Preserve any locally verifiable access if product metadata cannot load.
             await refreshEntitlements()
             let loadedProducts = try await Product.products(for: ids)
-                .filter { $0.type == .autoRenewable }
-                .sorted { $0.price < $1.price }
+                .filter {
+                    $0.type == .autoRenewable
+                }
+                .sorted {
+                    $0.price < $1.price
+                }
             guard !loadedProducts.isEmpty else {
                 products = []
                 await refreshEntitlements()
                 if !state.hasEntitlement {
                     state = .unavailable(
-                        "No App Store subscription products are available for this storefront right now."
+                        RecipeLanguage.localized("No App Store subscription products are available for this storefront right now.")
                     )
                 }
                 // Product availability can be transient; keep load retryable.
@@ -102,15 +119,19 @@ final class SubscriptionStore {
     }
 
     func purchase(_ product: Product) async {
-        guard !isWorking else { return }
+        guard !isWorking else {
+            return
+        }
         isWorking = true
-        defer { isWorking = false }
+        defer {
+            isWorking = false
+        }
 
         do {
             switch try await product.purchase() {
             case .success(let result):
                 guard case .verified(let transaction) = result else {
-                    message = "The App Store transaction could not be verified."
+                    message = RecipeLanguage.localized("The App Store transaction could not be verified.")
                     return
                 }
                 await finishAfterEntitlementDelivery(
@@ -119,13 +140,13 @@ final class SubscriptionStore {
                 )
 
             case .pending:
-                message = "Your purchase is pending approval."
+                message = RecipeLanguage.localized("Your purchase is pending approval.")
 
             case .userCancelled:
                 break
 
             @unknown default:
-                message = "The App Store returned an unknown purchase result."
+                message = RecipeLanguage.localized("The App Store returned an unknown purchase result.")
             }
         } catch {
             message = error.localizedDescription
@@ -133,7 +154,9 @@ final class SubscriptionStore {
     }
 
     func restore() async {
-        guard !isWorking else { return }
+        guard !isWorking else {
+            return
+        }
         guard !Self.productIDs.isEmpty else {
             state = .unavailable(Self.unconfiguredProductsMessage)
             message = Self.unconfiguredProductsMessage
@@ -141,17 +164,19 @@ final class SubscriptionStore {
         }
 
         isWorking = true
-        defer { isWorking = false }
+        defer {
+            isWorking = false
+        }
 
         do {
             try await AppStore.sync()
             await refreshEntitlements()
             if state.hasEntitlement {
-                message = "Your active RecipePouch subscription has been restored."
+                message = RecipeLanguage.localized("Your active RecipePouch subscription has been restored.")
             } else if case .unavailable(let reason) = state {
                 message = reason
             } else {
-                message = "No active RecipePouch subscription was found for this App Store account."
+                message = RecipeLanguage.localized("No active RecipePouch subscription was found for this App Store account.")
             }
         } catch {
             message = error.localizedDescription
@@ -165,7 +190,7 @@ final class SubscriptionStore {
         _ transaction: Transaction,
         reportUnavailable: Bool
     ) async {
-        let configuredIDs = Set(Self.productIDs)
+        let configuredIDs = Self.entitlementProductIDs
         guard configuredIDs.contains(transaction.productID),
             transaction.revocationDate == nil
         else {
@@ -177,8 +202,7 @@ final class SubscriptionStore {
         guard entitledIDs.contains(transaction.productID) else {
             if reportUnavailable {
                 message =
-                    "The App Store verified your purchase, but the entitlement is not yet available. "
-                    + "Check your subscription status or try Restore Purchases."
+                    RecipeLanguage.localized("The App Store verified your purchase, but the entitlement is not yet available. Check your subscription status or try Restore Purchases.")
             }
             return
         }
@@ -190,22 +214,31 @@ final class SubscriptionStore {
     /// displayed lifecycle state without granting access on its own.
     @discardableResult
     func refreshEntitlements() async -> Set<String> {
-        let configuredProductIDs = Set(Self.productIDs)
-        guard !configuredProductIDs.isEmpty else {
+        guard !Self.productIDs.isEmpty else {
             state = .unavailable(Self.unconfiguredProductsMessage)
             return []
         }
 
         var entitledProductIDs = Set<String>()
         for await entitlement in Transaction.currentEntitlements {
-            guard case .verified(let transaction) = entitlement else { continue }
-            guard configuredProductIDs.contains(transaction.productID) else { continue }
-            guard transaction.revocationDate == nil else { continue }
+            guard case .verified(let transaction) = entitlement else {
+                continue
+            }
+            guard Self.entitlementProductIDs.contains(transaction.productID) else {
+                continue
+            }
+            guard transaction.revocationDate == nil else {
+                continue
+            }
             entitledProductIDs.insert(transaction.productID)
         }
 
         var renewalStates: [Product.SubscriptionInfo.RenewalState] = []
-        let groupIDs = Set(products.compactMap { $0.subscription?.subscriptionGroupID })
+        let groupIDs = Set(
+            products.compactMap {
+                $0.subscription?.subscriptionGroupID
+            }
+        )
         var statusLookupFailed = false
         for groupID in groupIDs {
             guard let statuses = try? await Product.SubscriptionInfo.status(for: groupID) else {
@@ -215,7 +248,7 @@ final class SubscriptionStore {
             for status in statuses {
                 guard case .verified(let transaction) = status.transaction,
                     case .verified = status.renewalInfo,
-                    Self.productIDs.contains(transaction.productID)
+                    Self.entitlementProductIDs.contains(transaction.productID)
                 else {
                     continue
                 }
@@ -235,7 +268,7 @@ final class SubscriptionStore {
             }
         } else if statusLookupFailed || groupIDs.isEmpty {
             state = .unavailable(
-                "The App Store subscription status could not be checked. Try again when you are online."
+                RecipeLanguage.localized("The App Store subscription status could not be checked. Try again when you are online.")
             )
         } else if renewalStates.contains(.revoked) {
             state = .revoked
@@ -312,10 +345,27 @@ final class SubscriptionStore {
         return []
     }
 
+    /// Recognize verified legacy purchases without offering their products to new customers.
+    static var entitlementProductIDs: Set<String> {
+        let legacyIDs = [
+            "com.natefox.cookapp.pro.monthly",
+            "com.natefox.cookapp.pro.yearly",
+            "com.natefox.cookapp.lifetime",
+        ]
+        let configuredLegacyIDs =
+            (Bundle.main.object(forInfoDictionaryKey: "LegacyCookSubscriptionProductIDs") as? String)
+            .map(parseProductIDs) ?? []
+        return Set(productIDs + legacyIDs + configuredLegacyIDs)
+    }
+
     private static func parseProductIDs(_ raw: String) -> [String] {
         raw
             .split(separator: ",")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty && !$0.hasPrefix("$(") }
+            .map {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            .filter {
+                !$0.isEmpty && !$0.hasPrefix("$(")
+            }
     }
 }

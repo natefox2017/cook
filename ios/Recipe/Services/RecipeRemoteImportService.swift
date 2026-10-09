@@ -14,13 +14,13 @@ enum RecipeRemoteImportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notSignedIn:
-            "Sign in before sending a recipe to cloud processing."
+            RecipeLanguage.localized("Sign in before sending a recipe to cloud processing.")
         case .invalidConfiguration:
-            "The RecipePouch import service is not configured."
+            RecipeLanguage.localized("The RecipePouch import service is not configured.")
         case .transport(let message):
             message
         case .jobNotReady:
-            "The recipe has not finished processing. Your original source is still saved."
+            RecipeLanguage.localized("The recipe has not finished processing. Your original source is still saved.")
         }
     }
 }
@@ -118,7 +118,7 @@ struct RecipeRemoteImportService {
     ) async throws -> RecipeRemoteImportJob {
         guard ["url", "text"].contains(inputType) else {
             throw RecipeRemoteImportError.transport(
-                "Cloud media uploads are not yet available. Share a link or text."
+                RecipeLanguage.localized("Cloud media uploads are not yet available. Share a link or text.")
             )
         }
 
@@ -185,7 +185,7 @@ struct RecipeRemoteImportService {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let response = response as? HTTPURLResponse else {
             throw RecipeRemoteImportError.transport(
-                "The cloud import service did not return an HTTP response."
+                RecipeLanguage.localized("The cloud import service did not return an HTTP response.")
             )
         }
 
@@ -205,7 +205,7 @@ struct RecipeRemoteImportService {
         }
 
         throw RecipeRemoteImportError.transport(
-            "Cloud import unavailable (HTTP \(response.statusCode)). The source is still saved on this iPhone."
+            RecipeLanguage.localized("Cloud import unavailable (HTTP %lld). The source is still saved on this iPhone.", response.statusCode)
         )
     }
 

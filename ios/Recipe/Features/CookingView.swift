@@ -25,9 +25,12 @@ struct CookingView: View {
     @State private var isShowingIngredients = false
     @State private var isShowingTimers = false
     @State private var isAddingManualTimer = false
+    @State private var isRenamingManualTimer = false
     @State private var isConfirmingFinish = false
     @State private var pendingFinishStepID: UUID?
     @State private var manualTimerLabel = ""
+    @State private var manualTimerRenameID: UUID?
+    @State private var manualTimerRenameDraft = ""
     @State private var manualTimerMinutes = 5
     @State private var errorMessage: String?
     @State private var originalIdleTimerDisabled: Bool?
@@ -352,9 +355,11 @@ struct CookingView: View {
             } label: {
                 HStack {
                     Text(
-                        index + 1 == recipe.steps.count
-                            ? "Finish Cooking"
-                            : (isDone ? "Next Step" : "Done & Next")
+                        LocalizedStringKey(
+                            index + 1 == recipe.steps.count
+                                ? "Finish Cooking"
+                                : (isDone ? "Next Step" : "Done & Next")
+                        )
                     )
                     Image(
                         systemName: index + 1 == recipe.steps.count
@@ -408,7 +413,11 @@ struct CookingView: View {
                                     Label(active.label, systemImage: "timer")
                                     Text(
                                         remaining == 0
-                                            ? "Time’s up"
+                                            ? String(
+                                                localized: LocalizedStringResource(
+                                                    "Time’s up", locale: RecipeLanguage.active
+                                                )
+                                            )
                                             : String(
                                                 localized: LocalizedStringResource(
                                                     "\(CookingClockFormatter.text(remaining)) remaining",
@@ -652,6 +661,18 @@ struct CookingView: View {
             .sheet(isPresented: $isAddingManualTimer) {
                 manualTimerSheet
             }
+            .alert("Rename Timer", isPresented: $isRenamingManualTimer) {
+                TextField("Timer label", text: $manualTimerRenameDraft)
+                Button("Cancel", role: .cancel) {
+                    resetManualTimerRenameDraft()
+                }
+                Button("Save", action: saveManualTimerRename)
+                    .disabled(
+                        manualTimerRenameDraft.trimmingCharacters(
+                            in: .whitespacesAndNewlines
+                        ).isEmpty
+                    )
+            }
         }
     }
 
@@ -663,8 +684,23 @@ struct CookingView: View {
             VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
-                        Text(active.label)
-                            .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
+                        if active.isManual {
+                            Button {
+                                beginManualTimerRename(active)
+                            } label: {
+                                Text(active.label)
+                                    .font(
+                                        RecipeTheme.text(16, weight: .semibold, relativeTo: .headline)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Rename timer")
+                            .accessibilityValue(active.label)
+                            .accessibilityIdentifier("cookingTimerRename.\(active.id.uuidString)")
+                        } else {
+                            Text(active.label)
+                                .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
+                        }
                         Text(
                             remaining == 0
                                 ? String(
@@ -703,7 +739,9 @@ struct CookingView: View {
         running: Bool,
         remaining: Int
     ) -> some View {
-        Button(running ? "Pause" : (remaining == 0 ? "Start Again" : "Start")) {
+        Button(
+            LocalizedStringKey(running ? "Pause" : (remaining == 0 ? "Start Again" : "Start"))
+        ) {
             if running {
                 pauseTimer(active.id)
             } else {
@@ -953,6 +991,37 @@ struct CookingView: View {
     private func resetManualTimerDraft() {
         manualTimerLabel = ""
         manualTimerMinutes = 5
+    }
+
+    private func beginManualTimerRename(_ active: PersistedActiveTimer) {
+        guard active.isManual else {
+            return
+        }
+        manualTimerRenameID = active.id
+        manualTimerRenameDraft = active.label
+        isRenamingManualTimer = true
+    }
+
+    private func saveManualTimerRename() {
+        let label = manualTimerRenameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !label.isEmpty,
+            let id = manualTimerRenameID,
+            var active = session.timers[id],
+            active.isManual
+        else {
+            resetManualTimerRenameDraft()
+            return
+        }
+
+        active.label = label
+        session.timers[id] = active
+        persistSession()
+        resetManualTimerRenameDraft()
+    }
+
+    private func resetManualTimerRenameDraft() {
+        manualTimerRenameID = nil
+        manualTimerRenameDraft = ""
     }
 
     private func requestFinish(stepID: UUID) {

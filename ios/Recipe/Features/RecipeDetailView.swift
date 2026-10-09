@@ -528,7 +528,9 @@ struct RecipeDetailView: View {
                     Image(systemName: recipe.isFavorite ? "heart.fill" : "heart")
                 }
                 .accessibilityLabel(
-                    recipe.isFavorite ? "Remove from Favorites" : "Add to Favorites")
+                    LocalizedStringKey(
+                        recipe.isFavorite ? "Remove from Favorites" : "Add to Favorites"
+                    ))
                 Menu {
                     Button("Add to Meal Plan", systemImage: "calendar.badge.plus") {
                         isPlanningMeal = true
@@ -685,7 +687,11 @@ private struct RecipeIngredientsSelectionView: View {
                 Text("Portions")
             }
             Section {
-                Button(selection.count == recipe.ingredients.count ? "Deselect All" : "Select All")
+                Button(
+                    LocalizedStringKey(
+                        selection.count == recipe.ingredients.count ? "Deselect All" : "Select All"
+                    )
+                )
                 {
                     selection =
                         selection.count == recipe.ingredients.count
@@ -729,9 +735,11 @@ private struct RecipeIngredientsSelectionView: View {
                 Text("Choose ingredients")
             } footer: {
                 Text(
-                    consolidate
-                        ? "Compatible amounts combine safely. Unclear amounts stay as written."
-                        : "Each selected ingredient becomes a separate item. Existing items are unchanged."
+                    LocalizedStringKey(
+                        consolidate
+                            ? "Compatible amounts combine safely. Unclear amounts stay as written."
+                            : "Each selected ingredient becomes a separate item. Existing items are unchanged."
+                    )
                 )
             }
         }

@@ -1,6 +1,6 @@
 # Localization
 
-Updated: 2026-10-08
+Updated: 2026-10-09
 
 ## Runtime policy
 
@@ -22,6 +22,14 @@ Initial targets: English (en), Simplified Chinese (zh-Hans), Traditional Chinese
 - The Share Extension now has its **own** catalog, `ios/ShareExtension/Localizable.xcstrings` (11 source keys, zh-Hans/zh-Hant/ja), included in the `RecipeShare` target's Resources phase. The app catalog alone does not localize this separate extension bundle.
 - UI assertions cover localized Profile defaults, Account and Premium menu labels in the four shipping locales and retain stable accessibility identifiers. This code-only pass verified catalog JSON completeness and static Swift delimiter balance; **Xcode build, iPhone/simulator screenshots, VoiceOver and exhaustive view-state runtime tests have not been executed in this environment**. Complete these before release.
 
+## 2026-10-09 localization source sweep
+
+- Rebased the sweep on the latest `main` timer changes; the iOS app String Catalog now has **808** source keys, each with Simplified Chinese, Traditional Chinese and Japanese values. The Share Extension has **14** translated keys, including shared-storage errors.
+- Covered new authentication code actions, empty states, cooking timers, groceries, collection views, recipe editor, subscription statuses, cloud/import/Core errors, accessibility labels and portable HTML export headings.
+- Runtime-generated Core/service strings are looked up in the host app or Share Extension catalog with `RecipeLanguage.active`, preventing device-language fallback during the English-only testing stage. Static multi-branch SwiftUI labels now pass `LocalizedStringKey` explicitly.
+- Existing user recipe text, persisted enum identifiers, source metadata, StoreKit names/prices and backend technical content are not automatically translated. The separate internal `admin/` React tool is outside the documented iOS localization targets.
+- **Verification performed:** JSON parsing, all three locale values present, and placeholder-count checks. **Not run in this environment:** native Xcode/SwiftUI build, simulator locale screenshots, accessibility testing, Share Extension host testing, subscription checkout or export display QA. Complete those before claiming international-release readiness.
+
 ## Implementation rules
 
 1. User-facing SwiftUI literals remain localizable; do not use them as persistence identifiers.
@@ -37,7 +45,7 @@ Initial targets: English (en), Simplified Chinese (zh-Hans), Traditional Chinese
 
 **The four-language catalog is implemented, with full-page acceptance still in progress.**
 
-- `ios/Recipe/Resources/Localizable.xcstrings` contains **594 source keys**; each key has zh-Hans, zh-Hant and ja values, including plural variants. The keys cover Recipes, recipe details/editing, import, Collections, groceries, meal planning, cooking, profile, Settings, account, subscription, cloud sync, privacy and help. English uses source values as the fallback. `InfoPlist.xcstrings` contains the camera permission string and app display/name values for all four locales.
+- `ios/Recipe/Resources/Localizable.xcstrings` contains **670 source keys**; each key has zh-Hans, zh-Hant and ja values, including plural variants. The keys cover Recipes, recipe details/editing, import, Collections, groceries, meal planning, cooking, profile, Settings, account, subscription, cloud sync, privacy and help. English uses source values as the fallback. `InfoPlist.xcstrings` contains the camera permission string and app display/name values for all four locales.
 - Both catalogs are registered in the **Recipe** app target. Xcode 27 built the target successfully for the iOS 27 simulator, compiling its String Catalogs. The Xcode localization export extracted additional literals and surfaced 111 non-literal extraction warnings; a source scan localized concrete dynamic/composed copy and user-visible service/core errors. Keep reviewing new UI copy as adjacent features change.
 - `ios/Recipe/Info.plist` advertises only en, zh-Hans, zh-Hant and ja. es/fr/de/ko/pt-BR remain planned and are intentionally not advertised.
 - UI tests keep English by default. The locale smoke explicitly passes `--uitesting-locale` for four deterministic locales. `RecipeApp.appLocale` is temporarily pinned to English in normal launches. Locale smoke tests must explicitly opt in; switching languages while running has not been verified.

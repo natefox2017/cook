@@ -14,6 +14,22 @@ public enum RecipeLanguage {
         supportedIdentifiers: supportedIdentifiers
     )
 
+
+    /// Resolves app and extension catalog strings using the explicit test-stage locale.
+    /// Core is a Swift package without its own translations; the host bundle owns them.
+    public static func localized(_ key: String, _ arguments: CVarArg...) -> String {
+        let translation: String
+        if let path = Bundle.main.path(forResource: active.identifier, ofType: "lproj"),
+            let bundle = Bundle(path: path)
+        {
+            translation = bundle.localizedString(forKey: key, value: key, table: "Localizable")
+        } else {
+            translation = key
+        }
+        guard !arguments.isEmpty else { return translation }
+        return String(format: translation, locale: active, arguments: arguments)
+    }
+
     static func resolve(arguments: [String], supportedIdentifiers: [String]) -> Locale {
         if arguments.contains("--uitesting"),
             let index = arguments.firstIndex(of: "--uitesting-locale"),
