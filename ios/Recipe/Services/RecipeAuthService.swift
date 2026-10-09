@@ -36,7 +36,7 @@ final class RecipeAuthService {
 
     init(
         client: SupabaseClient = RecipeSupabase.client,
-        defaults: UserDefaults = .standard
+        defaults: UserDefaults = RecipeUITestNamespace.authDefaults
     ) {
         self.client = client
         self.defaults = defaults

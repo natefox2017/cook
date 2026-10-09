@@ -507,8 +507,10 @@ struct CookingSettingsView: View {
 }
 
 struct GrocerySettingsView: View {
-    @AppStorage("recipe.grocery.consolidate") private var consolidate = true
-    @AppStorage("recipe.grocery.sources") private var sources = true
+    @AppStorage(RecipeUITestNamespace.preferenceKey("recipe.grocery.consolidate"))
+    private var consolidate = true
+    @AppStorage(RecipeUITestNamespace.preferenceKey("recipe.grocery.sources"))
+    private var sources = true
 
     var body: some View {
         Form {
@@ -527,7 +529,8 @@ struct GrocerySettingsView: View {
 }
 
 struct MealPlanSettingsView: View {
-    @AppStorage("recipe.meal.weekStart") private var weekStart = "System Default"
+    @AppStorage(RecipeUITestNamespace.preferenceKey("recipe.meal.weekStart"))
+    private var weekStart = "System Default"
 
     var body: some View {
         Form {

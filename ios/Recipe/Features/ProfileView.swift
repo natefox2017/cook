@@ -567,9 +567,11 @@ struct NotificationPreferencesView: View {
 
 @MainActor
 enum RecipeNotificationCleanup {
-    static func removeTimerReminders() async {
+    static func removeTimerReminders(isUITesting: Bool = false) async {
         let center = UNUserNotificationCenter.current()
-        let prefixes = ["cook.timer.", "recipe.timer."]
+        let prefixes = isUITesting
+            ? ["recipe.uitesting.timer."]
+            : ["cook.timer.", "recipe.timer."]
         let pending = await center.pendingNotificationRequests()
         center.removePendingNotificationRequests(
             withIdentifiers: pending.map(\.identifier).filter { id in
@@ -591,11 +593,27 @@ enum RecipeNotificationCleanup {
 enum RecipeLocalDataDeletion {
     static func erase(
         store: RecipeStore,
-        cloudSync: CloudSyncCoordinator
+        cloudSync: CloudSyncCoordinator,
+        authState: RecipeAuthState? = nil,
+        isUITesting: Bool = RecipeUITestNamespace.isUITesting,
+        defaults: UserDefaults = .standard
     ) async throws {
-        guard case .signedOut = RecipeAuthService.shared.state else {
+        let currentAuthState = authState ?? RecipeAuthService.shared.state
+        guard case .signedOut = currentAuthState else {
             throw RecipeLocalResetError.requiresSignOut
         }
+
+        #if DEBUG
+        if isUITesting {
+            try store.clearLocalLibraryOnly()
+            RecipeUITestNamespace.clearPreferences(from: defaults)
+            await RecipeNotificationCleanup.removeTimerReminders(isUITesting: true)
+            return
+        }
+        #else
+            _ = isUITesting
+        #endif
+
         // A failed disk cleanup must never allow an empty local snapshot to
         // be uploaded as offline edits. Invalidate cloud lineage first, even
         // if the following local write fails or the process is interrupted.
@@ -617,7 +635,6 @@ enum RecipeLocalDataDeletion {
             cleanupError = cleanupError ?? error
         }
 
-        let defaults = UserDefaults.standard
         let prefixes = [
             "recipe.cookingSession.",
             "cook.cookingSession.",

@@ -9,7 +9,26 @@ enum RecipeUITestNamespace {
     static let resetCookingSessionsArgument = "--uitesting-reset-cooking-sessions"
 
     static var isUITesting: Bool {
-        ProcessInfo.processInfo.arguments.contains("--uitesting")
+        #if DEBUG
+            ProcessInfo.processInfo.arguments.contains("--uitesting")
+        #else
+            false
+        #endif
+    }
+
+    static var authDefaults: UserDefaults {
+        authDefaults(isUITesting: isUITesting)
+    }
+
+    static func authDefaults(isUITesting: Bool) -> UserDefaults {
+        #if DEBUG
+            if isUITesting {
+                return UserDefaults(
+                    suiteName: "com.shopkivoo.recipe.uitesting-auth"
+                )!
+            }
+        #endif
+        return .standard
     }
 
     static func preferenceKey(_ key: String, isUITesting: Bool) -> String {
@@ -26,8 +45,15 @@ enum RecipeUITestNamespace {
     }
 
     static func clearCookingSessions(from defaults: UserDefaults) {
-        for key in defaults.dictionaryRepresentation().keys
+        for key in Array(defaults.dictionaryRepresentation().keys)
         where key.hasPrefix("recipe.uitesting.cookingSession.") {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    static func clearPreferences(from defaults: UserDefaults) {
+        for key in Array(defaults.dictionaryRepresentation().keys)
+        where key.hasPrefix("recipe.uitesting.") {
             defaults.removeObject(forKey: key)
         }
     }
@@ -52,7 +78,7 @@ enum RecipeUITestNamespace {
 struct RecipeApp: App {
     @State private var store: RecipeStore
     @State private var subscriptions = SubscriptionStore()
-    @State private var cloudSync = CloudSyncCoordinator()
+    @State private var cloudSync: CloudSyncCoordinator
     private let isUITesting: Bool
     private let bypassOnboarding: Bool
 
@@ -60,7 +86,7 @@ struct RecipeApp: App {
         TimerNotifications.configurePresentation()
         let defaults = UserDefaults.standard
         let arguments = ProcessInfo.processInfo.arguments
-        let isUITesting = arguments.contains("--uitesting")
+        let isUITesting = RecipeUITestNamespace.isUITesting
 
         if !isUITesting {
             for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("cook.") {
@@ -91,6 +117,16 @@ struct RecipeApp: App {
         #endif
         self.isUITesting = isUITesting
         self.bypassOnboarding = bypassOnboarding
+        let cloudSyncService: any RecipeCloudSyncing = isUITesting
+            ? UnconfiguredCloudSync()
+            : SupabaseCloudSync()
+        _cloudSync = State(
+            initialValue: CloudSyncCoordinator(
+                service: cloudSyncService,
+                defaults: RecipeUITestNamespace.authDefaults,
+                monitorsNetworkChanges: !isUITesting
+            )
+        )
 
         _ = RecipeAuthService.shared
 
@@ -250,10 +286,10 @@ private struct RecipeRootView: View {
             }
         }
         .task {
-            await cloudSync.bind(
-                store: store,
-                authState: auth.state
-            )
+            guard !isUITesting else {
+                return
+            }
+            await cloudSync.bind(store: store, authState: auth.state)
             if auth.authCallbackGeneration > 0 {
                 openAccountForAuthCallback()
             }
@@ -269,8 +305,10 @@ private struct RecipeRootView: View {
             if !isUITesting {
                 shareInbox.refresh()
             }
-            Task {
-                await cloudSync.authenticationChanged(state)
+            if !isUITesting {
+                Task {
+                    await cloudSync.authenticationChanged(state)
+                }
             }
             Task {
                 if !isUITesting {
@@ -282,6 +320,9 @@ private struct RecipeRootView: View {
             openAccountForAuthCallback()
         }
         .onChange(of: store.changeToken) { _, token in
+            guard !isUITesting else {
+                return
+            }
             Task {
                 await cloudSync.localStoreChanged(token: token)
             }
@@ -293,8 +334,10 @@ private struct RecipeRootView: View {
             if !isUITesting {
                 shareInbox.refresh()
             }
-            Task {
-                await cloudSync.appBecameActive()
+            if !isUITesting {
+                Task {
+                    await cloudSync.appBecameActive()
+                }
             }
             Task {
                 if !isUITesting {

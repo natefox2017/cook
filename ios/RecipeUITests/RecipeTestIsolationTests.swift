@@ -2,6 +2,8 @@
 // Purpose: Verifies UI-test cooking state stays separate from normal user data.
 
 import Foundation
+import RecipeCore
+import Supabase
 import UserNotifications
 import XCTest
 
@@ -65,6 +67,98 @@ final class RecipeTestIsolationTests: XCTestCase {
         )
         XCTAssertNotEqual(normalID, testID)
     }
+
+    @MainActor
+    func testUITestDeletionClearsOnlyUITestLibraryAndPreferences() async throws {
+        let suiteName = "recipe.test.deletion-isolation.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+
+        let productionKeys = [
+            "recipe.grocery.consolidate",
+            "cook.grocery.sources",
+            "recipe.meal.weekStart",
+            "recipe.collections",
+            "recipe.sync.mode",
+            "recipe.sync.localErasePending",
+            "recipe.shareInbox",
+        ]
+        for (index, key) in productionKeys.enumerated() {
+            defaults.set("normal-\(index)", forKey: key)
+        }
+
+        let testKeys = [
+            "recipe.grocery.consolidate",
+            "recipe.grocery.sources",
+            "recipe.meal.weekStart",
+            "recipe.collections",
+        ].map { RecipeUITestNamespace.preferenceKey($0, isUITesting: true) }
+        for (index, key) in testKeys.enumerated() {
+            defaults.set("test-\(index)", forKey: key)
+        }
+
+        let store = RecipeStore(fileURL: nil)
+        try store.loadSampleRecipes()
+        let cloudSync = CloudSyncCoordinator(
+            service: UnconfiguredCloudSync(),
+            defaults: defaults,
+            monitorsNetworkChanges: false
+        )
+
+        try await RecipeLocalDataDeletion.erase(
+            store: store,
+            cloudSync: cloudSync,
+            authState: .signedOut,
+            isUITesting: true,
+            defaults: defaults
+        )
+
+        XCTAssertFalse(store.hasUserData)
+        for key in productionKeys {
+            XCTAssertNotNil(defaults.object(forKey: key), "Unexpectedly cleared \(key)")
+        }
+        for key in testKeys {
+            XCTAssertNil(defaults.object(forKey: key), "Did not clear \(key)")
+        }
+    }
+
+    #if DEBUG
+        func testUITestSupabaseClientUsesIsolatedStorageAndBlocksNetwork() async {
+            RecipeUITestNetworkURLProtocol.reset()
+            let client = RecipeSupabase.makeUITestClient()
+            let authKey = "recipe.test.auth-isolation.\(UUID().uuidString)"
+            let authDefaults = RecipeUITestNamespace.authDefaults(isUITesting: true)
+            defer {
+                authDefaults.removeObject(forKey: authKey)
+            }
+
+            authDefaults.set(true, forKey: authKey)
+            XCTAssertTrue(authDefaults.bool(forKey: authKey))
+            XCTAssertNil(UserDefaults.standard.object(forKey: authKey))
+            XCTAssertNotEqual(
+                RecipeSupabase.uiTestAuthStorageService,
+                RecipeSupabase.productionAuthStorageService
+            )
+
+            do {
+                _ = try await client.auth.signIn(
+                    email: "recipe-ui-test@example.test",
+                    password: "not-a-real-password"
+                )
+                XCTFail("The UI-test Supabase client must not complete network requests.")
+            } catch {
+            }
+
+            let interceptedHosts = RecipeUITestNetworkURLProtocol.interceptedHosts
+            XCTAssertFalse(interceptedHosts.isEmpty)
+            XCTAssertTrue(
+                interceptedHosts.allSatisfy { $0 == "uitesting.recipe.invalid" },
+                "Unexpected request hosts: \(interceptedHosts)"
+            )
+        }
+    #endif
 }
 
 @MainActor

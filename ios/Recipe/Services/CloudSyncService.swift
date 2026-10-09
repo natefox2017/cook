@@ -253,6 +253,7 @@ final class CloudSyncCoordinator {
     private(set) var mode: CloudSyncMode
 
     @ObservationIgnored private let service: any RecipeCloudSyncing
+    @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let pathMonitor = NWPathMonitor()
     @ObservationIgnored private let pathQueue = DispatchQueue(
         label: "com.modelhub.recipe.cloud-sync-path")
@@ -268,9 +269,13 @@ final class CloudSyncCoordinator {
     @ObservationIgnored private var isOnWiFi = false
     @ObservationIgnored private var isSyncing = false
 
-    init(service: any RecipeCloudSyncing = SupabaseCloudSync()) {
+    init(
+        service: any RecipeCloudSyncing = SupabaseCloudSync(),
+        defaults: UserDefaults = .standard,
+        monitorsNetworkChanges: Bool = true
+    ) {
         self.service = service
-        let defaults = UserDefaults.standard
+        self.defaults = defaults
         let storedMode =
             defaults.string(forKey: "recipe.sync.mode")
             ?? defaults.string(forKey: "cook.sync.mode")
@@ -279,12 +284,18 @@ final class CloudSyncCoordinator {
         pathMonitor.pathUpdateHandler = { [weak self] path in
             let isOnWiFi = path.usesInterfaceType(.wifi)
             Task { @MainActor [weak self] in
-                guard let self else { return }
+                guard let self else {
+                    return
+                }
                 self.isOnWiFi = isOnWiFi
-                if isOnWiFi, self.mode == .wifiOnly { await self.syncLocalChangesIfAllowed() }
+                if isOnWiFi, self.mode == .wifiOnly {
+                    await self.syncLocalChangesIfAllowed()
+                }
             }
         }
-        pathMonitor.start(queue: pathQueue)
+        if monitorsNetworkChanges {
+            pathMonitor.start(queue: pathQueue)
+        }
     }
 
     /// Local-only erasure is allowed only after sign-out and after all
@@ -308,7 +319,7 @@ final class CloudSyncCoordinator {
         // If persisting it fails, never touch the library contents.
         try RecipeLocalEraseMarker.persist(at: localEraseMarkerURL)
 
-        let defaults = UserDefaults.standard
+        let defaults = self.defaults
         defaults.set(true, forKey: "recipe.sync.localErasePending")
         for key in [
             "recipe.sync.localAccountID",
@@ -378,7 +389,7 @@ final class CloudSyncCoordinator {
             automaticSyncPaused = false
             deferredInitialChoice = nil
             lastSyncedAt =
-                UserDefaults.standard.object(
+                defaults.object(
                     forKey: lastSyncedKey(for: userID)
                 ) as? Date
             await loadAccountSnapshot(userID: userID)
@@ -406,7 +417,7 @@ final class CloudSyncCoordinator {
 
     func setMode(_ mode: CloudSyncMode) {
         self.mode = mode
-        UserDefaults.standard.set(mode.rawValue, forKey: "recipe.sync.mode")
+        defaults.set(mode.rawValue, forKey: "recipe.sync.mode")
         if mode != .manual {
             Task {
                 await refreshFromCloudIfAllowed()
@@ -833,7 +844,7 @@ final class CloudSyncCoordinator {
 
     private var localLibraryAccountID: UUID? {
         guard
-            let raw = UserDefaults.standard.string(
+            let raw = defaults.string(
                 forKey: "recipe.sync.localAccountID"
             )
         else {
@@ -849,7 +860,7 @@ final class CloudSyncCoordinator {
     }
 
     private func linkLocalLibrary(to userID: UUID?) throws {
-        let defaults = UserDefaults.standard
+        let defaults = self.defaults
         if let userID {
             // Persist the newly linked account first; clear the durable erase
             // barrier only AFTER a confirmed cloud read/save and local base.
@@ -888,7 +899,7 @@ final class CloudSyncCoordinator {
         // A previous local-only erase invalidates ALL cached server baselines,
         // including files left behind by an interrupted cleanup.
         guard !RecipeLocalEraseMarker.isPresent(at: localEraseMarkerURL),
-            !UserDefaults.standard.bool(
+            !defaults.bool(
                 forKey: "recipe.sync.localErasePending"
             )
         else {
@@ -936,7 +947,7 @@ final class CloudSyncCoordinator {
         let timestamp = date ?? .now
         lastSyncedAt = timestamp
         if let accountID {
-            UserDefaults.standard.set(
+            defaults.set(
                 timestamp,
                 forKey: lastSyncedKey(for: accountID)
             )
