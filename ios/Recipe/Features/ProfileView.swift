@@ -278,7 +278,12 @@ struct ProfileView: View {
                             cloudSync: cloudSync
                         )
                         exportDocument = RecipeExportDocument(data: Data())
-                        errorMessage = "Local RecipePouch data deleted."
+                        errorMessage = String(
+                            localized: LocalizedStringResource(
+                                "Local RecipePouch data deleted.",
+                                locale: RecipeLanguage.active
+                            )
+                        )
                     } catch {
                         errorMessage = error.localizedDescription
                     }
