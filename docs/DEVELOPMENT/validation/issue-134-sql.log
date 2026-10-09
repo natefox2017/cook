@@ -86,7 +86,7 @@ ok 39 - retry message is admitted to the V1 queue
 ok 40 - queued job cannot be retried twice
 
 tests/database/snapshot_artifact_boundaries.sql
-1..24
+1..25
 ok 1 - artifact bucket configuration is private
 ok 2 - artifact bucket configuration enforces ten MiB
 ok 3 - authenticated tests run without superuser or BYPASSRLS
@@ -112,9 +112,11 @@ ok 18 - another account cannot read snapshot through RLS
 ok 19 - another account cannot read artifact through RLS
 ok 20 - another account cannot read artifact job through RLS
 ok 21 - another account cannot import a private artifact
-{"sub":"22222222-2222-4222-8222-222222222222","is_anonymous":true}
+11111111-1111-4111-8111-111111111111
+{"sub":"11111111-1111-4111-8111-111111111111","is_anonymous":true}
 ok 22 - anonymous Auth user cannot submit artifact import
 ok 23 - anon role cannot read artifact table
 ok 24 - anon role cannot invoke snapshot writes
+ok 25 - artifact replay and rejected submissions enqueue no duplicate messages
 
 PASS: all selected SQL suites; legacy bodies, HTTP Auth/Storage and deployment are not tested.

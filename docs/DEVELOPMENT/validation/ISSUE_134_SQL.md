@@ -2,6 +2,7 @@
 
 Executed 2026-10-09 UTC, Linux x86_64, Node 24.19.0, PostgreSQL 18.3 in
 PGlite 0.5.8, pgTAP 1.3.5, PGMQ 1.11.1. Base: `main@55ac164`.
+Tested source commit: `f6627af` (later commits update evidence only).
 
 ## First real run and fix
 
@@ -18,15 +19,16 @@ returns `42501`; grants and production migrations are unchanged.
 ## Final clean-install results
 
 - **PASS:** `npm ci --ignore-scripts` from the committed exact-version lock.
-- **PASS:** `NODE_OPTIONS=--max-old-space-size=256 npm test`: **84/84 pgTAP assertions** across 3 suites.
+- **PASS:** `NODE_OPTIONS=--max-old-space-size=256 npm test`: **85/85 pgTAP assertions** across 3 suites.
   - 20 legacy function privilege assertions (signature-only fixture bodies).
   - 40 real queue/owner/idempotency/worker attempt/retry assertions.
-  - 24 snapshot CAS and private artifact/owner/expiry/anonymous-role assertions.
+  - 25 snapshot CAS and private artifact/owner/expiry/anonymous-role assertions.
 - **PASS:** `git diff --check`.
-- An unrestricted-heap clean-install rerun was killed by the host before TAP
-  output. Retrying with the Node heap bounded to 256 MiB completed all 84
-  assertions; the earlier complete run also passed. This is not a production
-  memory benchmark.
+- Several shared-host reruns were killed before TAP output (with and without
+  a bounded Node heap). No OOM cause was established. A final single-process
+  run after other heavy work naturally finished completed all 85 assertions in
+  4.3 seconds, exit 0. Earlier source passed 84 assertions. This is not a
+  production memory benchmark.
 - **NOT RUN:** actual Supabase Auth/Storage HTTP, external endpoints, legacy
   backend business logic, two-session contention, production or deployment.
 
