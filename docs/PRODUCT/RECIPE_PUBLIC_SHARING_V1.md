@@ -58,3 +58,7 @@ Never infer a unique person from IP/UA/device fingerprint/cross-app graph. See [
 - **#248 P0** [Recipe Detail share entry point](https://github.com/natefox2017/cook/issues/248) hooks into this flow, no new social tab.
 
 **Do not equate GitHub PR merge with production sharing:** mobile Web staging/valid domain, signed iPhone universal links, third-party app link previews, revocation and CDN behavior, source-rights audit and consent need real environment results.
+
+## 2026-10-10 privacy-filtered Core payload (source code only)
+
+`RecipeShareApproval` requires an exact local recipe ID and saved revision plus a chosen scope. `PublicRecipeSnapshot.preview` returns a strictly allowlisted content-only payload without notes, owner IDs, private media, AI evidence transcripts, coverData, image paths, raw Recipe JSON or credentials. The default `summaryAndSource` mode omits steps and ingredient quantities; full instructions are rejected unless the user explicitly confirms distribution rights. URL attribution is restricted to http(s), with no embedded credentials. The public server **must still** enforce logged-in owner, rights, versioned publishing/revocation, unguessable share token, RLS, image rights and cache invalidation. There is **no live public Web** or publishing button yet, and this code must not be exposed via anon Data API before #250 staging and #251 release evidence.
