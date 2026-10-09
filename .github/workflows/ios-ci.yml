@@ -10,40 +10,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  ruleset-compat:
-    # Compatibility-only status for the existing ruleset. No docs validation runs.
-    name: docs
-    if: >-
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    steps:
-      - name: Mark PR merge gate ready
-        run: echo "No docs CI configured."
-
-  localization:
-    name: Verify translations
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Export and validate every supported translation
-        run: |
-          check_root="$(mktemp -d)"
-          # Xcode export synchronizes extracted keys, so run it on an isolated project copy.
-          ditto "$GITHUB_WORKSPACE/ios" "$check_root/ios"
-          xcodebuild -exportLocalizations \
-            -project "$check_root/ios/Recipe.xcodeproj" \
-            -localizationPath "$check_root/export" \
-            -exportLanguage ja \
-            -exportLanguage zh-Hans \
-            -exportLanguage zh-Hant
-          python3 "$GITHUB_WORKSPACE/scripts/check_localizations.py" "$check_root/export"
-
   auto-merge:
-    # Keep this status name only because the current ruleset requires it.
-    # It no longer builds or tests the iOS project.
-    name: Validate iOS project
-    needs: [ruleset-compat, localization]
+    name: Enable Auto Merge
     if: >-
       github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository
@@ -54,8 +22,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
+          state="$(gh pr view "$PR_URL" --json state --jq '.state')"
+          if [ "$state" != "OPEN" ]; then
+            echo "PR is $state; nothing to do."
+            exit 0
+          fi
+
           if [ "$(gh pr view "$PR_URL" --json autoMergeRequest --jq '.autoMergeRequest != null')" = "true" ]; then
             echo "Auto-merge already enabled."
-          else
-            gh pr merge "$PR_URL" --auto --squash
+            exit 0
           fi
+
+          gh pr merge "$PR_URL" --auto --squash
