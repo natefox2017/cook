@@ -75,7 +75,7 @@ public enum RecipeShareInboxError: LocalizedError {
 /// an acknowledgement is a separate immutable file, written only after the
 /// authenticated backend confirms a durable job. No ack is created here.
 public struct RecipeShareInbox: Sendable {
-    public static let appGroupID = "group.com.modelhub.cook"
+    public static let appGroupID = "group.com.shopkivoo.recipe"
 
     private let root: URL
 

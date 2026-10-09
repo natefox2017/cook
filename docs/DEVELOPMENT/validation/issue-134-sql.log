@@ -1,4 +1,5 @@
-npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+added 3 packages in 2s
 
 > test
 > node run.mjs

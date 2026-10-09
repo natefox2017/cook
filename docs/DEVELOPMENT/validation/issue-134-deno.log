@@ -14,88 +14,90 @@ Check supabase/functions/_shared/errors_test.ts
 Check supabase/functions/_shared/storage-purge_test.ts
 Check docs/import-fixtures/contract-evidence_test.ts
 running 7 tests from ./supabase/functions/purge-expired-recipe-import-artifacts/purge_test.ts
-cleanup processes 205 rows across stable pages without offset skips ... ok (35ms)
-Storage failure retains a retryable record ... ok (657µs)
-cleanup rejects cross-user paths and corrupted metadata without deleting ... ok (239µs)
-one run is bounded, reports backlog, and the next run drains it ... ok (17ms)
-concurrent state update is reported rather than silently committed ... ok (230µs)
-cleanup limits concurrent Storage calls to eight ... ok (437µs)
-cleanup secret and timestamp validators fail closed ... ok (555µs)
+cleanup processes 205 rows across stable pages without offset skips ... ok (22ms)
+Storage failure retains a retryable record ... ok (3ms)
+cleanup rejects cross-user paths and corrupted metadata without deleting ... ok (192µs)
+one run is bounded, reports backlog, and the next run drains it ... ok (18ms)
+concurrent state update is reported rather than silently committed ... ok (479µs)
+cleanup limits concurrent Storage calls to eight ... ok (380µs)
+cleanup secret and timestamp validators fail closed ... ok (429µs)
 running 5 tests from ./supabase/functions/recipe-import-worker/artifactOCR_test.ts
-approved mock OCR preserves original image and page-aware fields ... ok (2ms)
-low-confidence scanned PDF retains review and two page references ... ok (282µs)
-empty, oversized and invalid provider pages never become a ready recipe ... ok (565µs)
-OCR egress is disabled without explicit approval and exact trusted host ... ok (835µs)
-approved OCR request sends only the supplied byte view ... ok (27ms)
+approved mock OCR preserves original image and page-aware fields ... ok (7ms)
+low-confidence scanned PDF retains review and two page references ... ok (285µs)
+empty, oversized and invalid provider pages never become a ready recipe ... ok (589µs)
+OCR egress is disabled without explicit approval and exact trusted host ... ok (904µs)
+approved OCR request sends only the supplied byte view ... ok (14ms)
 running 4 tests from ./supabase/functions/recipe-import-worker/artifactText_test.ts
-private file path, UUID, owner and expiry must all match ... ok (1ms)
-text/plain artifact produces traceable recipe fields ... ok (2ms)
-unstructured text remains needs_review without invented steps ... ok (146µs)
-malformed, truncated, empty and oversized text never become evidence ... ok (21ms)
+private file path, UUID, owner and expiry must all match ... ok (679µs)
+text/plain artifact produces traceable recipe fields ... ok (1ms)
+unstructured text remains needs_review without invented steps ... ok (125µs)
+malformed, truncated, empty and oversized text never become evidence ... ok (10ms)
 running 2 tests from ./supabase/functions/recipe-import-worker/publicSocialMetadata_test.ts
-trusted public social posts preserve platform, author and caption evidence ... ok (17ms)
-YouTube and Instagram only use exact post host and route ... ok (2ms)
+trusted public social posts preserve platform, author and caption evidence ... ok (6ms)
+YouTube and Instagram only use exact post host and route ... ok (1ms)
 running 7 tests from ./supabase/functions/recipe-import-worker/safeURLFetch_test.ts
-accepts only HTTPS DNS hostnames on the default port ... ok (5ms)
-rejects private, link-local, documentation and benchmarking IP ranges ... ok (600µs)
-pins every redirect to a freshly resolved public address ... ok (2ms)
-blocks a redirect whose freshly resolved address is private ... ok (1ms)
-rejects a DNS answer set that mixes public and private addresses ... ok (566µs)
-rejects non-HTTPS redirects and redirect chains over the limit ... ok (2ms)
-enforces body size, content type and content encoding ... ok (1ms)
+accepts only HTTPS DNS hostnames on the default port ... ok (1ms)
+rejects private, link-local, documentation and benchmarking IP ranges ... ok (182µs)
+pins every redirect to a freshly resolved public address ... ok (670µs)
+blocks a redirect whose freshly resolved address is private ... ok (474µs)
+rejects a DNS answer set that mixes public and private addresses ... ok (160µs)
+rejects non-HTTPS redirects and redirect chains over the limit ... ok (305µs)
+enforces body size, content type and content encoding ... ok (253µs)
 running 1 test from ./supabase/functions/recipe-import-worker/safeURL_live_test.ts
 live public page uses DNS-pinned HTTPS and extracts recipe evidence ... ignored (0ms)
 running 4 tests from ./supabase/functions/recipe-import-worker/schemaRecipe_test.ts
-extracts only explicit Schema.org Recipe fields from @graph ... ok (46ms)
-keeps missing fields and exposes review paths ... ok (3ms)
-does not choose between multiple Recipe entities ... ok (5ms)
-reports malformed JSON-LD instead of inventing recipe fields ... ok (4ms)
+extracts only explicit Schema.org Recipe fields from @graph ... ok (5ms)
+keeps missing fields and exposes review paths ... ok (991µs)
+does not choose between multiple Recipe entities ... ok (721µs)
+reports malformed JSON-LD instead of inventing recipe fields ... ok (953µs)
 running 4 tests from ./supabase/functions/recipe-import-worker/textEvidence_test.ts
-labelled English source retains ambiguous amounts ... ok (1ms)
-Chinese input with missing instructions keeps needs_review ... ok (145µs)
-unstructured text is not hallucinated into a full recipe ... ok (153µs)
-raw source HTML is evidence, never executed ... ok (133µs)
+labelled English source retains ambiguous amounts ... ok (716µs)
+Chinese input with missing instructions keeps needs_review ... ok (86µs)
+unstructured text is not hallucinated into a full recipe ... ok (142µs)
+raw source HTML is evidence, never executed ... ok (98µs)
 running 2 tests from ./supabase/functions/recipe-imports/requestValidation_test.ts
-accepts a URL request with frozen optional metadata ... ok (1ms)
-rejects mixed inputs, unknown fields and invalid artifact IDs ... ok (275µs)
-running 6 tests from ./supabase/functions/admin-auth/index_test.ts
-production bootstrap rejects a missing server token before its handler ... ok (28ms)
-production bootstrap rejects missing and invalid tokens before its handler ... ok (1ms)
+accepts a URL request with frozen optional metadata ... ok (329µs)
+rejects mixed inputs, unknown fields and invalid artifact IDs ... ok (138µs)
+running 8 tests from ./supabase/functions/admin-auth/index_test.ts
+production bootstrap rejects a missing server token before its handler ... ok (12ms)
+production bootstrap rejects missing and invalid tokens before its handler ... ok (956µs)
 production bootstrap rejects prefixes, suffixes and oversized headers ... ok (1ms)
-production bootstrap accepts the configured header or bearer token ... ok (2ms)
-bootstrap token header is allowed by public CORS preflight ... ok (1ms)
-non-production bootstrap keeps the existing no-token behavior ... ok (428µs)
+production bootstrap accepts the configured header or bearer token ... ok (1ms)
+bootstrap token header is allowed by public CORS preflight ... ok (610µs)
+non-production bootstrap keeps the existing no-token behavior ... ok (79µs)
+bootstrap RPC errors reveal only intentional authentication and validation guidance ... ok (105µs)
+bootstrap unexpected database errors do not escape in a 4xx response ... ok (445µs)
 running 5 tests from ./supabase/functions/_shared/admin-role_test.ts
-all four database-backed admin roles parse exactly ... ok (478µs)
-unknown and missing roles fail closed instead of becoming owner ... ok (404µs)
-owner authorization never accepts admin, operator or readonly ... ok (202µs)
-readonly cannot mutate subscription or financial routes ... ok (123µs)
-authorization handles malformed role before checking allowed roles ... ok (201µs)
+all four database-backed admin roles parse exactly ... ok (530µs)
+unknown and missing roles fail closed instead of becoming owner ... ok (534µs)
+owner authorization never accepts admin, operator or readonly ... ok (247µs)
+readonly cannot mutate subscription or financial routes ... ok (117µs)
+authorization handles malformed role before checking allowed roles ... ok (83µs)
 running 6 tests from ./supabase/functions/_shared/bounded-json_test.ts
-small valid JSON objects pass unchanged ... ok (28ms)
-honest or dishonest Content-Length cannot bypass the byte limit ... ok (943µs)
-streaming body is rejected one byte past its exact cap ... ok (400µs)
-malformed JSON, arrays and missing bodies fail as validation errors ... ok (2ms)
-invalid UTF-8 bytes cannot become a login object ... ok (3ms)
-the parser rejects invalid size configurations ... ok (176µs)
+small valid JSON objects pass unchanged ... ok (14ms)
+honest or dishonest Content-Length cannot bypass the byte limit ... ok (602µs)
+streaming body is rejected one byte past its exact cap ... ok (195µs)
+malformed JSON, arrays and missing bodies fail as validation errors ... ok (383µs)
+invalid UTF-8 bytes cannot become a login object ... ok (1ms)
+the parser rejects invalid size configurations ... ok (100µs)
 running 3 tests from ./supabase/functions/_shared/errors_test.ts
-HTTP 5xx replies never expose database internals ... ok (27ms)
-Validation errors can retain public client-actionable details ... ok (331µs)
+HTTP 5xx replies never expose database internals ... ok (11ms)
+Validation errors can retain public client-actionable details ... ok (193µs)
 Unhandled exceptions never return raw error messages ...
 ------- post-test output -------
 unhandled_error SUPABASE_SERVICE_ROLE_KEY=secret
 ----- post-test output end -----
-Unhandled exceptions never return raw error messages ... ok (553µs)
+Unhandled exceptions never return raw error messages ... ok (966µs)
 running 3 tests from ./supabase/functions/_shared/storage-purge_test.ts
-purges only the requested user's files, including nested folders ... ok (903µs)
-paginates listings and chunks removals at the API limit ... ok (325µs)
+purges only the requested user's files, including nested folders ... ok (375µs)
+paginates listings and chunks removals at the API limit ... ok (141µs)
 stops cleanup when listing or removal fails ...
 ------- post-test output -------
-{"ts":"2026-10-08T18:16:38.632Z","level":"error","event":"storage_list_failed","bucket":"one","prefix":"user-a","message":"list failed"}
-{"ts":"2026-10-08T18:16:38.632Z","level":"error","event":"storage_remove_failed","bucket":"one","message":"remove failed","count":1}
+{"ts":"2026-10-09T01:39:41.860Z","level":"error","event":"storage_list_failed","bucket":"one","prefix":"user-a","message":"list failed"}
+{"ts":"2026-10-09T01:39:41.860Z","level":"error","event":"storage_remove_failed","bucket":"one","message":"remove failed","count":1}
 ----- post-test output end -----
-stops cleanup when listing or removal fails ... ok (1ms)
+stops cleanup when listing or removal fails ... ok (341µs)
 running 1 test from ./docs/import-fixtures/contract-evidence_test.ts
-completed import preserves original source, linked evidence, review gaps and user edit ... ok (1ms)
+completed import preserves original source, linked evidence, review gaps and user edit ... ok (599µs)
 
-ok | 59 passed | 0 failed | 1 ignored (3s)
+ok | 61 passed | 0 failed | 1 ignored (1s)

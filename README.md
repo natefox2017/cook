@@ -44,7 +44,7 @@ V1 **不做社区**：不做 Feed、发帖、关注、点赞、评论、达人�
 
 ## 当前状态
 
-已建立原生 SwiftUI iPhone App，最低 iOS 18，主 App Bundle ID 继续使用已注册的 `com.modelhub.cook`，以保留现有安装身份。用 Xcode 26.2 或更新版本打开 `ios/Recipe.xcodeproj`，选择共享的 `Recipe` scheme 后运行。
+已建立原生 SwiftUI iPhone App，最低 iOS 18，主 App Bundle ID 为 `com.shopkivoo.recipe`。更换 Bundle ID 后，旧 ID 安装的数据不会随新 App 安装自动迁移。用 Xcode 26.2 或更新版本打开 `ios/Recipe.xcodeproj`，选择共享的 `Recipe` scheme 后运行。
 
 客户端包含食谱库、搜索/筛选/收藏、详情与编辑、网页/文字/照片/文档导入、烹饪计时、购物清单、简单周计划及本地设置。用户数据原子保存到本机；首启为空库，演示数据只通过明确入口加载。
 
