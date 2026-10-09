@@ -31,9 +31,6 @@ struct CookingView: View {
     @State private var manualTimerMinutes = 5
     @State private var errorMessage: String?
     @State private var originalIdleTimerDisabled: Bool?
-    @State private var notificationTasks: [UUID: Task<Void, Never>] = [:]
-    // A revision prevents an older async request from canceling a newer timer alert.
-    @State private var notificationTaskRevisions: [UUID: UUID] = [:]
 
     private var recipe: Recipe? { store.recipe(id: recipeID) }
     private var sessionKey: String {
@@ -1104,25 +1101,7 @@ struct CookingView: View {
     }
 
     private func cancelNotification(for timerID: UUID) {
-        let pendingTask = notificationTasks[timerID]
-        pendingTask?.cancel()
         TimerNotifications.cancel(id: notificationID(for: timerID))
-
-        guard let pendingTask else {
-            notificationTaskRevisions[timerID] = nil
-            return
-        }
-
-        let cancellationRevision = UUID()
-        notificationTaskRevisions[timerID] = cancellationRevision
-        Task { @MainActor in
-            await pendingTask.value
-            guard notificationTaskRevisions[timerID] == cancellationRevision else {
-                return
-            }
-            notificationTasks[timerID] = nil
-            notificationTaskRevisions[timerID] = nil
-        }
     }
 
     private func scheduleNotification(for active: PersistedActiveTimer) {
@@ -1131,44 +1110,20 @@ struct CookingView: View {
             active.timer.remaining(at: .now) > 0
         else { return }
 
-        let previous = notificationTasks[active.id]
-        previous?.cancel()
-        let requestRevision = UUID()
-        notificationTaskRevisions[active.id] = requestRevision
         let id = notificationID(for: active.id)
-
-        let task = Task { @MainActor in
-            await previous?.value
-            defer {
-                if notificationTaskRevisions[active.id] == requestRevision {
-                    notificationTasks[active.id] = nil
-                    notificationTaskRevisions[active.id] = nil
-                }
-            }
-            guard !Task.isCancelled,
-                notificationTaskRevisions[active.id] == requestRevision
-            else {
-                return
-            }
-
+        let seconds = active.timer.remaining(at: .now)
+        guard seconds > 0 else { return }
+        let scheduleTask = TimerNotifications.schedule(
+            id: id,
+            title: active.label.isEmpty ? "Cooking timer" : active.label,
+            seconds: seconds
+        )
+        Task { @MainActor in
             do {
-                let seconds = active.timer.remaining(at: .now)
-                guard seconds > 0 else { return }
-                try await TimerNotifications.schedule(
-                    id: id,
-                    title: active.label.isEmpty ? "Cooking timer" : active.label,
-                    seconds: seconds
-                )
-
-                if Task.isCancelled
-                    || notificationTaskRevisions[active.id] != requestRevision
-                    || !store.settings.timerNotifications
-                {
-                    TimerNotifications.cancel(id: id)
-                }
+                try await scheduleTask.value
             } catch {
                 if !Task.isCancelled
-                    && notificationTaskRevisions[active.id] == requestRevision
+                    && store.settings.timerNotifications
                 {
                     errorMessage = String(
                         localized: LocalizedStringResource(
@@ -1177,7 +1132,6 @@ struct CookingView: View {
                 }
             }
         }
-        notificationTasks[active.id] = task
     }
 
     private func synchronizeNotifications() {
