@@ -17,4 +17,4 @@ The sample resources are exact copies of the user's existing recipe-app designs:
 
 ## App icon
 
-`AppIcon.png` is the user-approved RecipePouch cooking-pot icon used by the asset catalog. `AppIcon.svg` is a lightweight editable vector companion. The selected white-background, full-color design was approved on 2026-10-07.
+`AppIcon.png` is the user-approved RecipePouch cooking-pot icon used by the asset catalog. `AppIcon.svg` is a lightweight editable vector companion. `RecipeBrand.imageset/RecipeBrand.png` is an exact copy of the approved raster icon for the account sheet; the vector companion is not substituted for the approved artwork. The selected white-background, full-color design was approved on 2026-10-07.

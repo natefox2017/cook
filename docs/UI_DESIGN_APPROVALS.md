@@ -29,6 +29,8 @@
 
 | UI-021 | 全页面字体与间距统一 | `DESIGN_SYSTEM.md` + `ios/Recipe/Design/RecipeTheme.swift` | APPROVED | 2026-10-09 用户要求直接执行：原生标题位置与字号统一、页面间距/颜色规范化，清理冗余说明文案，保留必要提示、数据和功能。 |
 
+| UI-022 | Recipe Pals 登录页品牌与控件修正 | 已批准 AppIcon.png + RecipeTheme + 用户登录页截图 | APPROVED | 2026-10-09 用户明确要求直接修正 logo、标题、按钮及右上角关闭图标；使用锅形品牌图标、Recipe Pals 标题、Lora 与 #42A85A 邮箱主按钮，Apple/Google 使用白色胶囊控件并保留官方标识，关闭入口为灰色叉号；不改认证契约 |
+
 ## 状态定义
 - PENDING：尚无明确 UI 决策记录
 - APPROVED：用户已明确同意或直接要求执行对应方向
