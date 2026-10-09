@@ -2,7 +2,7 @@
 
 Open `Recipe.xcodeproj` with Xcode 26.2 or later and select the shared `Recipe` scheme.
 
-- iPhone app: iOS 18.0 or later, `com.modelhub.cook` (retained for existing app identity).
+- iPhone app: iOS 18.0 or later, `com.shopkivoo.recipe`.
 - SwiftUI screens: `Recipe/Features/`; shared appearance: `Recipe/Design/`.
 - Local domain and persistence: the `RecipeCore` Swift package, with no external package dependency.
 - UI tests: `RecipeUITests/`; `--uitesting` uses an isolated in-memory sample library and clears only legacy cooking-session keys.

@@ -382,6 +382,19 @@ public enum RecipeShareImportWorkflow {
             fromText: structuredText,
             title: title
         )
+        if receipt.inputType == .text,
+           ingredients.isEmpty || steps.isEmpty {
+            let sourceRecipe = RecipeDocumentParser.recipe(
+                fromText: source,
+                title: title
+            )
+            if ingredients.isEmpty {
+                recipe.ingredients = sourceRecipe.ingredients
+            }
+            if steps.isEmpty {
+                recipe.steps = sourceRecipe.steps
+            }
+        }
         recipe.id = result.recipeID
         recipe.servings = nil
         recipe.sourceText = receipt.inputType == .text ? source : nil
