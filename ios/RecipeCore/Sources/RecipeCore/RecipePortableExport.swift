@@ -125,7 +125,7 @@ public enum RecipePortableExport {
 
                 var facts: [String] = [RecipeLanguage.localized(recipe.category.rawValue)]
                 if let servings = recipe.servings {
-                    facts.append(RecipeLanguage.localized("%lld servings", servings))
+                    facts.append(RecipeLanguage.localized("Servings: %lld", servings))
                 }
                 if let prep = recipe.prepMinutes {
                     facts.append(RecipeLanguage.localized("Prep: %lld minutes", prep))
