@@ -18,7 +18,10 @@ import {
   isDefaultAdminCredentials,
   validateAdminPassword,
 } from "../_shared/admin-password.ts";
-import { withAdminBootstrapAuthorization } from "../_shared/admin-bootstrap.ts";
+import {
+  publicAdminBootstrapError,
+  withAdminBootstrapAuthorization,
+} from "../_shared/admin-bootstrap.ts";
 
 function routeAction(req: Request): string {
   const url = new URL(req.url);
@@ -179,29 +182,7 @@ Deno.serve(async (req) => {
 
           if (error) {
             log("warn", "admin_bootstrap_failed", { message: error.message });
-            const msg = error.message ?? "Bootstrap failed";
-            if (msg.includes("current default password")) {
-              throw new AppError(
-                "unauthorized",
-                "Current default password is incorrect",
-                401,
-              );
-            }
-            if (msg.includes("strength")) {
-              throw new AppError(
-                "validation_error",
-                "newPassword does not meet strength policy",
-                400,
-              );
-            }
-            if (msg.includes("not available")) {
-              throw new AppError(
-                "conflict",
-                "Bootstrap is not available for this environment",
-                409,
-              );
-            }
-            throw new AppError("validation_error", msg, 400);
+            throw publicAdminBootstrapError(error.message ?? "");
           }
 
           const row = Array.isArray(data) ? data[0] : data;
