@@ -166,7 +166,7 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
   const [records, setRecords] = useState<SubscriptionRecord[]>([]);
   const [revenue, setRevenue] = useState<RevenueData | null>(null);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [planEditor, setPlanEditor] = useState<SubscriptionPlan | "new" | null>(null);
@@ -296,7 +296,7 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
         </div>
         <div className="billing-header-actions">
           <label className="billing-platform-select">
-            <span className="billing-sr-only">Platform filter</span>
+            <span>Platform</span>
             <select value={platform} onChange={(event) => setPlatform(event.target.value as Platform)}>
               <option value="all">All platforms</option>
               <option value="app_store">App Store</option>
@@ -336,7 +336,7 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
           {(tab === "subscriptions" || tab === "plans") && (
             <label className="billing-search">
               <Search size={16} aria-hidden="true" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === "plans" ? "Search plans…" : "Search subscribers…"} />
+              <input type="search" aria-label={tab === "plans" ? "Search plans" : "Search subscribers"} value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === "plans" ? "Search plans…" : "Search subscribers…"} />
             </label>
           )}
         </div>
@@ -395,7 +395,7 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
                   ))}
                 </tbody>
               </table>
-              {visibleRecords.length === 0 && <div className="billing-table-empty">No subscription records match this view.</div>}
+              {visibleRecords.length === 0 && <div className="billing-table-empty">{records.length === 0 ? "No subscription records have been returned." : "No subscription records match this view."}</div>}
             </div>
             <div className="billing-table-footer">Showing {visibleRecords.length} subscription{visibleRecords.length === 1 ? "" : "s"} returned by the service</div>
           </section>
@@ -420,7 +420,7 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
                   ))}
                 </tbody>
               </table>
-              {visiblePlans.length === 0 && <div className="billing-table-empty">No plans match this view.</div>}
+              {visiblePlans.length === 0 && <div className="billing-table-empty">{plans.length === 0 ? "No subscription plans are configured yet." : "No plans match this view."}</div>}
             </div>
             <div className="billing-table-footer">{visiblePlans.length} plan{visiblePlans.length === 1 ? "" : "s"}{!canManagePlans && <span> · Read-only access</span>}</div>
           </section>

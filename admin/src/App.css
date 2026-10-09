@@ -144,7 +144,7 @@ h2 { font-size: 15px; font-weight: 700; letter-spacing: -.15px; }
 .breakdown-row strong { color: #39463d; font-size: 10px; font-weight: 600; text-align: right; }
 .breakdown-track { height: 6px; overflow: hidden; border-radius: 9px; background: #f0f3f0; }
 .breakdown-track i { display: block; height: 100%; min-width: 0; border-radius: inherit; background: #5ca972; }
-.loading-panel { display: flex; align-items: center; gap: 9px; min-height: 260px; color: #89948c; font-size: 12px; }
+.loading-panel { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 260px; color: #89948c; font-size: 12px; }
 .error-panel { display: grid; max-width: 520px; gap: 10px; padding: 22px; color: #68736b; font-size: 12px; }
 .error-panel h2 { font-size: 17px; }
 .error-panel .button { justify-self: start; margin-top: 5px; }

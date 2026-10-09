@@ -207,7 +207,7 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
         </div>
         <div className="llm-heading-actions">
           <label className="llm-range-select">
-            <span className="llm-sr-only">Usage time range</span>
+            <span>Usage range</span>
             <select value={range} onChange={(event) => setRange(event.target.value as LLMUsageRange)}>
               {ranges.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>

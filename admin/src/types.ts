@@ -13,6 +13,28 @@ export type AdminSession = {
   admin: AdminAccount;
 };
 
+export type AdminLoginResult = AdminSession | {
+  factorRequired: true;
+  challengeToken: string;
+  methods: Array<"totp" | "passkey">;
+  admin: AdminAccount;
+};
+
+export type AdminFactorState = {
+  totp: { enabled: boolean; enabledAt: string | null };
+  passkeys: Array<{ credential_id: string; name: string; created_at: string; last_used_at: string | null }>;
+};
+
+export type AdminLoginEvent = {
+  id: string;
+  createdAt: string;
+  method: "password" | "totp" | "passkey" | "bootstrap";
+  success: boolean;
+  ipAddress: string | null;
+  userAgent: string | null;
+  failureReason: string | null;
+};
+
 export type DashboardData = {
   stats: {
     totalUsers: number;
@@ -56,6 +78,11 @@ export type AdminUser = {
   registrationProvider: "apple" | "google" | "email" | "unknown";
   deviceType: "ios" | "android" | "web" | "unknown";
   registrationCountryCode?: string | null;
+  lastLoginAt: string | null;
+  lastLoginIp: string | null;
+  subscriptionPlan: string | null;
+  subscriptionBillingPeriod: "monthly" | "yearly" | "lifetime" | null;
+  subscriptionStatus: string | null;
 };
 
 export type AdminUserPage = {
@@ -66,7 +93,6 @@ export type AdminUserPage = {
 };
 
 export type AdminUserDetail = AdminUser & {
-  lastLoginAt: string | null;
   payments: Array<{
     id: string;
     eventType: string;

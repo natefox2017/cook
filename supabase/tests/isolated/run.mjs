@@ -24,6 +24,7 @@ try {
     '20261008103818_restrict_untrusted_security_definer_rpcs.sql',
     '20261009120000_fix_admin_bootstrap_owner_ambiguous_id.sql',
     '20261009121000_restrict_admin_bootstrap_owner_execution.sql',
+    '20261009121100_admin_auth_factors.sql',
     '20261008155000_recipe_import_jobs_v1.sql',
     '20261008195255_preserve_recipe_import_source_url.sql',
     '20261008200000_recipe_import_artifacts_v1.sql',
@@ -35,6 +36,8 @@ try {
   for (const file of [
     'tests/security_definer_function_privileges.test.sql',
     'tests/database/admin_bootstrap_owner.sql',
+    'tests/database/admin_auth_factors.sql',
+    'tests/database/admin_users_contract.sql',
     'tests/database/recipe_import_jobs_v1.sql',
     'tests/database/snapshot_artifact_boundaries.sql',
   ]) {

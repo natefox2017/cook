@@ -2,7 +2,7 @@
 -- Purpose: Verify default-seed conversion updates the owner and revokes sessions.
 begin;
 
-select plan(6);
+select plan(8);
 
 insert into public.admin_accounts (
     id, username, password_hash, role, is_default_seed, must_change_password
@@ -13,6 +13,12 @@ insert into public.admin_accounts (
     'admin',
     true,
     true
+);
+
+select is(
+    (select exists(select 1 from public.admin_accounts where is_default_seed = false)),
+    false,
+    'bootstrap status is uninitialized before seed conversion'
 );
 
 insert into public.admin_sessions (id, admin_id, token_hash)
@@ -27,6 +33,11 @@ select lives_ok(
         'admin', 'NewStrongPassword123', 'SeedPassword123'
     )$$,
     'converts the default seed without ambiguous id references'
+);
+select is(
+    (select exists(select 1 from public.admin_accounts where is_default_seed = false)),
+    true,
+    'bootstrap status is initialized after successful setup'
 );
 select is(
     (select username from public.admin_accounts where id = '11111111-1111-4111-8111-111111111111'),

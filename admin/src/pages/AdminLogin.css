@@ -1,0 +1,191 @@
+.admin-login-shell {
+  display: grid;
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100svh;
+  grid-template-rows: 1fr auto;
+  justify-items: center;
+  align-items: center;
+  gap: 20px;
+  padding: clamp(20px, 5vh, 56px) 16px 20px;
+  overflow-y: auto;
+  background: radial-gradient(ellipse 60% 42% at 50% 0%, #eff6ef, transparent 78%), #f7f8f7;
+}
+
+.admin-login-card {
+  width: min(100%, 440px);
+  padding: clamp(22px, 6vw, 36px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 18px 55px #17291b0d, 0 2px 8px #17291b08;
+}
+
+.admin-login-brand {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 28px;
+  color: var(--foreground);
+  font-family: Manrope, "DM Sans", sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.35px;
+}
+
+.admin-login-brand .brand-mark {
+  width: 50px;
+  height: 50px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: transparent;
+}
+
+.admin-login-brand .brand-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-login-card h1 {
+  text-align: center;
+  margin-bottom: 8px;
+  font-size: clamp(24px, 6vw, 29px);
+  line-height: 1.2;
+  letter-spacing: -.8px;
+}
+
+.admin-login-notice {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid #ead8a9;
+  border-radius: 9px;
+  color: #604b20;
+  background: #fffaf0;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.admin-login-notice code {
+  font-size: .92em;
+}
+
+.admin-login-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 26px;
+}
+
+.admin-login-form label {
+  margin-top: 8px;
+  color: #354139;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.admin-login-form label span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.admin-login-form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--foreground);
+  background: #fff;
+  font-size: 15px;
+  transition: border-color .12s, box-shadow .12s;
+}
+
+.admin-login-form input:focus-visible,
+.admin-login-mode-toggle:focus-visible {
+  border-color: #4d9b63;
+  outline: 3px solid #22844826;
+  outline-offset: 2px;
+}
+
+.admin-login-submit {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 13px;
+  font-size: 14px;
+}
+
+.admin-login-submit .spinner {
+  width: 17px;
+  height: 17px;
+  border-color: #ffffff70;
+  border-top-color: #fff;
+}
+
+.admin-login-error {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #f1c8c4;
+  border-radius: 8px;
+  color: #9f241c;
+  background: #fff6f5;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.admin-login-mode-toggle {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 9px;
+  font-size: 13px;
+}
+
+.admin-login-security {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 22px;
+  color: #68766c;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.admin-login-security svg {
+  flex: 0 0 auto;
+}
+
+/* The shared sidebar still renders this placeholder icon; replace it with the app mark. */
+.brand-mark {
+  background: center / cover no-repeat url("../assets/recipepouch-app-icon.png");
+}
+
+.brand-mark > svg {
+  visibility: hidden;
+}
+
+@media (max-width: 359px) {
+  body {
+    min-width: 0;
+  }
+}
+
+@media (max-height: 720px) {
+  .admin-login-shell {
+    align-items: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-login-form input {
+    transition: none;
+  }
+}

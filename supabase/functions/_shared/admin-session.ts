@@ -4,7 +4,7 @@ import { createServiceClient } from "./auth.ts";
 import { AppError } from "./errors.ts";
 import { parseAdminRole, requireAdminRole } from "./admin-role.ts";
 
-const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
 export async function sha256Hex(value: string): Promise<string> {
   const data = new TextEncoder().encode(value);

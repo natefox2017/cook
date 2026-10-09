@@ -17,6 +17,13 @@ type UserStatus = "all" | AdminUser["status"];
 type Subscription = "all" | AdminUser["subscription"];
 type Provider = "all" | AdminUser["registrationProvider"];
 type Device = "all" | AdminUser["deviceType"];
+type AdminUserRow = AdminUser & {
+  lastLoginAt: string | null;
+  lastLoginIp: string | null;
+  subscriptionPlan: string | null;
+  subscriptionBillingPeriod: "monthly" | "yearly" | "lifetime" | null;
+  subscriptionStatus: string | null;
+};
 
 const pageSize = 20;
 
@@ -28,6 +35,14 @@ function formatDate(value: string | null | undefined): string {
     : new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(date);
 }
 
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return "Never";
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf())
+    ? "—"
+    : new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
 function titleCase(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
@@ -37,6 +52,24 @@ function initials(user: AdminUser): string {
   return name && name !== "Unknown"
     ? name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()
     : (user.email[0] ?? "U").toUpperCase();
+}
+
+function subscriptionSummary(user: AdminUserRow): string {
+  const status = user.subscriptionStatus?.trim();
+  const plan = user.subscriptionPlan?.trim();
+  const period = user.subscriptionBillingPeriod;
+  const planDetails = [plan, period && titleCase(period)].filter(Boolean).join(" · ");
+  if (!status && !plan) return "Not subscribed";
+
+  const normalizedStatus = status?.toLowerCase();
+  if (["active", "trialing"].includes(normalizedStatus ?? "")) {
+    return `Subscribed${planDetails ? ` · ${planDetails}` : ""}`;
+  }
+  if (!status) return `Status unavailable${planDetails ? ` · ${planDetails}` : ""}`;
+  if (["expired", "cancelled", "canceled", "none"].includes(normalizedStatus ?? "")) {
+    return `Not subscribed · ${titleCase(status)}${planDetails ? ` · ${planDetails}` : ""}`;
+  }
+  return `${titleCase(status)}${planDetails ? ` · ${planDetails}` : ""}`;
 }
 
 export default function UsersPage({ token, onAuthExpired }: UsersPageProps) {
@@ -140,7 +173,7 @@ export default function UsersPage({ token, onAuthExpired }: UsersPageProps) {
           <label className="users-search">
             <Search size={17} aria-hidden="true" />
             <span className="sr-only">Search users</span>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name or email" />
+            <input type="search" aria-label="Search users by name or email" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name or email" />
           </label>
         </div>
 
@@ -168,27 +201,32 @@ export default function UsersPage({ token, onAuthExpired }: UsersPageProps) {
         <div className="users-table-wrap">
           <table className="users-table">
             <thead>
-              <tr><th scope="col">User</th><th scope="col">Plan</th><th scope="col">Status</th><th scope="col">Provider</th><th scope="col">Device</th><th scope="col">Joined</th><th scope="col"><span className="sr-only">Actions</span></th></tr>
+              <tr><th scope="col">User</th><th scope="col">Registration platform</th><th scope="col">Last login</th><th scope="col">Login IP</th><th scope="col">Subscription</th><th scope="col">Status</th><th scope="col">Device</th><th scope="col">Joined</th><th scope="col"><span className="sr-only">Actions</span></th></tr>
             </thead>
             <tbody>
-              {loading && <tr><td className="users-empty" colSpan={7}>Loading users…</td></tr>}
-              {!loading && users?.data.map((user) => (
-                <tr key={user.id}>
-                  <td>
-                    <button className="users-identity" type="button" onClick={() => void openUser(user)} aria-label={`View ${user.displayName}, ${user.email}`}>
-                      {user.avatarUrl ? <img className="users-avatar" src={user.avatarUrl} alt="" /> : <span className="users-avatar users-avatar-fallback">{initials(user)}</span>}
-                      <span className="users-identity-copy"><strong>{user.displayName}</strong><span>{user.email || "No email"}</span></span>
-                    </button>
-                  </td>
-                  <td><span className={`users-plan users-plan-${user.subscription}`}>{titleCase(user.subscription)}</span></td>
-                  <td><span className={`users-status users-status-${user.status}`}><i />{titleCase(user.status)}</span></td>
-                  <td>{titleCase(user.registrationProvider)}</td>
-                  <td>{user.deviceType === "ios" ? "iOS" : titleCase(user.deviceType)}</td>
-                  <td>{formatDate(user.createdAt)}</td>
-                  <td><button className="users-open" type="button" onClick={() => void openUser(user)}>View</button></td>
-                </tr>
-              ))}
-              {!loading && !error && !users?.data.length && <tr><td className="users-empty" colSpan={7}>No users match these filters.</td></tr>}
+              {loading && <tr><td className="users-empty" colSpan={9}>Loading users…</td></tr>}
+              {!loading && users?.data.map((user) => {
+                const row = user as AdminUserRow;
+                return (
+                  <tr key={user.id}>
+                    <td>
+                      <button className="users-identity" type="button" onClick={() => void openUser(user)} aria-label={`View ${user.displayName}, ${user.email}`}>
+                        {user.avatarUrl ? <img className="users-avatar" src={user.avatarUrl} alt="" /> : <span className="users-avatar users-avatar-fallback">{initials(user)}</span>}
+                        <span className="users-identity-copy"><strong>{user.displayName}</strong><span>{user.email || "No email"}</span></span>
+                      </button>
+                    </td>
+                    <td>{titleCase(user.registrationProvider)}</td>
+                    <td>{formatDateTime(row.lastLoginAt)}</td>
+                    <td className="users-mono">{row.lastLoginIp || "—"}</td>
+                    <td>{subscriptionSummary(row)}</td>
+                    <td><span className={`users-status users-status-${user.status}`}><i />{titleCase(user.status)}</span></td>
+                    <td>{user.deviceType === "ios" ? "iOS" : titleCase(user.deviceType)}</td>
+                    <td>{formatDate(user.createdAt)}</td>
+                    <td><button className="users-open" type="button" onClick={() => void openUser(user)}>View</button></td>
+                  </tr>
+                );
+              })}
+              {!loading && !error && !users?.data.length && <tr><td className="users-empty" colSpan={9}>No users match these filters.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -222,7 +260,7 @@ function Filter({ label, value, onChange, options }: {
   onChange: (value: string) => void;
   options: Array<[string, string]>;
 }) {
-  return <label className="users-filter"><span className="sr-only">{label}</span><select aria-label={label} value={value} onChange={(event) => onChange(event.target.value)}>
+  return <label className="users-filter"><span>{label}</span><select aria-label={label} value={value} onChange={(event) => onChange(event.target.value)}>
     {options.map(([option, text]) => <option key={option} value={option}>{text}</option>)}
   </select></label>;
 }

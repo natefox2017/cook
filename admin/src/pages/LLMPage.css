@@ -1,6 +1,6 @@
 .llm-page {
   display: grid;
-  gap: 25px;
+  gap: 18px;
   color: var(--foreground);
   text-align: left;
 }
@@ -12,11 +12,13 @@
 .llm-heading { align-items: flex-end; }
 .llm-heading h1 { margin: 5px 0; }
 .llm-heading .muted { font-size: 12px; }
-.llm-heading-actions { display: flex; align-items: center; gap: 8px; }
+.llm-heading-actions { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 8px; }
 .llm-heading-actions .button { min-height: 36px; }
+.llm-range-select { display: grid; gap: 4px; color: var(--muted); font-size: 10px; font-weight: 600; }
 .llm-range-select select {
-  height: 36px;
-  padding: 0 30px 0 10px;
+  min-width: 110px;
+  height: 40px;
+  padding: 0 10px;
   color: #48524b;
   border: 1px solid var(--border-strong);
   border-radius: 7px;
@@ -24,8 +26,8 @@
   font-size: 11px;
   outline: none;
 }
-.llm-range-select select:focus,
-.llm-field input:focus { border-color: #72b887; box-shadow: 0 0 0 3px #2284481a; }
+.llm-range-select select:focus-visible,
+.llm-field input:focus-visible { border-color: #72b887; outline: 3px solid #2284481a; outline-offset: 1px; }
 .llm-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 
 .llm-section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
@@ -130,6 +132,8 @@
 @media (max-width: 760px) {
   .llm-heading { align-items: flex-start; flex-direction: column; }
   .llm-heading-actions { width: 100%; flex-wrap: wrap; }
+  .llm-range-select { flex: 1 1 130px; }
+  .llm-range-select select { width: 100%; }
   .llm-usage-grid { grid-template-columns: 1fr; }
   .llm-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
