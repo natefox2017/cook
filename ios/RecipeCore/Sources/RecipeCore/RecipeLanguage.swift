@@ -48,6 +48,17 @@ public enum RecipeLanguage {
             .sorted()
     }
 
+    /// Same locale calculation used by the app's reactive AppStorage values.
+    public static func configuredLocale(language: String, region: String) -> Locale {
+        resolve(
+            arguments: ProcessInfo.processInfo.arguments,
+            supportedIdentifiers: Bundle.main.localizations,
+            languageOverride: language,
+            regionOverride: region,
+            systemRegion: Locale.current.region?.identifier
+        )
+    }
+
     /// Read the shared preference only in the extension. The main app uses its own
     /// AppStorage keys so legacy installs, previews and isolated UI tests keep working.
     private static var preferences: UserDefaults {
@@ -111,6 +122,10 @@ public enum RecipeLanguage {
             supported.contains(arguments[index + 1])
         {
             return Locale(identifier: arguments[index + 1])
+        }
+
+        if arguments.contains("--uitesting") {
+            return Locale(identifier: defaultLanguage)
         }
 
         let language = languageOverride.flatMap { supported.contains($0) ? $0 : nil }
