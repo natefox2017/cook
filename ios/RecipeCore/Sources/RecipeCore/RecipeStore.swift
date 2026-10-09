@@ -552,7 +552,9 @@ public final class RecipeStore {
     }
 
     public func reload() {
-        guard let fileURL else { return }
+        guard let fileURL else {
+            return
+        }
         do {
             let data = try Data(contentsOf: fileURL)
             var loaded = try JSONDecoder().decode(LibrarySnapshot.self, from: data)
@@ -577,6 +579,7 @@ public final class RecipeStore {
     }
 
     private func migrateKnownSampleCover(in snapshot: inout LibrarySnapshot) -> Bool {
+        // Migrate only this sample's stale bundled default; preserve user-selected coverData.
         guard
             let index = snapshot.recipes.firstIndex(where: {
                 $0.id == SampleRecipes.roastChickenID
