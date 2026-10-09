@@ -2,7 +2,7 @@
 -- Purpose: Verify snapshot CAS and private artifact isolation as actual unprivileged database roles.
 create extension if not exists pgtap;
 begin;
-select plan(24);
+select plan(25);
 
 insert into auth.users(id) values
 ('11111111-1111-4111-8111-111111111111'),
@@ -74,7 +74,8 @@ select is((select count(*) from public.recipe_import_jobs), 0::bigint,
 select throws_ok($$select * from public.submit_own_recipe_artifact_import(
     'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'file', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', null, null)$$,
     'P0001', 'ARTIFACT_NOT_READY', 'another account cannot import a private artifact');
-select set_config('request.jwt.claims', '{"sub":"22222222-2222-4222-8222-222222222222","is_anonymous":true}', true);
+select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-4111-8111-111111111111","is_anonymous":true}', true);
 select throws_ok($$select * from public.submit_own_recipe_artifact_import(
     'ffffffff-ffff-4fff-8fff-ffffffffffff', 'file', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', null, null)$$,
     '42501', 'AUTH_REQUIRED', 'anonymous Auth user cannot submit artifact import');
@@ -85,5 +86,8 @@ select throws_ok($$select * from public.save_own_user_snapshot(
     '11111111-1111-4111-8111-111111111111', 0, 1, '{}', now())$$, '42501', null,
     'anon role cannot invoke snapshot writes');
 reset role;
+select is((select count(*) from pgmq.q_recipe_import_v1
+    where message ->> 'owner_id' = '11111111-1111-4111-8111-111111111111'), 1::bigint,
+    'artifact replay and rejected submissions enqueue no duplicate messages');
 select * from finish();
 rollback;
