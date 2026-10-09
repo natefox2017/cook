@@ -342,16 +342,16 @@ struct RecipeDetailView: View {
                 if hasNutrition, let nutrition {
                     DisclosureGroup("Nutrition per serving") {
                         if let calories = nutrition.caloriesKcal {
-                            Text("Calories: \(NSDecimalNumber(decimal: calories)) kcal")
+                            Text("Calories: \(NSDecimalNumber(decimal: calories).stringValue) kcal")
                         }
                         if let protein = nutrition.proteinGrams {
-                            Text("Protein: \(NSDecimalNumber(decimal: protein)) g")
+                            Text("Protein: \(NSDecimalNumber(decimal: protein).stringValue) g")
                         }
                         if let carbohydrates = nutrition.carbohydratesGrams {
-                            Text("Carbohydrates: \(NSDecimalNumber(decimal: carbohydrates)) g")
+                            Text("Carbohydrates: \(NSDecimalNumber(decimal: carbohydrates).stringValue) g")
                         }
                         if let fat = nutrition.fatGrams {
-                            Text("Fat: \(NSDecimalNumber(decimal: fat)) g")
+                            Text("Fat: \(NSDecimalNumber(decimal: fat).stringValue) g")
                         }
                         Text("Source: \(nutrition.source)")
                             .font(RecipeTheme.text(12, relativeTo: .caption))
