@@ -39,11 +39,18 @@ struct ProfileView: View {
                         .background(RecipeTheme.accent.opacity(0.10), in: Circle())
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
-                        Text(displayName).font(RecipeTheme.heading(.title))
+                        Text(displayName)
+                            .font(RecipeTheme.heading(.title))
                         if !store.settings.email.isEmpty {
-                            Text(store.settings.email).font(
-                                RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline)
-                            ).foregroundStyle(.secondary)
+                            Text(store.settings.email)
+                                .font(
+                                    RecipeTheme.text(
+                                        15,
+                                        weight: .regular,
+                                        relativeTo: .subheadline
+                                    )
+                                )
+                                .foregroundStyle(.secondary)
                                 .textSelection(.enabled)
                         }
                         Button {
@@ -52,7 +59,10 @@ struct ProfileView: View {
                             Label("Edit Profile", systemImage: "pencil")
                                 .font(
                                     RecipeTheme.text(
-                                        15, weight: .semibold, relativeTo: .subheadline)
+                                        15,
+                                        weight: .semibold,
+                                        relativeTo: .subheadline
+                                    )
                                 )
                                 .frame(minHeight: 44)
                         }
@@ -70,7 +80,10 @@ struct ProfileView: View {
                 NavigationLink {
                     SettingsHubView()
                 } label: {
-                    ProfileRowLabel(title: "Settings", systemImage: "gearshape")
+                    ProfileRowLabel(
+                        title: "Settings",
+                        systemImage: "gearshape"
+                    )
                 }
             }
             .listRowBackground(RecipeTheme.card)
@@ -87,15 +100,18 @@ struct ProfileView: View {
                 NavigationLink {
                     SubscriptionView()
                 } label: {
-                    ProfileRowLabel(title: "Premium", systemImage: "sparkles")
+                    ProfileRowLabel(
+                        title: "Premium",
+                        systemImage: "sparkles"
+                    )
                 }
             }
             .listRowBackground(RecipeTheme.card)
 
             Section {
                 NavigationLink {
-                    RecipesView(titleDisplayMode: RecipeNavigation.detailTitleMode)
-                        .toolbar(.hidden, for: .tabBar)
+                        RecipesView(titleDisplayMode: RecipeNavigation.detailTitleMode)
+                            .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(
                         title: "Saved Recipes",
@@ -106,7 +122,10 @@ struct ProfileView: View {
                     CollectionsView()
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
-                    ProfileRowLabel(title: "Collections", systemImage: "folder")
+                    ProfileRowLabel(
+                        title: "Collections",
+                        systemImage: "folder"
+                    )
                 }
                 .accessibilityIdentifier("profile.collections")
 
@@ -125,17 +144,27 @@ struct ProfileView: View {
                     NotificationPreferencesView()
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
-                    ProfileRowLabel(title: "Notifications", systemImage: "bell")
+                    ProfileRowLabel(
+                        title: "Notifications",
+                        systemImage: "bell"
+                    )
                 }
                 Picker(selection: appearanceBinding) {
                     ForEach(AppAppearance.allCases) { appearance in
-                        Text(LocalizedStringKey(appearance.rawValue)).tag(appearance)
+                        Text(LocalizedStringKey(appearance.rawValue))
+                            .tag(appearance)
                     }
                 } label: {
-                    ProfileRowLabel(title: "Appearance", systemImage: "circle.lefthalf.filled")
+                    ProfileRowLabel(
+                        title: "Appearance",
+                        systemImage: "circle.lefthalf.filled"
+                    )
                 }
                 Toggle(isOn: keepAwakeBinding) {
-                    ProfileRowLabel(title: "Keep Screen Awake", systemImage: "sun.max")
+                    ProfileRowLabel(
+                        title: "Keep Screen Awake",
+                        systemImage: "sun.max"
+                    )
                 }
                 .accessibilityIdentifier("profile.keep-awake")
             } header: {
@@ -148,13 +177,19 @@ struct ProfileView: View {
                     RecipeHelpView()
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
-                    ProfileRowLabel(title: "Using RecipePouch", systemImage: "questionmark.circle")
+                    ProfileRowLabel(
+                        title: "Using RecipePouch",
+                        systemImage: "questionmark.circle"
+                    )
                 }
                 NavigationLink {
                     RecipeAboutView()
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
-                    ProfileRowLabel(title: "About & Your Data", systemImage: "info.circle")
+                    ProfileRowLabel(
+                        title: "About & Your Data",
+                        systemImage: "info.circle"
+                    )
                 }
             }
             .listRowBackground(RecipeTheme.card)
@@ -163,7 +198,10 @@ struct ProfileView: View {
                 Button {
                     choosesExportFormat = true
                 } label: {
-                    ProfileRowLabel(title: "Export Data", systemImage: "square.and.arrow.up")
+                    ProfileRowLabel(
+                        title: "Export Data",
+                        systemImage: "square.and.arrow.up"
+                    )
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("profile.export")
@@ -188,7 +226,9 @@ struct ProfileView: View {
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(RecipeNavigation.rootTitleMode)
         .tint(RecipeTheme.accent)
-        .sheet(isPresented: $editsProfile) { LocalProfileEditorView() }
+        .sheet(isPresented: $editsProfile) {
+            LocalProfileEditorView()
+        }
         .fileExporter(
             isPresented: $exportsData,
             document: exportDocument,
@@ -204,30 +244,46 @@ struct ProfileView: View {
             isPresented: $choosesExportFormat,
             titleVisibility: .visible
         ) {
-            Button("Recipes (JSON)") { prepareExport(.recipesJSON) }
-            Button("Recipes (HTML)") { prepareExport(.recipesHTML) }
-            Button("All Local Library Data (JSON)") { prepareExport(.allLibraryJSON) }
-            Button("Cancel", role: .cancel) {}
+            Button("Recipes (JSON)") {
+                prepareExport(.recipesJSON)
+            }
+            Button("Recipes (HTML)") {
+                prepareExport(.recipesHTML)
+            }
+            Button("All Local Library Data (JSON)") {
+                prepareExport(.allLibraryJSON)
+            }
+            Button("Cancel", role: .cancel) {
+            }
         } message: {
             Text(
                 "Recipe JSON/HTML includes sources and Collections but not photos. Full library JSON also includes groceries, meal plan and local preferences. This app cannot restore these exports."
             )
         }
         .confirmationDialog(
-            "Delete all local data?", isPresented: $confirmsReset, titleVisibility: .visible
+            "Delete all local data?",
+            isPresented: $confirmsReset,
+            titleVisibility: .visible
         ) {
             Button("Delete All RecipePouch Data", role: .destructive) {
                 guard !isDeletingLocalData else { return }
                 isDeletingLocalData = true
                 Task {
-                    defer { isDeletingLocalData = false }
+                    defer {
+                        isDeletingLocalData = false
+                    }
                     do {
                         try await RecipeLocalDataDeletion.erase(
                             store: store,
                             cloudSync: cloudSync
                         )
                         exportDocument = RecipeExportDocument(data: Data())
-                        errorMessage = "Local RecipePouch data deleted."
+                        errorMessage = String(
+                            localized: LocalizedStringResource(
+                                "Local RecipePouch data deleted.",
+                                locale: RecipeLanguage.active
+                            )
+                        )
                     } catch {
                         errorMessage = error.localizedDescription
                     }
@@ -242,7 +298,14 @@ struct ProfileView: View {
         .alert(
             "RecipePouch",
             isPresented: Binding(
-                get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
+                get: {
+                    errorMessage != nil
+                },
+                set: { isPresented in
+                    if !isPresented {
+                        errorMessage = nil
+                    }
+                }
             )
         ) {
             Button("OK", role: .cancel) { errorMessage = nil }

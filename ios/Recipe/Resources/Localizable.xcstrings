@@ -8314,6 +8314,28 @@
         }
       }
     },
+    "Local RecipePouch data deleted.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch 本地数据已删除。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch 本機資料已刪除。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch のローカルデータを削除しました。"
+          }
+        }
+      }
+    },
     "This file is too large. Choose a smaller image or a recipe document under 10 MB.": {
       "extractionState": "stale",
       "localizations": {
