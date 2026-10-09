@@ -290,6 +290,10 @@ struct RecipeApp: App {
     @State private var store: RecipeStore
     @State private var subscriptions = SubscriptionStore()
     @State private var cloudSync: CloudSyncCoordinator
+    @AppStorage(RecipeLanguage.languagePreferenceKey)
+    private var selectedLanguage = RecipeLanguage.defaultLanguage
+    @AppStorage(RecipeLanguage.regionPreferenceKey)
+    private var selectedRegion = RecipeLanguage.automaticRegion
     private let isUITesting: Bool
     private let bypassOnboarding: Bool
 
@@ -308,6 +312,16 @@ struct RecipeApp: App {
                     defaults.set(value, forKey: recipeKey)
                 }
             }
+        }
+
+        // The extension uses the App Group rather than this app's standard defaults.
+        if !isUITesting {
+            RecipeLanguage.sharePreferences(
+                language: defaults.string(forKey: RecipeLanguage.languagePreferenceKey)
+                    ?? RecipeLanguage.defaultLanguage,
+                region: defaults.string(forKey: RecipeLanguage.regionPreferenceKey)
+                    ?? RecipeLanguage.automaticRegion
+            )
         }
 
         RecipeTheme.installUIKitTypography()
@@ -422,7 +436,7 @@ struct RecipeApp: App {
     }
 
     private var appLocale: Locale {
-        RecipeLanguage.active
+        RecipeLanguage.configuredLocale(language: selectedLanguage, region: selectedRegion)
     }
 
     private var colorScheme: ColorScheme? {
