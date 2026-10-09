@@ -2,6 +2,7 @@ import {createServer} from "node:http";
 import {readFile} from "node:fs/promises";
 import {fileURLToPath} from "node:url";
 import {renderRecipePage,renderUnavailable} from "./page.mjs";
+import {readPublicRecipeJSON} from "./public-api.mjs";
 
 function configuredAPI() {
   const raw=process.env.RECIPE_PALS_PUBLIC_RECIPE_API;
@@ -31,7 +32,7 @@ export function createRecipeServer({loadRecipe=null,appStoreURL=process.env.RECI
         const response=await fetch(`${api}/${encodeURIComponent(match[1])}`,{headers:{Accept:"application/json"},cache:"no-store",signal:AbortSignal.timeout(8000)});
         if([404,410].includes(response.status)){res.writeHead(404,{"Content-Type":"text/html; charset=utf-8"}).end(renderUnavailable());return;}
         if(!response.ok) throw new Error("Public API unavailable");
-        recipe=await response.json();
+        recipe=await readPublicRecipeJSON(response);
       }
       if(!recipe){res.writeHead(404,{"Content-Type":"text/html; charset=utf-8"}).end(renderUnavailable());return;}
       const page=renderRecipePage(recipe,{appStoreURL});
