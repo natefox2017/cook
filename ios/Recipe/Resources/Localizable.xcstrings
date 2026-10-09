@@ -17577,6 +17577,719 @@
           }
         }
       }
+    },
+    "RecipePouch's shared storage is not available. Check App Group signing.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch 无法访问共享存储，请检查 App Group 签名配置。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch 無法存取共享儲存空間，請檢查 App Group 簽署設定。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch の共有ストレージにアクセスできません。App Group の署名設定を確認してください。"
+          }
+        }
+      }
+    },
+    "Share a public HTTPS link, readable text, image, or PDF to RecipePouch.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请向 RecipePouch 分享公开的 HTTPS 链接、可读取文本、图片或 PDF。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請向 RecipePouch 分享公開的 HTTPS 連結、可讀取文字、圖片或 PDF。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公開 HTTPS リンク、読み取り可能なテキスト、画像、PDF を RecipePouch に共有してください。"
+          }
+        }
+      }
+    },
+    "The original shared source is missing. Share it again.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原始分享内容已丢失，请重新分享。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原始分享內容已遺失，請重新分享。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有元のコンテンツが見つかりません。もう一度共有してください。"
+          }
+        }
+      }
+    },
+    "The server has not confirmed durable queue admission. The saved source remains available.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务器尚未确认接收导入任务，已保存的来源仍可使用。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "伺服器尚未確認接收匯入工作，已儲存的來源仍可使用。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーがインポートの受付を確認していません。保存済みのソースは引き続き利用できます。"
+          }
+        }
+      }
+    },
+    "The server response did not match this saved source. The local receipt was kept.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务器响应与已保存的来源不匹配，本地记录已保留。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "伺服器回應與已儲存的來源不符，本機紀錄已保留。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーの応答が保存済みソースと一致しません。ローカルの記録は保持しました。"
+          }
+        }
+      }
+    },
+    "The saved source was removed while it was processing. No recipe was added.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "处理期间已保存的来源被移除，未添加食谱。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "處理期間已儲存的來源遭移除，未新增食譜。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "処理中に保存済みソースが削除されたため、レシピは追加されませんでした。"
+          }
+        }
+      }
+    },
+    "The server finished processing without a recipe result. The original source remains saved.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务器已处理完成，但未返回食谱。原始来源仍已保存。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "伺服器已處理完成，但未傳回食譜。原始來源仍已儲存。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーの処理は完了しましたが、レシピが返されませんでした。元のソースは保存されています。"
+          }
+        }
+      }
+    },
+    "This source type is not supported for recipe saving yet. The original source remains saved.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂不支持从这种来源保存食谱，原始来源已保留。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暫不支援從這種來源儲存食譜，原始來源已保留。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この種類のソースからのレシピ保存にはまだ対応していません。元のソースは保存されています。"
+          }
+        }
+      }
+    },
+    "The import could not be completed.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入未能完成。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法完成匯入。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インポートを完了できませんでした。"
+          }
+        }
+      }
+    },
+    "A shared source failed: %@": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享来源处理失败：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享來源處理失敗：%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有ソースの処理に失敗しました：%@"
+          }
+        }
+      }
+    },
+    "The previously synced cloud library is no longer available.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "之前同步的云端食谱库已不可用。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "先前同步的雲端食譜庫已無法使用。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以前同期したクラウドライブラリを利用できなくなりました。"
+          }
+        }
+      }
+    },
+    "The cloud library is no longer available. Sync again before uploading.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "云端食谱库已不可用，请重新同步后再上传。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雲端食譜庫已無法使用，請重新同步後再上傳。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クラウドライブラリが利用できません。アップロード前に再同期してください。"
+          }
+        }
+      }
+    },
+    "Cloud sync changed while this device was saving. Try again.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此设备保存期间云同步状态发生变化，请重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此裝置儲存期間雲端同步狀態發生變化，請重試。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存中にクラウドの同期状態が変わりました。もう一度お試しください。"
+          }
+        }
+      }
+    },
+    "Sign in before sending a recipe to cloud processing.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先登录，再将食谱发送到云端处理。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請先登入，再將食譜傳送至雲端處理。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クラウドでレシピを処理するにはログインしてください。"
+          }
+        }
+      }
+    },
+    "The RecipePouch import service is not configured.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch 导入服务尚未配置。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch 匯入服務尚未設定。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RecipePouch のインポートサービスが設定されていません。"
+          }
+        }
+      }
+    },
+    "The recipe has not finished processing. Your original source is still saved.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食谱尚未处理完成，原始来源仍已保存。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食譜尚未處理完成，原始來源仍已儲存。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピの処理はまだ完了していません。元のソースは保存されています。"
+          }
+        }
+      }
+    },
+    "Cloud media uploads are not yet available. Share a link or text.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂不支持上传图片或文件到云端，请分享链接或文本。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暫不支援上傳圖片或檔案至雲端，請分享連結或文字。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メディアのクラウドアップロードはまだ利用できません。リンクかテキストを共有してください。"
+          }
+        }
+      }
+    },
+    "The cloud import service did not return an HTTP response.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "云端导入服务未返回 HTTP 响应。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雲端匯入服務未傳回 HTTP 回應。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クラウドインポートサービスから HTTP 応答がありませんでした。"
+          }
+        }
+      }
+    },
+    "Cloud import unavailable (HTTP %lld). The source is still saved on this iPhone.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "云端导入不可用（HTTP %lld），来源仍保存在此 iPhone 上。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雲端匯入無法使用（HTTP %lld），來源仍儲存在此 iPhone 上。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クラウドインポートを利用できません（HTTP %lld）。ソースはこの iPhone に保存されています。"
+          }
+        }
+      }
+    },
+    "Subscription products have not been configured in App Store Connect.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未在 App Store Connect 配置订阅产品。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未在 App Store Connect 設定訂閱產品。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store Connect でサブスクリプション商品が設定されていません。"
+          }
+        }
+      }
+    },
+    "No App Store subscription products are available for this storefront right now.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前 App Store 地区暂时没有可购买的订阅产品。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前 App Store 地區暫時沒有可購買的訂閱產品。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在の App Store 地域では利用できるサブスクリプション商品がありません。"
+          }
+        }
+      }
+    },
+    "The App Store transaction could not be verified.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法验证 App Store 交易。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法驗證 App Store 交易。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store の取引を検証できませんでした。"
+          }
+        }
+      }
+    },
+    "Your purchase is pending approval.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "购买正在等待批准。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購買正在等待核准。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購入は承認待ちです。"
+          }
+        }
+      }
+    },
+    "The App Store returned an unknown purchase result.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store 返回了未知的购买结果。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store 傳回了未知的購買結果。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store から不明な購入結果が返されました。"
+          }
+        }
+      }
+    },
+    "Your active RecipePouch subscription has been restored.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已恢复有效的 RecipePouch 订阅。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已恢復有效的 RecipePouch 訂閱。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有効な RecipePouch サブスクリプションを復元しました。"
+          }
+        }
+      }
+    },
+    "No active RecipePouch subscription was found for this App Store account.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 App Store 账号没有有效的 RecipePouch 订阅。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 App Store 帳號沒有有效的 RecipePouch 訂閱。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この App Store アカウントに有効な RecipePouch サブスクリプションはありません。"
+          }
+        }
+      }
+    },
+    "The App Store verified your purchase, but the entitlement is not yet available. Check your subscription status or try Restore Purchases.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store 已验证购买，但订阅权益尚未生效。请检查订阅状态或尝试恢复购买。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store 已驗證購買，但訂閱權益尚未生效。請檢查訂閱狀態或嘗試恢復購買。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store で購入は確認されましたが、利用権限がまだ反映されていません。契約状況を確認するか、購入を復元してください。"
+          }
+        }
+      }
+    },
+    "The App Store subscription status could not be checked. Try again when you are online.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法检查 App Store 订阅状态，请联网后重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法檢查 App Store 訂閱狀態，請連線後重試。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store の契約状況を確認できませんでした。オンラインになってから再試行してください。"
+          }
+        }
+      }
+    },
+    "The shared file has no supported media type.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享的文件不是受支持的媒体类型。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享的檔案不是支援的媒體類型。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有ファイルのメディア形式には対応していません。"
+          }
+        }
+      }
+    },
+    "The file upload could not be resumed.": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法继续文件上传。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法繼續檔案上傳。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイルのアップロードを再開できませんでした。"
+          }
+        }
+      }
+    },
+    "Your library could not be read. Its original file has been preserved. %@": {
+      "comment": "Localized shared/core/service message.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取食谱库，原始文件已保留。%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法讀取食譜庫，原始檔案已保留。%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピライブラリを読み込めませんでした。元のファイルは保持されています。%@"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
