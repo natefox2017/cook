@@ -1110,6 +1110,7 @@ final class RecipeUITests: XCTestCase {
         app.launchArguments = [
             "--uitesting",
             "--uitesting-allow-language-preferences",
+            "--uitesting-reset-locale-preferences",
         ]
         app.launch()
         defer { app.terminate() }
@@ -1147,6 +1148,7 @@ final class RecipeUITests: XCTestCase {
         greatBritain.tap()
 
         app.terminate()
+        app.launchArguments.removeAll { $0 == "--uitesting-reset-locale-preferences" }
         app.launch()
 
         // A country selection must not change the UI language.
