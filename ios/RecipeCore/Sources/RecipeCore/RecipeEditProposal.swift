@@ -24,6 +24,7 @@ public enum RecipeEditProposalError: Error, Equatable, Sendable {
     case missingField
     case sourceChanged
     case invalidReplacement
+    case oversizedProposal
 }
 
 public struct RecipeEditPreview: Equatable, Sendable {
@@ -59,6 +60,10 @@ public struct RecipeEditProposal: Codable, Equatable, Sendable {
             throw RecipeEditProposalError.staleRecipe
         }
         guard !changes.isEmpty else { throw RecipeEditProposalError.emptyProposal }
+        // AI output is untrusted. Bound patch work and user-visible explanation text.
+        guard changes.count <= 30, reasons.count <= 8, warnings.count <= 8,
+            (reasons + warnings).allSatisfy({ $0.count <= 300 })
+        else { throw RecipeEditProposalError.oversizedProposal }
         var visited = Set<String>()
         var candidate = original
         for change in changes {
@@ -126,6 +131,10 @@ public struct RecipeEditProposal: Codable, Equatable, Sendable {
         if asVariant {
             recipe.id = UUID()
             recipe.createdAt = savedAt
+            recipe.isFavorite = false
+            // A variant is a distinct private recipe, not another result of the
+            // same import job; future import retries must not claim ownership.
+            recipe.importRecord = nil
         }
         return recipe
     }
