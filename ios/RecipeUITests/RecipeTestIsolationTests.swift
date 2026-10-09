@@ -14,8 +14,10 @@ final class RecipeTestIsolationTests: XCTestCase {
         @MainActor
         func testPerformanceFixtureGenerationIsDeterministic() {
             let first = RecipePerformanceFixtureConfiguration.snapshot(seed: 137, recipeCount: 25)
-            let repeated = RecipePerformanceFixtureConfiguration.snapshot(seed: 137, recipeCount: 25)
-            let otherSeed = RecipePerformanceFixtureConfiguration.snapshot(seed: 138, recipeCount: 25)
+            let repeated = RecipePerformanceFixtureConfiguration.snapshot(
+                seed: 137, recipeCount: 25)
+            let otherSeed = RecipePerformanceFixtureConfiguration.snapshot(
+                seed: 138, recipeCount: 25)
 
             XCTAssertEqual(first, repeated)
             XCTAssertNotEqual(first, otherSeed)
@@ -78,6 +80,79 @@ final class RecipeTestIsolationTests: XCTestCase {
                 fixtureURL.path.hasPrefix(productionDirectory.path + "/")
             )
             XCTAssertFalse(fixtureURL.path.hasPrefix(legacyDirectory.path + "/"))
+        }
+
+        @MainActor
+        func testExportQAFixtureSerializesPrivateAndFullLibraryData() throws {
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("recipe-export-qa-\(UUID().uuidString)", isDirectory: true)
+            let libraryURL = directory.appendingPathComponent("library.json")
+            defer {
+                try? FileManager.default.removeItem(at: directory)
+            }
+
+            let store = try RecipeExportQAFixture.makeStore(at: libraryURL)
+            let snapshot = try store.exportCloudSnapshot()
+            XCTAssertEqual(snapshot.recipes.count, 5)
+            XCTAssertEqual(snapshot.groceries.count, 2)
+            XCTAssertEqual(snapshot.mealPlan.count, 2)
+            XCTAssertEqual(snapshot.collections.count, 1)
+            XCTAssertEqual(snapshot.collectionMemberships.count, 2)
+
+            let recipe = try XCTUnwrap(
+                snapshot.recipes.first { $0.id == RecipeExportQAFixture.firstRecipeID }
+            )
+            XCTAssertEqual(recipe.sourceURL, RecipeExportQAFixture.sourceURL)
+            XCTAssertEqual(recipe.notes, RecipeExportQAFixture.privateNotes)
+            XCTAssertNotNil(recipe.coverData)
+            XCTAssertEqual(
+                recipe.ingredients.map(\.amountText),
+                ["a little", "to taste", "about 1 cup"]
+            )
+
+            let fullLibrary =
+                try JSONSerialization.jsonObject(with: store.exportData()) as? [String: Any]
+            let fullRecipes = try XCTUnwrap(fullLibrary?["recipes"] as? [[String: Any]])
+            let fullRecipe = try XCTUnwrap(
+                fullRecipes.first { $0["id"] as? String == recipe.id.uuidString }
+            )
+            XCTAssertNotNil(fullRecipe["coverData"])
+            XCTAssertEqual(fullRecipe["notes"] as? String, RecipeExportQAFixture.privateNotes)
+
+            let portableData = try RecipePortableExport.json(snapshot: snapshot)
+            let portableDecoder = JSONDecoder()
+            portableDecoder.dateDecodingStrategy = .iso8601
+            let portableArchive = try portableDecoder.decode(
+                RecipePortableArchive.self,
+                from: portableData
+            )
+            let portableRecipe = try XCTUnwrap(
+                portableArchive.recipes.first { $0.id == RecipeExportQAFixture.firstRecipeID }
+            )
+            XCTAssertNil(portableRecipe.coverData)
+            XCTAssertEqual(portableRecipe.notes, RecipeExportQAFixture.privateNotes)
+
+            let reopenedStore = try RecipeExportQAFixture.makeStore(at: libraryURL)
+            XCTAssertEqual(reopenedStore.recipes.count, 5)
+        }
+
+        @MainActor
+        func testExportQAFixtureDoesNotReseedAfterLocalDeletion() throws {
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent(
+                    "recipe-export-qa-delete-\(UUID().uuidString)", isDirectory: true)
+            let libraryURL = directory.appendingPathComponent("library.json")
+            defer {
+                try? FileManager.default.removeItem(at: directory)
+            }
+
+            let store = try RecipeExportQAFixture.makeStore(at: libraryURL)
+            XCTAssertEqual(store.recipes.count, 5)
+            try store.clearLocalLibraryOnly()
+            XCTAssertTrue(FileManager.default.fileExists(atPath: libraryURL.path))
+
+            let reopenedStore = try RecipeExportQAFixture.makeStore(at: libraryURL)
+            XCTAssertTrue(reopenedStore.recipes.isEmpty)
         }
     #endif
 

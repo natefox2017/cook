@@ -1,6 +1,7 @@
 // Developer: gengyun
 // Purpose: Implements ProfileView for the Recipe iOS app.
 
+import Foundation
 import RecipeCore
 import SwiftUI
 import UIKit
@@ -784,7 +785,27 @@ enum RecipeExportFormat {
 
     /// Only the system exporter's completion callback can report a successful save.
     static func feedback(for result: Result<URL, Error>) -> String? {
-        switch RecipeFileExportResult(result) {
+        #if DEBUG
+            let feedbackResult: Result<URL, Error>
+            if RecipeUITestNamespace.injectsExportQAPermissionFailure {
+                feedbackResult = .failure(
+                    NSError(
+                        domain: NSCocoaErrorDomain,
+                        code: CocoaError.Code.fileWriteNoPermission.rawValue,
+                        userInfo: [
+                            NSLocalizedDescriptionKey:
+                                "QA-INJECTED file-write permission denial. This is not a Files provider error."
+                        ]
+                    )
+                )
+            } else {
+                feedbackResult = result
+            }
+        #else
+            let feedbackResult = result
+        #endif
+
+        switch RecipeFileExportResult(feedbackResult) {
         case .saved(let filename):
             return RecipeLanguage.localized("Export saved as %@.", filename)
         case .cancelled:

@@ -634,6 +634,160 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testExportQAFailureFeedbackIsClearlyInjectedFromBothEntryPoints() {
+        let app = launchExportQAApp(injectPermissionFailure: true)
+        defer {
+            app.terminate()
+        }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let export = app.buttons["profile.export"]
+        reveal(export, in: app, maximumSwipes: 5)
+        export.tap()
+        app.buttons["Recipes (JSON)"].tap()
+        let cancel = fileExporterCancel(in: app)
+        XCTAssertTrue(cancel.waitForExistence(timeout: 8), app.debugDescription)
+        cancel.tap()
+
+        let injectedFeedback = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", "QA-INJECTED file-write permission denial")
+        ).firstMatch
+        XCTAssertTrue(injectedFeedback.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertTrue(injectedFeedback.label.contains("not a Files provider error"))
+        attachScreenshot("Profile export QA injected failure feedback", app: app)
+        app.alerts.buttons["OK"].tap()
+
+        openDataAndPrivacy(in: app)
+        let settingsExport = app.buttons["Export Data"]
+        waitUntilReady(settingsExport)
+        settingsExport.tap()
+        app.buttons["Recipes (HTML)"].tap()
+        let settingsCancel = fileExporterCancel(in: app)
+        XCTAssertTrue(settingsCancel.waitForExistence(timeout: 8), app.debugDescription)
+        settingsCancel.tap()
+
+        let settingsFeedback = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", "QA-INJECTED file-write permission denial")
+        ).firstMatch
+        XCTAssertTrue(settingsFeedback.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertTrue(settingsFeedback.label.contains("not a Files provider error"))
+        attachScreenshot("Settings export QA injected failure feedback", app: app)
+    }
+
+    @MainActor
+    func testExportQAProfileDeletionStaysEmptyAfterRestart() {
+        let app = launchExportQAApp()
+        deleteLocalDataFromProfile(in: app)
+        app.terminate()
+
+        let relaunchedApp = launchExportQAApp(resetFixture: false, expectsSeededFixture: false)
+        defer {
+            relaunchedApp.terminate()
+        }
+        XCTAssertTrue(relaunchedApp.buttons["loadSampleRecipes"].waitForExistence(timeout: 8))
+        XCTAssertFalse(relaunchedApp.buttons[Self.exportQAFixtureRecipeIdentifier].exists)
+    }
+
+    @MainActor
+    func testExportQASettingsDeletionStaysEmptyAfterRestart() {
+        let app = launchExportQAApp()
+        openDataAndPrivacy(in: app)
+
+        let delete = app.buttons["Delete Local Data"]
+        reveal(delete, in: app, maximumSwipes: 5)
+        delete.tap()
+        let confirm = app.buttons["Delete Local Data"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5), app.debugDescription)
+        confirm.tap()
+        XCTAssertTrue(
+            app.staticTexts["Local RecipePouch data deleted."].waitForExistence(timeout: 8),
+            app.debugDescription
+        )
+        app.terminate()
+
+        let relaunchedApp = launchExportQAApp(resetFixture: false, expectsSeededFixture: false)
+        defer {
+            relaunchedApp.terminate()
+        }
+        XCTAssertTrue(relaunchedApp.buttons["loadSampleRecipes"].waitForExistence(timeout: 8))
+        XCTAssertFalse(relaunchedApp.buttons[Self.exportQAFixtureRecipeIdentifier].exists)
+    }
+
+    @MainActor
+    private func launchExportQAApp(
+        injectPermissionFailure: Bool = false,
+        resetFixture: Bool = true,
+        expectsSeededFixture: Bool = true
+    ) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--uitesting",
+            "--uitesting-export-qa",
+            "--uitesting-reset-cooking-sessions",
+            "--uitesting-locale",
+            "en",
+        ]
+        if resetFixture {
+            app.launchArguments.append("--uitesting-export-qa-reset")
+        }
+        if injectPermissionFailure {
+            app.launchArguments.append(
+                "--uitesting-export-qa-inject-write-permission-denial"
+            )
+        }
+        app.launch()
+        if expectsSeededFixture {
+            XCTAssertTrue(
+                app.buttons[Self.exportQAFixtureRecipeIdentifier].waitForExistence(timeout: 8),
+                app.debugDescription
+            )
+        } else {
+            XCTAssertTrue(app.buttons["loadSampleRecipes"].waitForExistence(timeout: 8))
+            XCTAssertFalse(app.buttons[Self.exportQAFixtureRecipeIdentifier].exists)
+        }
+        return app
+    }
+
+    @MainActor
+    private func openDataAndPrivacy(in app: XCUIApplication) {
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let settings = app.buttons["Settings"]
+        reveal(settings, in: app, maximumSwipes: 5)
+        settings.tap()
+
+        let dataAndPrivacy = app.buttons["Data & Privacy"]
+        reveal(dataAndPrivacy, in: app, maximumSwipes: 6)
+        dataAndPrivacy.tap()
+    }
+
+    @MainActor
+    private func deleteLocalDataFromProfile(in app: XCUIApplication) {
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let delete = app.buttons["profile.delete-data"]
+        reveal(delete, in: app, maximumSwipes: 5)
+        delete.tap()
+        let confirm = app.buttons["Delete All RecipePouch Data"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5), app.debugDescription)
+        confirm.tap()
+        XCTAssertTrue(
+            app.staticTexts["Local RecipePouch data deleted."].waitForExistence(timeout: 8),
+            app.debugDescription
+        )
+    }
+
+    private static let exportQAFixtureRecipeIdentifier =
+        "recipe.BF80A79C-A36C-6C5A-AA23-15B5E66BAF06"
+
+    @MainActor
     func testSubscriptionOpensFromProfileAndSettings() {
         let app = launchSeededApp()
         defer {
