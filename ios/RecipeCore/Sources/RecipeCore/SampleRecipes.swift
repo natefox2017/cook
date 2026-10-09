@@ -5,6 +5,8 @@ import Foundation
 
 /// Authored examples are opt-in and remain visibly distinguishable from user imports.
 public enum SampleRecipes {
+    static let roastChickenID = UUID(uuidString: "C0010000-0000-4000-8000-000000000005")!
+
     public static var recipes: [Recipe] {
         let created = Date(timeIntervalSince1970: 1_759_795_200)
 
@@ -189,7 +191,7 @@ public enum SampleRecipes {
                 updatedAt: created
             ),
             Recipe(
-                id: UUID(uuidString: "C0010000-0000-4000-8000-000000000005")!,
+                id: roastChickenID,
                 title: "Roast chicken & potatoes",
                 summary:
                     "A fuller cooking-mode sample with step ingredients, heat cues and overlapping timers.",
@@ -281,7 +283,7 @@ public enum SampleRecipes {
                     ),
                 ],
                 sourceName: "Sample recipe",
-                coverAsset: "salmon",
+                coverAsset: "chicken",
                 createdAt: created,
                 updatedAt: created
             ),

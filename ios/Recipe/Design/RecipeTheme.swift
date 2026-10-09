@@ -201,16 +201,27 @@ struct RecipeImage: View {
         {
             return UIImage(cgImage: crop)
         }
-        guard let image = UIImage(named: "SampleRecipeSheet")?.cgImage else { return nil }
+        guard let image = UIImage(named: "SampleRecipeSheet")?.cgImage else {
+            return nil
+        }
         let rect: CGRect
         switch name {
-        case "pasta": rect = CGRect(x: 40, y: 630, width: 302, height: 132)
-        case "salmon": rect = CGRect(x: 363, y: 630, width: 302, height: 132)
-        case "salad": rect = CGRect(x: 40, y: 919, width: 302, height: 137)
-        case "pancakes": rect = CGRect(x: 363, y: 919, width: 302, height: 137)
-        default: return nil
+        case "pasta":
+            rect = CGRect(x: 40, y: 630, width: 302, height: 132)
+        case "salmon":
+            rect = CGRect(x: 363, y: 630, width: 302, height: 132)
+        case "salad":
+            rect = CGRect(x: 40, y: 919, width: 302, height: 137)
+        case "pancakes":
+            rect = CGRect(x: 363, y: 919, width: 302, height: 137)
+        case "chicken":
+            rect = CGRect(x: 363, y: 1205, width: 302, height: 123)
+        default:
+            return nil
         }
-        guard let crop = image.cropping(to: rect) else { return nil }
+        guard let crop = image.cropping(to: rect) else {
+            return nil
+        }
         return UIImage(cgImage: crop)
     }
 }
