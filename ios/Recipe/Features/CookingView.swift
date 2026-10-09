@@ -709,7 +709,9 @@ struct CookingView: View {
         running: Bool,
         remaining: Int
     ) -> some View {
-        Button(running ? "Pause" : (remaining == 0 ? "Start Again" : "Start")) {
+        Button(
+            LocalizedStringKey(running ? "Pause" : (remaining == 0 ? "Start Again" : "Start"))
+        ) {
             if running {
                 pauseTimer(active.id)
             } else {
