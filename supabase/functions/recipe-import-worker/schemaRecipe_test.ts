@@ -67,6 +67,20 @@ Deno.test("does not choose between multiple Recipe entities", async () => {
     "ingredients",
     "steps",
   ]);
+  assertEquals(result.candidate_recipes?.length, 2);
+  assertEquals(result.candidate_recipes?.map((c) => c.title), [
+    "First recipe", "Second recipe",
+  ]);
+  assertEquals(result.candidate_recipes?.every((c) => c.evidence_ids.length === 1), true);
+  const repeated = parseSchemaOrgRecipePage({
+    id: "123e4567-e89b-12d3-a456-426614174002",
+    html: await fixture("multiple-recipes.html"),
+    source,
+  });
+  assertEquals(
+    repeated.candidate_recipes?.map((c) => c.candidate_id),
+    result.candidate_recipes?.map((c) => c.candidate_id),
+  );
   assertStringIncludes(
     String(result.evidence[0].excerpt),
     "First recipe; Second recipe",
@@ -88,4 +102,22 @@ Deno.test("reports malformed JSON-LD instead of inventing recipe fields", async 
     "steps",
     "structured_data",
   ]);
+});
+
+Deno.test("keeps structured ingredients and steps separated by candidate", () => {
+  const html = `<html><script type="application/ld+json">{
+    "@context":"https://schema.org","@graph":[
+      {"@type":"Recipe","name":"Pasta","recipeIngredient":["100g pasta"],
+       "recipeInstructions":[{"@type":"HowToStep","text":"Boil pasta"}]},
+      {"@type":"Recipe","name":"Soup","recipeIngredient":["200ml stock"],
+       "recipeInstructions":[{"@type":"HowToStep","text":"Simmer stock"}]}
+    ]}</script></html>`;
+  const result = parseSchemaOrgRecipePage({
+    id: "123e4567-e89b-12d3-a456-426614174002", html, source
+  });
+  assertEquals(result.fields, {});
+  assertEquals(result.candidate_recipes?.[0].ingredients, ["100g pasta"]);
+  assertEquals(result.candidate_recipes?.[1].ingredients, ["200ml stock"]);
+  assertEquals(result.candidate_recipes?.[0].steps, ["Boil pasta"]);
+  assertEquals(result.candidate_recipes?.[1].steps, ["Simmer stock"]);
 });
