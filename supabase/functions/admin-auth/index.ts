@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
         isAdminProductionRuntime() &&
         isDefaultAdminCredentials(username, password)
       ) {
-        log("warn", "admin_default_credentials_blocked", { username });
+        log("warn", "admin_default_credentials_blocked");
         throw new AppError(
           "forbidden",
           "Default admin credentials are disabled in production. Bootstrap an Owner password first.",
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
       });
 
       if (error) {
-        log("error", "admin_verify_failed", { message: error.message });
+        log("error", "admin_verify_failed");
         throw new AppError(
           "internal_error",
           "Credential verification failed",
@@ -230,7 +230,7 @@ Deno.serve(async (req) => {
         .update({ revoked_at: new Date().toISOString() })
         .eq("id", session.sessionId);
       if (error) {
-        log("error", "admin_logout_failed", { message: error.message });
+        log("error", "admin_logout_failed");
         throw new AppError(
           "internal_error",
           "Failed to revoke admin session",
@@ -282,9 +282,7 @@ Deno.serve(async (req) => {
       });
 
       if (error) {
-        log("error", "admin_change_password_failed", {
-          message: error.message,
-        });
+        log("error", "admin_change_password_failed");
         if ((error.message ?? "").includes("strength")) {
           throw new AppError(
             "validation_error",
