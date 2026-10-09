@@ -10,6 +10,77 @@ import XCTest
 @testable import Recipe
 
 final class RecipeTestIsolationTests: XCTestCase {
+    #if DEBUG
+        @MainActor
+        func testPerformanceFixtureGenerationIsDeterministic() {
+            let first = RecipePerformanceFixtureConfiguration.snapshot(seed: 137, recipeCount: 25)
+            let repeated = RecipePerformanceFixtureConfiguration.snapshot(seed: 137, recipeCount: 25)
+            let otherSeed = RecipePerformanceFixtureConfiguration.snapshot(seed: 138, recipeCount: 25)
+
+            XCTAssertEqual(first, repeated)
+            XCTAssertNotEqual(first, otherSeed)
+        }
+
+        @MainActor
+        func testPerformanceFixtureRequiresUITestingAndUsesSeparatePath() throws {
+            let performanceArguments = [
+                RecipePerformanceFixtureConfiguration.launchArgument,
+                "--uitesting-performance-count=100",
+            ]
+            XCTAssertNil(
+                RecipePerformanceFixtureConfiguration.parse(arguments: performanceArguments)
+            )
+
+            let configuration = try XCTUnwrap(
+                RecipePerformanceFixtureConfiguration.parse(
+                    arguments: ["--uitesting"] + performanceArguments
+                )
+            )
+            XCTAssertEqual(configuration.recipeCount, 100)
+
+            for count in [500, 1_000, 5_000] {
+                let compatibleArguments = [
+                    "--uitesting",
+                    RecipePerformanceFixtureConfiguration.launchArgument,
+                    "--uitesting-performance-count=\(count)",
+                ]
+                let compatibleConfiguration = try XCTUnwrap(
+                    RecipePerformanceFixtureConfiguration.parse(arguments: compatibleArguments)
+                )
+                XCTAssertEqual(compatibleConfiguration.recipeCount, count)
+            }
+
+            let largeFixture = RecipePerformanceFixtureConfiguration.snapshot(
+                seed: 137,
+                recipeCount: 100,
+                collectionCount: 100,
+                includesCovers: false
+            )
+            XCTAssertEqual(largeFixture.collectionMemberships.count, 200)
+            XCTAssertEqual(
+                Set(largeFixture.collectionMemberships).count,
+                largeFixture.collectionMemberships.count
+            )
+            let fixtureURL = configuration.fileURL.standardizedFileURL
+            let supportDirectory = URL.applicationSupportDirectory
+            let productionDirectory = supportDirectory.appendingPathComponent(
+                "Recipe",
+                isDirectory: true
+            )
+            let legacyDirectory = supportDirectory.appendingPathComponent(
+                "Cook",
+                isDirectory: true
+            )
+            let productionURL = productionDirectory.appendingPathComponent("library.json")
+            XCTAssertTrue(fixtureURL.pathComponents.contains("RecipeUITestPerformance"))
+            XCTAssertNotEqual(fixtureURL, productionURL)
+            XCTAssertFalse(
+                fixtureURL.path.hasPrefix(productionDirectory.path + "/")
+            )
+            XCTAssertFalse(fixtureURL.path.hasPrefix(legacyDirectory.path + "/"))
+        }
+    #endif
+
     func testClearingUITestSessionsPreservesNormalAndLegacySessions() throws {
         let suiteName = "recipe.test.isolation.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))

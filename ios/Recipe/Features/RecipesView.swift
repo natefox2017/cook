@@ -25,35 +25,43 @@ struct RecipesView: View {
     @FocusState private var isSearchFocused: Bool
 
     private var visibleRecipes: [Recipe] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        // Build membership sets once, rather than scanning all memberships
-        // for every recipe card in a selected collection.
-        let selectedRecipeIDs = selectedCollectionID.map { collectionID in
-            RecipeCollectionIndex(memberships: store.collectionMemberships)
-                .recipeIDs(inCollection: collectionID)
-        }
+        RecipePerformanceSignposts.measure("Library Search") {
+            let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Build membership sets once, rather than scanning all memberships
+            // for every recipe card in a selected collection.
+            let selectedRecipeIDs = selectedCollectionID.map { collectionID in
+                RecipeCollectionIndex(memberships: store.collectionMemberships)
+                    .recipeIDs(inCollection: collectionID)
+            }
 
-        return store.recipes.filter { recipe in
-            let matchesScope: Bool
-            if let selectedRecipeIDs {
-                matchesScope = selectedRecipeIDs.contains(recipe.id)
-            } else {
-                matchesScope = filter.includes(recipe)
+            return store.recipes.filter { recipe in
+                let matchesScope: Bool
+                if let selectedRecipeIDs {
+                    matchesScope = selectedRecipeIDs.contains(recipe.id)
+                } else {
+                    matchesScope = filter.includes(recipe)
+                }
+                return matchesScope && (query.isEmpty || RecipeSearch.matches(recipe, query: query))
+            }.sorted { lhs, rhs in
+                switch sort {
+                case .recent:
+                    if lhs.createdAt != rhs.createdAt {
+                        return lhs.createdAt > rhs.createdAt
+                    }
+                case .alphabetical:
+                    let order = lhs.title.localizedStandardCompare(rhs.title)
+                    if order != .orderedSame {
+                        return order == .orderedAscending
+                    }
+                case .quickest:
+                    let left = lhs.totalMinutes ?? Int.max
+                    let right = rhs.totalMinutes ?? Int.max
+                    if left != right {
+                        return left < right
+                    }
+                }
+                return lhs.id.uuidString < rhs.id.uuidString
             }
-            return matchesScope && (query.isEmpty || RecipeSearch.matches(recipe, query: query))
-        }.sorted { lhs, rhs in
-            switch sort {
-            case .recent:
-                if lhs.createdAt != rhs.createdAt { return lhs.createdAt > rhs.createdAt }
-            case .alphabetical:
-                let order = lhs.title.localizedStandardCompare(rhs.title)
-                if order != .orderedSame { return order == .orderedAscending }
-            case .quickest:
-                let left = lhs.totalMinutes ?? Int.max
-                let right = rhs.totalMinutes ?? Int.max
-                if left != right { return left < right }
-            }
-            return lhs.id.uuidString < rhs.id.uuidString
         }
     }
 
@@ -82,6 +90,9 @@ struct RecipesView: View {
             .padding(.bottom, RecipeSpacing.large)
         }
         .recipeRootScrollClearance()
+        .onScrollPhaseChange { _, phase in
+            RecipePerformanceSignposts.setLibraryScrollActive(phase != .idle)
+        }
         .accessibilityIdentifier("recipeLibraryScroll")
         .background(RecipeTheme.canvas)
         .navigationTitle("My Recipes")
@@ -215,8 +226,12 @@ struct RecipesView: View {
             LazyVGrid(columns: columns, alignment: .leading, spacing: RecipeSpacing.large) {
                 ForEach(recipes) { recipe in
                     RecipeLibraryCard(recipe: recipe) {
-                        do { try store.toggleFavorite(id: recipe.id) } catch {
-                            errorMessage = error.localizedDescription
+                        RecipePerformanceSignposts.measure("Favorite Write") {
+                            do {
+                                try store.toggleFavorite(id: recipe.id)
+                            } catch {
+                                errorMessage = error.localizedDescription
+                            }
                         }
                     }
                 }

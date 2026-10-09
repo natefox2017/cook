@@ -198,7 +198,11 @@ struct GroceriesView: View {
     private func groceryRow(_ item: GroceryItem) -> some View {
         HStack(spacing: 12) {
             Button {
-                perform { try store.toggleGrocery(id: item.id) }
+                RecipePerformanceSignposts.measure("Grocery Write") {
+                    perform {
+                        try store.toggleGrocery(id: item.id)
+                    }
+                }
             } label: {
                 Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22))

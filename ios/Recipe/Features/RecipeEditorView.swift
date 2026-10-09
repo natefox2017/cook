@@ -248,7 +248,9 @@ struct RecipeEditorView: View {
                                 locale: RecipeLanguage.active))
                     )
                 }
-                if let previous = original.ingredients.first(where: { $0.id == ingredient.id }),
+                if let previous = original.ingredients.first(where: { candidate in
+                    candidate.id == ingredient.id
+                }),
                     previous.amountText.trimmingCharacters(in: .whitespacesAndNewlines) == amount
                 {
                     var item = ingredient
@@ -265,7 +267,9 @@ struct RecipeEditorView: View {
                 var cleaned = step
                 cleaned.linkedIngredientIDs = cleaned.linkedIngredientIDs.filter(
                     validIngredientIDs.contains)
-                cleaned.timers = cleaned.timers.filter { $0.durationSeconds > 0 }
+                cleaned.timers = cleaned.timers.filter { timer in
+                    timer.durationSeconds > 0
+                }
                 if cleaned.temperature?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                     == true
                 {
@@ -286,9 +290,13 @@ struct RecipeEditorView: View {
             if recipe.importRecord != nil {
                 recipe.importRecord?.reviewedAt = .now
             }
-            try store.upsert(recipe)
+            try RecipePerformanceSignposts.measure("Recipe Write") {
+                try store.upsert(recipe)
+            }
             dismiss()
-        } catch { errorMessage = error.localizedDescription }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     private func number(_ text: String, name: String, range: ClosedRange<Int>) throws -> Int? {

@@ -130,26 +130,45 @@ struct RecipeApp: App {
 
         _ = RecipeAuthService.shared
 
-        let libraryURL = RecipeStore.defaultFileURL()
-        if !isUITesting,
-            FileManager.default.fileExists(atPath: libraryURL.path),
-            defaults.object(forKey: FirstLaunchFlowView.completionKey) == nil
-        {
-            // Existing installs with a persisted library should not be mistaken for new users
-            // when this onboarding key is introduced for the first time.
-            defaults.set(true, forKey: FirstLaunchFlowView.completionKey)
-        }
-
-        let localStore = RecipeStore(fileURL: isUITesting ? nil : libraryURL)
-        if isUITesting {
+        let performanceFixtureRequested = RecipePerformanceFixtureConfiguration.isRequested(
+            arguments: arguments
+        )
+        let localStore: RecipeStore
+        if performanceFixtureRequested {
+            let configuration = RecipePerformanceFixtureConfiguration.parse(arguments: arguments)
+            if let configuration {
+                do {
+                    localStore = try configuration.makeStore(arguments: arguments)
+                } catch {
+                    assertionFailure("Performance fixture could not be loaded: \(error)")
+                    localStore = RecipeStore(fileURL: nil)
+                }
+            } else {
+                assertionFailure(
+                    "Pass a supported --uitesting-performance-count=100, 500, 1000, or 5000."
+                )
+                localStore = RecipeStore(fileURL: nil)
+            }
+        } else if isUITesting {
             if arguments.contains(RecipeUITestNamespace.resetCookingSessionsArgument) {
                 RecipeUITestNamespace.clearCookingSessions(from: defaults)
             }
+            localStore = RecipeStore(fileURL: nil)
             do {
                 try localStore.loadSampleRecipes()
             } catch {
                 assertionFailure("UI test fixtures could not be loaded: \(error)")
             }
+        } else {
+            let libraryURL = RecipeStore.defaultFileURL()
+            if FileManager.default.fileExists(atPath: libraryURL.path),
+                defaults.object(forKey: FirstLaunchFlowView.completionKey) == nil
+            {
+                // Existing installs with a persisted library should not be mistaken for new users
+                // when this onboarding key is introduced for the first time.
+                defaults.set(true, forKey: FirstLaunchFlowView.completionKey)
+            }
+            localStore = RecipeStore(fileURL: libraryURL)
         }
 
         _store = State(initialValue: localStore)
