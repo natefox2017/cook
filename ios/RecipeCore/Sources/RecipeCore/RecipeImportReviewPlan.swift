@@ -34,7 +34,11 @@ public enum RecipeImportReviewPlan {
             guard requested.contains(candidate.key) else { return nil }
             let relevant = result.fields.filter { groupName($0.key) == candidate.key }
             // Explicitly confirmed fields win over an older server review flag.
-            guard !relevant.values.contains(where: \.userConfirmed) else { return nil }
+            // A user-confirmed ingredient must not suppress a question about
+            // another still-unconfirmed ingredient in the same group.
+            let allKnownFieldsConfirmed = !relevant.isEmpty
+                && relevant.values.allSatisfy(\.userConfirmed)
+            guard !allKnownFieldsConfirmed else { return nil }
             let identifiers = Array(
                 Set(relevant.values.flatMap(\.evidenceIDs))
             ).sorted { $0.uuidString < $1.uuidString }
