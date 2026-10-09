@@ -161,3 +161,22 @@ Worker 所有写入都必须允许安全重试。
 ## Source-only review-question assistance (2026-10-10)
 
 `RecipeImportReviewPlan.questions(from:)` now inspects the already persisted `RecipeImportJobResponse.Result.reviewFields` (up to three prompts), suppresses fields explicitly marked `userConfirmed`, and preserves matching evidence IDs. The existing Recipe Editor shows these factual questions without inventing data; Save Draft still requires the user's explicit save and sets `reviewedAt` so retries cannot replace manual edits. Fully ready imports create no prompts. This is **not** a deployed multi-turn AI provider or universal video understanding: AI inference, legal ASR/visual sources, staging and user-provider review remain #238/#239/#250.
+
+## Multi-recipe candidates (source-only staged scope #240, 2026-10-10)
+
+When public JSON-LD identifies multiple distinct recipes, the worker keeps
+`needs_review/recipe_selection` and emits up to eight separately evidenced
+`candidate_recipes[]` (title, original ingredients/steps, evidence IDs, review
+flags and deterministic candidate ID). A single recipe still uses the old
+contract. The iOS `RecipeImportJobResponse.Result` understands this optional
+array without breaking older exports or sync records.
+
+The saved private source placeholder now lets its owner select candidate dishes
+in Recipe Detail. Only explicitly selected candidates are saved to separate
+private Recipes. A source UUID + candidate ID SHA256-derived local identity
+prevents repeat selection from duplicating or overwriting a previously edited
+candidate. Every saved candidate carries the job ID, source/evidence and review
+flags, and the source placeholder remains available for further selection.
+
+**Not delivered:** real media segmentation, on-device TestFlight verification,
+staging deployment or universal platform support; see #239/#240/#250/#251.

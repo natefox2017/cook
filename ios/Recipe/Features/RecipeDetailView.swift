@@ -1202,7 +1202,7 @@ private struct RecipeCandidateSelectionView: View {
     @State private var errorMessage: String?
 
     private var candidates: [RecipeImportJobResponse.Candidate] {
-        sourceRecipe.importRecord?.result.candidateRecipes ?? []
+        Array((sourceRecipe.importRecord?.result.candidateRecipes ?? []).prefix(8))
     }
 
     var body: some View {
