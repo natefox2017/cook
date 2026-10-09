@@ -30,3 +30,24 @@ func recipeLanguageAllowsOnlyExplicitSupportedUITestLocales() {
     #expect(chineseLocale.identifier == "zh-Hans")
     #expect(unscopedChineseLocale.identifier == "en")
 }
+
+@Test
+func userLanguageChoiceOverridesEnglishButNeverLeakesIntoUITests() {
+    let supported = ["en", "ja", "zh-Hans", "zh-Hant"]
+    #expect(RecipeLanguage.resolve(
+        arguments: [], supportedIdentifiers: supported,
+        selectedIdentifier: "ja"
+    ).identifier == "ja")
+    #expect(RecipeLanguage.resolve(
+        arguments: ["--uitesting"], supportedIdentifiers: supported,
+        selectedIdentifier: "ja"
+    ).identifier == "en")
+    #expect(RecipeLanguage.resolve(
+        arguments: [], supportedIdentifiers: supported,
+        selectedIdentifier: "de"
+    ).identifier == "en")
+    #expect(RecipeLanguage.resolve(
+        arguments: [], supportedIdentifiers: supported,
+        selectedIdentifier: "xx-Invalid"
+    ).identifier == "en")
+}

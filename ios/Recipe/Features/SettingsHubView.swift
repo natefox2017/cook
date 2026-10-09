@@ -29,6 +29,12 @@ struct SettingsHubView: View {
 
             Section("App preferences") {
                 NavigationLink {
+                    LocalePreferencesView()
+                } label: {
+                    SettingsRow("Language & Country", "globe")
+                }
+
+                NavigationLink {
                     AppearanceSettingsView()
                 } label: {
                     SettingsRow("Appearance", "circle.lefthalf.filled")
@@ -544,6 +550,55 @@ struct MealPlanSettingsView: View {
 
         }
         .navigationTitle("Meal Plan")
+        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
+    }
+}
+
+
+struct LocalePreferencesView: View {
+    @AppStorage(RecipeLanguage.preferenceKey) private var languageOverride = ""
+    @AppStorage("recipe.countryOverride") private var countryOverride = ""
+    private let languages: [(id: String, label: String)] = [
+        ("en", "English"), ("zh-Hans", "简体中文"),
+        ("zh-Hant", "繁體中文"), ("ja", "日本語"),
+    ]
+
+    private var countryCodes: [String] {
+        Locale.Region.isoRegions
+            .map(\.identifier)
+            .sorted {
+                Locale.current.localizedString(forRegionCode: $0) ?? $0
+                    < Locale.current.localizedString(forRegionCode: $1) ?? $1
+            }
+    }
+
+    var body: some View {
+        Form {
+            Section("App language") {
+                Picker("Language", selection: $languageOverride) {
+                    Text("English (test default)").tag("")
+                    ForEach(languages, id: \.id) { language in
+                        Text(language.label).tag(language.id)
+                    }
+                }
+            }
+            Section("Country or region") {
+                Picker("Country or region", selection: $countryOverride) {
+                    Text("Use device region").tag("")
+                    ForEach(countryCodes, id: \.self) { code in
+                        Text(Locale.current.localizedString(forRegionCode: code) ?? code)
+                            .tag(code)
+                    }
+                }
+            }
+            Section {
+                Text("Country is a preference for future regional content. It does not change your account country or App Store subscriptions.")
+                    .font(RecipeTheme.text(13, relativeTo: .footnote))
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(RecipeTheme.canvas)
+        .navigationTitle("Language & Country")
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }
