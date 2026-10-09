@@ -1,40 +1,119 @@
 {
-  "identifier" : "A189AC34",
-  "nonRenewingSubscriptions" : [],
-  "products" : [],
-  "settings" : {},
-  "subscriptionGroups" : [
+  "identifier": "A189AC34",
+  "nonRenewingSubscriptions": [],
+  "products": [
     {
-      "id" : "B074D1A9",
-      "localizations" : [],
-      "name" : "RecipePouch Premium Local Tests",
-      "subscriptions" : [
+      "displayPrice": "79.99",
+      "familyShareable": false,
+      "internalID": "A45A1005",
+      "localizations": [
         {
-          "adHocOffers" : [],
-          "codeOffers" : [],
-          "displayPrice" : "4.99",
-          "familyShareable" : false,
-          "groupNumber" : 1,
-          "internalID" : "A45A1001",
-          "introductoryOffer" : null,
-          "localizations" : [
+          "description": "Local-only legacy entitlement test.",
+          "displayName": "Recipe legacy lifetime local test",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.natefox.cookapp.lifetime",
+      "referenceName": "Recipe legacy lifetime local test",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {},
+  "subscriptionGroups": [
+    {
+      "id": "B074D1A9",
+      "localizations": [],
+      "name": "RecipePouch Premium Local Tests",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "4.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "A45A1001",
+          "introductoryOffer": null,
+          "localizations": [
             {
-              "description" : "Local-only StoreKit test subscription.",
-              "displayName" : "RecipePouch Premium Monthly Test",
-              "locale" : "en_US"
+              "description": "Local-only StoreKit test subscription.",
+              "displayName": "RecipePouch Premium Monthly Test",
+              "locale": "en_US"
             }
           ],
-          "productID" : "com.recipepouch.localtest.premium.monthly",
-          "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "RecipePouch Premium Monthly Local Test",
-          "subscriptionGroupID" : "B074D1A9",
-          "type" : "RecurringSubscription"
+          "productID": "com.recipepouch.localtest.premium.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "RecipePouch Premium Monthly Local Test",
+          "subscriptionGroupID": "B074D1A9",
+          "type": "RecurringSubscription"
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "4.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "A45A1002",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Local-only StoreKit test subscription.",
+              "displayName": "Recipe local test P1M",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.shopkivoo.recipe.pro.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Recipe formal or legacy local test A45A1002",
+          "subscriptionGroupID": "B074D1A9",
+          "type": "RecurringSubscription"
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "39.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "A45A1003",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Local-only StoreKit test subscription.",
+              "displayName": "Recipe local test P1Y",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.shopkivoo.recipe.pro.yearly",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Recipe formal or legacy local test A45A1003",
+          "subscriptionGroupID": "B074D1A9",
+          "type": "RecurringSubscription"
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "4.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "A45A1004",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Local-only StoreKit test subscription.",
+              "displayName": "Recipe local test P1M",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.natefox.cookapp.pro.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Recipe formal or legacy local test A45A1004",
+          "subscriptionGroupID": "B074D1A9",
+          "type": "RecurringSubscription"
         }
       ]
     }
   ],
-  "version" : {
-    "major" : 2,
-    "minor" : 0
+  "version": {
+    "major": 2,
+    "minor": 0
   }
 }
