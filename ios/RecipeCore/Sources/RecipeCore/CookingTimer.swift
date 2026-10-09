@@ -48,3 +48,23 @@ public struct CookingTimer: Codable, Equatable, Sendable {
         return max(0, Int(ceil(interval)))
     }
 }
+
+/// A pure deadline-based warning plan; no foreground timer tick is required.
+public struct CookingReminderPlan: Equatable, Sendable {
+    public let deadline: Date
+    public let earlyWarningAt: Date?
+
+    public init?(timer: CookingTimer, warningSeconds: Int, now: Date = .now) {
+        guard let deadline = timer.deadline, timer.remaining(at: now) > 0 else {
+            return nil
+        }
+        self.deadline = deadline
+        if warningSeconds > 0,
+            deadline.timeIntervalSince(now) > Double(warningSeconds + 1)
+        {
+            earlyWarningAt = deadline.addingTimeInterval(-TimeInterval(warningSeconds))
+        } else {
+            earlyWarningAt = nil
+        }
+    }
+}
