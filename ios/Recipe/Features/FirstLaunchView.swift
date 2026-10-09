@@ -20,9 +20,9 @@ struct FirstLaunchFlowView: View {
                             imageName: "OnboardingAI",
                             imageAccessibilityLabel:
                                 "A finished lemon and herb roast chicken recipe.",
-                            title: "Create with AI",
+                            title: "Save recipes your way",
                             subtitle:
-                                "Tell AI what you’re craving or list the ingredients you have. Start with a recipe idea.",
+                                "Collect recipes from links, photos, or text, then cook from your personal library.",
                             actionTitle: "Next",
                             page: 0,
                             onNext: advance,
