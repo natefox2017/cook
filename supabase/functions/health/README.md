@@ -67,3 +67,24 @@ deno test --config=supabase/functions/health/deno.json --frozen \
 The test log's service-error strings are synthetic regression fixtures. No
 production secret or user record is required. Local success does not authorize
 or imply a deployment; #155 must remain open for its other acceptance criteria.
+
+## Local HTTP boundary check
+
+On 2026-10-09, Deno 2.9.7 / TypeScript 6.0.3 ran the handler over an actual
+`127.0.0.1` HTTP listener with `--cached-only` and network permission limited
+to loopback. The normal 401 and 200 paths use the real shared `requireUser`
+client pointed at a synthetic local Auth server. A separate injected-auth
+case verifies that `errorResponse` maps a forbidden `AppError` to HTTP 403;
+the production `requireUser` contract itself currently maps invalid Auth
+responses to 401 and has no role-based 403 branch.
+
+```sh
+deno test --config=supabase/functions/health/deno.json --frozen --cached-only \
+  --allow-net=127.0.0.1 \
+  --allow-env=CORS_ALLOWED_ORIGINS,SUPABASE_URL,SUPABASE_ANON_KEY \
+  supabase/functions/health/http_test.ts
+```
+
+This check used no production Auth token, database, internet connection, or
+deployment. The 403 fixture is an error-boundary check, not evidence of a live
+health authorization rule.
