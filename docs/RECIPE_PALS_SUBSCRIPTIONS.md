@@ -2,9 +2,11 @@
 
 Confirmed by the coordination chat on 2026-10-09. ASC app: Recipe Pals,
 Apple ID `6820907753`, bundle `com.shopkivoo.recipe`, subscription group
-`22457671` (Recipe Pals Pro). The coordinator reports monthly record
-`6820909171` and annual record `6820910384` created at the prices below;
-same-level group configuration and product availability remain to be verified.
+`22457671` (Recipe Pals Pro). The coordinator confirmed from the saved ASC page
+that monthly record `6820909171` and annual record `6820910384` both use
+subscription level **1** in that group, at the prices below. This records ASC
+configuration confirmation; product availability and real-device purchase
+acceptance remain to be verified.
 
 | Duration | Formal product ID | USD base price | English US display name |
 | --- | --- | --- | --- |
@@ -12,7 +14,7 @@ same-level group configuration and product availability remain to be verified.
 | 1 year | `com.shopkivoo.recipe.pro.yearly` | $39.99 | Recipe Pals Pro Annual |
 
 Both products provide the same `pro` entitlement and belong to the same group
-at the same service level. There is no introductory offer or new lifetime
+at the same service level (level 1). There is no introductory offer or new lifetime
 product in this configuration. The annual price saves 33.2% against twelve
 monthly payments ($59.88); its monthly equivalent is approximately $3.33.
 These values are a configuration decision, not a profitability assessment.
