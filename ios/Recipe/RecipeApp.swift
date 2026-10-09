@@ -57,6 +57,7 @@ struct RecipeApp: App {
     private let bypassOnboarding: Bool
 
     init() {
+        TimerNotifications.configurePresentation()
         let defaults = UserDefaults.standard
         let arguments = ProcessInfo.processInfo.arguments
         let isUITesting = arguments.contains("--uitesting")
