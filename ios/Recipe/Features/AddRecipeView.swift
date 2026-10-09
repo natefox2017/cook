@@ -37,7 +37,7 @@ struct AddRecipeView: View {
                             ProgressView()
                             Text(LocalizedStringKey(status))
                         }
-                            .accessibilityElement(children: .combine)
+                        .accessibilityElement(children: .combine)
                     }
                     if let savedID, let recipe = store.recipe(id: savedID) { savedCard(recipe) }
                     VStack(spacing: RecipeSpacing.small) {
@@ -96,10 +96,11 @@ struct AddRecipeView: View {
             .sheet(
                 item: $editor,
                 onDismiss: {
-                if let savedID, store.recipe(id: savedID) == nil { self.savedID = nil }
+                    if let savedID, store.recipe(id: savedID) == nil { self.savedID = nil }
                 }
             ) { RecipeEditorView(recipe: $0) }
-            .fileImporter(isPresented: $showFile, allowedContentTypes: [.plainText, .pdf]) { result in
+            .fileImporter(isPresented: $showFile, allowedContentTypes: [.plainText, .pdf]) {
+                result in
                 switch result {
                 case .success(let url):
                     perform("Reading your document…") {
@@ -110,7 +111,9 @@ struct AddRecipeView: View {
                     failedURL = nil
                     savedID = nil
                     let cocoaError = error as NSError
-                    if cocoaError.domain != NSCocoaErrorDomain || cocoaError.code != NSUserCancelledError {
+                    if cocoaError.domain != NSCocoaErrorDomain
+                        || cocoaError.code != NSUserCancelledError
+                    {
                         errorMessage = error.localizedDescription
                     }
                 }
@@ -146,10 +149,12 @@ struct AddRecipeView: View {
             } label: {
                 Label("Import recipe", systemImage: "arrow.down.doc")
             }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(sourceLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isWorking)
+            .buttonStyle(PrimaryButtonStyle())
+            .disabled(
+                sourceLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isWorking)
         }
-        .padding(RecipeSpacing.pageInset).background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 24))
+        .padding(RecipeSpacing.pageInset).background(
+            RecipeTheme.card, in: RoundedRectangle(cornerRadius: 24))
     }
 
     private func importOption(
@@ -164,14 +169,16 @@ struct AddRecipeView: View {
                 Image(systemName: icon).font(.system(size: 22)).foregroundStyle(
                     RecipeTheme.accentForeground
                 )
-                    .frame(width: 46, height: 46).background(RecipeTheme.accent.opacity(0.09), in: Circle())
+                .frame(width: 46, height: 46).background(
+                    RecipeTheme.accent.opacity(0.09), in: Circle())
                 VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                     Text(LocalizedStringKey(title))
                         .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
                         .foregroundStyle(.primary)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 12)).foregroundStyle(.secondary)
+                Image(systemName: "chevron.right").font(.system(size: 12)).foregroundStyle(
+                    .secondary)
             }
             .padding(17).frame(maxWidth: .infinity, alignment: .leading)
             .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 20))
@@ -208,9 +215,11 @@ struct AddRecipeView: View {
                 }
             }
             .navigationTitle("Paste recipe text")
-        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { showText = false } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { showText = false }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Import") {
                         let text = pastedText
@@ -228,7 +237,7 @@ struct AddRecipeView: View {
             .alert(
                 "Recipe text is too long",
                 isPresented: Binding(
-                get: { textErrorMessage != nil }, set: { if !$0 { textErrorMessage = nil } }
+                    get: { textErrorMessage != nil }, set: { if !$0 { textErrorMessage = nil } }
                 )
             ) {
                 Button("OK", role: .cancel) { textErrorMessage = nil }
@@ -287,10 +296,14 @@ struct AddRecipeView: View {
             text = try await RecipeImportService.recognizeText(in: normalized)
         } catch is CancellationError { throw CancellationError() } catch {
             // The photo is still a usable source even when OCR finds no text.
-            var recipe = Recipe(title: "Recipe from a photo", servings: nil, sourceName: "Photo import")
+            var recipe = Recipe(
+                title: "Recipe from a photo", servings: nil, sourceName: "Photo import")
             recipe.coverData = normalized
             try saveImported(recipe)
-            status = String(localized: LocalizedStringResource("Photo saved. Add the ingredients and steps when you're ready.", locale: RecipeLanguage.active))
+            status = String(
+                localized: LocalizedStringResource(
+                    "Photo saved. Add the ingredients and steps when you're ready.",
+                    locale: RecipeLanguage.active))
             return
         }
         var recipe = RecipeDocumentParser.recipe(fromText: text)
@@ -319,7 +332,10 @@ struct AddRecipeView: View {
 
     private func requestCamera() {
         guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
-            errorMessage = String(localized: LocalizedStringResource("A camera isn't available here. Choose Import from Photos instead.", locale: RecipeLanguage.active))
+            errorMessage = String(
+                localized: LocalizedStringResource(
+                    "A camera isn't available here. Choose Import from Photos instead.",
+                    locale: RecipeLanguage.active))
             return
         }
         Task {
@@ -327,7 +343,10 @@ struct AddRecipeView: View {
             if allowed {
                 showCamera = true
             } else {
-                errorMessage = String(localized: LocalizedStringResource("Camera access is off. Enable it for Recipe in iPhone Settings, or use Import from Photos.", locale: RecipeLanguage.active))
+                errorMessage = String(
+                    localized: LocalizedStringResource(
+                        "Camera access is off. Enable it for Recipe in iPhone Settings, or use Import from Photos.",
+                        locale: RecipeLanguage.active))
             }
         }
     }

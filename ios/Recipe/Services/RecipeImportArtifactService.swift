@@ -132,10 +132,11 @@ struct RecipeImportArtifactService {
         ownerID: UUID
     ) async throws {
         try await verifySession(ownerID: ownerID)
-        _ = try await RecipeSupabase.client.functions.invoke(
-            "recipe-import-artifacts/\(artifactID.uuidString.lowercased())",
-            options: FunctionInvokeOptions(method: .delete)
-        ) as DeleteResponse
+        _ =
+            try await RecipeSupabase.client.functions.invoke(
+                "recipe-import-artifacts/\(artifactID.uuidString.lowercased())",
+                options: FunctionInvokeOptions(method: .delete)
+            ) as DeleteResponse
     }
 
     private func complete(_ artifactID: UUID) async throws -> UUID {

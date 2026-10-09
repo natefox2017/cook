@@ -87,12 +87,16 @@ struct GroceriesView: View {
                             } label: {
                                 HStack {
                                     Text(LocalizedStringKey(category.rawValue))
-                                    Text("\(items.count)").foregroundStyle(.secondary)
+                                    Text(items.count, format: .number).foregroundStyle(.secondary)
                                     Spacer()
-                                    Image(systemName: collapsedCategories.contains(category.rawValue)
-                                          ? "chevron.down" : "chevron.up")
+                                    Image(
+                                        systemName: collapsedCategories.contains(category.rawValue)
+                                            ? "chevron.down" : "chevron.up")
                                 }
-                                .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+                                .font(
+                                    RecipeTheme.text(
+                                        15, weight: .semibold, relativeTo: .subheadline)
+                                )
                                 .foregroundStyle(.primary)
                                 .frame(minHeight: 44)
                                 .contentShape(Rectangle())
@@ -124,8 +128,10 @@ struct GroceriesView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Button("Clear bought items", systemImage: "checkmark.circle") { confirmsClear = true }
-                        .disabled(purchasedCount == 0)
+                    Button("Clear bought items", systemImage: "checkmark.circle") {
+                        confirmsClear = true
+                    }
+                    .disabled(purchasedCount == 0)
                 } label: {
                     Image(systemName: "ellipsis")
                 }
@@ -141,14 +147,20 @@ struct GroceriesView: View {
         .sheet(item: $editor) { presentation in
             GroceryItemEditorView(item: presentation.item)
         }
-        .confirmationDialog("Clear bought items?", isPresented: $confirmsClear, titleVisibility: .visible) {
+        .confirmationDialog(
+            "Clear bought items?", isPresented: $confirmsClear, titleVisibility: .visible
+        ) {
             Button("Clear \(purchasedCount) bought item", role: .destructive) {
                 perform { try store.clearCheckedGroceries() }
             }
         } message: {
-            Text("Bought items will be removed from this list. Your saved recipes will stay in your library.")
+            Text(
+                "Bought items will be removed from this list. Your saved recipes will stay in your library."
+            )
         }
-        .confirmationDialog("Remove this item?", isPresented: deleteConfirmation, titleVisibility: .visible) {
+        .confirmationDialog(
+            "Remove this item?", isPresented: deleteConfirmation, titleVisibility: .visible
+        ) {
             if let item = itemToDelete {
                 Button("Remove \(item.name)", role: .destructive) {
                     perform { try store.deleteGrocery(id: item.id) }
@@ -169,9 +181,11 @@ struct GroceriesView: View {
         guard showRecipeNames else { return nil }
 
         let titles = item.recipeIDs.compactMap { id -> String? in
-            guard let title = store.recipe(id: id)?.title
-                .trimmingCharacters(in: .whitespacesAndNewlines),
-                  !title.isEmpty else {
+            guard
+                let title = store.recipe(id: id)?.title
+                    .trimmingCharacters(in: .whitespacesAndNewlines),
+                !title.isEmpty
+            else {
                 return nil
             }
             return title
@@ -186,7 +200,9 @@ struct GroceriesView: View {
             } label: {
                 Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22))
-                    .foregroundStyle(item.isChecked ? RecipeTheme.accentForeground : Color.secondary)
+                    .foregroundStyle(
+                        item.isChecked ? RecipeTheme.accentForeground : Color.secondary
+                    )
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
@@ -213,7 +229,9 @@ struct GroceriesView: View {
                             .strikethrough(item.isChecked)
                             .foregroundStyle(item.isChecked ? Color.secondary : Color.primary)
                         if !item.amountText.isEmpty {
-                            Text(item.amountText).font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
+                            Text(item.amountText).font(
+                                RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline)
+                            ).foregroundStyle(.secondary)
                         }
                         if let sourceNames = sourceDescription(for: item) {
                             Text(sourceNames)
@@ -256,11 +274,16 @@ struct GroceriesView: View {
         }
     }
 
-    private func emptyState(title: String, message: String, actionTitle: String, action: @escaping () -> Void) -> some View {
-        EmptyStateView(title: title, message: message, systemImage: "basket", actionTitle: actionTitle, action: action)
-            .frame(maxWidth: .infinity, minHeight: 260)
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
+    private func emptyState(
+        title: String, message: String, actionTitle: String, action: @escaping () -> Void
+    ) -> some View {
+        EmptyStateView(
+            title: title, message: message, systemImage: "basket", actionTitle: actionTitle,
+            action: action
+        )
+        .frame(maxWidth: .infinity, minHeight: 260)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
 
     private var deleteConfirmation: Binding<Bool> {
@@ -331,21 +354,28 @@ private struct GroceryItemEditorView: View {
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
             .navigationTitle(originalItem == nil ? "Add Grocery Item" : "Edit Grocery Item")
-        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save", action: save)
                         .fontWeight(.semibold)
-                        .disabled(draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(
+                            draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        )
                         .accessibilityIdentifier("grocery.editor.save")
                 }
             }
-            .alert("Couldn’t save item", isPresented: Binding(
-                get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
-            )) {
+            .alert(
+                "Couldn’t save item",
+                isPresented: Binding(
+                    get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
+                )
+            ) {
                 Button("OK", role: .cancel) { errorMessage = nil }
-            } message: { Text(errorMessage ?? "Please try again.") }
+            } message: {
+                Text(errorMessage ?? "Please try again.")
+            }
         }
         .tint(RecipeTheme.accent)
     }
@@ -356,7 +386,8 @@ private struct GroceryItemEditorView: View {
         item.amountText = item.amountText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !item.name.isEmpty else { return }
         if originalItem?.amountText != item.amountText {
-            let parsed = RecipeIngredient.from(name: item.name, amountText: item.amountText, category: item.category)
+            let parsed = RecipeIngredient.from(
+                name: item.name, amountText: item.amountText, category: item.category)
             item.quantity = parsed.quantity
             item.unit = parsed.unit
         }

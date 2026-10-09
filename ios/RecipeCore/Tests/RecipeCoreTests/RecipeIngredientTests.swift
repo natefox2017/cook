@@ -3,13 +3,16 @@
 
 import Foundation
 import Testing
+
 @testable import RecipeCore
 
-@Test(arguments: ["to taste", "a little", "1-2 tbsp", "1 – 2 tbsp",
-                  "1 to 2 cups", "about 1 cup", "1 cup (optional)",
-                  "1/0 cup", "1/3 cup", "2/3 cup", "1/7 cup", "2 1/3 cups", "1,5 cups",
-                  "99999999999999999999999999999999999999 1/2 cups",
-                  "123456789012345678901234567890123456789 g", ""])
+@Test(arguments: [
+    "to taste", "a little", "1-2 tbsp", "1 – 2 tbsp",
+    "1 to 2 cups", "about 1 cup", "1 cup (optional)",
+    "1/0 cup", "1/3 cup", "2/3 cup", "1/7 cup", "2 1/3 cups", "1,5 cups",
+    "99999999999999999999999999999999999999 1/2 cups",
+    "123456789012345678901234567890123456789 g", "",
+])
 func ambiguousAmountsStayExactlyAsWritten(text: String) {
     let ingredient = RecipeIngredient.from(name: "Ingredient", amountText: text)
     #expect(ingredient.quantity == nil)
@@ -64,9 +67,11 @@ func portionPreviewUsesExactRatioInsteadOfARoundedMultiplier() {
     #expect(oneCup.amountText == "1 cup")
     let twoCups = RecipeIngredient.from(name: "Flour", amountText: "2 cups")
     #expect(twoCups.displayAmount(servings: 1, originalServings: 3) == "2 cups × 1/3")
-    let enormous = RecipeIngredient(name: "Flour", amountText: "source amount",
-                                    quantity: .greatestFiniteMagnitude, unit: "g")
-    #expect(enormous.displayAmount(servings: 2, originalServings: 1)
+    let enormous = RecipeIngredient(
+        name: "Flour", amountText: "source amount",
+        quantity: .greatestFiniteMagnitude, unit: "g")
+    #expect(
+        enormous.displayAmount(servings: 2, originalServings: 1)
             == "\(enormous.displayAmount()) × 2/1")
 }
 

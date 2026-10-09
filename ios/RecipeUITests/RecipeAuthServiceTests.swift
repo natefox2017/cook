@@ -5,6 +5,7 @@ import AuthenticationServices
 import Foundation
 import Supabase
 import XCTest
+
 @testable import Recipe
 
 @MainActor
@@ -51,7 +52,9 @@ final class RecipeAuthServiceTests: XCTestCase {
             case "/auth/v1/token":
                 return .json(
                     statusCode: 400,
-                    payload: ["code": "invalid_credentials", "message": "Invalid login credentials"]
+                    payload: [
+                        "code": "invalid_credentials", "message": "Invalid login credentials",
+                    ]
                 )
             case "/auth/v1/recover":
                 return .json(payload: [:])
@@ -179,7 +182,9 @@ final class RecipeAuthServiceTests: XCTestCase {
         }
     }
 
-    func testPasswordRecoveryCallbackKeepsRecoveryStateAfterUpdateFailureAndAllowsRetry() async throws {
+    func testPasswordRecoveryCallbackKeepsRecoveryStateAfterUpdateFailureAndAllowsRetry()
+        async throws
+    {
         let userID = UUID()
         let email = "recipe-recovery@example.test"
         let defaults = makeAuthDefaults()
@@ -322,12 +327,13 @@ private final class AuthMockURLProtocol: URLProtocol, @unchecked Sendable {
     override func startLoading() {
         let mockResponse = Self.handlerStore.response(for: request)
         guard let url = request.url,
-              let response = HTTPURLResponse(
+            let response = HTTPURLResponse(
                 url: url,
                 statusCode: mockResponse.statusCode,
                 httpVersion: "HTTP/1.1",
                 headerFields: ["Content-Type": "application/json"]
-              ) else {
+            )
+        else {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return
         }
@@ -356,10 +362,11 @@ private final class AuthMockHandlerStore: @unchecked Sendable {
         lock.lock()
         let handler = handler
         lock.unlock()
-        return handler?(request) ?? .json(
-            statusCode: 500,
-            payload: ["message": "No mock Auth response is configured"]
-        )
+        return handler?(request)
+            ?? .json(
+                statusCode: 500,
+                payload: ["message": "No mock Auth response is configured"]
+            )
     }
 }
 

@@ -144,21 +144,34 @@ struct CookingView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 22))
                 }
 
-                Text(recipe.title.isEmpty ? String(localized: LocalizedStringResource("Untitled Recipe", locale: RecipeLanguage.active)) : recipe.title)
-                    .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
-                    .foregroundStyle(.secondary)
+                Text(
+                    recipe.title.isEmpty
+                        ? String(
+                            localized: LocalizedStringResource(
+                                "Untitled Recipe", locale: RecipeLanguage.active)) : recipe.title
+                )
+                .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
+                .foregroundStyle(.secondary)
 
                 progress(index: index, count: recipe.steps.count)
 
                 VStack(alignment: .leading, spacing: RecipeSpacing.small) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(step.title.isEmpty ? String(localized: LocalizedStringResource("Step \(index + 1)", locale: RecipeLanguage.active)) : step.title)
-                            .font(RecipeTheme.heading(.hero))
-                            .accessibilityAddTraits(.isHeader)
+                        Text(
+                            step.title.isEmpty
+                                ? String(
+                                    localized: LocalizedStringResource(
+                                        "Step \(index + 1)", locale: RecipeLanguage.active))
+                                : step.title
+                        )
+                        .font(RecipeTheme.heading(.hero))
+                        .accessibilityAddTraits(.isHeader)
                         Spacer()
                         if session.completedStepIDs.contains(step.id) {
                             Label("Done", systemImage: "checkmark.circle.fill")
-                                .font(RecipeTheme.text(13, weight: .semibold, relativeTo: .footnote))
+                                .font(
+                                    RecipeTheme.text(13, weight: .semibold, relativeTo: .footnote)
+                                )
                                 .foregroundStyle(RecipeTheme.accentForeground)
                         }
                     }
@@ -189,7 +202,7 @@ struct CookingView: View {
                                 ? LocalizedStringKey("Timer")
                                 : LocalizedStringKey("Timers for this step")
                         )
-                            .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+                        .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                         ForEach(step.timers) { definition in
                             CookingStepTimerPanel(
                                 label: definition.label,
@@ -360,7 +373,9 @@ struct CookingView: View {
     private func otherTimerLinks(currentStepID: UUID, recipe: Recipe) -> some View {
         let others = session.timers.values
             .filter { $0.isManual || $0.stepID != currentStepID }
-            .filter { $0.timer.isRunning || $0.timer.remaining(at: .now) < $0.timer.durationSeconds }
+            .filter {
+                $0.timer.isRunning || $0.timer.remaining(at: .now) < $0.timer.durationSeconds
+            }
             .sorted { $0.label.localizedCaseInsensitiveCompare($1.label) == .orderedAscending }
 
         if !others.isEmpty {
@@ -391,7 +406,10 @@ struct CookingView: View {
                                     Text(
                                         remaining == 0
                                             ? "Time’s up"
-                                            : String(localized: LocalizedStringResource("\(CookingClockFormatter.text(remaining)) remaining", locale: RecipeLanguage.active))
+                                            : String(
+                                                localized: LocalizedStringResource(
+                                                    "\(CookingClockFormatter.text(remaining)) remaining",
+                                                    locale: RecipeLanguage.active))
                                     )
                                     .font(RecipeTheme.text(12, relativeTo: .caption))
                                     .monospacedDigit()
@@ -428,10 +446,17 @@ struct CookingView: View {
                     .font(RecipeTheme.heading(.hero))
                     .accessibilityAddTraits(.isHeader)
 
-                Text("\(session.completedStepIDs.count) of \(recipe.steps.count) steps completed.")
-                    .lineLimit(1)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
+                Text(
+                    String(
+                        localized: LocalizedStringResource(
+                            "\(session.completedStepIDs.count) of \(recipe.steps.count) steps completed.",
+                            locale: RecipeLanguage.active
+                        )
+                    )
+                )
+                .lineLimit(1)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
 
                 Button("Back to Recipe") { dismiss() }
                     .buttonStyle(PrimaryButtonStyle())
@@ -522,7 +547,8 @@ struct CookingView: View {
                             } label: {
                                 HStack(spacing: 12) {
                                     Image(
-                                        systemName: session.usedIngredientIDs.contains(ingredient.id)
+                                        systemName: session.usedIngredientIDs.contains(
+                                            ingredient.id)
                                             ? "checkmark.circle.fill"
                                             : "circle"
                                     )
@@ -534,7 +560,9 @@ struct CookingView: View {
 
                                     VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                                         Text(ingredient.name)
-                                            .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
+                                            .font(
+                                                RecipeTheme.text(
+                                                    17, weight: .semibold, relativeTo: .headline))
 
                                         let amount = ingredient.displayAmount(
                                             servings: session.servings,
@@ -594,7 +622,8 @@ struct CookingView: View {
                         Section("Kitchen timers") {
                             ForEach(
                                 session.timers.values.sorted {
-                                $0.label.localizedCaseInsensitiveCompare($1.label) == .orderedAscending
+                                    $0.label.localizedCaseInsensitiveCompare($1.label)
+                                        == .orderedAscending
                                 }
                             ) { active in
                                 timerManagerRow(active)
@@ -633,9 +662,15 @@ struct CookingView: View {
                     VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                         Text(active.label)
                             .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
-                        Text(remaining == 0 ? String(localized: LocalizedStringResource("Time’s up", locale: RecipeLanguage.active)) : CookingClockFormatter.text(remaining))
-                            .font(RecipeTheme.text(20, weight: .semibold, relativeTo: .title3))
-                            .monospacedDigit()
+                        Text(
+                            remaining == 0
+                                ? String(
+                                    localized: LocalizedStringResource(
+                                        "Time’s up", locale: RecipeLanguage.active))
+                                : CookingClockFormatter.text(remaining)
+                        )
+                        .font(RecipeTheme.text(20, weight: .semibold, relativeTo: .title3))
+                        .monospacedDigit()
                     }
                     Spacer()
                     if active.isManual {
@@ -736,12 +771,16 @@ struct CookingView: View {
         }
 
         didRestoreSession = true
+        // Session recovery is conservative: missing or edited recipe steps are reconciled below.
         if let data = UserDefaults.standard.data(forKey: sessionKey) {
             do {
                 session = try JSONDecoder().decode(PersistedCookingSession.self, from: data)
             } catch {
                 requiresSessionRecovery = true
-                errorMessage = String(localized: LocalizedStringResource("Your previous cooking session could not be restored. \(error.localizedDescription)", locale: RecipeLanguage.active))
+                errorMessage = String(
+                    localized: LocalizedStringResource(
+                        "Your previous cooking session could not be restored. \(error.localizedDescription)",
+                        locale: RecipeLanguage.active))
             }
         }
 
@@ -756,8 +795,8 @@ struct CookingView: View {
             } else {
                 session.completedStepIDs = Set(
                     session.completedStepIDs.filter { completedID in
-                    recipe.steps.contains(where: { $0.id == completedID })
-                })
+                        recipe.steps.contains(where: { $0.id == completedID })
+                    })
             }
 
             if let original = recipe.servings, original > 0 {
@@ -797,10 +836,10 @@ struct CookingView: View {
         guard let originalIdleTimerDisabled else { return }
         UIApplication.shared.isIdleTimerDisabled =
             recipe?.steps.isEmpty == false
-            && !requiresSessionRecovery
-            && !session.isComplete
-            && scenePhase == .active
-            && store.settings.keepScreenAwake
+                && !requiresSessionRecovery
+                && !session.isComplete
+                && scenePhase == .active
+                && store.settings.keepScreenAwake
             ? true
             : originalIdleTimerDisabled
     }
@@ -966,7 +1005,10 @@ struct CookingView: View {
                 forKey: sessionKey
             )
         } catch {
-            errorMessage = String(localized: LocalizedStringResource("Your cooking progress could not be saved. \(error.localizedDescription)", locale: RecipeLanguage.active))
+            errorMessage = String(
+                localized: LocalizedStringResource(
+                    "Your cooking progress could not be saved. \(error.localizedDescription)",
+                    locale: RecipeLanguage.active))
         }
     }
 
@@ -1004,7 +1046,7 @@ struct CookingView: View {
         let resetStepIDs = Set(recipe.steps.dropFirst(startIndex).map(\.id))
         for (timerID, active) in Array(session.timers) {
             guard !active.isManual,
-                  let stepID = active.stepID,
+                let stepID = active.stepID,
                 resetStepIDs.contains(stepID)
             else { continue }
             session.timers.removeValue(forKey: timerID)
@@ -1059,7 +1101,7 @@ struct CookingView: View {
 
     private func scheduleNotification(for active: PersistedActiveTimer) {
         guard store.settings.timerNotifications,
-              active.timer.isRunning,
+            active.timer.isRunning,
             active.timer.remaining(at: .now) > 0
         else { return }
 
@@ -1085,7 +1127,10 @@ struct CookingView: View {
                 }
             } catch {
                 if !Task.isCancelled {
-                    errorMessage = String(localized: LocalizedStringResource("The timer is running, but its notification could not be scheduled. \(error.localizedDescription)", locale: RecipeLanguage.active))
+                    errorMessage = String(
+                        localized: LocalizedStringResource(
+                            "The timer is running, but its notification could not be scheduled. \(error.localizedDescription)",
+                            locale: RecipeLanguage.active))
                 }
             }
         }
@@ -1152,7 +1197,6 @@ struct CookingView: View {
         }
     }
 
-
 }
 
 private struct PersistedActiveTimer: Identifiable, Codable {
@@ -1218,6 +1262,7 @@ private struct PersistedCookingSession: Codable {
         if let current = try? container.decode([UUID: PersistedActiveTimer].self, forKey: .timers) {
             timers = current
         } else if let legacy = try? container.decode([UUID: CookingTimer].self, forKey: .timers) {
+            // Older sessions stored only timer values keyed by step ID; restore them as step timers.
             timers = legacy.reduce(into: [:]) { result, entry in
                 result[entry.key] = PersistedActiveTimer(
                     id: entry.key,
@@ -1281,7 +1326,8 @@ private struct CookingStepTimerPanel: View {
 
                 Text(
                     remaining == 0
-                        ? LocalizedStringKey("Continue when you’re ready. The next step is still up to you.")
+                        ? LocalizedStringKey(
+                            "Continue when you’re ready. The next step is still up to you.")
                         : notificationMessage
                 )
                 .font(RecipeTheme.text(12, relativeTo: .caption))
@@ -1338,8 +1384,6 @@ private struct CookingStepTimerPanel: View {
         }
     }
 
-
-
     private func durationText(_ seconds: Int) -> String {
         return Duration.seconds(seconds).formatted(
             .units(width: .abbreviated, maximumUnitCount: 2).locale(locale)
@@ -1347,7 +1391,9 @@ private struct CookingStepTimerPanel: View {
     }
 
     private func spokenDuration(_ seconds: Int) -> String {
-        if seconds == 0 { return String(localized: LocalizedStringResource("Time’s up", locale: locale)) }
+        if seconds == 0 {
+            return String(localized: LocalizedStringResource("Time’s up", locale: locale))
+        }
         return Duration.seconds(seconds).formatted(
             .units(width: .wide, maximumUnitCount: 3).locale(locale)
         )

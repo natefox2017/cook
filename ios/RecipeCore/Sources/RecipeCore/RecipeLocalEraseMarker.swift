@@ -9,6 +9,7 @@ import Foundation
 public enum RecipeLocalEraseMarker {
     private static let signature = Data("RecipePouch.localErasePending.v1".utf8)
 
+    /// Durably writes the fail-closed barrier before any local-only library erase begins.
     public static func persist(at url: URL) throws {
         try FileManager.default.createDirectory(
             at: url.deletingLastPathComponent(),
@@ -24,10 +25,12 @@ public enum RecipeLocalEraseMarker {
         }
     }
 
+    /// Treats any existing marker path as pending so unreadable state cannot reuse an old sync base.
     public static func isPresent(at url: URL) -> Bool {
         FileManager.default.fileExists(atPath: url.path)
     }
 
+    /// Removes the barrier only after sync has established a confirmed server baseline.
     public static func clear(at url: URL) throws {
         if isPresent(at: url) {
             try FileManager.default.removeItem(at: url)

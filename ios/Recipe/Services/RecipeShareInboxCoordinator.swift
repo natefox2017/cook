@@ -80,9 +80,11 @@ final class RecipeShareInboxCoordinator {
     /// Migrate every legacy value first and erase both keys only when all
     /// records have been durably persisted in the file-backed inbox.
     private func migrateLegacyInbox(into inbox: RecipeShareInbox) throws {
-        guard let defaults = UserDefaults(
-            suiteName: RecipeShareInbox.appGroupID
-        ) else {
+        guard
+            let defaults = UserDefaults(
+                suiteName: RecipeShareInbox.appGroupID
+            )
+        else {
             return
         }
 
@@ -96,8 +98,9 @@ final class RecipeShareInboxCoordinator {
             guard !trimmed.isEmpty else { continue }
             let kind: RecipeShareInputType
             if let components = URLComponents(string: trimmed),
-               components.scheme?.lowercased() == "https",
-               components.host != nil {
+                components.scheme?.lowercased() == "https",
+                components.host != nil
+            {
                 kind = .url
             } else {
                 kind = .text

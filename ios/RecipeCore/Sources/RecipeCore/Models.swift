@@ -4,24 +4,34 @@
 import Foundation
 
 public enum RecipeCategory: String, Codable, CaseIterable, Identifiable, Sendable {
-    case meals = "Meals", breakfast = "Breakfast", desserts = "Desserts"
-    case drinks = "Drinks", sides = "Sides"
+    case meals = "Meals"
+    case breakfast = "Breakfast"
+    case desserts = "Desserts"
+    case drinks = "Drinks"
+    case sides = "Sides"
     public var id: String { rawValue }
 }
 
 public enum GroceryCategory: String, Codable, CaseIterable, Identifiable, Sendable {
-    case produce = "Produce", proteins = "Proteins", dairy = "Dairy & eggs"
-    case pantry = "Pantry", other = "Other"
+    case produce = "Produce"
+    case proteins = "Proteins"
+    case dairy = "Dairy & eggs"
+    case pantry = "Pantry"
+    case other = "Other"
     public var id: String { rawValue }
 }
 
 public enum MealSlot: String, Codable, CaseIterable, Identifiable, Sendable {
-    case breakfast = "Breakfast", lunch = "Lunch", dinner = "Dinner"
+    case breakfast = "Breakfast"
+    case lunch = "Lunch"
+    case dinner = "Dinner"
     public var id: String { rawValue }
 }
 
 public enum AppAppearance: String, Codable, CaseIterable, Identifiable, Sendable {
-    case system = "System", light = "Light", dark = "Dark"
+    case system = "System"
+    case light = "Light"
+    case dark = "Dark"
     public var id: String { rawValue }
 }
 
@@ -83,8 +93,12 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
             && importRecord?.reviewedAt == nil)
             || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || ingredients.isEmpty || steps.isEmpty
-            || ingredients.contains { $0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            || steps.contains { $0.instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            || ingredients.contains {
+                $0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
+            || steps.contains {
+                $0.instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
     }
 
     public var totalMinutes: Int? {
@@ -134,9 +148,11 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
     public var unit: String?
     public var category: GroceryCategory
 
-    public init(id: UUID = UUID(), name: String, amountText: String = "",
-                quantity: Decimal? = nil, unit: String? = nil,
-                category: GroceryCategory = .other) {
+    public init(
+        id: UUID = UUID(), name: String, amountText: String = "",
+        quantity: Decimal? = nil, unit: String? = nil,
+        category: GroceryCategory = .other
+    ) {
         self.id = id
         self.name = name
         self.amountText = amountText
@@ -162,13 +178,15 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
     public func displayAmount(servings: Int?, originalServings: Int?) -> String {
         guard quantity != nil else { return amountText }
         guard let servings, let originalServings, servings > 0, originalServings > 0,
-              servings != originalServings else { return displayAmount() }
+            servings != originalServings
+        else { return displayAmount() }
         let expression = "\(displayAmount()) × \(servings)/\(originalServings)"
         do {
             let source = try IngredientAmount(originalText: amountText, value: quantity, unit: unit)
             let multiplied = try source.scaled(by: Decimal(servings))
             guard let numerator = multiplied.value else { return amountText }
-            guard let result = try Self.exactQuotient(numerator, by: Decimal(originalServings)) else {
+            guard let result = try Self.exactQuotient(numerator, by: Decimal(originalServings))
+            else {
                 return expression
             }
             return Self.formatted(result, unit: unit)
@@ -181,13 +199,14 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
     // Immutable Foundation regex can be safely shared between import passes.
     // A failed pattern compilation must leave the original user text intact.
     private static let amountRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"^((?:[0-9]+\s+)?[0-9]+/[0-9]+|[0-9]+(?:\.[0-9]+)?|\.[0-9]+)\s*([\p{L}µμ]+\.?(?:\s+(?:oz|ounces?))?)?$"#,
+        pattern:
+            #"^((?:[0-9]+\s+)?[0-9]+/[0-9]+|[0-9]+(?:\.[0-9]+)?|\.[0-9]+)\s*([\p{L}µμ]+\.?(?:\s+(?:oz|ounces?))?)?$"#,
         options: .caseInsensitive
     )
 
     private static let vagueAmountUnits: Set<String> = [
         "about", "approximately", "approx", "roughly", "heaped",
-        "heaping", "scant", "optional", "or", "to", "taste"
+        "heaping", "scant", "optional", "or", "to", "taste",
     ]
 
     /// Parse only explicit amounts; ambiguous quantities remain the original text.
@@ -202,7 +221,7 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
 
         for (symbol, fraction) in [
             ("¼", "1/4"), ("½", "1/2"), ("¾", "3/4"), ("⅛", "1/8"),
-            ("⅜", "3/8"), ("⅝", "5/8"), ("⅞", "7/8")
+            ("⅜", "3/8"), ("⅝", "5/8"), ("⅞", "7/8"),
         ] {
             text = text.replacingOccurrences(of: symbol, with: " " + fraction)
         }
@@ -212,8 +231,9 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
 
         let fullRange = NSRange(text.startIndex..., in: text)
         guard let match = regex.firstMatch(in: text, range: fullRange),
-              let numberRange = Range(match.range(at: 1), in: text),
-              let value = exactNumber(String(text[numberRange])) else {
+            let numberRange = Range(match.range(at: 1), in: text),
+            let value = exactNumber(String(text[numberRange]))
+        else {
             return result
         }
 
@@ -262,12 +282,14 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
         guard coefficientDigits(quotient) + coefficientDigits(divisor) <= 38 else { return nil }
         var restored = Decimal()
         guard NSDecimalMultiply(&restored, &quotient, &divisor, .plain) == .noError,
-              restored == numerator else { return nil }
+            restored == numerator
+        else { return nil }
         return quotient
     }
 
     private static func coefficientDigits(_ value: Decimal) -> Int {
-        let coefficient = NSDecimalNumber(decimal: value).stringValue
+        let coefficient =
+            NSDecimalNumber(decimal: value).stringValue
             .split(whereSeparator: { $0 == "e" || $0 == "E" }).first ?? ""
         return coefficient.filter(\.isNumber).drop(while: { $0 == "0" })
             .reversed().drop(while: { $0 == "0" }).count
@@ -279,18 +301,23 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
         guard let last = pieces.last else { return nil }
         // Decimal has finite precision; never silently round a longer source token.
         let numericTokens = text.split { $0.isWhitespace || $0 == "/" }
-        guard numericTokens.allSatisfy({
-            $0.filter(\.isNumber).drop(while: { $0 == "0" }).count <= 38
-        }) else { return nil }
+        guard
+            numericTokens.allSatisfy({
+                $0.filter(\.isNumber).drop(while: { $0 == "0" }).count <= 38
+            })
+        else { return nil }
         if !last.contains("/") {
-            guard let value = Decimal(string: String(last), locale: locale), !value.isNaN else { return nil }
+            guard let value = Decimal(string: String(last), locale: locale), !value.isNaN else {
+                return nil
+            }
             return value
         }
         let fraction = last.split(separator: "/")
         guard fraction.count == 2,
-              let numerator = Decimal(string: String(fraction[0]), locale: locale),
-              let denominator = Decimal(string: String(fraction[1]), locale: locale),
-              denominator > 0 else { return nil }
+            let numerator = Decimal(string: String(fraction[0]), locale: locale),
+            let denominator = Decimal(string: String(fraction[1]), locale: locale),
+            denominator > 0
+        else { return nil }
         guard var value = try? exactQuotient(numerator, by: denominator) else { return nil }
         if pieces.count == 2 {
             guard var whole = Decimal(string: String(pieces[0]), locale: locale) else { return nil }
@@ -301,9 +328,10 @@ public struct RecipeIngredient: Identifiable, Codable, Hashable, Sendable {
             var recoveredFraction = Decimal()
             var recoveredWhole = Decimal()
             guard NSDecimalSubtract(&recoveredFraction, &total, &whole, .plain) == .noError,
-                  recoveredFraction == value,
-                  NSDecimalSubtract(&recoveredWhole, &total, &value, .plain) == .noError,
-                  recoveredWhole == whole else { return nil }
+                recoveredFraction == value,
+                NSDecimalSubtract(&recoveredWhole, &total, &value, .plain) == .noError,
+                recoveredWhole == whole
+            else { return nil }
             value = total
         }
         return value.isNaN ? nil : value
@@ -348,7 +376,11 @@ public struct RecipeStep: Identifiable, Codable, Hashable, Sendable {
                 return
             }
             if timers.isEmpty {
-                timers = [RecipeStepTimer(id: id, label: title.isEmpty ? "Step timer" : title, durationSeconds: newValue)]
+                timers = [
+                    RecipeStepTimer(
+                        id: id, label: title.isEmpty ? "Step timer" : title,
+                        durationSeconds: newValue)
+                ]
             } else {
                 timers[0].durationSeconds = newValue
             }
@@ -397,13 +429,15 @@ public struct RecipeStep: Identifiable, Codable, Hashable, Sendable {
         id = try container.decode(UUID.self, forKey: .id)
         title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
         instruction = try container.decode(String.self, forKey: .instruction)
-        linkedIngredientIDs = try container.decodeIfPresent([UUID].self, forKey: .linkedIngredientIDs) ?? []
+        linkedIngredientIDs =
+            try container.decodeIfPresent([UUID].self, forKey: .linkedIngredientIDs) ?? []
         temperature = try container.decodeIfPresent(CookingTemperature.self, forKey: .temperature)
         timers = try container.decodeIfPresent([RecipeStepTimer].self, forKey: .timers) ?? []
 
         if timers.isEmpty,
-           let legacyDuration = try container.decodeIfPresent(Int.self, forKey: .durationSeconds),
-           legacyDuration > 0 {
+            let legacyDuration = try container.decodeIfPresent(Int.self, forKey: .durationSeconds),
+            legacyDuration > 0
+        {
             timers = [
                 RecipeStepTimer(
                     id: id,
@@ -437,10 +471,12 @@ public struct GroceryItem: Identifiable, Codable, Hashable, Sendable {
     public var isChecked: Bool
     public var recipeIDs: [UUID]
 
-    public init(id: UUID = UUID(), name: String, amountText: String = "",
-                quantity: Decimal? = nil, unit: String? = nil,
-                category: GroceryCategory = .other, isChecked: Bool = false,
-                recipeIDs: [UUID] = []) {
+    public init(
+        id: UUID = UUID(), name: String, amountText: String = "",
+        quantity: Decimal? = nil, unit: String? = nil,
+        category: GroceryCategory = .other, isChecked: Bool = false,
+        recipeIDs: [UUID] = []
+    ) {
         self.id = id
         self.name = name
         self.amountText = amountText
@@ -473,9 +509,11 @@ public struct RecipeSettings: Codable, Equatable, Sendable {
     public var keepScreenAwake: Bool
     public var timerNotifications: Bool
 
-    public init(displayName: String = "", email: String = "",
-                appearance: AppAppearance = .system, keepScreenAwake: Bool = true,
-                timerNotifications: Bool = false) {
+    public init(
+        displayName: String = "", email: String = "",
+        appearance: AppAppearance = .system, keepScreenAwake: Bool = true,
+        timerNotifications: Bool = false
+    ) {
         self.displayName = displayName
         self.email = email
         self.appearance = appearance

@@ -114,7 +114,9 @@ private struct FirstLaunchValueRow: View {
                 .font(.system(size: 21, weight: .medium))
                 .foregroundStyle(RecipeTheme.accentForeground)
                 .frame(width: 42, height: 42)
-                .background(RecipeTheme.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 13))
+                .background(
+                    RecipeTheme.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 13)
+                )
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
@@ -177,18 +179,21 @@ struct GettingStartedGuideContent: View {
         }
     }
 
-    private func guideStep(_ number: Int, icon: String, title: String, detail: String) -> some View {
+    private func guideStep(_ number: Int, icon: String, title: String, detail: String) -> some View
+    {
         HStack(alignment: .center, spacing: 14) {
             Image(systemName: icon)
                 .font(.system(size: 19, weight: .medium))
                 .foregroundStyle(RecipeTheme.accentForeground)
                 .frame(width: 42, height: 42)
-                .background(RecipeTheme.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
+                .background(
+                    RecipeTheme.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 12)
+                )
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
                 HStack(spacing: 4) {
-                    Text("\(number).")
+                    Text(number, format: .number)
                     Text(LocalizedStringKey(title))
                 }
                 .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))

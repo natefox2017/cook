@@ -3,6 +3,7 @@
 
 import Foundation
 import Testing
+
 @testable import RecipeCore
 
 private func libraryURL() throws -> URL {
@@ -48,7 +49,9 @@ func deletionsAndResetRemainInCloudSnapshotAfterReload() throws {
     try store.deleteRecipe(id: recipe.id)
 
     let restored = RecipeStore(fileURL: url)
-    #expect(try restored.exportCloudSnapshot().deletedEntities?.contains("recipe:\(recipe.id.uuidString)") == true)
+    #expect(
+        try restored.exportCloudSnapshot().deletedEntities?.contains(
+            "recipe:\(recipe.id.uuidString)") == true)
 
     let remaining = Recipe(title: "Keep", steps: [.init(instruction: "Cook.")])
     try restored.upsert(remaining)
@@ -68,13 +71,15 @@ func savedLibraryRoundTripsEveryUserFacingState() throws {
     let recipe = exampleRecipe()
     try store.upsert(recipe)
     try store.toggleFavorite(id: recipe.id)
-    try store.addToGroceries(recipeID: recipe.id, servings: 4,
-                             ingredientIDs: Set(recipe.ingredients.map(\.id)))
+    try store.addToGroceries(
+        recipeID: recipe.id, servings: 4,
+        ingredientIDs: Set(recipe.ingredients.map(\.id)))
     let grocery = try #require(store.groceries.first)
     try store.toggleGrocery(id: grocery.id)
     try store.upsertMeal(MealPlanEntry(recipeID: recipe.id, date: .now))
-    let settings = RecipeSettings(displayName: "Sam", email: "sam@example.com",
-                                appearance: .dark, keepScreenAwake: false, timerNotifications: true)
+    let settings = RecipeSettings(
+        displayName: "Sam", email: "sam@example.com",
+        appearance: .dark, keepScreenAwake: false, timerNotifications: true)
     try store.updateSettings(settings)
 
     let restored = RecipeStore(fileURL: url)
@@ -179,7 +184,8 @@ func mergeRequiresAnExplicitChoiceForSameRecipeAndForDeletionPropagation() throw
     let shared = exampleRecipe()
     try local.upsert(shared)
     let cloud = RecipeStore()
-    try cloud.upsert(Recipe(id: shared.id, title: "Cloud edit", steps: [.init(instruction: "Bake.")]))
+    try cloud.upsert(
+        Recipe(id: shared.id, title: "Cloud edit", steps: [.init(instruction: "Bake.")]))
 
     let editConflicts = try local.mergeCloudLibrary(with: cloud.exportData())
     #expect(editConflicts.map(\.entity) == [.recipe])
@@ -203,11 +209,17 @@ func mergeRequiresAnExplicitChoiceForSameRecipeAndForDeletionPropagation() throw
 
 @Test @MainActor
 func typedCloudSnapshotKeepsExactDecimalAmounts() throws {
-    let exact = try #require(Decimal(string: "0.1234567890123456789012345678", locale: Locale(identifier: "en_US_POSIX")))
+    let exact = try #require(
+        Decimal(string: "0.1234567890123456789012345678", locale: Locale(identifier: "en_US_POSIX"))
+    )
     let store = RecipeStore()
     let recipe = Recipe(
         title: "Precise sauce",
-        ingredients: [.init(name: "Oil", amountText: NSDecimalNumber(decimal: exact).stringValue, quantity: exact)],
+        ingredients: [
+            .init(
+                name: "Oil", amountText: NSDecimalNumber(decimal: exact).stringValue,
+                quantity: exact)
+        ],
         steps: [.init(instruction: "Mix.")]
     )
     try store.upsert(recipe)
@@ -246,8 +258,9 @@ func groceryMergeRequiresKnownQuantitiesAndExactlyMatchingUnits() throws {
     let recipe = exampleRecipe(ingredients: [grams, moreGrams, cups, unknown])
     let store = RecipeStore()
     try store.upsert(recipe)
-    try store.addToGroceries(recipeID: recipe.id, servings: 4,
-                             ingredientIDs: Set(recipe.ingredients.map(\.id)))
+    try store.addToGroceries(
+        recipeID: recipe.id, servings: 4,
+        ingredientIDs: Set(recipe.ingredients.map(\.id)))
     #expect(store.groceries.count == 3)
     #expect(store.groceries.first { $0.unit == "g" }?.quantity == 300)
     #expect(store.groceries.first { $0.unit == "cup" }?.quantity == 2)
@@ -289,8 +302,9 @@ func differentlyWrittenUnitsAreNotSilentlyConverted() throws {
     let recipe = exampleRecipe(ingredients: ingredients)
     let store = RecipeStore()
     try store.upsert(recipe)
-    try store.addToGroceries(recipeID: recipe.id, servings: nil,
-                             ingredientIDs: Set(ingredients.map(\.id)))
+    try store.addToGroceries(
+        recipeID: recipe.id, servings: nil,
+        ingredientIDs: Set(ingredients.map(\.id)))
     #expect(store.groceries.count == 4)
     #expect(store.groceries.allSatisfy { $0.quantity == 1 })
 }
@@ -304,12 +318,15 @@ func planReplacesSameDaySlotAndDeletingRecipeCleansReferences() throws {
     try store.upsert(second)
     let day = Calendar.current.startOfDay(for: .now)
     try store.upsertMeal(MealPlanEntry(recipeID: first.id, date: day, slot: .dinner))
-    try store.upsertMeal(MealPlanEntry(recipeID: second.id,
-                                     date: day.addingTimeInterval(3600), slot: .dinner))
+    try store.upsertMeal(
+        MealPlanEntry(
+            recipeID: second.id,
+            date: day.addingTimeInterval(3600), slot: .dinner))
     #expect(store.mealPlan.count == 1)
     #expect(store.mealPlan[0].recipeID == second.id)
-    try store.addToGroceries(recipeID: second.id, servings: nil,
-                             ingredientIDs: Set(second.ingredients.map(\.id)))
+    try store.addToGroceries(
+        recipeID: second.id, servings: nil,
+        ingredientIDs: Set(second.ingredients.map(\.id)))
     try store.deleteRecipe(id: second.id)
     #expect(store.mealPlan.isEmpty)
     #expect(store.groceries.count == 1)
@@ -332,7 +349,6 @@ func invalidRecipeDoesNotChangeOrPersistLibrary() throws {
     #expect(throws: IngredientAmount.ValidationError.invalidValue) { try store.upsert(recipe) }
     #expect(store.recipes.isEmpty)
 }
-
 
 @Test @MainActor
 func collectionsRoundTripAndRemainIndependentFromFavorites() throws {
@@ -397,7 +413,7 @@ func collectionNamesRejectDuplicatesAndLegacyNamesMigrateSafely() throws {
         "Weeknight",
         "Family",
         " family ",
-        ""
+        "",
     ])
     #expect(added == 1)
     #expect(store.collections.map(\.name).sorted() == ["Family", "Weeknight"])
@@ -465,7 +481,6 @@ func collectionExportContainsStableIDsAndRelationships() throws {
     #expect(memberships.first?["recipeID"] as? String == recipe.id.uuidString)
     #expect(memberships.first?["collectionID"] as? String == collection.id.uuidString)
 }
-
 
 @Test @MainActor
 func sampleRecipesCanBeLoadedAfterReset() throws {
@@ -680,7 +695,6 @@ func sameOfflineMealSlotReturnsResolvableConflict() throws {
     )
     #expect(local.mealPlan.map(\.id) == [cloudMeal.id])
 }
-
 
 @Test @MainActor
 func groceryConsolidationPreferenceIsNonRetroactive() throws {

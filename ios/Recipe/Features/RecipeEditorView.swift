@@ -37,8 +37,10 @@ struct RecipeEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    RecipeImage(recipe: draft, height: 180).clipShape(RoundedRectangle(cornerRadius: 18))
-                        .listRowInsets(EdgeInsets())
+                    RecipeImage(recipe: draft, height: 180).clipShape(
+                        RoundedRectangle(cornerRadius: 18)
+                    )
+                    .listRowInsets(EdgeInsets())
                     PhotosPicker(selection: $photo, matching: .images) {
                         Label {
                             Text(LocalizedStringKey(photoLabel))
@@ -49,10 +51,14 @@ struct RecipeEditorView: View {
                     if isLoadingPhoto { ProgressView("Preparing photo…") }
                 }
                 Section("Recipe") {
-                    TextField("Recipe name", text: $draft.title).accessibilityIdentifier("recipeName")
-                    TextField("A short description", text: $draft.summary, axis: .vertical).lineLimit(2...4)
+                    TextField("Recipe name", text: $draft.title).accessibilityIdentifier(
+                        "recipeName")
+                    TextField("A short description", text: $draft.summary, axis: .vertical)
+                        .lineLimit(2...4)
                     Picker("Category", selection: $draft.category) {
-                        ForEach(RecipeCategory.allCases) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
+                        ForEach(RecipeCategory.allCases) {
+                            Text(LocalizedStringKey($0.rawValue)).tag($0)
+                        }
                     }
                     numberField("Servings", placeholder: "Unknown", text: $servingsText)
                     numberField("Prep time (minutes)", placeholder: "Optional", text: $prepText)
@@ -86,7 +92,8 @@ struct RecipeEditorView: View {
                     .accessibilityIdentifier("addRecipeStep")
                 }
                 Section("Notes") {
-                    TextField("Your notes and changes", text: $draft.notes, axis: .vertical).lineLimit(3...10)
+                    TextField("Your notes and changes", text: $draft.notes, axis: .vertical)
+                        .lineLimit(3...10)
                 }
                 Section("Source") {
                     if let value = original.sourceURL {
@@ -103,7 +110,8 @@ struct RecipeEditorView: View {
                         .foregroundStyle(.secondary).textSelection(.enabled)
                     } else {
                         TextField("Original link (optional)", text: $sourceText)
-                            .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                            .keyboardType(.URL).textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
                     }
                     if let text = original.sourceText, !text.isEmpty {
                         DisclosureGroup("Original recipe text") {
@@ -234,7 +242,10 @@ struct RecipeEditorView: View {
                 }
                 guard !name.isEmpty else {
                     throw EditorError.invalid(
-                        String(localized: LocalizedStringResource("Give each ingredient a name, or remove the empty row.", locale: RecipeLanguage.active))
+                        String(
+                            localized: LocalizedStringResource(
+                                "Give each ingredient a name, or remove the empty row.",
+                                locale: RecipeLanguage.active))
                     )
                 }
                 if let previous = original.ingredients.first(where: { $0.id == ingredient.id }),
@@ -285,7 +296,10 @@ struct RecipeEditorView: View {
         guard !value.isEmpty else { return nil }
         guard let number = Int(value), range.contains(number) else {
             throw EditorError.invalid(
-                String(localized: LocalizedStringResource("\(name) must be a whole number between \(range.lowerBound) and \(range.upperBound), or left blank.", locale: RecipeLanguage.active))
+                String(
+                    localized: LocalizedStringResource(
+                        "\(name) must be a whole number between \(range.lowerBound) and \(range.upperBound), or left blank.",
+                        locale: RecipeLanguage.active))
             )
         }
         return number
@@ -393,7 +407,8 @@ private struct StepEditorRow: View {
                         }
                     }
                     .padding(10)
-                    .background(RecipeTheme.accent.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+                    .background(
+                        RecipeTheme.accent.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
                 }
 
                 Button {

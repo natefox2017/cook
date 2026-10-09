@@ -44,6 +44,8 @@ public enum RecipeShareImportWorkflowError: LocalizedError {
 
 @MainActor
 public enum RecipeShareImportWorkflow {
+    /// Submits durable receipts, polls jobs, and applies results only while the same owner is signed in.
+    /// Failed or cancelled work leaves its source receipt available for a later retry.
     public static func synchronize(
         inbox: RecipeShareInbox,
         store: RecipeStore,
@@ -69,10 +71,12 @@ public enum RecipeShareImportWorkflow {
                     guard currentOwnerID() == ownerID else { break }
 
                     do {
-                        guard try inbox.receivedJobID(
-                            for: receipt,
-                            ownerID: ownerID
-                        ) == nil else {
+                        guard
+                            try inbox.receivedJobID(
+                                for: receipt,
+                                ownerID: ownerID
+                            ) == nil
+                        else {
                             continue
                         }
 
@@ -108,10 +112,12 @@ public enum RecipeShareImportWorkflow {
                 pending = try inbox.pendingReceipts(for: ownerID)
                 for receipt in pending {
                     guard currentOwnerID() == ownerID else { break }
-                    guard let jobID = try inbox.receivedJobID(
-                        for: receipt,
-                        ownerID: ownerID
-                    ) else {
+                    guard
+                        let jobID = try inbox.receivedJobID(
+                            for: receipt,
+                            ownerID: ownerID
+                        )
+                    else {
                         continue
                     }
 
@@ -147,10 +153,12 @@ public enum RecipeShareImportWorkflow {
 
                 for receipt in try inbox.acknowledgedReceipts(for: ownerID) {
                     guard currentOwnerID() == ownerID else { break }
-                    guard let jobID = try inbox.acknowledgedJobID(
-                        for: receipt,
-                        ownerID: ownerID
-                    ) else {
+                    guard
+                        let jobID = try inbox.acknowledgedJobID(
+                            for: receipt,
+                            ownerID: ownerID
+                        )
+                    else {
                         continue
                     }
 
@@ -171,8 +179,9 @@ public enum RecipeShareImportWorkflow {
                         fetchedTerminalStatus = !response.isActive
 
                         if response.status == .failed,
-                           response.error?.recoverable == true,
-                           retryRequests.insert(jobID).inserted {
+                            response.error?.recoverable == true,
+                            retryRequests.insert(jobID).inserted
+                        {
                             response = try await client.retry(
                                 jobID: jobID,
                                 ownerID: ownerID
@@ -202,7 +211,8 @@ public enum RecipeShareImportWorkflow {
                                 store: store
                             )
                         } else if response.status == .failed {
-                            let serverMessage = response.error?.message
+                            let serverMessage =
+                                response.error?.message
                                 ?? "The import could not be completed."
                             let suggestedAction = nonempty(
                                 response.error?.suggestedAction
@@ -210,7 +220,8 @@ public enum RecipeShareImportWorkflow {
                             let detail = [serverMessage, suggestedAction]
                                 .compactMap { $0 }
                                 .joined(separator: " ")
-                            firstFailure = firstFailure
+                            firstFailure =
+                                firstFailure
                                 ?? "A shared source failed: \(detail)"
                         }
 
@@ -286,8 +297,9 @@ public enum RecipeShareImportWorkflow {
         currentOwnerID: @MainActor () -> UUID?
     ) throws {
         guard currentOwnerID() == ownerID,
-              response.clientRequestID == receipt.clientRequestID,
-              expectedJobID == nil || response.jobID == expectedJobID else {
+            response.clientRequestID == receipt.clientRequestID,
+            expectedJobID == nil || response.jobID == expectedJobID
+        else {
             if currentOwnerID() != ownerID {
                 throw RecipeShareImportWorkflowError.accountChanged
             }
@@ -308,12 +320,13 @@ public enum RecipeShareImportWorkflow {
             throw RecipeShareImportWorkflowError.completedResultMissing
         }
         guard result.source.inputType == receipt.inputType.rawValue,
-              let resultStatus = result.resultStatus,
-              response.recipeID == nil || response.recipeID == result.recipeID,
-              response.recipeStatus == nil
+            let resultStatus = result.resultStatus,
+            response.recipeID == nil || response.recipeID == result.recipeID,
+            response.recipeStatus == nil
                 || response.recipeStatus == resultStatus.rawValue,
-              response.existingRecipeID == nil
-                || response.existingRecipeID == result.recipeID else {
+            response.existingRecipeID == nil
+                || response.existingRecipeID == result.recipeID
+        else {
             throw RecipeShareImportWorkflowError.responseMismatch
         }
 
@@ -329,23 +342,27 @@ public enum RecipeShareImportWorkflow {
             return
         }
 
-        guard !isDuplicate(
+        guard
+            !isDuplicate(
                 result: result,
                 source: source,
                 receipt: receipt,
                 recipes: store.recipes
-              ) else {
+            )
+        else {
             return
         }
 
-        let title = nonempty(result.fields["title"]?.rawValue)
+        let title =
+            nonempty(result.fields["title"]?.rawValue)
             ?? "Imported recipe"
         var structuredText = title
         let rawIngredients = indexedValues(
             result.fields,
             pattern: #"^ingredients\[(\d+)\]\.raw_text$"#
         )
-        let ingredients = rawIngredients.isEmpty
+        let ingredients =
+            rawIngredients.isEmpty
             ? indexedValues(
                 result.fields,
                 pattern: #"^ingredients\[(\d+)\]\.amount$"#
@@ -381,13 +398,16 @@ public enum RecipeShareImportWorkflow {
         recipe.id = result.recipeID
         recipe.servings = nil
         recipe.sourceText = receipt.inputType == .text ? source : nil
-        let sharedURL = receipt.inputType == .url
+        let sharedURL =
+            receipt.inputType == .url
             ? validatedURL(source)?.absoluteString
             : nil
-        recipe.sourceURL = sharedURL
+        recipe.sourceURL =
+            sharedURL
             ?? validatedURL(result.source.originalURL)?.absoluteString
             ?? validatedURL(result.source.canonicalURL)?.absoluteString
-        recipe.sourceName = nonempty(result.source.sourceTitle)
+        recipe.sourceName =
+            nonempty(result.source.sourceTitle)
             ?? nonempty(result.source.authorName)
             ?? nonempty(result.source.platform)
             ?? defaultSourceName(for: receipt.inputType)
@@ -409,15 +429,16 @@ public enum RecipeShareImportWorkflow {
         store: RecipeStore
     ) throws {
         guard let old = existing.importRecord,
-              old.jobID == jobID,
-              old.result.recipeID == incoming.recipeID,
-              old.reviewedAt == nil,
-              old.result.resultStatus == .needsReview,
-              ["text", "url"].contains(old.result.source.inputType),
-              old.result.source.inputType == incoming.source.inputType,
-              old.result.source.originalURL == incoming.source.originalURL,
-              old.result.source.sourceArtifactID == nil,
-              incoming.source.sourceArtifactID == nil else {
+            old.jobID == jobID,
+            old.result.recipeID == incoming.recipeID,
+            old.reviewedAt == nil,
+            old.result.resultStatus == .needsReview,
+            ["text", "url"].contains(old.result.source.inputType),
+            old.result.source.inputType == incoming.source.inputType,
+            old.result.source.originalURL == incoming.source.originalURL,
+            old.result.source.sourceArtifactID == nil,
+            incoming.source.sourceArtifactID == nil
+        else {
             return
         }
 
@@ -428,22 +449,26 @@ public enum RecipeShareImportWorkflow {
                 && field.evidenceIDs.allSatisfy { evidenceIDs.contains($0) }
         }
 
-        let newTitle = existing.title == "Imported recipe"
+        let newTitle =
+            existing.title == "Imported recipe"
             ? nonempty(proven["title"]?.rawValue)
             : nil
-        let ingredientText = existing.ingredients.isEmpty
+        let ingredientText =
+            existing.ingredients.isEmpty
             ? indexedValues(
                 proven,
                 pattern: #"^ingredients\[(\d+)\]\.raw_text$"#
             )
             : []
-        let ingredients = ingredientText.isEmpty && existing.ingredients.isEmpty
+        let ingredients =
+            ingredientText.isEmpty && existing.ingredients.isEmpty
             ? indexedValues(
                 proven,
                 pattern: #"^ingredients\[(\d+)\]\.amount$"#
             )
             : ingredientText
-        let steps = existing.steps.isEmpty
+        let steps =
+            existing.steps.isEmpty
             ? indexedValues(
                 proven,
                 pattern: #"^steps\[(\d+)\]\.instruction$"#
@@ -474,15 +499,17 @@ public enum RecipeShareImportWorkflow {
         }
         if existing.ingredients.isEmpty && !parsed.ingredients.isEmpty {
             updated.ingredients = parsed.ingredients
-            acceptedPaths.formUnion(proven.keys.filter {
-                $0.hasPrefix("ingredients[")
-            })
+            acceptedPaths.formUnion(
+                proven.keys.filter {
+                    $0.hasPrefix("ingredients[")
+                })
         }
         if existing.steps.isEmpty && !parsed.steps.isEmpty {
             updated.steps = parsed.steps
-            acceptedPaths.formUnion(proven.keys.filter {
-                $0.hasPrefix("steps[")
-            })
+            acceptedPaths.formUnion(
+                proven.keys.filter {
+                    $0.hasPrefix("steps[")
+                })
         }
         guard !acceptedPaths.isEmpty else { return }
 
@@ -546,9 +573,10 @@ public enum RecipeShareImportWorkflow {
             let (key, field) = entry
             let range = NSRange(key.startIndex..., in: key)
             guard let match = expression.firstMatch(in: key, range: range),
-                  let indexRange = Range(match.range(at: 1), in: key),
-                  let index = Int(key[indexRange]),
-                  let value = nonempty(field.rawValue) else {
+                let indexRange = Range(match.range(at: 1), in: key),
+                let index = Int(key[indexRange]),
+                let value = nonempty(field.rawValue)
+            else {
                 return nil
             }
             return (index, value)
@@ -579,7 +607,8 @@ public enum RecipeShareImportWorkflow {
         recipes: [Recipe]
     ) -> Bool {
         if receipt.inputType == .text,
-           recipes.contains(where: { $0.sourceText == source }) {
+            recipes.contains(where: { $0.sourceText == source })
+        {
             return true
         }
 
@@ -588,13 +617,15 @@ public enum RecipeShareImportWorkflow {
         if receipt.inputType == .url, let sourceURL = validatedURL(source) {
             importedURLs.append(sourceURL)
         }
-        let importedKeys = Set(importedURLs.map {
-            RecipeDocumentParser.sourceKey($0)
-        })
+        let importedKeys = Set(
+            importedURLs.map {
+                RecipeDocumentParser.sourceKey($0)
+            })
         guard !importedKeys.isEmpty else { return false }
         return recipes.contains { recipe in
             guard let sourceURL = recipe.sourceURL,
-                  let existingURL = validatedURL(sourceURL) else {
+                let existingURL = validatedURL(sourceURL)
+            else {
                 return false
             }
             return importedKeys.contains(RecipeDocumentParser.sourceKey(existingURL))
@@ -608,7 +639,8 @@ public enum RecipeShareImportWorkflow {
 
     private static func nonempty(_ value: String?) -> String? {
         guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !value.isEmpty else {
+            !value.isEmpty
+        else {
             return nil
         }
         return value

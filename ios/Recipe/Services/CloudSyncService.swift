@@ -84,7 +84,10 @@ protocol RecipeCloudSyncing: Sendable {
 struct UnconfiguredCloudSync: RecipeCloudSyncing {
     struct NotConfigured: LocalizedError {
         var errorDescription: String? {
-            String(localized: LocalizedStringResource("RecipePouch cloud sync is not configured in this build.", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "RecipePouch cloud sync is not configured in this build.",
+                    locale: RecipeLanguage.active))
         }
     }
     func upload(
@@ -109,11 +112,20 @@ enum RecipeCloudSyncError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedPayload:
-            String(localized: LocalizedStringResource("This library snapshot cannot be sent to cloud sync.", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "This library snapshot cannot be sent to cloud sync.",
+                    locale: RecipeLanguage.active))
         case .revisionConflict:
-            String(localized: LocalizedStringResource("This library changed on another device. Download the latest version before retrying.", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "This library changed on another device. Download the latest version before retrying.",
+                    locale: RecipeLanguage.active))
         case .missingSaveResult:
-            String(localized: LocalizedStringResource("Cloud sync did not confirm that the snapshot was saved.", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "Cloud sync did not confirm that the snapshot was saved.",
+                    locale: RecipeLanguage.active))
         }
     }
 }
@@ -138,7 +150,8 @@ struct SupabaseCloudSync: RecipeCloudSyncing {
             payload: snapshot.payload,
             clientUpdatedAt: ISO8601DateFormatter().string(from: snapshot.clientUpdatedAt)
         )
-        let records: [RemoteSnapshot] = try await client
+        let records: [RemoteSnapshot] =
+            try await client
             .rpc("save_own_user_snapshot", params: params)
             .execute()
             .value
@@ -160,7 +173,8 @@ struct SupabaseCloudSync: RecipeCloudSyncing {
     }
 
     func download(for userID: UUID) async throws -> CloudSnapshotEnvelope? {
-        let row: RemoteSnapshot? = try await client
+        let row: RemoteSnapshot? =
+            try await client
             .from("user_snapshots")
             .select()
             .eq("user_id", value: userID.uuidString)
@@ -194,7 +208,7 @@ struct SupabaseCloudSync: RecipeCloudSyncing {
     private static func parseDate(_ value: String) -> Date? {
         for options: ISO8601DateFormatter.Options in [
             [.withInternetDateTime, .withFractionalSeconds],
-            [.withInternetDateTime]
+            [.withInternetDateTime],
         ] {
             let formatter = ISO8601DateFormatter()
             formatter.formatOptions = options
@@ -213,11 +227,20 @@ enum RecipeLocalResetError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .requiresSignOut:
-            String(localized: LocalizedStringResource("Sign out of your RecipePouch account before deleting only this iPhone's data. Your cloud library will stay intact.", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "Sign out of your RecipePouch account before deleting only this iPhone's data. Your cloud library will stay intact.",
+                    locale: RecipeLanguage.active))
         case .syncInProgress:
-            String(localized: LocalizedStringResource("A cloud sync operation is still finishing. Try deleting local data again after it stops.", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "A cloud sync operation is still finishing. Try deleting local data again after it stops.",
+                    locale: RecipeLanguage.active))
         case .markerPersistenceFailed:
-            String(localized: LocalizedStringResource("Could not securely persist the local erase barrier. Your library was not deleted. Check device storage and try again.", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "Could not securely persist the local erase barrier. Your library was not deleted. Check device storage and try again.",
+                    locale: RecipeLanguage.active))
         }
     }
 }
@@ -231,7 +254,8 @@ final class CloudSyncCoordinator {
 
     @ObservationIgnored private let service: any RecipeCloudSyncing
     @ObservationIgnored private let pathMonitor = NWPathMonitor()
-    @ObservationIgnored private let pathQueue = DispatchQueue(label: "com.modelhub.recipe.cloud-sync-path")
+    @ObservationIgnored private let pathQueue = DispatchQueue(
+        label: "com.modelhub.recipe.cloud-sync-path")
     @ObservationIgnored private var store: RecipeStore?
     @ObservationIgnored private var accountID: UUID?
     @ObservationIgnored private var remoteSnapshot: CloudSnapshotEnvelope?
@@ -247,7 +271,8 @@ final class CloudSyncCoordinator {
     init(service: any RecipeCloudSyncing = SupabaseCloudSync()) {
         self.service = service
         let defaults = UserDefaults.standard
-        let storedMode = defaults.string(forKey: "recipe.sync.mode")
+        let storedMode =
+            defaults.string(forKey: "recipe.sync.mode")
             ?? defaults.string(forKey: "cook.sync.mode")
             ?? CloudSyncMode.automatic.rawValue
         mode = CloudSyncMode(rawValue: storedMode) ?? .automatic
@@ -289,13 +314,14 @@ final class CloudSyncCoordinator {
             "recipe.sync.localAccountID",
             "cook.sync.localAccountID",
             "recipe.sync.mode",
-            "cook.sync.mode"
+            "cook.sync.mode",
         ] {
             defaults.removeObject(forKey: key)
         }
         for key in defaults.dictionaryRepresentation().keys
         where key.hasPrefix("recipe.sync.lastAt.")
-            || key.hasPrefix("cook.sync.lastAt.") {
+            || key.hasPrefix("cook.sync.lastAt.")
+        {
             defaults.removeObject(forKey: key)
         }
 
@@ -351,9 +377,10 @@ final class CloudSyncCoordinator {
             expectedRevision = remoteSnapshot?.revision ?? 0
             automaticSyncPaused = false
             deferredInitialChoice = nil
-            lastSyncedAt = UserDefaults.standard.object(
-                forKey: lastSyncedKey(for: userID)
-            ) as? Date
+            lastSyncedAt =
+                UserDefaults.standard.object(
+                    forKey: lastSyncedKey(for: userID)
+                ) as? Date
             await loadAccountSnapshot(userID: userID)
             await syncLocalChangesIfAllowed()
         case .signedOut:
@@ -365,7 +392,12 @@ final class CloudSyncCoordinator {
             deferredInitialChoice = nil
             lastSyncedAt = nil
             state = .localOnly
-        case .loading, .authenticating, .needsEmailVerification, .passwordResetSent, .passwordRecovery:
+        case .loading,
+            .authenticating,
+            .emailCodeSent,
+            .needsEmailVerification,
+            .passwordResetSent,
+            .passwordRecovery:
             break
         case .error(let message):
             state = .error(message)
@@ -390,7 +422,8 @@ final class CloudSyncCoordinator {
 
     func chooseInitialSync(_ choice: InitialCloudSyncChoice) async {
         guard case .initialChoice(let local, let cloud) = state,
-              let store else {
+            let store
+        else {
             return
         }
 
@@ -510,8 +543,9 @@ final class CloudSyncCoordinator {
             // A local library associated with another account must never be
             // silently uploaded into the newly signed-in account.
             if store.hasUserData,
-               let linkedAccountID,
-               linkedAccountID != userID {
+                let linkedAccountID,
+                linkedAccountID != userID
+            {
                 remoteSnapshot = remote
                 expectedRevision = remote?.revision ?? 0
                 state = .initialChoice(
@@ -522,8 +556,9 @@ final class CloudSyncCoordinator {
             }
 
             if store.hasUserData,
-               linkedAccountID == nil,
-               persistedBase == nil {
+                linkedAccountID == nil,
+                persistedBase == nil
+            {
                 remoteSnapshot = remote
                 expectedRevision = remote?.revision ?? 0
                 state = .initialChoice(
@@ -602,7 +637,8 @@ final class CloudSyncCoordinator {
                     markSynced(remote.serverUpdatedAt)
                 }
             } else if store.hasUserData
-                        || !(local.deletedEntities ?? []).isEmpty {
+                || !(local.deletedEntities ?? []).isEmpty
+            {
                 state = .initialChoice(
                     local: CloudLibraryCounts(local),
                     cloud: nil
@@ -693,8 +729,9 @@ final class CloudSyncCoordinator {
 
     private func syncLocalChangesIfAllowed() async {
         guard accountID != nil, let store, store.changeToken != lastExportedToken,
-              !automaticSyncPaused,
-              !isSyncing, canSyncAutomatically else { return }
+            !automaticSyncPaused,
+            !isSyncing, canSyncAutomatically
+        else { return }
 
         // loadAccountSnapshot() awaits the server while displaying .syncing.
         // Concurrent edits must not upload another account's local library
@@ -716,7 +753,9 @@ final class CloudSyncCoordinator {
         guard !isSyncing else { return }
         do {
             let payload = try store.exportCloudSnapshot()
-            if !store.hasUserData && (payload.deletedEntities ?? []).isEmpty && expectedRevision == 0 {
+            if !store.hasUserData && (payload.deletedEntities ?? []).isEmpty
+                && expectedRevision == 0
+            {
                 state = .localOnly
                 return
             }
@@ -744,7 +783,8 @@ final class CloudSyncCoordinator {
                 serverUpdatedAt: nil
             )
             do {
-                let saved = try await service.upload(pending, expectedRevision: expectedRevision, for: accountID)
+                let saved = try await service.upload(
+                    pending, expectedRevision: expectedRevision, for: accountID)
                 guard self.accountID == accountID else { return }
                 remoteSnapshot = saved
                 mergeBaseSnapshot = nil
@@ -792,9 +832,11 @@ final class CloudSyncCoordinator {
     }
 
     private var localLibraryAccountID: UUID? {
-        guard let raw = UserDefaults.standard.string(
-            forKey: "recipe.sync.localAccountID"
-        ) else {
+        guard
+            let raw = UserDefaults.standard.string(
+                forKey: "recipe.sync.localAccountID"
+            )
+        else {
             return nil
         }
         return UUID(uuidString: raw)
@@ -846,9 +888,10 @@ final class CloudSyncCoordinator {
         // A previous local-only erase invalidates ALL cached server baselines,
         // including files left behind by an interrupted cleanup.
         guard !RecipeLocalEraseMarker.isPresent(at: localEraseMarkerURL),
-              !UserDefaults.standard.bool(
+            !UserDefaults.standard.bool(
                 forKey: "recipe.sync.localErasePending"
-              ) else {
+            )
+        else {
             return nil
         }
 
@@ -879,9 +922,11 @@ final class CloudSyncCoordinator {
         for userID: UUID
     ) throws {
         let url = syncBaseURL(for: userID)
-        guard FileManager.default.fileExists(
-            atPath: url.path
-        ) else {
+        guard
+            FileManager.default.fileExists(
+                atPath: url.path
+            )
+        else {
             return
         }
         try FileManager.default.removeItem(at: url)
