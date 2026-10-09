@@ -38,3 +38,7 @@ The snapshot was inspected through live repository file reads:
 4. Do not claim this small gate equals Xcode build, UITests, true notification name update, subscription verification or Supabase deployment. Those remain under [#136](https://github.com/natefox2017/cook/issues/136), [#189](https://github.com/natefox2017/cook/issues/189), [#132](https://github.com/natefox2017/cook/issues/132), and [#155](https://github.com/natefox2017/cook/issues/155).
 
 This is a targeted prevention of **known source regressions**, not a proof that every possible functional bug has been eliminated. No production config, credential, payment or user data was changed by this audit.
+
+## Completed-Draft automatic promotion smoke test
+
+This documentation update is deliberately proposed as a **completed Draft PR with the explicit author completion marker**. It is a bounded end-to-end test of the trusted GitHub Actions workflow introduced by #235; it does not change app/runtime code or require an iPhone. Acceptance is observable GitHub Events history containing a bot-initiated `ready_for_review`, then `merged` by `github-actions[bot]`, with the matching Actions run green and correct merge head SHA. A Draft remaining open means the workflow must be debugged, not reported as working.
