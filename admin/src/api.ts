@@ -126,23 +126,23 @@ export const adminApi = {
   loginEvents(token: string) {
     return request<{ data: AdminLoginEvent[]; total: number }>("admin-auth", "/login-events?limit=25", token);
   },
-  setupTotp(token: string, currentPassword: string) {
-    return request<{ secret: string; otpauthUri: string }>("admin-auth", "/totp-setup", token, { method: "POST", body: { currentPassword } });
+  setupTotp(token: string) {
+    return request<{ secret: string; otpauthUri: string }>("admin-auth", "/totp-setup", token, { method: "POST" });
   },
   verifyTotp(token: string, code: string) {
     return request<{ enabled: true }>("admin-auth", "/totp-verify", token, { method: "POST", body: { code } });
   },
-  removeTotp(token: string, currentPassword: string, code: string) {
-    return request<{ removed: true }>("admin-auth", "/totp-remove", token, { method: "POST", body: { currentPassword, code } });
+  removeTotp(token: string, code: string) {
+    return request<{ removed: true }>("admin-auth", "/totp-remove", token, { method: "POST", body: { code } });
   },
-  passkeyRegistrationOptions(token: string, currentPassword: string) {
-    return request<{ challengeId: string; options: Record<string, unknown> }>("admin-auth", "/passkey-registration-options", token, { method: "POST", body: { currentPassword } });
+  passkeyRegistrationOptions(token: string) {
+    return request<{ challengeId: string; options: Record<string, unknown> }>("admin-auth", "/passkey-registration-options", token, { method: "POST" });
   },
   verifyPasskeyRegistration(token: string, challengeId: string, response: unknown, name: string) {
     return request<{ created: true }>("admin-auth", "/passkey-registration-verify", token, { method: "POST", body: { challengeId, response, name } });
   },
-  removePasskey(token: string, credentialId: string, currentPassword: string) {
-    return request<{ removed: true }>("admin-auth", "/passkey-remove", token, { method: "POST", body: { credentialId, currentPassword } });
+  removePasskey(token: string, credentialId: string) {
+    return request<{ removed: true }>("admin-auth", "/passkey-remove", token, { method: "POST", body: { credentialId } });
   },
   dashboard(token: string) {
     return request<DashboardData>("admin-dashboard", "", token);

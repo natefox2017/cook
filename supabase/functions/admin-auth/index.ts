@@ -1063,12 +1063,6 @@ Deno.serve(async (req) => {
 
     if (action === "totp-setup" && method === "POST") {
       const session = await requireAdminSession(req);
-      const body = await readJson(req);
-      await verifyPassword(
-        req,
-        session.adminId,
-        requireString(body, "currentPassword"),
-      );
       const { data: current, error } = await admin.from("admin_auth_factors")
         .select("totp_enabled_at").eq("admin_id", session.adminId)
         .maybeSingle();
@@ -1179,11 +1173,6 @@ Deno.serve(async (req) => {
     if (action === "totp-remove" && method === "POST") {
       const session = await requireAdminSession(req);
       const body = await readJson(req);
-      await verifyPassword(
-        req,
-        session.adminId,
-        requireString(body, "currentPassword"),
-      );
       const { data: factor, error } = await admin.from("admin_auth_factors")
         .select(
           "admin_id, totp_secret_ciphertext, totp_enabled_at, totp_last_counter",
@@ -1226,12 +1215,6 @@ Deno.serve(async (req) => {
 
     if (action === "passkey-registration-options" && method === "POST") {
       const session = await requireAdminSession(req);
-      const body = await readJson(req);
-      await verifyPassword(
-        req,
-        session.adminId,
-        requireString(body, "currentPassword"),
-      );
       await admin.from("admin_auth_login_challenges").delete().lt(
         "expires_at",
         new Date().toISOString(),
@@ -1360,11 +1343,6 @@ Deno.serve(async (req) => {
     if (action === "passkey-remove" && method === "POST") {
       const session = await requireAdminSession(req);
       const body = await readJson(req);
-      await verifyPassword(
-        req,
-        session.adminId,
-        requireString(body, "currentPassword"),
-      );
       const credentialId = requireString(body, "credentialId");
       const { data, error } = await admin.from("admin_passkeys").delete()
         .eq("credential_id", credentialId)
