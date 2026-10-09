@@ -13,6 +13,16 @@ func recipeLanguageDefaultsToEnglishWithoutAnExplicitLocaleOverride() {
         systemRegion: "GB"
     )
 
+    #expect(locale.identifier == "en")
+}
+
+@Test
+func recipeLanguageUsesDeviceRegionWhenNoCountryWasSelected() {
+    let locale = RecipeLanguage.resolve(
+        arguments: [],
+        supportedIdentifiers: ["en", "de", "fr"],
+        systemRegion: "GB"
+    )
     #expect(locale.identifier == "en_GB")
 }
 
