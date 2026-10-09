@@ -6,6 +6,10 @@ Updated: 2026-10-09
 
 ## Runtime policy
 
+> **Scope separation:** the currently shipping client/source still forces English for normal test-stage launches. New owner-approved [#230](https://github.com/natefox2017/cook/issues/230) will introduce **manual App language AND country choices**, with automatic system-language fallback when no override is selected for international release. Do not conflate choosing a country with changing UI language. Existing four-language string catalogs are **not** completed coverage of every European/American language. New UI copy from #231–#248 also needs extraction/QA.
+
+
+
 - **Temporary test-stage setting (2026-10-08):** Recipe Pals app UI is forced to English (en), regardless of the iPhone's preferred language. This applies to the SwiftUI environment and computed strings resolved with `LocalizedStringResource(locale:)`.
 - Explicit `--uitesting-locale en|zh-Hans|zh-Hant|ja` is retained solely for localization smoke tests; ordinary UI tests and normal app launches default to English.
 - The Share Extension uses its own English locale. Core display errors remain in English during the test stage.
@@ -21,7 +25,7 @@ Initial targets: English (en), Simplified Chinese (zh-Hans), Traditional Chinese
 - The main app must use a localized key when a shared SwiftUI row receives product copy through a runtime `String`. Raw `Text(title)` or `Button(mode.rawValue)` is not equivalent to a localizable literal. Use `LocalizedStringKey` for fixed UI copy and `String(localized:)` when a computed String is required. Keep user-authored recipe names, email addresses, account data and StoreKit product metadata unchanged.
 - Profile uses short navigation titles **Account** and **Premium** without a repeated Recipe Pals prefix. The uncustomized kitchen name is localized. Additional account, recipe editor, grocery, cooking and onboarding dynamic labels were routed through the catalogs.
 - Redundant informational footnotes, duplicate read-only settings rows and long marketing subtitles were removed from common screens. Necessary statuses are short, ideally one line; preserve important data-deletion warnings, privacy notices and App Store renewal disclosure rather than obscuring essential terms.
-- The Share Extension now has its **own** catalog, `ios/ShareExtension/Localizable.xcstrings` (11 source keys, zh-Hans/zh-Hant/ja), included in the `RecipeShare` target's Resources phase. The app catalog alone does not localize this separate extension bundle.
+- The Share Extension now has its **own** catalog, `ios/ShareExtension/Localizable.xcstrings` (11 source keys at this historical update; **14 in current main**, zh-Hans/zh-Hant/ja), included in the `RecipeShare` target's Resources phase. The app catalog alone does not localize this separate extension bundle.
 - UI assertions cover localized Profile defaults, Account and Premium menu labels in the four shipping locales and retain stable accessibility identifiers. This code-only pass verified catalog JSON completeness and static Swift delimiter balance; **Xcode build, iPhone/simulator screenshots, VoiceOver and exhaustive view-state runtime tests have not been executed in this environment**. Complete these before release.
 
 ## 2026-10-09 localization source sweep

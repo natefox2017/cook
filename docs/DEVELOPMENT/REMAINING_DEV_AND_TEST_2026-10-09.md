@@ -1,4 +1,8 @@
-# Recipe Pals — Remaining Issue and Test Matrix
+# Recipe Pals — Historical 2026-10-09 Test Snapshot and Subsequent Scope
+
+> **2026-10-09 reconciliation:** The 7-Issue matrix below is a **historical audit snapshot**, not the complete live backlog. As of the latest audit, GitHub had 24 open Issues covering core QA plus newly approved AI/voice/share/detail tasks. See [current Issue snapshot](CURRENT_BACKLOG_2026-10-09.md). The earlier Release #139 and machine/device #126–#129/#134 are closed; **current release signoff is #251**, controlled new-feature staging is #250. Do not reopen the earlier import tickets marked `not_planned` or claim old checklist text is live issue state.
+
+
 
 > Reconciled on 2026-10-09 against `main@4e26fe74c7ef1db4fe39867a0d8ca07d0ac98c4b` (PR #226; review also covers PR #225). This replaces the stale *open-issue predictions* previously in this file; Git history retains that historical roadmap.
 

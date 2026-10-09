@@ -1,3 +1,5 @@
+> **2026-10-09 dated implementation provenance, not current hosted availability.** This describes the original #31 job/queue slice. Later source includes public page text, private UTF-8 text-artifact parsing and optional **disabled-by-default** approved OCR. Original #31 is CLOSED and the earlier production rollout #135/#141 is CLOSED `not_planned`; their checked-in source does not mean the functions were deployed. For the user-approved NEW AI/video/sharing scope use [#238–#245](https://github.com/natefox2017/cook/issues/238) and **[#250 controlled staging](https://github.com/natefox2017/cook/issues/250)**; actual launch testing is [#251](https://github.com/natefox2017/cook/issues/251). Read historical verification below only at its stated commit/environment.
+
 # Import Jobs V1 — implementation and deployment boundary
 
 This directory adds the **first server job/queue slice** for [Issue #31](https://github.com/natefox2017/cook/issues/31). V1 uses the durable PGMQ queue `recipe_import_v1`, created by this migration. The pre-existing `recipe_import` queue remains owned by legacy producers and consumers.

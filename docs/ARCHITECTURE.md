@@ -19,47 +19,49 @@ AI：
 
 该组合复用此前 cookapp 已验证过的基础能力，但本仓库重新以当前 V1 产品基线为准，不继承旧 UI/旧需求。
 
-## 2. 高层结构
+## 2. 高层结构：实际来源流与待批准能力
+
+**Current iOS code path (not a claim that the remote worker is deployed):**
 
 ```
-Third-party App / Browser
-        |
-        v
-iOS Share Extension
-        |
-        | create import job
-        v
-Supabase API / Edge Function
-        |
-        v
-recipe-import queue
-        |
-        v
-Import Worker
-  |- source resolver
-  |- content extractor
-  |- ASR / OCR / vision
-  |- AI parser
-  |- normalizer
-  |- quality validator
-  |- duplicate detector
-        |
-        +--> Storage (raw/derived artifacts)
-        |
-        +--> Postgres (recipe + evidence + job)
-        |
-        v
-iOS App realtime/poll refresh
+Third-party Share Sheet / Browser
+            |
+            v
+iOS Share Extension (URL/text; image/PDF receive code, limited activation)
+            |
+            | atomic App Group receipt + source, then complete host request
+            v
+Main Recipe Pals App (on launch/foreground)
+            |
+            | signed-in owner checks; submit/refresh idempotent job
+            v
+Supabase recipe-imports API [requires separately verified deployment]
+            |
+            v
+owner-scoped Postgres + PGMQ queue
+            |
+            v
+recipe-import-worker [server only; deployment and providers unverified]
+  |- public HTTPS safe fetch, JSON-LD and page text
+  |- owner-checked text artifacts
+  |- optional approved OCR (disabled without provider)
+  |- review fields and source evidence
+            |
+            v
+Main App owner-scoped result mapping / recipe review [must verify end-to-end]
 ```
+
+**Planned next-phase additions, not currently shipped:** AI dialogue and version proposals [#238/#241](https://github.com/natefox2017/cook/issues/238); lawful media ASR/keyframes and multiple candidates [#239/#240](https://github.com/natefox2017/cook/issues/239). Separate optional public recipe publishing [#242](https://github.com/natefox2017/cook/issues/242) → guest-readable Web [#243](https://github.com/natefox2017/cook/issues/243) → poster/QR [#244](https://github.com/natefox2017/cook/issues/244) sits behind an isolated privacy-filtered public snapshot, **never a direct public read of RecipeStore/user_snapshots**. New approved features need controlled staging [#250](https://github.com/natefox2017/cook/issues/250), selected-release evidence [#251](https://github.com/natefox2017/cook/issues/251) and separately approved production deployment.
 
 ## 3. Share Extension 原则
 
-Share Extension 只负责：
-1. 读取 extension context 的 URL/text/image/video 等输入。
-2. 做轻量本地校验。
-3. 写入共享容器/发起短请求或后台传输。
-4. 创建 import job。
-5. 立即完成 host request。
+Share Extension 当前只负责：
+1. 读取 extension context 中的 URL/text；有 image/PDF 附件接收代码，但实际 activation 以 `ShareExtension/Info.plist` 为准，不能宣称支持任意视频。
+2. 做轻量校验，将来源写入 App Group 的可恢复本地收件记录。
+3. **确认本地记录成功后立即结束 host request**。本地 `received` 不等于云端持久化，更不等于已识别并存入食谱。
+4. 由**主 App** 在用户有效授权及网络可用时提交/重试 owner-scoped server import job；查询 worker 结果并按用户编辑优先规则入库。
+
+禁止在扩展里长时间等待云端 AI、把未确认内容标记为解析成功或偷偷绑定其他账号。
 
 禁止：
 - 在 Extension 内等待完整 AI 推理

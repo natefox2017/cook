@@ -1,5 +1,7 @@
 ## 对应 Issue
-Closes #
+Refs #
+
+> 仅当 Issue 的**完整约定验收范围**已满足、允许结案时，才改为 `Closes #...`；只有源码/设计文档落地但真实运行仍阻塞时用 `Refs #...`，不要触发自动关闭。
 
 ## 改动
 -
@@ -14,8 +16,14 @@ Closes #
 
 ## UI
 - [ ] 非 UI 改动
-- [ ] UI 已在 `docs/UI_DESIGN_APPROVALS.md` 标记 APPROVED
+- [ ] 已核对 `docs/UI_DESIGN_APPROVALS.md` 对应 UI 状态（APPROVED / SCOPED / PENDING），不把用户明确要求开发误当成额外审批门禁
 - 设计资源 ID：
+
+## 运行证据（如实写 NOT RUN）
+- 静态/单元验证：
+- Xcode / signed iPhone：
+- 后端 / staging / 生产：
+- 新功能是否仍 feature-gated（未交付时不得露出可点击死入口）：
 
 ## 高风险检查
 - [ ] 无权限/RLS变化

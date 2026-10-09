@@ -1,6 +1,6 @@
-# RecipePouch Share Extension (V1 URL/Text)
+# Recipe Pals Share Extension (V1 URL/Text)
 
-The native `RecipeShare` extension is embedded in the `Recipe` iOS app. It is offered in the iOS Share Sheet for **URL or plain text** from apps such as Safari and Notes. Image/video/file activation is **not yet enabled**, because that would advertise payloads the current extension cannot safely ingest.
+The native `RecipeShare` extension is embedded in the `Recipe` iOS app. It is offered in the iOS Share Sheet for **URL or plain text** from apps such as Safari and Notes. Image/PDF receipt handling exists in `ShareViewController`, but `ShareExtension/Info.plist` currently advertises **web URL and text activation only**. Do not claim general video/media activation or complete AI parsing; additional authorized media support is planned under #239.
 
 ## Lifecycle and durable receipt
 
@@ -16,14 +16,14 @@ The native `RecipeShare` extension is embedded in the `Recipe` iOS app. It is of
 
 Unacknowledged receipts survive host cancellation, extension process exit, app restart, offline state and sign-out; they are not assigned to an account until the owner explicitly submits through a logged-in main app session.
 
-## Apple Developer signing still required
+## Signing prerequisites and fresh-build verification
 
 The host and extension must be signed by the **same Apple Developer Team** with the App Group `group.com.shopkivoo.recipe` provisioned to **both** App IDs:
 
 - Host: `com.shopkivoo.recipe`, `ios/Recipe/Recipe.entitlements`
 - Extension: `com.shopkivoo.recipe.ShareExtension`, `ios/ShareExtension/ShareExtension.entitlements`
 
-The new App IDs and App Group must be registered and provisioned in the Apple Developer account before signing. Changing the App Group identifier does not migrate files or defaults from the old `group.com.modelhub.cook` container.
+The host and extension App IDs/App Group must be correctly provisioned for the **actual signed build**. Earlier profile/phone evidence for a previous commit is not proof of the currently installed binary. Changing the App Group identifier does not migrate files or defaults from the old `group.com.modelhub.cook` container.
 
 `DEVELOPMENT_TEAM` in the checked-in Xcode project is intentionally blank. A non-signing simulator build is **not** evidence of a working App Group on a device. Validate signing, profiles, app-group container and .appex installation on the actual developer account before release.
 
@@ -43,11 +43,11 @@ swift test --package-path ios/RecipeCore
 ```
 
 On a **signed iPhone install**:
-- Verify the `RecipeShare.appex` is embedded and RecipePouch appears in Safari Share Sheet and Notes Share Sheet.
-- Share HTTPS links/text; return to source app promptly, then open RecipePouch and confirm the pending source/duplicate count.
+- Verify the `RecipeShare.appex` is embedded and Recipe Pals appears in Safari Share Sheet and Notes Share Sheet.
+- Share HTTPS links/text; return to source app promptly, then open Recipe Pals and confirm the pending source/duplicate count.
 - Force-quit the host app before sharing, reboot, go offline, share twice or rapidly in parallel; pending receipts and original text must remain available.
 - Confirm unsupported images and attachments do not falsely claim a saved recipe and that Retry/Cancel returns to the host.
 - Confirm login/logout does not silently attach receipts to another user. Verify local receipt, server `received`, server `queued`, and parse completion as separate states.
 - Include device, OS, commit, language (English default), App Group provisioning and actual status. Do not infer success from CI compatibility check.
 
-Remaining: real signed Safari/Notes host tests, production App Group provisioning, authenticated handoff against a deployed API, client mapping of RecipeResult into RecipeStore with edit precedence, media imports, and a reviewed retention policy for source files after ACK. Do not close #30 or #34 without those results.
+Remaining for selected release: verify actual signed Safari/Notes host behavior and installed .appex (release #251); if the new AI import scope ships, verify authorized staging #250, real owner-scoped job→Recipe mapping and legal media capabilities #238/#239. Original #30/#34 are **closed historical issues**; their old checklists are not open tasks or deployment proof.

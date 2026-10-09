@@ -1,3 +1,5 @@
+> **Historical source audit.** This report examined `main@975f70b` as a scoped, earlier source snapshot, not the current tree or a full iPhone/hosted acceptance result. The current user-facing brand is **Recipe Pals**; old naming in this dated evidence is historical. Latest docs/Issue inventory is [the 2026-10-09 audit](DOCUMENTATION_ISSUE_AUDIT_2026-10-09.md) and [dated current backlog](CURRENT_BACKLOG_2026-10-09.md). Keep prior evidence and fixed-file lists intact for provenance.
+
 # RecipePouch Full-Repository Code Audit — 2026-10-09
 
 ## Baseline and method

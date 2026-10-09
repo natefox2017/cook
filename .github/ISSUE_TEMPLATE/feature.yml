@@ -33,7 +33,7 @@ body:
     id: design
     attributes:
       label: 设计资源 ID
-      description: UI 任务必须引用 APPROVED 的 UI-xxx；非 UI 填 N/A。
+      description: UI 任务填写相关 UI-xxx 和当前状态（APPROVED/SCOPED/PENDING）；用户明确要求可直接开发，非 UI 填 N/A。不要把功能方向 SCOPED 假称定版视觉 APPROVED。
     validations:
       required: true
   - type: textarea
@@ -53,3 +53,13 @@ body:
       label: 测试要求
     validations:
       required: true
+  - type: textarea
+    id: competitor
+    attributes:
+      label: 已上线同行与可复用开源方案
+      description: 优先引用长期运营产品的真实做法、官方链接与候选开源许可证；说明现有仓库中可复用的组件。纯修复无需新的竞品结论。
+  - type: textarea
+    id: verification
+    attributes:
+      label: 当前实现状态与分层验收
+      description: CODE / TEST / SIGNED DEVICE / STAGING / PROD，未运行填 NOT RUN。指定需要真实权限/设备/外部服务的阻塞条件。

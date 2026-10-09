@@ -11,7 +11,7 @@ Apple Liquid Glass inspired navigation + premium European recipe app.
 ## Typography
 
 Brand direction:
-A restrained Lora editorial type system matched to the shipped RecipePouch UI.
+A restrained Lora editorial type system matched to the current Recipe Pals UI.
 
 Implementation font:
 Lora (SIL Open Font License), registered as `Lora-Regular`.
@@ -40,3 +40,5 @@ This document reflects the current implementation. See
 ## Navigation
 
 Floating Liquid Glass Tab Bar.
+
+> **New-scope note (2026-10-09):** optional detail enhancements #247/#248, AI editing #241, per-recipe opt-in share #242–#244 and cooking sound/voice #231/#232 are planned, not already rendered/approved just because the existing Lora/UI theme is recorded here. New UI should extend [DESIGN_SYSTEM.md](../DESIGN_SYSTEM.md); no default public feed or excessive Liquid Glass.

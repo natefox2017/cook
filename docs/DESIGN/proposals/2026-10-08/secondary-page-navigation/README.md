@@ -11,7 +11,7 @@ This proposal records the navigation behavior requested for secondary pages. It 
 
 ## State diagram
 
-![Root and secondary navigation states](secondary-page-navigation.svg)
+**Missing historical asset notice:** the referenced `secondary-page-navigation.svg` was never checked into this directory. The approved requirement is the written root/secondary/tab behavior above; see the [existing UI-016 root navigation visual reference](../navigation-and-week-strip/README.md) for the actual tracked image. Do not treat that root reference as an uncreated secondary-state diagram.
 
 ## Approval
 

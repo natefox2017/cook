@@ -50,5 +50,5 @@ RLS, matching the worker privilege boundary.
   behavior or production performance. This is not hosted Supabase, its pinned
   production Postgres/extension versions, or deployment/production acceptance.
 
-#134 stays open for remaining coverage; #135, #140, #141 and #155 still require
+#134 was CLOSED after local-suite evidence. #135/#141 are CLOSED not_planned (historical); #140 is CLOSED. #155 remains OPEN for admin/webhook acceptance, while new AI/public-share staging uses #250 and selected-release QA #251. Prior suites did not prove
 their distinct controlled integration and/or deployment evidence.

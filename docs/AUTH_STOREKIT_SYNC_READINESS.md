@@ -1,3 +1,5 @@
+> **HISTORICAL configuration snapshot (2026-10-09).** This document verified `main@8e552e6` at its own timestamp and is **not the latest product-ID/provider availability inventory**. After this snapshot, [PR #210](https://github.com/natefox2017/cook/pull/210) configured Debug/Release product IDs `com.shopkivoo.recipe.pro.monthly` and `com.shopkivoo.recipe.pro.yearly`; #132 records the signed **Xcode local StoreKitTest** evidence, but real ASC Sandbox/TestFlight remains unverified. Recheck live Apple/Google/email settings under #131; do not assume provider state is unchanged. Current release gate: #251.
+
 # Auth, StoreKit and snapshot integration readiness
 
 Checked 2026-10-09 against main `8e552e64f7c672373d4c6290817ee6882d3c2cd1`.
@@ -6,7 +8,7 @@ Tracks [#131](https://github.com/natefox2017/cook/issues/131),
 [#133](https://github.com/natefox2017/cook/issues/133). These issues remain open;
 the local HTTP evidence below does not complete their device acceptance.
 
-## Current verified configuration
+## Verified configuration at historical baseline `8e552e6` (not a live status claim)
 
 - Public `GET https://semsjyrqjnumpvanibip.supabase.co/auth/v1/settings` with
   the app's publishable key returned Apple **disabled**, Google **disabled**,
@@ -23,7 +25,7 @@ the local HTTP evidence below does not complete their device acceptance.
   profile, not Apple credential exchange or the current installed binary.
 - `RecipeSubscriptionProductIDs` resolves from
   `RECIPE_SUBSCRIPTION_PRODUCT_IDS`; the legacy setting remains supported.
-  Neither is assigned in the checked-in build settings. No ASC key file was
+  Neither was assigned in the **historical checked-in build settings at this snapshot**; later PR #210 added formal IDs to Debug and Release. No ASC key file was
   found in the standard local key directories and no ASC API connector is
   available in this task. The earlier #132 browser inventory is historical
   evidence; it is not a fresh ASC API inventory.
@@ -89,9 +91,7 @@ Freeze these fields before creating products: subscription group, exact
 immutable monthly/annual product IDs, reference names, one-month/one-year
 durations, subscription level, storefront availability, base currency/price
 point, English display names/descriptions, review screenshot/contact notes,
-and any explicitly approved introductory offer. There is currently no source
-of truth for formal IDs, price points or trial duration; obtain these choices
-from the owner/ASC metadata, not the local fixture or admin placeholders.
+and any explicitly approved introductory offer. At the **historical 8e552 snapshot** there was no source of truth for formal IDs/price/trial. Later configuration is documented in #132/PR #210; current availability/trial terms must still be obtained from the real App Store Connect/Sandbox metadata, not the local fixture.
 Keep prices/eligibility displayed by the app sourced from StoreKit. See
 [Apple's subscription setup](https://developer.apple.com/help/app-store-connect/manage-subscriptions/offer-auto-renewable-subscriptions/).
 

@@ -1,3 +1,5 @@
+> **Historical QA artifact only — not the latest App source or product configuration.** This report records the old subscription visual-review blocking point on its own branch. The approved image onboarding was subsequently merged (#184), the first AI story was restored by #226, customer branding was fixed by #229, and #210 configured formal monthly/annual client product IDs. Actual ASC Sandbox payment remains open #132; signed current-build acceptance belongs to #251. Do not reuse the old 'unconfigured' assertion or `f19c345` branch status as the current baseline.
+
 # Subscription page design QA
 
 final result: blocked

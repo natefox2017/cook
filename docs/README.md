@@ -23,6 +23,12 @@ Not in V1:
 
 ## Current development and verification
 
+- **Live Issue state** must be read from GitHub. The dated [Open Issues snapshot](DEVELOPMENT/CURRENT_BACKLOG_2026-10-09.md) records priorities and dependencies, not a continuously updated issue count.
+- [2026-10-09 documentation and Issue inventory/corrections](DEVELOPMENT/DOCUMENTATION_ISSUE_AUDIT_2026-10-09.md) distinguishes code merged, actual device/service tests and closed historical records. Selected-release acceptance is [#251](https://github.com/natefox2017/cook/issues/251); controlled AI/share staging is [#250](https://github.com/natefox2017/cook/issues/250).
+- Manual, offline Markdown-relative-link verification: `python3 scripts/check_documentation_links.py` from the repository root. It does **not** check external URLs, production availability or render UI.
+
+
+
 - [Remaining development vs test backlog](DEVELOPMENT/REMAINING_DEV_AND_TEST_2026-10-09.md) — authoritative split of open code work, automated tests, local Mac checks, and Apple/Supabase integration acceptance.
 - [Release testing contract](TESTING_RELEASE.md) — required evidence and release gates.
 

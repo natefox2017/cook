@@ -1,10 +1,12 @@
-# RecipePouch V1 Product Completeness Specification
+> **2026-10-09 source/status note:** This is an original V1 implementation checklist, **not a live open-Issue list or release PASS**. Product branding is Recipe Pals, the approved AI-first onboarding was restored (#226), and the new **not yet implemented** AI conversation/edit, owner-consented single-recipe Web sharing, referral tracking, optional metadata and detail redesign are in [ROADMAP.md](ROADMAP.md) (#238–#248). Test-stage ordinary launches stay English; #230 controls future language/country selection. Latest issue inventory: [dated snapshot](DEVELOPMENT/CURRENT_BACKLOG_2026-10-09.md), selected-release gate #251.
+
+# Recipe Pals V1 Product Completeness — Historical Implementation Checklist
 
 Updated: 2026-10-09
 
 ## Product benchmark
 
-RecipePouch is a private recipe utility: collect → organize → cook → shop → plan → sync. It does not add a public feed in V1.
+Recipe Pals is a private recipe utility: collect → organize → cook → shop → plan → sync. It does not add a public feed in V1.
 
 Repeated patterns verified in established products:
 - ReciMe: account login, multi-device recipe sync, mobile subscription, subscription status and Restore Purchase; recipe import, cookbooks, groceries and meal planning.
@@ -58,7 +60,7 @@ Required:
 - Clipboard/text import.
 - Keep source and partial result when extraction is incomplete.
 - Duplicate source handling.
-- Share Extension: third-party app → Share → RecipePouch → durable receipt → return immediately.
+- Share Extension: third-party app → Share → Recipe Pals → durable receipt → return immediately.
 - Social source backend fallback (caption/article/ASR/OCR/visual evidence) without fabricating quantities.
 
 Implementation status: local URL/text/photo/PDF/manual flows, an embedded Share Extension with durable local receipts, an authenticated import-job API, the queue worker and private artifact upload/download are **IMPLEMENTED IN MAIN** (including merged PRs #72, #73, #96 and #97). This establishes code boundaries, **not production acceptance**: signed host-app device tests, deployed queue/storage lifecycle, protected social-video extraction and full end-to-end processing remain unverified or incomplete.
