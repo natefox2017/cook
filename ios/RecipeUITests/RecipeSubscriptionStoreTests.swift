@@ -50,6 +50,7 @@ final class RecipeSubscriptionStoreTests: XCTestCase {
             )
 
             await store.purchase(product)
+            await assertLocallyVerifiedEntitlement(for: productID)
             XCTAssertNil(store.message)
             XCTAssertEqual(store.state, .active)
             let entitledIDs = await store.refreshEntitlements()
@@ -71,6 +72,7 @@ final class RecipeSubscriptionStoreTests: XCTestCase {
         ] {
             session.clearTransactions()
             _ = try await session.buyProduct(identifier: productID)
+            await assertLocallyVerifiedEntitlement(for: productID)
             let store = SubscriptionStore()
             await store.load()
             let entitledIDs = await store.refreshEntitlements()
@@ -83,6 +85,26 @@ final class RecipeSubscriptionStoreTests: XCTestCase {
         }
     }
 
+    private func assertLocallyVerifiedEntitlement(for productID: String) async {
+        var foundEntitlement = false
+        for await result in Transaction.currentEntitlements {
+            switch result {
+            case .verified(let transaction):
+                guard transaction.productID == productID else {
+                    continue
+                }
+                foundEntitlement = true
+                XCTAssertEqual(transaction.environment, .xcode)
+            case .unverified(let transaction, let error):
+                guard transaction.productID == productID else {
+                    continue
+                }
+                XCTFail("Local fixture transaction was not verified: \(error)")
+            }
+        }
+        XCTAssertTrue(foundEntitlement, "No verified Xcode entitlement for \(productID)")
+    }
+
     private func makeSession() throws -> SKTestSession {
         let fixtureURL = try XCTUnwrap(
             Bundle(for: Self.self).url(
@@ -91,6 +113,7 @@ final class RecipeSubscriptionStoreTests: XCTestCase {
             )
         )
         let session = try SKTestSession(contentsOf: fixtureURL)
+        session.resetToDefaultState()
         session.disableDialogs = true
         session.locale = Locale(identifier: "en_US")
         session.storefront = "USA"

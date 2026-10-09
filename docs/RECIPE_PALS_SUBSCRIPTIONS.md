@@ -98,10 +98,49 @@ StoreKit testing support. The fixture is a test-target resource, not an app
 release resource. The original UI tests remain unchanged; button titles,
 visible price labels and page layout still require UI automation.
 
-The coordinator can select only the hosted cases when running on the real
-device: `-only-testing:RecipeTests/RecipeSubscriptionStoreTests`. Do not use
-generic build-for-testing results as runtime acceptance or substitute these
-fixture transactions for ASC Sandbox/TestFlight purchases.
+The coordinator's first signed real-device hosted run executed both cases:
+**2 FAIL, 0 skip**. The configured-ID assertion passed, but StoreKit returned
+no formal products and no usable verified legacy entitlement. This is a real
+runtime failure, not the earlier UI runner launch failure.
+
+The original `Recipe` scheme had no active StoreKit configuration. The host
+creates `Transaction.updates` during app initialization and calls StoreKit in
+its root `.task`, before a testcase creates `SKTestSession(contentsOf:)`.
+Copying a fixture into a test bundle did not establish the host's StoreKit
+environment before those calls. Missing launch configuration is confirmed;
+the previous log does not prove that early connection timing was the only
+cause, or rule out local transaction verification errors.
+
+Use the dedicated **RecipeStoreKit** scheme and **RecipeStoreKit** test plan
+for the next signed real-device run. Its Run action selects
+`RecipeSubscriptionTests.storekit` using the same scheme reference form as
+[Apple's StoreKit sample](https://developer.apple.com/documentation/storekit/implementing-a-store-in-your-app-using-the-storekit-api).
+Its test action retains Run argument/environment inheritance; the plan starts the host with
+`--uitesting` and selects only `RecipeSubscriptionStoreTests` in the existing
+hosted target. The normal `Recipe` scheme is unchanged for actual ASC testing.
+
+```sh
+xcodebuild -project ios/Recipe.xcodeproj -scheme RecipeStoreKit \
+  -testPlan RecipeStoreKit -destination 'platform=iOS,id=<real-device-id>' \
+  -derivedDataPath '<fresh-signed-test-output>' \
+  -only-testing:RecipeTests/RecipeSubscriptionStoreTests \
+  -parallel-testing-enabled NO DEVELOPMENT_TEAM='<authorized-team>' test
+```
+
+Rebuild signed test artifacts for this scheme before execution; do not reuse
+the old `Recipe` scheme's `.xctestrun`. The generic generated runfile confirms
+the host bundle, `--uitesting` and the selected suite; it does not serialize a
+StoreKit path or prove that a CLI/device launch actually synced the fixture.
+That launch behavior remains a real-device acceptance requirement. The tests
+now additionally require each fixture entitlement to be **verified** with
+environment **Xcode**, and report an unverified transaction's error. No custom
+receipt certificate or signature bypass is added: this client uses StoreKit 2
+`VerificationResult`, not manual receipt validation. See
+[Apple's setup guidance](https://developer.apple.com/documentation/xcode/setting-up-storekit-testing-in-xcode).
+
+Do not use generic build-for-testing results as runtime acceptance or substitute
+fixture transactions for ASC Sandbox/TestFlight purchases. The original UI
+assertions and all hosted assertions remain; none are removed or converted to skip.
 
 No StoreKit runtime PASS is claimed in this delivery. A simulator attempt was
 interrupted before any test case ran; its dedicated device and temporary test

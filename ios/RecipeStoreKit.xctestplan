@@ -1,0 +1,31 @@
+{
+  "configurations": [
+    {
+      "id": "75C9363B-16B0-4D78-928A-23767CA6D03A",
+      "name": "Local StoreKit on real device",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {
+    "commandLineArgumentEntries": [
+      {
+        "argument": "--uitesting",
+        "enabled": true
+      }
+    ]
+  },
+  "testTargets": [
+    {
+      "parallelizable": false,
+      "selectedTests": [
+        "RecipeSubscriptionStoreTests"
+      ],
+      "target": {
+        "containerPath": "container:Recipe.xcodeproj",
+        "identifier": "A12900000000000000000035",
+        "name": "RecipeTests"
+      }
+    }
+  ],
+  "version": 1
+}
