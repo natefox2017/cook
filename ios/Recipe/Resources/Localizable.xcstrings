@@ -15809,6 +15809,50 @@
           }
         }
       }
+    },
+    "No timers yet": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有计时器"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無計時器"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タイマーはまだありません"
+          }
+        }
+      }
+    },
+    "Start a timer from a cooking step, or add a kitchen timer here.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你可以从烹饪步骤启动计时器，也可以在这里添加厨房计时器。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你可以從烹飪步驟啟動計時器，也可以在這裡新增廚房計時器。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "調理手順からタイマーを開始するか、ここでキッチンタイマーを追加できます。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
