@@ -156,9 +156,24 @@ Deno.test("non-production bootstrap keeps the existing no-token behavior", async
 
 Deno.test("bootstrap RPC errors reveal only intentional authentication and validation guidance", async () => {
   const cases: Array<[string, string, number, string]> = [
-    ["incorrect current default password", "unauthorized", 401, "Current default password is incorrect"],
-    ["password strength requirement", "validation_error", 400, "newPassword does not meet strength policy"],
-    ["bootstrap not available", "conflict", 409, "Bootstrap is not available for this environment"],
+    [
+      "incorrect current default password",
+      "unauthorized",
+      401,
+      "Current default password is incorrect",
+    ],
+    [
+      "password strength requirement",
+      "validation_error",
+      400,
+      "newPassword does not meet strength policy",
+    ],
+    [
+      "bootstrap not available",
+      "conflict",
+      409,
+      "Bootstrap is not available for this environment",
+    ],
   ];
   for (const [diagnostic, code, status, publicMessage] of cases) {
     const err = publicAdminBootstrapError(diagnostic);
@@ -177,8 +192,12 @@ Deno.test("bootstrap unexpected database errors do not escape in a 4xx response"
     }
     const response = errorResponse(err);
     const text = await response.text();
-    if (response.status !== 500 || text.includes(diagnostic) && diagnostic !== "" ||
-        text.includes("admin_accounts") || text.includes("email@example.com")) {
+    if (
+      response.status !== 500 ||
+      (diagnostic !== "" && text.includes(diagnostic)) ||
+      text.includes("admin_accounts") ||
+      text.includes("email@example.com")
+    ) {
       throw new Error("Database details escaped into bootstrap HTTP response");
     }
     if (!text.includes("temporarily unavailable")) {
