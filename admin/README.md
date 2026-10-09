@@ -1,4 +1,4 @@
-# RecipePouch Admin
+# Recipe Pals Admin
 
 Standalone operations console built with React, Vite, and shadcn-style components.
 

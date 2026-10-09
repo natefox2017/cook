@@ -169,7 +169,7 @@ export function webauthnConfig(): {
   const origin = Deno.env.get("ADMIN_WEBAUTHN_ORIGIN")?.trim() ?? "";
   const rpID = Deno.env.get("ADMIN_WEBAUTHN_RP_ID")?.trim().toLowerCase() ?? "";
   const rpName = Deno.env.get("ADMIN_WEBAUTHN_RP_NAME")?.trim() ||
-    "RecipePouch Admin";
+    "Recipe Pals Admin";
   let parsed: URL;
   try {
     parsed = new URL(origin);

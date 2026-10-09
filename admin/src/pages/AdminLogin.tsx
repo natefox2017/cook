@@ -119,11 +119,11 @@ export function AdminLogin({ onLogin, allowBootstrap }: AdminLoginProps) {
   return (
     <main className="admin-login-shell">
       <section className="admin-login-card" aria-labelledby="admin-login-title">
-        <a className="admin-login-brand" href="/" aria-label="RecipePouch admin home">
+        <a className="admin-login-brand" href="/" aria-label="Recipe Pals admin home">
           <span className="brand-mark" aria-hidden="true">
             <img src={appIconUrl} alt="" />
           </span>
-          <span>RecipePouch</span>
+          <span>Recipe Pals</span>
         </a>
         <h1 id="admin-login-title">{factorChallenge ? "Two-step verification" : mode === "login" ? "Sign in" : "Set up your owner account"}</h1>
 
