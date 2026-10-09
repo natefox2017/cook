@@ -121,3 +121,9 @@ Exit：
 - 家庭协作
 - 默认公开的菜谱社区 / Feed（独立决定，当前未批准）
 - 推荐系统
+
+## 2026-10-09 审计：实际执行与发布依赖
+
+- 当前开发任务优先级见 [24 个开放 Issue 的日期快照](DEVELOPMENT/CURRENT_BACKLOG_2026-10-09.md)，实际状态始终重新查询 [GitHub Issues](https://github.com/natefox2017/cook/issues?q=is%3Aissue+is%3Aopen)。
+- **代码开发顺序不等于上线资格。** #238–#241 与 #242–#245 需要 [#250 受控 staging](https://github.com/natefox2017/cook/issues/250) 的真实 Auth/RLS/来源授权/撤回验证，实际选择上线的功能最终在 [#251 发布验收](https://github.com/natefox2017/cook/issues/251) 取得签名 App 与 Web/StoreKit 证据。#246 奖励仍须另行审批。
+- 尚未完成的功能必须 **feature-gated 或不展示入口**，不能因为 `ROADMAP` 列为 P0、PR 自动合并，便宣称上线；旧 Closed Issue #139 和 not_planned 导入票不作为新功能的验收证明。

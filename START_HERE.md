@@ -28,3 +28,7 @@
 - AI 猜测未出现的精确用量并当作事实保存
 
 总入口 Issue：#1
+
+## 最新任务入口（2026-10-09）
+
+开始开发前，先看 [最新任务快照](docs/DEVELOPMENT/CURRENT_BACKLOG_2026-10-09.md) 和 [文档/Issue 审计记录](docs/DEVELOPMENT/DOCUMENTATION_ISSUE_AUDIT_2026-10-09.md)，**再实时查询 GitHub Open Issues 和最新 main**。过期的 Closed Issue 和已合并 PR 不能当作新的开发命令；每个任务仍然用独立 PR。

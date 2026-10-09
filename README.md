@@ -64,3 +64,10 @@ xcodebuild -project ios/Recipe.xcodeproj -scheme Recipe \
 CI 只保留轻量 PR 自动合并状态，不自动运行 Xcode/Simulator/Swift Test。需要的构建、模拟器和真机验收按 Issue 手动执行并如实记录。签名安装需在 Xcode 中选择自己的开发团队。
 
 总入口 Issue: #1
+
+## 当前任务与文档状态（2026-10-09 审计）
+
+- [开放任务快照及领取顺序](docs/DEVELOPMENT/CURRENT_BACKLOG_2026-10-09.md)（快照，不代替 GitHub 的实时 Issue 状态）。
+- [文档/Issue 全量审计与修复记录](docs/DEVELOPMENT/DOCUMENTATION_ISSUE_AUDIT_2026-10-09.md)。
+- [下一阶段 AI / 分享 Web / 食谱详情路线](docs/ROADMAP.md)；设计和任务已规划，**不是功能已上线**。
+- 历史发布总表 #139 已关闭且正文包含过期 OPEN 文字；**本次发布验收用 [#251](https://github.com/natefox2017/cook/issues/251)**，新 AI/分享服务的受控部署使用 [#250](https://github.com/natefox2017/cook/issues/250)。

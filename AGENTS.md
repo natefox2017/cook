@@ -22,6 +22,16 @@ Recipe is the native iOS codebase for Recipe Pals, a private recipe collection a
 
 ## Source of Truth
 
+### Live backlog, snapshots, and user-approved extensions
+
+- **Live Issue state is GitHub**, not unchecked boxes or `OPEN` text in closed historical tickets. Review [current snapshot](docs/DEVELOPMENT/CURRENT_BACKLOG_2026-10-09.md) and the latest GitHub Issue/PR before claiming work. The former release umbrella #139 and older device/test Issues #126–#129/#134 are closed and retained as historical evidence; current selected-release acceptance is #251.
+- The user's approved **next-phase** extensions are AI-assisted source/evidence drafts and edit (#238–#241), opt-in **single-recipe** Web/long-image sharing (#242–#245), optional later invite rewards (#246), and detail metadata/UI (#247–#248). These are **planned, not shipped**. They do not authorize a public feed/community, automatically publishing imported private/copyrighted material, user fingerprinting or real reward payouts.
+- Import deployment tickets #116–#120/#130/#135/#138/#141/#164 were closed as `not_planned`; **do not reopen them or treat them as passing integration tests**. For the newly approved functionality use #250 for controlled staging and #251 for release-scope acceptance. Changes to production infrastructure require separate owner approval.
+- Keep historical dated design/QA/provenance documents as evidence; put corrections in a dated note rather than rewriting the tests they describe. For operative development decisions use `docs/ROADMAP.md`, `docs/PRODUCT_BASELINE_V1.md`, relevant new `docs/PRODUCT/*.md`, and the current Issue.
+- During testing normal App launches remain English; manually selectable language/country and international locale fallback remain **unimplemented until #230**. Do not confuse translated string catalogs with a finished locale UI.
+
+
+
 Read the relevant documents before substantial product or architecture changes:
 
 - `docs/PRODUCT_BASELINE_V1.md` — product scope and priorities
