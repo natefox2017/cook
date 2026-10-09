@@ -21,6 +21,48 @@
             "state": "translated",
             "value": "ソースを保存中…"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quelle wird gespeichert…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrement de la source…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardando fuente…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvataggio della fonte…"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A guardar a fonte…"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bron opslaan…"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "소스 저장 중…"
+          }
         }
       }
     },
@@ -43,6 +85,48 @@
           "stringUnit": {
             "state": "translated",
             "value": "この iPhone に保存しました"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf diesem iPhone gespeichert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistré sur cet iPhone"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardado en este iPhone"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvato su questo iPhone"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardado neste iPhone"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Op deze iPhone opgeslagen"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 iPhone에 저장됨"
           }
         }
       }
@@ -67,6 +151,48 @@
             "state": "translated",
             "value": "インポート待ちです。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import ausstehend."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importation en attente."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importación pendiente."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importazione in attesa."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importação pendente."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import wacht op verwerking."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "가져오기 대기 중"
+          }
         }
       }
     },
@@ -89,6 +215,48 @@
           "stringUnit": {
             "state": "translated",
             "value": "ソースを保存できませんでした"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quelle konnte nicht gespeichert werden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible d’enregistrer la source"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo guardar la fuente"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile salvare la fonte"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível guardar a fonte"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kan de bron niet opslaan"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "소스를 저장하지 못했습니다"
           }
         }
       }
@@ -113,6 +281,48 @@
             "state": "translated",
             "value": "キャンセル"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuler"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelar"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annulla"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelar"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuleren"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "취소"
+          }
         }
       }
     },
@@ -135,6 +345,48 @@
           "stringUnit": {
             "state": "translated",
             "value": "再試行"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réessayer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reintentar"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riprova"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tentar novamente"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opnieuw proberen"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "다시 시도"
           }
         }
       }
@@ -159,6 +411,48 @@
             "state": "translated",
             "value": "共有元アプリから読み取り可能なリンクやテキストを取得できませんでした。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Quell-App hat keinen lesbaren Link oder Text bereitgestellt."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’app source n’a fourni aucun lien ou texte lisible."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La app de origen no proporcionó ningún enlace o texto legible."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’app di origine non ha fornito un link o un testo leggibile."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A aplicação de origem não forneceu uma ligação nem texto legível."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De bronapp leverde geen leesbare link of tekst aan."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "원본 앱에서 읽을 수 있는 링크나 텍스트를 제공하지 않았습니다."
+          }
         }
       }
     },
@@ -181,6 +475,48 @@
           "stringUnit": {
             "state": "translated",
             "value": "公開レシピのリンク、テキスト、画像、PDF を共有してください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teile einen öffentlichen Rezeptlink, lesbaren Text, ein Bild oder ein PDF."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partagez un lien public de recette, du texte lisible, une image ou un PDF."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comparte un enlace público de receta, texto legible, una imagen o un PDF."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condividi un link pubblico a una ricetta, testo leggibile, un’immagine o un PDF."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partilhe uma ligação pública para uma receita, texto legível, uma imagem ou um PDF."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deel een openbare receptlink, leesbare tekst, een afbeelding of een pdf."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공개 레시피 링크, 읽을 수 있는 텍스트, 이미지 또는 PDF를 공유하세요."
           }
         }
       }
@@ -205,6 +541,48 @@
             "state": "translated",
             "value": "この添付ファイル形式には対応していません。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Anhangstyp wird nicht unterstützt."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce type de pièce jointe n’est pas pris en charge."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se admite este tipo de archivo adjunto."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo tipo di allegato non è supportato."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este tipo de anexo não é suportado."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dit bijlagetype wordt niet ondersteund."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 첨부 파일 형식은 지원되지 않습니다."
+          }
         }
       }
     },
@@ -227,6 +605,48 @@
           "stringUnit": {
             "state": "translated",
             "value": "共有された内容を読み取れません。リンクかテキストをコピーしてください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das geteilte Element konnte nicht gelesen werden. Kopiere stattdessen den Link oder Text."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de lire l’élément partagé. Essayez de copier le lien ou le texte."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo leer el elemento compartido. Prueba a copiar el enlace o el texto."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile leggere l’elemento condiviso. Prova a copiare il link o il testo."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível ler o item partilhado. Experimente copiar a ligação ou o texto."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kan het gedeelde item niet lezen. Probeer de link of tekst te kopiëren."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공유 항목을 읽을 수 없습니다. 링크나 텍스트를 복사해 보세요."
           }
         }
       }
@@ -251,6 +671,48 @@
             "state": "translated",
             "value": "共有をキャンセルしました。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilen abgebrochen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partage annulé."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se canceló el uso compartido."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condivisione annullata."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partilha cancelada."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delen geannuleerd."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공유가 취소되었습니다."
+          }
         }
       }
     },
@@ -273,6 +735,48 @@
           "stringUnit": {
             "state": "translated",
             "value": "RecipePouch の共有ストレージにアクセスできません。App Group の署名設定を確認してください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der gemeinsame Speicher von Recipe Pals ist nicht verfügbar. Überprüfe die App-Group-Signierung."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le stockage partagé de Recipe Pals est indisponible. Vérifiez la signature App Group."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El almacenamiento compartido de Recipe Pals no está disponible. Comprueba la firma del App Group."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’archiviazione condivisa di Recipe Pals non è disponibile. Controlla la firma dell’App Group."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O armazenamento partilhado do Recipe Pals não está disponível. Verifique a assinatura do App Group."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gedeelde opslag van Recipe Pals is niet beschikbaar. Controleer de ondertekening van de App Group."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals의 공유 저장소를 사용할 수 없습니다. App Group 서명을 확인하세요."
           }
         }
       }
@@ -297,6 +801,48 @@
             "state": "translated",
             "value": "公開 HTTPS リンク、読み取り可能なテキスト、画像、PDF を RecipePouch に共有してください。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teile einen öffentlichen HTTPS-Link, lesbaren Text, ein Bild oder ein PDF mit Recipe Pals."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partagez un lien HTTPS public, du texte lisible, une image ou un PDF avec Recipe Pals."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comparte un enlace HTTPS público, texto legible, una imagen o un PDF con Recipe Pals."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condividi un link HTTPS pubblico, testo leggibile, un’immagine o un PDF con Recipe Pals."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partilhe uma ligação HTTPS pública, texto legível, uma imagem ou um PDF com Recipe Pals."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deel een openbare HTTPS-link, leesbare tekst, een afbeelding of een pdf met Recipe Pals."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals에 공개 HTTPS 링크, 읽을 수 있는 텍스트, 이미지 또는 PDF를 공유하세요."
+          }
         }
       }
     },
@@ -319,6 +865,48 @@
           "stringUnit": {
             "state": "translated",
             "value": "共有元のコンテンツが見つかりません。もう一度共有してください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die ursprünglich geteilte Quelle fehlt. Teile sie erneut."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La source partagée d’origine est introuvable. Partagez-la à nouveau."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falta la fuente compartida original. Compártela de nuevo."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La fonte originale condivisa non è più disponibile. Condividila di nuovo."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A fonte originalmente partilhada está em falta. Partilhe-a novamente."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De oorspronkelijke gedeelde bron ontbreekt. Deel deze opnieuw."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "원본 공유 소스가 없습니다. 다시 공유해 주세요."
           }
         }
       }
