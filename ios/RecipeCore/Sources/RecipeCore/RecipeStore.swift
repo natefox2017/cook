@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Owns RecipePouch's validated local library and cloud snapshot synchronization boundary.
+// Purpose: Owns Recipe Pals’ validated local library and cloud snapshot synchronization boundary.
 
 import Foundation
 import Observation

@@ -16,7 +16,7 @@ enum RecipeRemoteImportError: LocalizedError {
         case .notSignedIn:
             RecipeLanguage.localized("Sign in before sending a recipe to cloud processing.")
         case .invalidConfiguration:
-            RecipeLanguage.localized("The RecipePouch import service is not configured.")
+            RecipeLanguage.localized("The Recipe Pals import service is not configured.")
         case .transport(let message):
             message
         case .jobNotReady:
@@ -250,7 +250,7 @@ struct RecipeRemoteImportService {
         )
         parsed.id = recipeID
         parsed.sourceText = originalSource
-        parsed.sourceName = "RecipePouch import"
+        parsed.sourceName = "Recipe Pals import"
         parsed.servings = nil
         try store.upsert(parsed)
         return parsed

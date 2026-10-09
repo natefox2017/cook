@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Synchronizes validated RecipePouch snapshots through Supabase with revision checks.
+// Purpose: Synchronizes validated Recipe Pals snapshots through Supabase with revision checks.
 
 import Foundation
 import Network
@@ -86,7 +86,7 @@ struct UnconfiguredCloudSync: RecipeCloudSyncing {
         var errorDescription: String? {
             String(
                 localized: LocalizedStringResource(
-                    "RecipePouch cloud sync is not configured in this build.",
+                    "Recipe Pals cloud sync is not configured in this build.",
                     locale: RecipeLanguage.active))
         }
     }
@@ -229,7 +229,7 @@ enum RecipeLocalResetError: LocalizedError {
         case .requiresSignOut:
             String(
                 localized: LocalizedStringResource(
-                    "Sign out of your RecipePouch account before deleting only this iPhone's data. Your cloud library will stay intact.",
+                    "Sign out of your Recipe Pals account before deleting only this iPhone's data. Your cloud library will stay intact.",
                     locale: RecipeLanguage.active))
         case .syncInProgress:
             String(

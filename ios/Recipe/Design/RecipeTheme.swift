@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Defines RecipePouch colors, typography, spacing, and shared UI helpers.
+// Purpose: Defines Recipe Pals colors, typography, spacing, and shared UI helpers.
 
 import RecipeCore
 import SwiftUI

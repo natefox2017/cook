@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Exports private RecipePouch recipes to portable, versioned JSON and safe offline HTML.
+// Purpose: Exports private Recipe Pals recipes to portable, versioned JSON and safe offline HTML.
 
 import Foundation
 
@@ -75,7 +75,7 @@ public enum RecipePortableExport {
             "<meta charset=\"utf-8\">",
             "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
             "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\">",
-            "<title>\(escape(RecipeLanguage.localized("RecipePouch Recipes")))</title>",
+            "<title>\(escape(RecipeLanguage.localized("Recipe Pals Recipes")))</title>",
             """
             <style>
             body{font-family:system-ui,-apple-system,sans-serif;line-height:1.55;
@@ -90,7 +90,7 @@ public enum RecipePortableExport {
             """,
             "</head>",
             "<body>",
-            "<h1>\(escape(RecipeLanguage.localized("RecipePouch Recipes")))</h1>",
+            "<h1>\(escape(RecipeLanguage.localized("Recipe Pals Recipes")))</h1>",
             "<p class=\"muted\">\(escape(RecipeLanguage.localized("Exported %@. Recipe text only; photos, attachments, shopping lists, meal plans and app preferences are not included.", dateText)))</p>",
         ]
 
