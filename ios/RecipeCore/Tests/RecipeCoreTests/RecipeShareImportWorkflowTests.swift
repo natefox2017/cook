@@ -664,3 +664,31 @@ func manualReviewLocksAnIncompleteImportedRecipeAgainstLateResults() async throw
     #expect(retained.importRecord?.reviewedAt != nil)
     #expect(retained.importRecord?.result.fields["title"]?.rawValue == "Soup")
 }
+
+@Test
+func importResultDecodesDistinctMultiRecipeCandidatesWithoutAffectingLegacyResults() throws {
+    let id = UUID()
+    let json = """
+    {"recipe_id":"\(id.uuidString)","status":"needs_review",
+    "source":{"input_type":"url","original_url":"https://example.com/two"},
+    "fields":{},"evidence":[],"review_fields":["recipe_selection"],
+    "candidate_recipes":[{"candidate_id":"candidate-1-abcdef12","title":"Soup",
+    "ingredients":["stock"],"steps":["Boil stock"],"evidence_ids":[],
+    "review_fields":[]}]}
+    """
+    let new = try JSONDecoder().decode(RecipeImportJobResponse.Result.self, from: Data(json.utf8))
+    #expect(new.candidateRecipes?.count == 1)
+    #expect(new.candidateRecipes?.first?.title == "Soup")
+    #expect(new.fields.isEmpty)
+    let roundTrip = try JSONDecoder().decode(
+        RecipeImportJobResponse.Result.self, from: JSONEncoder().encode(new))
+    #expect(roundTrip.candidateRecipes == new.candidateRecipes)
+
+    let previous = RecipeImportJobResponse.Result(
+        recipeID: id, status: "ready",
+        source: .init(inputType: "text"), fields: [:])
+    #expect(previous.candidateRecipes == nil)
+    let old = try JSONDecoder().decode(
+        RecipeImportJobResponse.Result.self, from: JSONEncoder().encode(previous))
+    #expect(old.candidateRecipes == nil)
+}
