@@ -66,6 +66,90 @@
             "state": "translated",
             "value": "已購買 %lld 項"
           }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld gekauft"
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld achetés"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld comprados"
+                }
+              }
+            }
+          }
+        },
+        "it": {
+          "variations": {
+            "plural": {
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld acquistati"
+                }
+              }
+            }
+          }
+        },
+        "pt": {
+          "variations": {
+            "plural": {
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld comprados"
+                }
+              }
+            }
+          }
+        },
+        "nl": {
+          "variations": {
+            "plural": {
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld gekocht"
+                }
+              }
+            }
+          }
+        },
+        "ko": {
+          "variations": {
+            "plural": {
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "구매 완료 %lld개"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -29991,6 +30075,24 @@
             "state": "translated",
             "value": "언어"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "言語"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "语言"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "語言"
+          }
         }
       }
     },
@@ -30036,6 +30138,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "국가 또는 지역"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "国または地域"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "国家或地区"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "國家或地區"
           }
         }
       }
@@ -30083,6 +30203,24 @@
             "state": "translated",
             "value": "iPhone 지역 사용"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhoneの地域設定を使用"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 iPhone 地区"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 iPhone 地區"
+          }
         }
       }
     },
@@ -30128,6 +30266,152 @@
           "stringUnit": {
             "state": "translated",
             "value": "국가 검색"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "国・地域を検索"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索国家或地区"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜尋國家或地區"
+          }
+        }
+      }
+    },
+    "The email code was accepted, but no signed-in session was returned. Try again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der E-Mail-Code wurde bestätigt, aber keine Anmeldung abgeschlossen. Versuche es erneut."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le code reçu par e-mail a été accepté, mais aucune session n’a été ouverte. Réessayez."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se aceptó el código del correo, pero no se inició sesión. Inténtalo de nuevo."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il codice email è stato accettato, ma non è stata avviata una sessione. Riprova."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O código enviado por e-mail foi aceite, mas a sessão não foi iniciada. Tente novamente."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De e-mailcode is geaccepteerd, maar er is geen sessie gestart. Probeer opnieuw."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이메일 코드가 승인되었지만 로그인 세션이 생성되지 않았습니다. 다시 시도하세요."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メールのコードは承認されましたが、ログインできませんでした。もう一度お試しください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "邮箱验证码已通过，但未建立登录会话。请重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "電子郵件驗證碼已通過，但未建立登入工作階段。請重試。"
+          }
+        }
+      }
+    },
+    "RecipePouch’s interaction model is informed by established private recipe managers: collect recipes, organize them, cook step-by-step, plan meals, and shop from ingredients. RecipePouch’s implementation and visual system remain its own.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals orientiert sich an bewährten Funktionen privater Rezeptverwaltungen: Rezepte sammeln, organisieren, schrittweise kochen, Mahlzeiten planen und Zutaten einkaufen. Umsetzung und Gestaltung von Recipe Pals sind eigenständig."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals s’inspire des fonctionnalités éprouvées des gestionnaires privés de recettes : collecter et organiser les recettes, cuisiner étape par étape, planifier les repas et faire les courses. Sa réalisation et son identité visuelle lui sont propres."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals se inspira en gestores privados de recetas consolidados para guardar, organizar, cocinar paso a paso, planificar comidas y comprar ingredientes. Su implementación y diseño son propios."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals si ispira ai gestori privati di ricette consolidati per raccogliere e organizzare ricette, cucinare passo passo, pianificare i pasti e acquistare ingredienti. Implementazione e design restano originali."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals inspira-se em gestores privados de receitas estabelecidos para guardar e organizar receitas, cozinhar passo a passo, planear refeições e fazer compras. A implementação e o design são próprios."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals volgt beproefde patronen van privé-receptenbeheerders: recepten verzamelen en ordenen, stapsgewijs koken, maaltijden plannen en boodschappen doen. De uitvoering en vormgeving zijn eigen werk."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals는 검증된 개인 레시피 관리 방식인 레시피 수집과 정리, 단계별 요리, 식단 계획, 재료 장보기를 참고했습니다. 구현과 디자인은 Recipe Pals만의 독자적인 것입니다."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals は、レシピの保存・整理、手順に沿った調理、献立作成、買い物という既存の個人向けレシピ管理アプリの使い方を参考にしています。実装とデザインは独自のものです。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals 借鉴了成熟的私人食谱管理应用的使用方式：收藏食谱、分类管理、分步烹饪、规划餐食和采购食材。应用实现和视觉设计均为独立开发。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals 參考成熟的私人食譜管理應用使用方式：收藏食譜、分類整理、分步烹飪、規劃餐食與採買食材。實作與視覺設計均為獨立開發。"
           }
         }
       }
