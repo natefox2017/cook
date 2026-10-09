@@ -29,7 +29,7 @@ The function versions and bundle hashes are inventory evidence only. This branch
 
 ## Local verification
 
-The new HTTP tests start loopback Deno servers and send real HTTP requests for the role matrix. They inject deterministic session and database fixtures so prohibited roles can be checked before any service-client access. This verifies route-level authorization and response status locally; it does not authenticate against Supabase Auth/Postgres, exercise real administrator accounts, or prove staging or production behavior.
+The Deno HTTP tests start loopback servers and exercise the role gates with deterministic injected dependencies. A second integration run below used the actual local Supabase Edge Runtime, GoTrue health service, PostgreSQL schema, service-role client and persisted admin sessions.
 
 Commands:
 
@@ -52,6 +52,55 @@ deno check --frozen --config supabase/functions/admin-dashboard/deno.json \
 ```
 
 Latest result for the two local HTTP suites: subscriptions **5 passed**, dashboard **4 passed**. Both type checks passed. These local tests do not close Issue #155.
+
+### Local Supabase HTTP integration
+
+On 2026-10-09, a separate disposable project `issue155-http-57481` ran on API port `57481` and database port `57482`, isolated from the other local Supabase stack. Runtime versions were Supabase CLI 2.120.0, PostgreSQL 17.11, Edge Runtime 1.77.4 and Deno 2.1.4. The GoTrue health endpoint returned HTTP 200.
+
+The database used the schema-only #140 production catalog export for admin tables and `profiles`, plus a local schema-only subset for tables used by these two handlers. The extra table definitions came from read-only production catalog queries for columns, defaults and constraints. The catalog indexes were inspected; the local harness did not reproduce non-unique performance indexes. No production rows or credentials were copied. A synthetic owner was created through the local `admin-auth/bootstrap` route and production-derived `admin_bootstrap_owner` RPC. Synthetic `admin`, `operator` and `readonly` rows were added only to this disposable database; all four roles then logged in through the actual local `admin-auth/login` function and received persisted `admin_sessions` rows. Each `/admin-auth/session` request returned HTTP 200 with its expected role.
+
+| Local HTTP request | owner | admin | operator | readonly |
+| --- | ---: | ---: | ---: | ---: |
+| `GET /admin-subscriptions/plans` | 200 | 200 | 200 | 200 |
+| `GET /admin-subscriptions/records` | 200 | 200 | 403 | 403 |
+| `GET /admin-subscriptions/revenue` | 200 | 200 | 403 | 403 |
+| `POST /admin-subscriptions/plans` | 201 | 201 | 403 | 403 |
+| `PUT /admin-subscriptions/plans/{id}` | 200 | 200 | 403 | 403 |
+| `DELETE /admin-subscriptions/plans/{id}` | 200 | 200 | 403 | 403 |
+| `GET /admin-dashboard` | 200 | 403 | 403 | 403 |
+
+Missing and invalid sessions returned 401 on both functions. The local plan row was created, updated and deleted through the real HTTP handlers and local PostgREST database. This confirms the two handlers' route and SQL behavior against the checked-in source with a production-derived schema subset. It is still local evidence, not hosted staging or production acceptance.
+
+## Admin AI recovery plan and source gap
+
+### Source search and read-only database evidence
+
+- `git log --all --full-history -- supabase/functions/admin-ai` and `git rev-list --all --objects` contain no tracked `admin-ai` source path or blob. The scoped search of the known #155 worktrees found only the downloaded production wrapper under `.tmp/issue-155-live`; that 399-byte file imports implementation from the inaccessible `natefox2017/cookapp` feature branch. The wrapper's raw GitHub URL and authenticated repository lookup both returned 404.
+- A read-only production catalog query on 2026-10-09 found six AI tables: `ai_providers`, `ai_models`, `ai_routes`, `ai_secrets`, `ai_provider_health`, and `ai_usage_events`. RLS is enabled (not forced) on each. No policies were listed. `anon` and `authenticated` have no SELECT privilege; `service_role` has SELECT/INSERT/UPDATE/DELETE on all six. No public routines named `ai_*` or `llm_*` were found.
+- Catalog columns are: `ai_providers` — `id`, `name`, `protocol`, `base_url`, `secret_ref`, `enabled`, `request_timeout_ms`, `max_retries`, `status`, `last_health_check_at`, `environment`, `metadata`, timestamps; `ai_models` — `id`, `provider_id`, `display_name`, `upstream_model_id`, `enabled`, `capabilities`, `context_window`, `max_output_tokens`, input/output cost fields, `metadata`, timestamps; `ai_routes` — `id`, `route_key`, `primary_model_id`, `fallback_model_ids`, timeout/retry/temperature/output limits, `structured_schema_key`, `enabled`, `reserved`, timestamps; `ai_secrets` — `id`, `secret_ref`, `ciphertext`, `nonce`, `key_version`, timestamps; `ai_provider_health` — `provider_id`, `status`, success/error timestamps, `last_error`, `consecutive_failures`, `circuit_open_until`, `updated_at`; `ai_usage_events` — request/route/provider/model IDs, status, latency, input/output tokens, estimated cost, retry/error/attempt metadata, user/admin IDs, source job ID, timestamp.
+- The live `ai_usage_events` schema records request/route/provider/model IDs, final model, status, latency, input/output tokens, estimated cost, retries, error code, attempted models, user/admin IDs, source job ID and timestamp. It has no cached-input-token column. The UI treats cached input and average latency as optional; average latency can be aggregated from `latency_ms`, while cached-input usage must remain absent/null unless the source owner confirms another telemetry source.
+- `ai_models.provider_id` and `ai_provider_health.provider_id` cascade from providers; `ai_routes.primary_model_id` and usage-event model/provider references use `ON DELETE SET NULL`. Provider `secret_ref` references `ai_secrets.secret_ref` with `ON DELETE SET NULL`. The provider/model/route schema contains enabled flags, retry/timeout bounds, model capabilities, cost fields and fallback model IDs. The UI exposes only a single provider/model projection, so the exact CRUD mapping must preserve the broader routing data.
+
+### Recoverable admin UI contract
+
+The current `admin/src/api.ts`, `admin/src/types.ts`, `admin/src/App.tsx` and `admin/src/pages/LLMPage.tsx` define these routes. The admin portal routes the LLM page only to `owner/admin`; the page also gates provider write actions to those roles:
+
+| Route | UI request/response contract |
+| --- | --- |
+| `GET /providers` | `{ data: LLMProvider[] }`; each item has `id`, `name`, `baseUrl`, `model`, `active`, `apiKeyConfigured`, `updatedAt`. |
+| `POST /providers` | `{ name, baseUrl, model, apiKey, active }`; returns one `LLMProvider`. |
+| `PUT /providers/{id}` | Same body; an empty `apiKey` means preserve the saved key. Returns one `LLMProvider`. |
+| `DELETE /providers/{id}` | Returns `{ ok: true }`. |
+| `POST /providers/test` | `{ providerId?, name, baseUrl, model, apiKey? }`; returns `{ ok, message? }`. An omitted key for an existing provider means test with its saved key. |
+| `GET /usage?range=7d|30d|90d` | Totals, date series and by-model request/token aggregates; cached input and average latency are optional. |
+
+The UI makes provider-management actions available to `owner` and `admin` and shows keys as write-only. It sends provider keys only to an HTTPS function origin and rejects redirects for save/test requests. The backend must enforce the same role boundary, never return or log keys, preserve a blank key on edit, validate provider URLs and redirects against SSRF/private-network access, and bound connection-test time and response size.
+
+### What can be rebuilt from the current contract
+
+The provider CRUD projection, test route, usage range query, safe key-configured flag, owner/admin checks, and token/latency aggregation can be implemented from the UI and live table structure. The implementation should keep `ai_routes` fallback/model relationships intact and use the existing `ai_providers`/`ai_models`/`ai_secrets` data model instead of introducing parallel tables.
+
+The complete former `admin-ai` source is still needed to resolve the provider-to-model projection, encrypted-secret write/read protocol, encryption-key custody and environment name, whether connection tests persist `ai_provider_health`, usage bucket timezone/retention semantics, route deletion policy and any provider-specific compatibility behavior. The wrapper comment mentions `COOKAPP_AI_MASTER_KEY`, but that name and the encryption format are not independently confirmed. Do not implement or deploy these unresolved storage/security behaviors by guessing. Recover the authorized function source or obtain the source owner's explicit data-mapping and key-custody contract first.
 
 ## Staging rollout and production rollback plan
 
