@@ -12,7 +12,7 @@
         <string>ja</string>
     </array>
     <key>CFBundleDisplayName</key>
-    <string>RecipePouch</string>
+    <string>Recipe Pals</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>

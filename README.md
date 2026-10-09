@@ -1,4 +1,6 @@
-# RecipePouch
+# Recipe Pals
+
+*Private Recipes with Friends*
 
 把第三方平台和网页里的做饭内容，一键收进自己的食谱库，并自动整理成可执行食谱。
 
@@ -7,7 +9,7 @@
 ```
 第三方平台 / 网页
         ↓
-系统分享 → RecipePouch
+系统分享 → Recipe Pals
         ↓
 “已收下”并立即返回
         ↓
