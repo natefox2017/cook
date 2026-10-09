@@ -132,7 +132,10 @@ struct DataPrivacySettingsView: View {
                 Task {
                     do {
                         try await cloudSync.deleteAccountAndCloudData()
-                        message = String(localized: LocalizedStringResource("RecipePouch account and cloud data deleted. Local data on this iPhone was kept.", locale: RecipeLanguage.active))
+                        message = String(
+                            localized: LocalizedStringResource(
+                                "RecipePouch account and cloud data deleted. Local data on this iPhone was kept.",
+                                locale: RecipeLanguage.active))
                     } catch {
                         message = error.localizedDescription
                     }
@@ -140,7 +143,10 @@ struct DataPrivacySettingsView: View {
             }
         } message: {
             Text(
-                String(localized: LocalizedStringResource("This deletes the signed-in RecipePouch account and cloud data. Local data on this iPhone stays until you delete it separately. This does not cancel an App Store subscription.", locale: RecipeLanguage.active)))
+                String(
+                    localized: LocalizedStringResource(
+                        "This deletes the signed-in RecipePouch account and cloud data. Local data on this iPhone stays until you delete it separately. This does not cancel an App Store subscription.",
+                        locale: RecipeLanguage.active)))
         }
         .alert(
             "Data & Privacy",
@@ -165,7 +171,9 @@ struct DataPrivacySettingsView: View {
             exportDocument = try format.makeDocument(from: store)
             exportsData = true
         } catch {
-            message = String(localized: LocalizedStringResource("Export failed: \(error.localizedDescription)", locale: RecipeLanguage.active))
+            message = String(
+                localized: LocalizedStringResource(
+                    "Export failed: \(error.localizedDescription)", locale: RecipeLanguage.active))
         }
     }
 }
@@ -196,16 +204,28 @@ struct PrivacySummaryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
                 Text(
-                    String(localized: LocalizedStringResource("RecipePouch is designed as a private recipe utility. It does not publish your recipes to a public feed.", locale: RecipeLanguage.active)))
+                    String(
+                        localized: LocalizedStringResource(
+                            "RecipePouch is designed as a private recipe utility. It does not publish your recipes to a public feed.",
+                            locale: RecipeLanguage.active)))
 
                 Text(
-                    String(localized: LocalizedStringResource("Automated imports may send source material to RecipePouch’s backend only when processing is required. Provider secrets remain server-side.", locale: RecipeLanguage.active)))
+                    String(
+                        localized: LocalizedStringResource(
+                            "Automated imports may send source material to RecipePouch’s backend only when processing is required. Provider secrets remain server-side.",
+                            locale: RecipeLanguage.active)))
 
                 Text(
-                    String(localized: LocalizedStringResource("App Store purchases are managed by Apple. Your App Store purchase identity and RecipePouch account are treated as separate identities.", locale: RecipeLanguage.active)))
+                    String(
+                        localized: LocalizedStringResource(
+                            "App Store purchases are managed by Apple. Your App Store purchase identity and RecipePouch account are treated as separate identities.",
+                            locale: RecipeLanguage.active)))
 
                 Text(
-                    String(localized: LocalizedStringResource("You can export local data and request deletion of your RecipePouch account data from Settings.", locale: RecipeLanguage.active)))
+                    String(
+                        localized: LocalizedStringResource(
+                            "You can export local data and request deletion of your RecipePouch account data from Settings.",
+                            locale: RecipeLanguage.active)))
             }
             .recipePageContentInsets()
         }
@@ -345,12 +365,18 @@ private struct LicensesView: View {
         List {
             Section("Lora") {
                 Text(
-                    String(localized: LocalizedStringResource("Copyright The Lora Project Authors. Licensed under the SIL Open Font License 1.1.", locale: RecipeLanguage.active)))
+                    String(
+                        localized: LocalizedStringResource(
+                            "Copyright The Lora Project Authors. Licensed under the SIL Open Font License 1.1.",
+                            locale: RecipeLanguage.active)))
             }
 
             Section("System frameworks") {
                 Text(
-                    String(localized: LocalizedStringResource("SwiftUI, StoreKit, AuthenticationServices, Vision, and related Apple frameworks are used under Apple platform terms.", locale: RecipeLanguage.active)))
+                    String(
+                        localized: LocalizedStringResource(
+                            "SwiftUI, StoreKit, AuthenticationServices, Vision, and related Apple frameworks are used under Apple platform terms.",
+                            locale: RecipeLanguage.active)))
             }
         }
         .listSectionSpacing(RecipeSpacing.medium)
@@ -367,7 +393,10 @@ private struct AcknowledgementsView: View {
     var body: some View {
         ScrollView {
             Text(
-                String(localized: LocalizedStringResource("RecipePouch’s interaction model is informed by established private recipe managers: collect recipes, organize them, cook step-by-step, plan meals, and shop from ingredients. RecipePouch’s implementation and visual system remain its own.", locale: RecipeLanguage.active))
+                String(
+                    localized: LocalizedStringResource(
+                        "RecipePouch’s interaction model is informed by established private recipe managers: collect recipes, organize them, cook step-by-step, plan meals, and shop from ingredients. RecipePouch’s implementation and visual system remain its own.",
+                        locale: RecipeLanguage.active))
             )
             .recipePageContentInsets()
         }

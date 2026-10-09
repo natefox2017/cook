@@ -7,22 +7,17 @@ import SwiftUI
 
 @MainActor
 struct AccountView: View {
-    private enum Mode: String, CaseIterable, Identifiable {
-        case signIn = "Sign In"
-        case signUp = "Create Account"
-
-        var id: Self { self }
-    }
-
     let onExpand: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var auth = RecipeAuthService.shared
-    @State private var mode: Mode = .signIn
     @State private var isEmailExpanded = false
+    @State private var usesPasswordSignIn = false
     @State private var email = ""
+    @State private var emailCode = ""
+    @State private var codeEmail: String?
     @State private var password = ""
     @State private var newPassword = ""
     @State private var confirmPassword = ""
@@ -68,9 +63,6 @@ struct AccountView: View {
                 .accessibilityIdentifier("account.close")
             }
         }
-        .onChange(of: mode) { _, _ in
-            localMessage = nil
-        }
         .onChange(of: auth.state) { _, state in
             if case .signedIn = state {
                 password = ""
@@ -96,7 +88,7 @@ struct AccountView: View {
                 header("Welcome to RecipePouch", symbol: "leaf.fill")
 
                 VStack(spacing: RecipeSpacing.xSmall) {
-                    SignInWithAppleButton(mode == .signUp ? .signUp : .signIn) { request in
+                    SignInWithAppleButton(.signIn) { request in
                         let nonce = RecipeAuthService.makeAppleNonce()
                         appleNonce = nonce.raw
                         request.nonce = nonce.hashed
@@ -136,7 +128,9 @@ struct AccountView: View {
                             onExpand()
                         } label: {
                             Label("Continue with email", systemImage: "envelope")
-                                .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
+                                .font(
+                                    RecipeTheme.text(16, weight: .semibold, relativeTo: .headline)
+                                )
                                 .frame(maxWidth: .infinity, minHeight: 50)
                                 .foregroundStyle(RecipeTheme.accentForeground)
                                 .background(
@@ -183,14 +177,10 @@ struct AccountView: View {
                     .background(.white, in: RoundedRectangle(cornerRadius: 5))
                     .accessibilityHidden(true)
 
-                Text(
-                    mode == .signUp
-                        ? LocalizedStringKey("Sign up with Google")
-                        : LocalizedStringKey("Sign in with Google")
-                )
-                .font(.system(size: 15, weight: .medium))
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
+                Text(LocalizedStringKey("Sign in with Google"))
+                    .font(.system(size: 15, weight: .medium))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
             }
             .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, minHeight: 50)
@@ -223,14 +213,6 @@ struct AccountView: View {
 
     private var emailForm: some View {
         VStack(spacing: RecipeSpacing.small) {
-            Picker("Account action", selection: $mode) {
-                ForEach(Mode.allCases) { item in
-                    Text(LocalizedStringKey(item.rawValue)).tag(item)
-                }
-            }
-            .pickerStyle(.segmented)
-            .accessibilityIdentifier("account.mode")
-
             TextField("Email", text: $email)
                 .textContentType(.emailAddress)
                 .keyboardType(.emailAddress)
@@ -239,37 +221,107 @@ struct AccountView: View {
                 .submitLabel(.next)
                 .accountInputStyle()
 
-            SecureField("Password", text: $password)
-                .textContentType(mode == .signIn ? .password : .newPassword)
-                .submitLabel(.go)
-                .onSubmit {
-                    if canSubmitEmail && !isAuthenticating {
-                        performEmailAction()
+            if let codeEmail {
+                TextField("6-digit code", text: $emailCode)
+                    .keyboardType(.numberPad)
+                    .textContentType(.oneTimeCode)
+                    .textInputAutocapitalization(.never)
+                    .accountInputStyle()
+                    .accessibilityIdentifier("account.emailCode")
+
+                Button {
+                    verifyEmailCode(for: codeEmail)
+                } label: {
+                    HStack(spacing: 10) {
+                        if isAuthenticating {
+                            ProgressView().tint(.white)
+                        }
+                        Text("Verify Code")
                     }
                 }
-                .accountInputStyle()
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(
+                    emailCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        || isAuthenticating
+                )
+                .accessibilityIdentifier("account.submit")
 
-            Button {
-                performEmailAction()
-            } label: {
-                HStack(spacing: 10) {
-                    if isAuthenticating {
-                        ProgressView().tint(.white)
+                HStack {
+                    Button("Resend Code") {
+                        sendEmailCode(to: codeEmail)
                     }
-                    Text(LocalizedStringKey(mode.rawValue))
-                }
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(!canSubmitEmail || isAuthenticating)
-            .accessibilityIdentifier("account.submit")
+                    .disabled(isAuthenticating)
 
-            if mode == .signIn {
+                    Spacer()
+
+                    Button("Change Email") {
+                        emailCode = ""
+                        self.codeEmail = nil
+                        localMessage = nil
+                    }
+                    .disabled(isAuthenticating)
+                }
+            } else if usesPasswordSignIn {
+                SecureField("Password", text: $password)
+                    .textContentType(.password)
+                    .submitLabel(.go)
+                    .onSubmit {
+                        if canSubmitPassword && !isAuthenticating {
+                            signInWithPassword()
+                        }
+                    }
+                    .accountInputStyle()
+
                 Button("Forgot Password?") {
                     sendPasswordReset()
                 }
                 .font(RecipeTheme.text(14, weight: .medium, relativeTo: .subheadline))
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .disabled(!isValidEmail || isAuthenticating)
+
+                Button {
+                    signInWithPassword()
+                } label: {
+                    HStack(spacing: 10) {
+                        if isAuthenticating {
+                            ProgressView().tint(.white)
+                        }
+                        Text("Sign In")
+                    }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(!canSubmitPassword || isAuthenticating)
+                .accessibilityIdentifier("account.submit")
+
+                Button("Use an email code instead") {
+                    usesPasswordSignIn = false
+                    password = ""
+                    localMessage = nil
+                }
+                .disabled(isAuthenticating)
+                .accessibilityIdentifier("account.passwordAlternative")
+            } else {
+                Button {
+                    sendEmailCode(to: email)
+                } label: {
+                    HStack(spacing: 10) {
+                        if isAuthenticating {
+                            ProgressView().tint(.white)
+                        }
+                        Text("Continue with Email")
+                    }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(!isValidEmail || isAuthenticating)
+                .accessibilityIdentifier("account.submit")
+
+                Button("Use a password instead") {
+                    usesPasswordSignIn = true
+                    localMessage = nil
+                    onExpand()
+                }
+                .disabled(isAuthenticating)
+                .accessibilityIdentifier("account.passwordAlternative")
             }
         }
     }
@@ -336,7 +388,9 @@ struct AccountView: View {
                     Button("Update Password") {
                         guard !isUpdatingPassword else { return }
                         guard newPassword == confirmPassword else {
-                            localMessage = String(localized: LocalizedStringResource("The passwords do not match.", locale: RecipeLanguage.active))
+                            localMessage = String(
+                                localized: LocalizedStringResource(
+                                    "The passwords do not match.", locale: RecipeLanguage.active))
                             return
                         }
                         isUpdatingPassword = true
@@ -433,13 +487,31 @@ struct AccountView: View {
         }
 
         switch auth.state {
+        case .emailCodeSent(let address):
+            return (
+                String(
+                    localized: LocalizedStringResource(
+                        "Enter the code sent to \(address).",
+                        locale: RecipeLanguage.active
+                    )
+                ),
+                false
+            )
         case .needsEmailVerification(let address):
             return (
-                String(localized: LocalizedStringResource("Check \(address) to verify your account, then return to RecipePouch.", locale: RecipeLanguage.active)),
+                String(
+                    localized: LocalizedStringResource(
+                        "Check \(address) to verify your account, then return to RecipePouch.",
+                        locale: RecipeLanguage.active)),
                 false
             )
         case .passwordResetSent:
-            return (String(localized: LocalizedStringResource("Check your inbox for the reset link.", locale: RecipeLanguage.active)), false)
+            return (
+                String(
+                    localized: LocalizedStringResource(
+                        "Check your inbox for the reset link.", locale: RecipeLanguage.active)),
+                false
+            )
         case .error(let message):
             return (message, true)
         default:
@@ -450,13 +522,12 @@ struct AccountView: View {
         }
     }
 
-    private var canSubmitEmail: Bool {
-        guard isValidEmail, !password.isEmpty else { return false }
-        return mode == .signIn || password.count >= 8
-    }
+    private var canSubmitPassword: Bool { isValidEmail && !password.isEmpty }
 
-    private var isValidEmail: Bool {
-        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+    private var isValidEmail: Bool { Self.isValidEmail(email) }
+
+    private static func isValidEmail(_ rawAddress: String) -> Bool {
+        let trimmed = rawAddress.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.contains("@") && trimmed.contains(".")
     }
 
@@ -465,20 +536,51 @@ struct AccountView: View {
         return false
     }
 
-    private func performEmailAction() {
-        guard canSubmitEmail, !isAuthenticating else { return }
+    private func sendEmailCode(to rawAddress: String) {
+        guard Self.isValidEmail(rawAddress), !isAuthenticating else { return }
+        localMessage = nil
+        let address = rawAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        Task {
+            do {
+                try await auth.sendEmailCode(to: address)
+                codeEmail = address
+                emailCode = ""
+            } catch {
+                localMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func verifyEmailCode(for address: String) {
+        guard !emailCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            !isAuthenticating
+        else {
+            return
+        }
+        localMessage = nil
+        dismissAfterAuthentication = true
+        let code = emailCode.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        Task {
+            do {
+                try await auth.verifyEmailCode(email: address, code: code)
+            } catch {
+                dismissAfterAuthentication = false
+                localMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func signInWithPassword() {
+        guard canSubmitPassword, !isAuthenticating else { return }
         localMessage = nil
         dismissAfterAuthentication = true
         let address = email.trimmingCharacters(in: .whitespacesAndNewlines)
 
         Task {
             do {
-                switch mode {
-                case .signIn:
-                    try await auth.signIn(email: address, password: password)
-                case .signUp:
-                    try await auth.signUp(email: address, password: password)
-                }
+                try await auth.signIn(email: address, password: password)
             } catch {
                 dismissAfterAuthentication = false
                 localMessage = error.localizedDescription
@@ -528,10 +630,14 @@ struct AccountView: View {
         switch result {
         case .success(let authorization):
             guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
-                  let tokenData = credential.identityToken,
-                  let identityToken = String(data: tokenData, encoding: .utf8),
-                  let rawNonce = pendingNonce else {
-                localMessage = String(localized: LocalizedStringResource("Apple sign-in did not return a usable identity token.", locale: RecipeLanguage.active))
+                let tokenData = credential.identityToken,
+                let identityToken = String(data: tokenData, encoding: .utf8),
+                let rawNonce = pendingNonce
+            else {
+                localMessage = String(
+                    localized: LocalizedStringResource(
+                        "Apple sign-in did not return a usable identity token.",
+                        locale: RecipeLanguage.active))
                 return
             }
 
@@ -558,7 +664,8 @@ struct AccountView: View {
 
         case .failure(let error):
             if let authorizationError = error as? ASAuthorizationError,
-               authorizationError.code == .canceled {
+                authorizationError.code == .canceled
+            {
                 return
             }
             localMessage = error.localizedDescription
@@ -566,8 +673,8 @@ struct AccountView: View {
     }
 }
 
-private extension View {
-    func accountInputStyle() -> some View {
+extension View {
+    fileprivate func accountInputStyle() -> some View {
         self
             .font(RecipeTheme.body())
             .padding(.horizontal, 16)

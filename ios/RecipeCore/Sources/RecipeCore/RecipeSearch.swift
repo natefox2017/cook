@@ -17,7 +17,8 @@ public enum RecipeSearch {
 
         if recipe.title.localizedStandardContains(query)
             || recipe.summary.localizedStandardContains(query)
-            || recipe.notes.localizedStandardContains(query) {
+            || recipe.notes.localizedStandardContains(query)
+        {
             return true
         }
 

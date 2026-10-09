@@ -11,6 +11,7 @@ let package = Package(
     products: [.library(name: "RecipeCore", targets: ["RecipeCore"])],
     targets: [
         .target(name: "RecipeCore", path: "Sources/RecipeCore"),
-        .testTarget(name: "RecipeCoreTests", dependencies: ["RecipeCore"], path: "Tests/RecipeCoreTests")
+        .testTarget(
+            name: "RecipeCoreTests", dependencies: ["RecipeCore"], path: "Tests/RecipeCoreTests"),
     ]
 )

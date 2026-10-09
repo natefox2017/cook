@@ -74,12 +74,13 @@ public struct RecipeLibrarySnapshot: Codable, Sendable, Equatable {
         recipes = try container.decodeIfPresent([Recipe].self, forKey: .recipes) ?? []
         groceries = try container.decodeIfPresent([GroceryItem].self, forKey: .groceries) ?? []
         mealPlan = try container.decodeIfPresent([MealPlanEntry].self, forKey: .mealPlan) ?? []
-        collections = try container.decodeIfPresent([RecipeCollection].self, forKey: .collections) ?? []
+        collections =
+            try container.decodeIfPresent([RecipeCollection].self, forKey: .collections) ?? []
         collectionMemberships =
             try container.decodeIfPresent(
-            [RecipeCollectionMembership].self,
-            forKey: .collectionMemberships
-        ) ?? []
+                [RecipeCollectionMembership].self,
+                forKey: .collectionMemberships
+            ) ?? []
         settings =
             try container.decodeIfPresent(RecipeSettings.self, forKey: .settings)
             ?? RecipeSettings()
@@ -236,7 +237,7 @@ public final class RecipeStore {
         let cleaned = try validatedCollectionName(name)
         guard
             !collections.contains(where: {
-            normalized($0.name) == normalized(cleaned)
+                normalized($0.name) == normalized(cleaned)
             })
         else {
             throw RecipeStoreError.invalidValue("A collection with this name already exists.")
@@ -260,7 +261,7 @@ public final class RecipeStore {
         let cleaned = try validatedCollectionName(name)
         guard
             !collections.contains(where: {
-            $0.id != id && normalized($0.name) == normalized(cleaned)
+                $0.id != id && normalized($0.name) == normalized(cleaned)
             })
         else {
             throw RecipeStoreError.invalidValue("A collection with this name already exists.")
@@ -405,7 +406,8 @@ public final class RecipeStore {
         let originalServings = recipe.servings ?? 1
         let requestedServings = servings ?? originalServings
         guard originalServings > 0 else {
-            throw RecipeStoreError.invalidValue("The recipe's serving count must be greater than zero.")
+            throw RecipeStoreError.invalidValue(
+                "The recipe's serving count must be greater than zero.")
         }
 
         var next = snapshot
@@ -443,9 +445,10 @@ public final class RecipeStore {
             )
 
             if consolidateCompatibleIngredients,
-               let index = consolidationIndices[key],
-               var existing = next.groceries[index].quantity,
-               var added = item.quantity {
+                let index = consolidationIndices[key],
+                var existing = next.groceries[index].quantity,
+                var added = item.quantity
+            {
                 var total = Decimal()
                 guard NSDecimalAdd(&total, &existing, &added, .plain) == .noError else {
                     throw IngredientAmount.ValidationError.arithmeticFailure
@@ -461,8 +464,9 @@ public final class RecipeStore {
                 next.groceries.append(item)
                 // The next selected ingredient may combine with this new row.
                 if consolidateCompatibleIngredients,
-                   item.quantity != nil,
-                   consolidationIndices[key] == nil {
+                    item.quantity != nil,
+                    consolidationIndices[key] == nil
+                {
                     consolidationIndices[key] = next.groceries.count - 1
                 }
             }
@@ -518,14 +522,16 @@ public final class RecipeStore {
         // One recipe per day and meal slot, including when editing an existing entry.
         let replacedIDs = next.mealPlan.filter {
             $0.id == entry.id
-                || ($0.slot == entry.slot && Calendar.current.isDate($0.date, inSameDayAs: entry.date))
+                || ($0.slot == entry.slot
+                    && Calendar.current.isDate($0.date, inSameDayAs: entry.date))
         }.map(\.id).filter { $0 != entry.id }
         for replacedID in replacedIDs {
             next.deletedEntities?.insert(Self.deletionKey(.meal, replacedID))
         }
         next.mealPlan.removeAll {
             $0.id == entry.id
-                || ($0.slot == entry.slot && Calendar.current.isDate($0.date, inSameDayAs: entry.date))
+                || ($0.slot == entry.slot
+                    && Calendar.current.isDate($0.date, inSameDayAs: entry.date))
         }
         next.mealPlan.append(saved)
         next.mealPlan.sort { $0.date < $1.date }
@@ -555,7 +561,9 @@ public final class RecipeStore {
             loadError = nil
         } catch {
             let cocoaError = error as NSError
-            if cocoaError.domain == NSCocoaErrorDomain && cocoaError.code == NSFileReadNoSuchFileError {
+            if cocoaError.domain == NSCocoaErrorDomain
+                && cocoaError.code == NSFileReadNoSuchFileError
+            {
                 publish(LibrarySnapshot())
                 loadError = nil
             } else {
@@ -640,6 +648,8 @@ public final class RecipeStore {
         try commit(snapshot)
     }
 
+    /// Performs a three-way merge against the last shared base and reports unresolved conflicts.
+    /// Local values remain selected until the caller supplies an explicit choice.
     @discardableResult
     public func mergeCloudLibrary(
         with data: Data,
@@ -654,6 +664,7 @@ public final class RecipeStore {
         )
     }
 
+    /// Decodes a cloud snapshot, then applies the same validated three-way merge as the typed API.
     @discardableResult
     public func mergeCloudLibrary(
         with cloud: RecipeLibrarySnapshot,
@@ -744,18 +755,18 @@ public final class RecipeStore {
                 .union(baseByID.keys)
                 .union(
                     localDeleted.compactMap {
-                    Self.deletedID($0, entity: entity)
+                        Self.deletedID($0, entity: entity)
                     }
                 )
                 .union(
                     cloudDeleted.compactMap {
-                    Self.deletedID($0, entity: entity)
+                        Self.deletedID($0, entity: entity)
                     }
                 )
                 .union(
                     baseDeleted.compactMap {
-                    Self.deletedID($0, entity: entity)
-                })
+                        Self.deletedID($0, entity: entity)
+                    })
 
             var result: [T] = []
 
@@ -1004,7 +1015,7 @@ public final class RecipeStore {
                 : cloud.collections
             guard
                 let winner = sourceCollections.first(where: {
-                normalized($0.name) == nameKey
+                    normalized($0.name) == nameKey
                 })
             else {
                 conflictsByID[conflict.id] = conflict
@@ -1063,7 +1074,7 @@ public final class RecipeStore {
                 : cloud.mealPlan
             guard
                 let winner = sourceMeals.first(where: {
-                mealSlotKey($0) == slotKey
+                    mealSlotKey($0) == slotKey
                 })
             else {
                 conflictsByID[conflict.id] = conflict
@@ -1172,8 +1183,8 @@ public final class RecipeStore {
         for collection in snapshot.collections {
             let name = collection.name.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !name.isEmpty,
-                  collection.createdAt.timeIntervalSinceReferenceDate.isFinite,
-                  collection.updatedAt.timeIntervalSinceReferenceDate.isFinite,
+                collection.createdAt.timeIntervalSinceReferenceDate.isFinite,
+                collection.updatedAt.timeIntervalSinceReferenceDate.isFinite,
                 collectionNameKeys.insert(normalized(name)).inserted
             else {
                 throw RecipeStoreError.invalidValue(
@@ -1185,8 +1196,8 @@ public final class RecipeStore {
         var membershipKeys: Set<String> = []
         for membership in snapshot.collectionMemberships {
             guard recipeIDs.contains(membership.recipeID),
-                  collectionIDs.contains(membership.collectionID),
-                  membershipKeys.insert(
+                collectionIDs.contains(membership.collectionID),
+                membershipKeys.insert(
                     "\(membership.recipeID.uuidString):\(membership.collectionID.uuidString)"
                 ).inserted
             else {
@@ -1198,10 +1209,10 @@ public final class RecipeStore {
 
         for recipe in snapshot.recipes {
             guard recipe.servings.map({ $0 > 0 }) ?? true,
-                  recipe.prepMinutes.map({ $0 >= 0 }) ?? true,
-                  recipe.cookMinutes.map({ $0 >= 0 }) ?? true,
-                  unique(recipe.ingredients.map(\.id)), unique(recipe.steps.map(\.id)),
-                  recipe.createdAt.timeIntervalSinceReferenceDate.isFinite,
+                recipe.prepMinutes.map({ $0 >= 0 }) ?? true,
+                recipe.cookMinutes.map({ $0 >= 0 }) ?? true,
+                unique(recipe.ingredients.map(\.id)), unique(recipe.steps.map(\.id)),
+                recipe.createdAt.timeIntervalSinceReferenceDate.isFinite,
                 recipe.updatedAt.timeIntervalSinceReferenceDate.isFinite
             else {
                 throw RecipeStoreError.invalidValue(
@@ -1217,8 +1228,8 @@ public final class RecipeStore {
             }
             for step in recipe.steps {
                 guard unique(step.linkedIngredientIDs),
-                      Set(step.linkedIngredientIDs).isSubset(of: ingredientIDs),
-                      unique(step.timers.map(\.id)),
+                    Set(step.linkedIngredientIDs).isSubset(of: ingredientIDs),
+                    unique(step.timers.map(\.id)),
                     step.timers.allSatisfy({ $0.durationSeconds > 0 })
                 else {
                     throw RecipeStoreError.invalidValue(
@@ -1231,16 +1242,19 @@ public final class RecipeStore {
             guard !normalized(item.name).isEmpty, Set(item.recipeIDs).isSubset(of: recipeIDs),
                 unique(item.recipeIDs)
             else {
-                throw RecipeStoreError.invalidValue("Check the grocery item's name and recipe sources.")
+                throw RecipeStoreError.invalidValue(
+                    "Check the grocery item's name and recipe sources.")
             }
-            _ = try IngredientAmount(originalText: item.amountText, value: item.quantity, unit: item.unit)
+            _ = try IngredientAmount(
+                originalText: item.amountText, value: item.quantity, unit: item.unit)
         }
         var occupiedSlots: Set<String> = []
         for entry in snapshot.mealPlan {
             guard recipeIDs.contains(entry.recipeID),
                 entry.date.timeIntervalSinceReferenceDate.isFinite
             else {
-                throw RecipeStoreError.invalidValue("A meal plan refers to an unavailable recipe or date.")
+                throw RecipeStoreError.invalidValue(
+                    "A meal plan refers to an unavailable recipe or date.")
             }
             let day = Calendar.current.startOfDay(for: entry.date).timeIntervalSinceReferenceDate
             guard occupiedSlots.insert("\(day):\(entry.slot.rawValue)").inserted else {
@@ -1288,8 +1302,8 @@ public final class RecipeStore {
     ) -> RecipeCollectionMembership? {
         let parts = key.split(separator: ":")
         guard parts.count == 3,
-              parts[0] == "membership",
-              let collectionID = UUID(uuidString: String(parts[1])),
+            parts[0] == "membership",
+            let collectionID = UUID(uuidString: String(parts[1])),
             let recipeID = UUID(uuidString: String(parts[2]))
         else {
             return nil
@@ -1315,7 +1329,7 @@ public final class RecipeStore {
     ) throws -> GroceryItem {
         let source = try IngredientAmount(
             originalText: ingredient.amountText,
-                                          value: ingredient.quantity, unit: ingredient.unit)
+            value: ingredient.quantity, unit: ingredient.unit)
         var quantity = source.value
         var text = source.originalText
         if quantity != nil, originalServings != requestedServings {
@@ -1328,7 +1342,8 @@ public final class RecipeStore {
                 } else {
                     // Keep an exact visible expression instead of inventing a rounded quantity.
                     quantity = nil
-                    text = "\(ingredient.displayAmount()) × \(requestedServings)/\(originalServings)"
+                    text =
+                        "\(ingredient.displayAmount()) × \(requestedServings)/\(originalServings)"
                 }
             }
         }
@@ -1337,6 +1352,6 @@ public final class RecipeStore {
         }
         return GroceryItem(
             name: ingredient.name, amountText: text, quantity: quantity,
-                           unit: ingredient.unit, category: ingredient.category, recipeIDs: [recipeID])
+            unit: ingredient.unit, category: ingredient.category, recipeIDs: [recipeID])
     }
 }

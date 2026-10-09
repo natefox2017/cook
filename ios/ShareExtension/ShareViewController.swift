@@ -2,9 +2,9 @@
 // Purpose: Receives recipe links, text, images, and PDFs from Share hosts.
 
 import RecipeCore
+import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
-import SwiftUI
 
 /// Share Extension entry point; it never contacts Supabase or waits for AI.
 @MainActor
@@ -33,7 +33,7 @@ final class ShareViewController: UIViewController {
             host.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             host.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             host.view.topAnchor.constraint(equalTo: view.topAnchor),
-            host.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            host.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
         host.didMove(toParent: self)
     }
@@ -50,7 +50,12 @@ final class ShareViewController: UIViewController {
         display(.receiving)
 
         guard let items = extensionContext?.inputItems as? [NSExtensionItem] else {
-            display(.failed(String(localized: LocalizedStringResource("The source app did not provide a readable link or text.", locale: Locale(identifier: "en")))))
+            display(
+                .failed(
+                    String(
+                        localized: LocalizedStringResource(
+                            "The source app did not provide a readable link or text.",
+                            locale: RecipeLanguage.active))))
             return
         }
 
@@ -89,12 +94,17 @@ final class ShareViewController: UIViewController {
 
         // Some host apps supply an attributed text item without a provider.
         if let content = items.compactMap({ $0.attributedContentText?.string })
-            .first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+            .first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+        {
             save(content, as: .text)
         } else {
-            display(.failed(
-                String(localized: LocalizedStringResource("Share a public recipe link, readable text, image, or PDF.", locale: Locale(identifier: "en")))
-            ))
+            display(
+                .failed(
+                    String(
+                        localized: LocalizedStringResource(
+                            "Share a public recipe link, readable text, image, or PDF.",
+                            locale: RecipeLanguage.active))
+                ))
         }
     }
 
@@ -115,10 +125,14 @@ final class ShareViewController: UIViewController {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 guard let data, let mimeType else {
-                    self.display(.failed(
-                        error?.localizedDescription
-                            ?? String(localized: LocalizedStringResource("This attachment type is not supported.", locale: Locale(identifier: "en")))
-                    ))
+                    self.display(
+                        .failed(
+                            error?.localizedDescription
+                                ?? String(
+                                    localized: LocalizedStringResource(
+                                        "This attachment type is not supported.",
+                                        locale: RecipeLanguage.active))
+                        ))
                     return
                 }
                 self.save(data, as: type, mimeType: mimeType)
@@ -155,9 +169,14 @@ final class ShareViewController: UIViewController {
                 if let source, !source.isEmpty {
                     self.save(source, as: type)
                 } else {
-                    self.display(.failed(
-                        failure ?? String(localized: LocalizedStringResource("The shared item could not be read. Try copying the link or text.", locale: Locale(identifier: "en")))
-                    ))
+                    self.display(
+                        .failed(
+                            failure
+                                ?? String(
+                                    localized: LocalizedStringResource(
+                                        "The shared item could not be read. Try copying the link or text.",
+                                        locale: RecipeLanguage.active))
+                        ))
                 }
             }
         }
@@ -202,7 +221,11 @@ final class ShareViewController: UIViewController {
             withError: NSError(
                 domain: "RecipePouch.ShareExtension",
                 code: NSUserCancelledError,
-                userInfo: [NSLocalizedDescriptionKey: String(localized: LocalizedStringResource("Share cancelled.", locale: Locale(identifier: "en")))]
+                userInfo: [
+                    NSLocalizedDescriptionKey: String(
+                        localized: LocalizedStringResource(
+                            "Share cancelled.", locale: RecipeLanguage.active))
+                ]
             )
         )
     }

@@ -3,12 +3,13 @@
 
 import Foundation
 import Testing
+
 @testable import RecipeCore
 
 @Test func weekStartPreferenceChangesSevenDayIntervalAcrossNewYear() throws {
     var systemCalendar = Calendar(identifier: .gregorian)
     systemCalendar.timeZone = try #require(TimeZone(secondsFromGMT: 0))
-    systemCalendar.firstWeekday = 3 // Tuesday, to detect System Default fallback.
+    systemCalendar.firstWeekday = 3  // Tuesday, to detect System Default fallback.
     systemCalendar.minimumDaysInFirstWeek = 1
 
     let selectedDate = try #require(
@@ -20,7 +21,7 @@ import Testing
     let cases: [(String, Int, DateComponents)] = [
         ("System Default", 3, DateComponents(year: 2025, month: 12, day: 30)),
         ("Sunday", 1, DateComponents(year: 2025, month: 12, day: 28)),
-        ("Monday", 2, DateComponents(year: 2025, month: 12, day: 29))
+        ("Monday", 2, DateComponents(year: 2025, month: 12, day: 29)),
     ]
 
     for (preference, expectedWeekday, expectedStart) in cases {
