@@ -32,6 +32,33 @@ struct RecipeEditorView: View {
         _sourceText = State(initialValue: value.sourceURL ?? "")
     }
 
+    // Keep empty optional editor fields absent from older recipe records.
+    private func optionalStringBinding(
+        _ path: WritableKeyPath<Recipe, String?>
+    ) -> Binding<String> {
+        Binding(
+            get: { draft[keyPath: path] ?? "" },
+            set: { input in
+                let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+                draft[keyPath: path] = trimmed.isEmpty ? nil : input
+            }
+        )
+    }
+
+    private func commaSeparatedBinding(
+        _ path: WritableKeyPath<Recipe, [String]?>
+    ) -> Binding<String> {
+        Binding(
+            get: { draft[keyPath: path]?.joined(separator: ", ") ?? "" },
+            set: { input in
+                let values = input.split(separator: ",").map {
+                    $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                }.filter { !$0.isEmpty }
+                draft[keyPath: path] = values.isEmpty ? nil : values
+            }
+        )
+    }
+
     var body: some View {
         let photoLabel = draft.coverData == nil ? "Add a photo" : "Change photo"
         NavigationStack {
@@ -60,6 +87,18 @@ struct RecipeEditorView: View {
                             Text(LocalizedStringKey($0.rawValue)).tag($0)
                         }
                     }
+                    Picker("Difficulty", selection: $draft.difficulty) {
+                        Text("Unknown").tag(nil as RecipeDifficulty?)
+                        ForEach(RecipeDifficulty.allCases) { difficulty in
+                            Text(LocalizedStringKey(difficulty.rawValue))
+                                .tag(Optional(difficulty))
+                        }
+                    }
+                    TextField("Cuisine (optional)", text: optionalStringBinding(\.cuisine))
+                    TextField(
+                        "Dietary tags (comma separated)",
+                        text: commaSeparatedBinding(\.dietaryTags)
+                    )
                     numberField("Servings", placeholder: "Unknown", text: $servingsText)
                     numberField("Prep time (minutes)", placeholder: "Optional", text: $prepText)
                     numberField("Cook time (minutes)", placeholder: "Optional", text: $cookText)
@@ -90,6 +129,21 @@ struct RecipeEditorView: View {
                         Label("Add step", systemImage: "plus.circle")
                     }
                     .accessibilityIdentifier("addRecipeStep")
+                }
+                Section("Details") {
+                    TextField(
+                        "Equipment (comma separated)",
+                        text: commaSeparatedBinding(\.equipment)
+                    )
+                    TextField("Yield (optional)", text: optionalStringBinding(\.yieldDescription))
+                    TextField(
+                        "Preparation tips", text: optionalStringBinding(\.preparationTips),
+                        axis: .vertical
+                    ).lineLimit(2...4)
+                    TextField(
+                        "Storage notes", text: optionalStringBinding(\.storageNotes),
+                        axis: .vertical
+                    ).lineLimit(2...4)
                 }
                 Section("Notes") {
                     TextField("Your notes and changes", text: $draft.notes, axis: .vertical)
