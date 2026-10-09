@@ -145,7 +145,7 @@ struct RecipeApp: App {
                 }
             } else {
                 assertionFailure(
-                    "Pass a supported --uitesting-performance-count=500, 1000, or 5000."
+                    "Pass a supported --uitesting-performance-count=100, 500, 1000, or 5000."
                 )
                 localStore = RecipeStore(fileURL: nil)
             }

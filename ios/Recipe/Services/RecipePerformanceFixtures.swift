@@ -47,7 +47,7 @@
             let count = countArgument.flatMap { argument in
                 Int(argument.dropFirst(countPrefix.count))
             }
-            guard let count, [500, 1_000, 5_000].contains(count) else {
+            guard let count, [100, 500, 1_000, 5_000].contains(count) else {
                 return nil
             }
             let collectionsArgument = arguments.first { argument in

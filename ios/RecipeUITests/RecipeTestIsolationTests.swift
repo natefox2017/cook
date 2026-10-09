@@ -25,7 +25,7 @@ final class RecipeTestIsolationTests: XCTestCase {
         func testPerformanceFixtureRequiresUITestingAndUsesSeparatePath() throws {
             let performanceArguments = [
                 RecipePerformanceFixtureConfiguration.launchArgument,
-                "--uitesting-performance-count=500",
+                "--uitesting-performance-count=100",
             ]
             XCTAssertNil(
                 RecipePerformanceFixtureConfiguration.parse(arguments: performanceArguments)
@@ -35,6 +35,31 @@ final class RecipeTestIsolationTests: XCTestCase {
                 RecipePerformanceFixtureConfiguration.parse(
                     arguments: ["--uitesting"] + performanceArguments
                 )
+            )
+            XCTAssertEqual(configuration.recipeCount, 100)
+
+            for count in [500, 1_000, 5_000] {
+                let compatibleArguments = [
+                    "--uitesting",
+                    RecipePerformanceFixtureConfiguration.launchArgument,
+                    "--uitesting-performance-count=\(count)",
+                ]
+                let compatibleConfiguration = try XCTUnwrap(
+                    RecipePerformanceFixtureConfiguration.parse(arguments: compatibleArguments)
+                )
+                XCTAssertEqual(compatibleConfiguration.recipeCount, count)
+            }
+
+            let largeFixture = RecipePerformanceFixtureConfiguration.snapshot(
+                seed: 137,
+                recipeCount: 100,
+                collectionCount: 100,
+                includesCovers: false
+            )
+            XCTAssertEqual(largeFixture.collectionMemberships.count, 200)
+            XCTAssertEqual(
+                Set(largeFixture.collectionMemberships).count,
+                largeFixture.collectionMemberships.count
             )
             let fixtureURL = configuration.fileURL.standardizedFileURL
             let supportDirectory = URL.applicationSupportDirectory
