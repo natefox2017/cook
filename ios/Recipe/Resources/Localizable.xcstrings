@@ -15502,46 +15502,46 @@
         }
       }
     },
-    "Collect recipes on any plan": {
+    "Create with AI": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "どのプランでもレシピを保存"
+            "value": "AIで作成"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "所有套餐均可收藏食谱"
+            "value": "用 AI 创作"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "所有方案皆可收藏食譜"
+            "value": "用 AI 創作"
           }
         }
       }
     },
-    "Collect recipes from links, photos, or text, then cook from your personal library.": {
+    "Tell AI what you’re craving or list the ingredients you have. Start with a recipe idea.": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "リンク、写真、テキストからレシピを保存し、自分のライブラリで料理しましょう。"
+            "value": "食べたいものや手元の食材をAIに伝えて、レシピのアイデアを作りましょう。"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "从链接、照片或文字收集食谱，再从个人食谱库中开始烹饪。"
+            "value": "告诉 AI 你想吃什么或手头有哪些食材，先获得一道菜谱灵感。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "從連結、照片或文字收集食譜，再從個人食譜庫中開始烹飪。"
+            "value": "告訴 AI 你想吃什麼或手邊有哪些食材，先獲得一道食譜靈感。"
           }
         }
       }
@@ -19044,28 +19044,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "人数分：%lld"
-          }
-        }
-      }
-    },
-    "Save recipes your way": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "レシピを自分らしく保存"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "用你喜欢的方式收藏食谱"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "用你喜歡的方式收藏食譜"
           }
         }
       }

@@ -808,7 +808,7 @@ final class RecipeUITests: XCTestCase {
         let premium = app.buttons["Premium"]
         reveal(premium, in: app, maximumSwipes: 4)
         premium.tap()
-        XCTAssertTrue(app.staticTexts["RecipePouch Premium"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Recipe Pals Premium"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["Restore Purchases"].exists)
         attachScreenshot("Subscription from Profile", app: app)
 
@@ -821,9 +821,47 @@ final class RecipeUITests: XCTestCase {
         reveal(subscription, in: app, maximumSwipes: 4)
         subscription.tap()
 
-        XCTAssertTrue(app.staticTexts["RecipePouch Premium"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Recipe Pals Premium"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["Restore Purchases"].exists)
         attachScreenshot("Subscription from Settings", app: app)
+    }
+
+    @MainActor
+    func testOnboardingPreservesApprovedAIStoryAndPaywall() {
+        let app = launchOnboardingApp(productIDs: "")
+        defer {
+            app.terminate()
+        }
+
+        // Keep the approved story order and AI-first messaging through future merges.
+        XCTAssertTrue(app.staticTexts["Create with AI"].waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            app.staticTexts[
+                "Tell AI what you’re craving or list the ingredients you have. Start with a recipe idea."
+            ].exists
+        )
+        let next = app.buttons["onboarding.primary"]
+        waitUntilReady(next)
+        XCTAssertEqual(next.label, "Next")
+
+        next.tap()
+        XCTAssertTrue(app.staticTexts["Save recipe links"].waitForExistence(timeout: 8))
+        waitUntilReady(next)
+        next.tap()
+        XCTAssertTrue(app.staticTexts["Import social recipes"].waitForExistence(timeout: 8))
+        waitUntilReady(next)
+        XCTAssertEqual(next.label, "See Plans")
+
+        next.tap()
+        XCTAssertTrue(app.staticTexts["Recipe Pals Premium"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Create with AI"].exists)
+        let annual = app.buttons["subscription.plan.annual.unavailable"]
+        let monthly = app.buttons["subscription.plan.monthly.unavailable"]
+        XCTAssertTrue(annual.isSelected)
+        XCTAssertGreaterThan(annual.frame.minY, monthly.frame.minY)
+        XCTAssertTrue(app.buttons["onboarding.plan.free"].exists)
+        XCTAssertTrue(app.buttons["subscription.restore"].exists)
+        attachScreenshot("Approved AI-first onboarding and Premium", app: app)
     }
 
     @MainActor
@@ -862,8 +900,10 @@ final class RecipeUITests: XCTestCase {
             "--uitesting", "--uitesting-onboarding", "--uitesting-locale", "zh-Hans",
         ]
         app.launch()
+        XCTAssertTrue(app.staticTexts["用 AI 创作"].waitForExistence(timeout: 8))
         waitUntilReady(app.buttons["onboarding.skip"])
         app.buttons["onboarding.skip"].tap()
+        XCTAssertTrue(app.staticTexts["Recipe Pals 高级版"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["onboarding.purchase"].waitForExistence(timeout: 8))
         attachScreenshot("Product Design subscription - Chinese layout smoke", app: app)
     }
@@ -1311,7 +1351,7 @@ final class RecipeUITests: XCTestCase {
         let premium = app.buttons["Premium"]
         reveal(premium, in: app, maximumSwipes: 4)
         premium.tap()
-        XCTAssertTrue(app.staticTexts["RecipePouch Premium"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Recipe Pals Premium"].waitForExistence(timeout: 8))
     }
 
     @MainActor

@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Implements RecipePouch subscription status, purchase, restore, and management UI.
+// Purpose: Implements Recipe Pals subscription status, purchase, restore, and management UI.
 
 import Foundation
 import RecipeCore
@@ -290,7 +290,7 @@ struct PremiumPaywallContent: View {
 
     private var premiumFeatures: some View {
         VStack(alignment: .leading, spacing: 10) {
-            premiumFeature("bookmark", title: "Collect recipes on any plan")
+            premiumFeature("sparkles", title: "Create with AI")
             premiumFeature("link", title: "Links & social")
             premiumFeature("fork.knife", title: "Cook & plan")
         }
