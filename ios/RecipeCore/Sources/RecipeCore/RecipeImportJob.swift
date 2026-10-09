@@ -178,6 +178,34 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         }
     }
 
+    public struct Candidate: Codable, Hashable, Sendable {
+        public let candidateID: String
+        public let title: String?
+        public let ingredients: [String]
+        public let steps: [String]
+        public let evidenceIDs: [UUID]
+        public let reviewFields: [String]
+
+        private enum CodingKeys: String, CodingKey {
+            case candidateID = "candidate_id"
+            case title, ingredients, steps
+            case evidenceIDs = "evidence_ids"
+            case reviewFields = "review_fields"
+        }
+
+        public init(
+            candidateID: String, title: String?, ingredients: [String],
+            steps: [String], evidenceIDs: [UUID] = [], reviewFields: [String] = []
+        ) {
+            self.candidateID = candidateID
+            self.title = title
+            self.ingredients = ingredients
+            self.steps = steps
+            self.evidenceIDs = evidenceIDs
+            self.reviewFields = reviewFields
+        }
+    }
+
     public struct Result: Codable, Hashable, Sendable {
         public let recipeID: UUID
         public let status: String
@@ -185,6 +213,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         public let fields: [String: Field]
         public let evidence: [Evidence]
         public let reviewFields: [String]?
+        public let candidateRecipes: [Candidate]?
 
         public var resultStatus: RecipeImportResultStatus? {
             RecipeImportResultStatus(rawValue: status)
@@ -197,6 +226,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
             case fields
             case evidence
             case reviewFields = "review_fields"
+            case candidateRecipes = "candidate_recipes"
         }
 
         public init(
@@ -205,7 +235,8 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
             source: Source,
             fields: [String: Field],
             evidence: [Evidence] = [],
-            reviewFields: [String]? = nil
+            reviewFields: [String]? = nil,
+            candidateRecipes: [Candidate]? = nil
         ) {
             self.recipeID = recipeID
             self.status = status
@@ -213,6 +244,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
             self.fields = fields
             self.evidence = evidence
             self.reviewFields = reviewFields
+            self.candidateRecipes = candidateRecipes
         }
     }
 
@@ -352,17 +384,20 @@ public struct RecipeImportRecord: Codable, Hashable, Sendable {
     /// Local tombstone for user-deleted private source bytes. Keeps job evidence
     /// immutable so older snapshots and completed retries remain decodable.
     public var sourceArtifactDeletedAt: Date?
+    public var selectedCandidateID: String?
 
     public init(
         jobID: UUID,
         result: RecipeImportJobResponse.Result,
         reviewedAt: Date? = nil,
-        sourceArtifactDeletedAt: Date? = nil
+        sourceArtifactDeletedAt: Date? = nil,
+        selectedCandidateID: String? = nil
     ) {
         self.jobID = jobID
         self.result = result
         self.reviewedAt = reviewedAt
         self.sourceArtifactDeletedAt = sourceArtifactDeletedAt
+        self.selectedCandidateID = selectedCandidateID
     }
 }
 

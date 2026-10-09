@@ -553,7 +553,8 @@ public enum RecipeShareImportWorkflow {
             source: old.result.source,
             fields: fields,
             evidence: evidence,
-            reviewFields: review.sorted()
+            reviewFields: review.sorted(),
+            candidateRecipes: incoming.candidateRecipes ?? old.result.candidateRecipes
         )
         updated.importRecord = RecipeImportRecord(
             jobID: old.jobID,

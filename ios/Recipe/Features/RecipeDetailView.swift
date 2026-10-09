@@ -1,6 +1,7 @@
 // Developer: gengyun
 // Purpose: Implements RecipeDetailView for the Recipe iOS app.
 
+import CryptoKit
 import RecipeCore
 import SwiftUI
 
@@ -14,6 +15,7 @@ struct RecipeDetailView: View {
     @State private var didLoadServings = false
     @State private var didAdjustServings = false
     @State private var isEditing = false
+    @State private var isChoosingRecipeCandidates = false
     @State private var isCooking = false
     @State private var cookingStartStepID: UUID?
     @State private var isChoosingIngredients = false
@@ -45,6 +47,11 @@ struct RecipeDetailView: View {
         .toolbar { detailToolbar }
         .sheet(isPresented: $isEditing) {
             if let recipe = store.recipe(id: recipeID) { RecipeEditorView(recipe: recipe) }
+        }
+        .sheet(isPresented: $isChoosingRecipeCandidates) {
+            if let recipe = store.recipe(id: recipeID) {
+                RecipeCandidateSelectionView(sourceRecipe: recipe)
+            }
         }
         .sheet(isPresented: $isPlanningMeal) { RecipeMealPlanSheet(recipeID: recipeID) }
         .sheet(isPresented: $isManagingCollections) {
@@ -169,7 +176,21 @@ struct RecipeDetailView: View {
                     .textSelection(.enabled)
             }
             recipeCollections(recipe)
-            if recipe.needsReview {
+            if let candidates = recipe.importRecord?.result.candidateRecipes,
+                !candidates.isEmpty
+            {
+                Button {
+                    isChoosingRecipeCandidates = true
+                } label: {
+                    Label(
+                        "Select dishes from this source (\(candidates.count))",
+                        systemImage: "square.stack.3d.up"
+                    )
+                    .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+                    .frame(minHeight: 44, alignment: .leading)
+                }
+                .accessibilityIdentifier("recipeMultiCandidateSelect")
+            } else if recipe.needsReview {
                 Button {
                     isEditing = true
                 } label: {
@@ -1168,4 +1189,152 @@ private struct DetailIngredientGroup: Identifiable {
     let id: String
     let title: String?
     let ingredients: [RecipeIngredient]
+}
+
+
+/// Explicit multi-dish picker. A source can remain in the private library for
+/// future review; no dish is saved automatically or merged into a false recipe.
+private struct RecipeCandidateSelectionView: View {
+    let sourceRecipe: Recipe
+    @Environment(RecipeStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var selected = Set<String>()
+    @State private var errorMessage: String?
+
+    private var candidates: [RecipeImportJobResponse.Candidate] {
+        Array((sourceRecipe.importRecord?.result.candidateRecipes ?? []).prefix(8))
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(candidates, id: \.candidateID) { candidate in
+                        Button {
+                            if !selected.insert(candidate.candidateID).inserted {
+                                selected.remove(candidate.candidateID)
+                            }
+                        } label: {
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: selected.contains(candidate.candidateID)
+                                      ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(RecipeTheme.accentForeground)
+                                    .font(.system(size: 22))
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text(candidate.title ?? "Untitled Recipe")
+                                        .font(RecipeTheme.text(
+                                            16, weight: .semibold, relativeTo: .body))
+                                    Text(
+                                        "\(candidate.ingredients.count) ingredients · \(candidate.steps.count) steps"
+                                    )
+                                    .font(RecipeTheme.text(13, relativeTo: .footnote))
+                                    .foregroundStyle(.secondary)
+                                    if !candidate.reviewFields.isEmpty {
+                                        Text("Needs review after saving")
+                                            .font(RecipeTheme.text(12, relativeTo: .caption))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer(minLength: 0)
+                            }
+                            .frame(minHeight: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier(
+                            "recipeCandidate.\(candidate.candidateID)")
+                    }
+                } header: {
+                    Text("Choose recipes to save")
+                } footer: {
+                    Text("Only selected dishes are added to your private recipes.")
+                }
+            }
+            .navigationTitle("Select recipes")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save selected") {
+                        do { try saveSelected(); dismiss() }
+                        catch { errorMessage = error.localizedDescription }
+                    }
+                    .disabled(selected.isEmpty)
+                    .accessibilityIdentifier("saveSelectedCandidateRecipes")
+                }
+            }
+            .alert(
+                "Could not save recipes",
+                isPresented: Binding(
+                    get: { errorMessage != nil },
+                    set: { if !$0 { errorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "")
+            }
+        }
+    }
+
+    private func saveSelected() throws {
+        guard let sourceRecord = sourceRecipe.importRecord else { return }
+        for candidate in candidates where selected.contains(candidate.candidateID) {
+            let targetID = Self.stableChildID(
+                sourceID: sourceRecipe.id, candidateID: candidate.candidateID)
+            // Repeated saves do not duplicate a dish or overwrite user edits.
+            if store.recipe(id: targetID) != nil { continue }
+            let title = candidate.title ?? "Untitled Recipe"
+            let content = title
+                + "\n\nIngredients\n" + candidate.ingredients.joined(separator: "\n")
+                + "\n\nInstructions\n" + candidate.steps.joined(separator: "\n")
+            var recipe = RecipeDocumentParser.recipe(fromText: content, title: title)
+            recipe.id = targetID
+            recipe.sourceURL = sourceRecipe.sourceURL
+            recipe.sourceName = sourceRecipe.sourceName
+            recipe.sourceText = sourceRecipe.sourceText
+
+            var fields: [String: RecipeImportJobResponse.Field] = [:]
+            let evidenceIDs = candidate.evidenceIDs
+            fields["title"] = .init(rawValue: title, evidenceIDs: evidenceIDs)
+            for (index, raw) in candidate.ingredients.enumerated() {
+                let field = RecipeImportJobResponse.Field(
+                    rawValue: raw, evidenceIDs: evidenceIDs)
+                fields["ingredients[\(index)].raw_text"] = field
+                fields["ingredients[\(index)].amount"] = field
+            }
+            for (index, instruction) in candidate.steps.enumerated() {
+                fields["steps[\(index)].instruction"] = .init(
+                    rawValue: instruction, evidenceIDs: evidenceIDs)
+            }
+            let evidence = sourceRecord.result.evidence.filter {
+                evidenceIDs.contains($0.id)
+            }
+            let result = RecipeImportJobResponse.Result(
+                recipeID: targetID,
+                status: candidate.reviewFields.isEmpty ? "ready" : "needs_review",
+                source: sourceRecord.result.source,
+                fields: fields,
+                evidence: evidence,
+                reviewFields: candidate.reviewFields
+            )
+            recipe.importRecord = RecipeImportRecord(
+                jobID: sourceRecord.jobID,
+                result: result,
+                selectedCandidateID: candidate.candidateID)
+            try store.upsert(recipe)
+        }
+    }
+
+    private static func stableChildID(sourceID: UUID, candidateID: String) -> UUID {
+        let key = Data("\(sourceID.uuidString):\(candidateID)".utf8)
+        let digest = Array(SHA256.hash(data: key))
+        return UUID(uuid: (
+            digest[0], digest[1], digest[2], digest[3],
+            digest[4], digest[5], digest[6], digest[7],
+            digest[8], digest[9], digest[10], digest[11],
+            digest[12], digest[13], digest[14], digest[15]
+        ))
+    }
 }
