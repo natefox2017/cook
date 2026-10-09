@@ -1,16 +1,20 @@
 // Developer: gengyun
-// Purpose: Selects a supported UI locale from the user's language preferences.
+// Purpose: Keeps the interface in English unless a UI test explicitly selects another locale.
 
 import Foundation
 
-/// Resolves a supported interface language while preserving explicit locale smoke-test overrides.
+/// Uses English by default and permits non-English locales only for explicit UI smoke tests.
 public enum RecipeLanguage {
     private static let supportedIdentifiers = Bundle.main.localizations.filter {
         $0.caseInsensitiveCompare("Base") != .orderedSame
     }
 
-    public static let active: Locale = {
-        let arguments = ProcessInfo.processInfo.arguments
+    public static let active = resolve(
+        arguments: ProcessInfo.processInfo.arguments,
+        supportedIdentifiers: supportedIdentifiers
+    )
+
+    static func resolve(arguments: [String], supportedIdentifiers: [String]) -> Locale {
         if arguments.contains("--uitesting"),
             let index = arguments.firstIndex(of: "--uitesting-locale"),
             arguments.indices.contains(index + 1)
@@ -21,12 +25,6 @@ public enum RecipeLanguage {
             }
         }
 
-        let preferred = Bundle.preferredLocalizations(
-            from: supportedIdentifiers,
-            forPreferences: Locale.preferredLanguages
-        )
-        // The bundle's development language is the source language for unmatched preferences.
-        let fallback = Bundle.main.developmentLocalization ?? "en"
-        return Locale(identifier: preferred.first ?? fallback)
-    }()
+        return Locale(identifier: "en")
+    }
 }
