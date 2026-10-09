@@ -121,6 +121,7 @@ struct RecipeDetailView: View {
                         Text(recipe.notes).textSelection(.enabled)
                     }
                 }
+                additionalDetails(recipe)
                 source(recipe)
             }
             .recipePageContentInsets()
@@ -204,18 +205,26 @@ struct RecipeDetailView: View {
 
     @ViewBuilder
     private func recipeMetadata(_ recipe: Recipe) -> some View {
-        if let minutes = recipe.totalMinutes {
-            Label(
-                Duration.seconds(minutes * 60).formatted(
-                    .units(width: .abbreviated, maximumUnitCount: 1).locale(locale)
-                ),
-                systemImage: "clock"
-            )
+        if let prep = recipe.prepMinutes, prep >= 0 {
+            Label("Prep \(prep) min", systemImage: "clock")
+        }
+        if let cook = recipe.cookMinutes, cook >= 0 {
+            Label("Cook \(cook) min", systemImage: "flame")
+        }
+        if let total = recipe.totalMinutes, recipe.prepMinutes == nil || recipe.cookMinutes == nil {
+            Label("Total \(total) min", systemImage: "clock")
         }
         if let originalServings = recipe.servings, originalServings > 0 {
-            Label("\(originalServings) servings", systemImage: "person.2")
+            Label("\(servings) servings", systemImage: "person.2")
         }
-        Text(LocalizedStringKey(recipe.category.rawValue))
+        if let difficulty = recipe.difficulty {
+            Label(LocalizedStringKey(difficulty.rawValue), systemImage: "gauge.medium")
+        }
+        if let cuisine = recipe.cuisine, !cuisine.isEmpty {
+            Label(cuisine, systemImage: "fork.knife")
+        } else {
+            Text(LocalizedStringKey(recipe.category.rawValue))
+        }
     }
 
     private func ingredients(_ recipe: Recipe) -> some View {
@@ -236,25 +245,37 @@ struct RecipeDetailView: View {
                 Text("No ingredients yet. Edit this recipe to add them.")
                     .foregroundStyle(.secondary)
             } else {
-                VStack(spacing: 0) {
-                    ForEach(recipe.ingredients) { ingredient in
-                        Button {
-                            parameterInfo = .ingredient(
-                                ingredient, servings: servings, originalServings: recipe.servings)
-                        } label: {
-                            RecipeIngredientLine(
-                                ingredient: ingredient, servings: servings,
-                                originalServings: recipe.servings)
-                                .contentShape(Rectangle())
+                ForEach(ingredientGroups(for: recipe)) { group in
+                    VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
+                        if let title = group.title {
+                            Text(title)
+                                .font(RecipeTheme.text(
+                                    15, weight: .semibold, relativeTo: .subheadline))
+                                .foregroundStyle(RecipeTheme.accentForeground)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Show ingredient amount details")
-                        .accessibilityIdentifier("recipeIngredientInfo.\(ingredient.id.uuidString)")
-                        if ingredient.id != recipe.ingredients.last?.id { Divider() }
+                        VStack(spacing: 0) {
+                            ForEach(group.ingredients) { ingredient in
+                                Button {
+                                    parameterInfo = .ingredient(
+                                        ingredient, servings: servings,
+                                        originalServings: recipe.servings)
+                                } label: {
+                                    RecipeIngredientLine(
+                                        ingredient: ingredient, servings: servings,
+                                        originalServings: recipe.servings)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityHint("Show ingredient amount details")
+                                .accessibilityIdentifier(
+                                    "recipeIngredientInfo.\(ingredient.id.uuidString)")
+                                if ingredient.id != group.ingredients.last?.id { Divider() }
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 20))
                     }
                 }
-                .padding(.horizontal, 16)
-                .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 20))
                 Button {
                     isChoosingIngredients = true
                 } label: {
@@ -264,6 +285,81 @@ struct RecipeDetailView: View {
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("addToGroceries")
             }
+        }
+    }
+
+
+    private func ingredientGroups(for recipe: Recipe) -> [DetailIngredientGroup] {
+        var groups: [DetailIngredientGroup] = []
+        var used: Set<UUID> = []
+        for section in recipe.ingredientSections ?? [] {
+            let ids = Set(section.ingredientIDs)
+            let members = recipe.ingredients.filter {
+                ids.contains($0.id) && !used.contains($0.id)
+            }
+            guard !members.isEmpty else { continue }
+            used.formUnion(members.map(\.id))
+            groups.append(DetailIngredientGroup(
+                id: section.id.uuidString, title: section.title, ingredients: members))
+        }
+        let remaining = recipe.ingredients.filter { !used.contains($0.id) }
+        if !remaining.isEmpty {
+            groups.append(DetailIngredientGroup(
+                id: "remaining", title: groups.isEmpty ? nil : "Other Ingredients",
+                ingredients: remaining))
+        }
+        return groups
+    }
+
+    @ViewBuilder
+    private func additionalDetails(_ recipe: Recipe) -> some View {
+        let hasEquipment = !(recipe.equipment ?? []).isEmpty
+        let hasTips = !(recipe.preparationTips ?? "").isEmpty
+        let hasStorage = !(recipe.storageNotes ?? "").isEmpty
+        let hasYield = !(recipe.yieldDescription ?? "").isEmpty
+        let hasAuthor = !(recipe.authorCredit ?? "").isEmpty
+        let nutrition = recipe.nutrition
+        let hasNutrition = nutrition?.perServings == 1
+            && nutrition?.source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        if hasEquipment || hasTips || hasStorage || hasYield || hasAuthor || hasNutrition {
+            VStack(alignment: .leading, spacing: RecipeSpacing.small) {
+                sectionTitle("More details")
+                if let equipment = recipe.equipment, !equipment.isEmpty {
+                    Label(equipment.joined(separator: ", "), systemImage: "frying.pan")
+                }
+                if let yield = recipe.yieldDescription, !yield.isEmpty {
+                    Text("Yield: \(yield)")
+                }
+                if let tips = recipe.preparationTips, !tips.isEmpty {
+                    Text(tips)
+                }
+                if let storage = recipe.storageNotes, !storage.isEmpty {
+                    Text(storage)
+                }
+                if let author = recipe.authorCredit, !author.isEmpty {
+                    Text("Creator: \(author)")
+                }
+                if hasNutrition, let nutrition {
+                    DisclosureGroup("Nutrition per serving") {
+                        if let calories = nutrition.caloriesKcal {
+                            Text("Calories: \(NSDecimalNumber(decimal: calories)) kcal")
+                        }
+                        if let protein = nutrition.proteinGrams {
+                            Text("Protein: \(NSDecimalNumber(decimal: protein)) g")
+                        }
+                        if let carbohydrates = nutrition.carbohydratesGrams {
+                            Text("Carbohydrates: \(NSDecimalNumber(decimal: carbohydrates)) g")
+                        }
+                        if let fat = nutrition.fatGrams {
+                            Text("Fat: \(NSDecimalNumber(decimal: fat)) g")
+                        }
+                        Text("Source: \(nutrition.source)")
+                            .font(RecipeTheme.text(12, relativeTo: .caption))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .font(RecipeTheme.text(15, relativeTo: .subheadline))
         }
     }
 
@@ -1066,4 +1162,10 @@ struct RecipeParameterSheet: View {
         .presentationDetents([.height(260), .medium])
         .presentationDragIndicator(.visible)
     }
+}
+
+private struct DetailIngredientGroup: Identifiable {
+    let id: String
+    let title: String?
+    let ingredients: [RecipeIngredient]
 }
