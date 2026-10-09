@@ -89,17 +89,19 @@ struct RecipeRemoteImportService {
     private let publishableKey: String
 
     init(bundle: Bundle = .main) throws {
-        guard let origin = bundle.object(
-            forInfoDictionaryKey: "RecipeSupabaseURL"
-        ) as? String,
-              let url = URL(string: origin),
-              url.scheme == "https",
-              let host = url.host,
-              host.hasSuffix(".supabase.co"),
-              let key = bundle.object(
-                  forInfoDictionaryKey: "RecipeSupabasePublishableKey"
-              ) as? String,
-              !key.isEmpty else {
+        guard
+            let origin = bundle.object(
+                forInfoDictionaryKey: "RecipeSupabaseURL"
+            ) as? String,
+            let url = URL(string: origin),
+            url.scheme == "https",
+            let host = url.host,
+            host.hasSuffix(".supabase.co"),
+            let key = bundle.object(
+                forInfoDictionaryKey: "RecipeSupabasePublishableKey"
+            ) as? String,
+            !key.isEmpty
+        else {
             throw RecipeRemoteImportError.invalidConfiguration
         }
 
@@ -124,7 +126,7 @@ struct RecipeRemoteImportService {
         // named exactly "url" or "text".
         var body = [
             "client_request_id": clientRequestID.uuidString,
-            "input_type": inputType
+            "input_type": inputType,
         ]
         body[inputType] = originalSource
         let data = try JSONEncoder().encode(body)
@@ -146,7 +148,8 @@ struct RecipeRemoteImportService {
     func retryJob(_ identifier: UUID) async throws -> RecipeRemoteImportJob {
         try await send(
             method: "POST",
-            destination: baseURL
+            destination:
+                baseURL
                 .appendingPathComponent(identifier.uuidString)
                 .appendingPathComponent("retry"),
             body: nil
@@ -219,24 +222,28 @@ struct RecipeRemoteImportService {
         // A delayed result from user A must not silently enter the library
         // while a different account B is signed in. The owner binding came
         // from the authenticated Supabase session, not the job JSON.
-        guard case .signedIn(let currentUserID, _) =
-            RecipeAuthService.shared.state,
-              job.authenticatedOwnerID == currentUserID,
-              job.clientRequestID == expectedClientRequestID else {
+        guard
+            case .signedIn(let currentUserID, _) =
+                RecipeAuthService.shared.state,
+            job.authenticatedOwnerID == currentUserID,
+            job.clientRequestID == expectedClientRequestID
+        else {
             throw RecipeRemoteImportError.notSignedIn
         }
 
         guard job.status == .completed,
-              let result = job.result,
-              let recipeID = job.recipeID,
-              recipeID == result.recipeID else {
+            let result = job.result,
+            let recipeID = job.recipeID,
+            recipeID == result.recipeID
+        else {
             throw RecipeRemoteImportError.jobNotReady
         }
         if store.recipe(id: recipeID) != nil {
             return nil
         }
 
-        let title = result.fields["title"]?.rawValue
+        let title =
+            result.fields["title"]?.rawValue
             ?? "Imported recipe"
         var parsed = RecipeDocumentParser.recipe(
             fromText: originalSource, title: title

@@ -52,7 +52,8 @@ public enum SampleRecipes {
             Recipe(
                 id: UUID(uuidString: "C0010000-0000-4000-8000-000000000001")!,
                 title: "Garlic Butter Shrimp Pasta",
-                summary: "Garlic butter coats tender shrimp and pasta, finished with lemon and parsley.",
+                summary:
+                    "Garlic butter coats tender shrimp and pasta, finished with lemon and parsley.",
                 servings: 2, prepMinutes: 5, cookMinutes: 15,
                 ingredients: [
                     .from(name: "Pasta", amountText: "200 g", category: .pantry),
@@ -60,10 +61,14 @@ public enum SampleRecipes {
                     .from(name: "Butter", amountText: "30 g", category: .dairy),
                     .from(name: "Garlic", amountText: "2 cloves", category: .produce),
                     .from(name: "Lemon", amountText: "1", category: .produce),
-                    .from(name: "Chopped parsley", amountText: "2 tbsp", category: .produce)
+                    .from(name: "Chopped parsley", amountText: "2 tbsp", category: .produce),
                 ],
                 steps: [
-                    RecipeStep(title: "Prepare", instruction: "Pat the peeled shrimp dry. Mince the garlic, chop the parsley and cut the lemon into wedges."),
+                    RecipeStep(
+                        title: "Prepare",
+                        instruction:
+                            "Pat the peeled shrimp dry. Mince the garlic, chop the parsley and cut the lemon into wedges."
+                    ),
                     RecipeStep(
                         title: "Cook pasta",
                         instruction: "Boil the pasta in water for the time on its package. "
@@ -78,14 +83,16 @@ public enum SampleRecipes {
                             + "then stir in the garlic until fragrant. Toss with the pasta, "
                             + "parsley and a squeeze of lemon. Add reserved cooking water "
                             + "a spoonful at a time to loosen."
-                    )
+                    ),
                 ],
-                sourceName: "Sample recipe", coverAsset: "pasta", createdAt: created, updatedAt: created
+                sourceName: "Sample recipe", coverAsset: "pasta", createdAt: created,
+                updatedAt: created
             ),
             Recipe(
                 id: UUID(uuidString: "C0010000-0000-4000-8000-000000000002")!,
                 title: "Avocado Salad",
-                summary: "Creamy avocado, crisp cucumber and cherry tomatoes with a lemon dressing.",
+                summary:
+                    "Creamy avocado, crisp cucumber and cherry tomatoes with a lemon dressing.",
                 servings: 2, prepMinutes: 15, cookMinutes: 0,
                 ingredients: [
                     .from(name: "Avocado", amountText: "1", category: .produce),
@@ -93,14 +100,27 @@ public enum SampleRecipes {
                     .from(name: "Cherry tomatoes", amountText: "200 g", category: .produce),
                     .from(name: "Mixed salad leaves", amountText: "50 g", category: .produce),
                     .from(name: "Olive oil", amountText: "2 tbsp", category: .pantry),
-                    .from(name: "Lemon juice", amountText: "1 tbsp", category: .produce)
+                    .from(name: "Lemon juice", amountText: "1 tbsp", category: .produce),
                 ],
                 steps: [
-                    RecipeStep(title: "Chop", instruction: "Wash and dry the salad leaves. Slice the cucumber, halve the cherry tomatoes and cut the avocado into chunks."),
-                    RecipeStep(title: "Dress", instruction: "Whisk the olive oil and lemon juice in a bowl. Add the leaves, cucumber and tomatoes, then toss gently."),
-                    RecipeStep(title: "Finish", instruction: "Fold in the avocado without crushing it. Let the salad stand for 2 minutes, then divide between bowls and serve.", durationSeconds: 120)
+                    RecipeStep(
+                        title: "Chop",
+                        instruction:
+                            "Wash and dry the salad leaves. Slice the cucumber, halve the cherry tomatoes and cut the avocado into chunks."
+                    ),
+                    RecipeStep(
+                        title: "Dress",
+                        instruction:
+                            "Whisk the olive oil and lemon juice in a bowl. Add the leaves, cucumber and tomatoes, then toss gently."
+                    ),
+                    RecipeStep(
+                        title: "Finish",
+                        instruction:
+                            "Fold in the avocado without crushing it. Let the salad stand for 2 minutes, then divide between bowls and serve.",
+                        durationSeconds: 120),
                 ],
-                sourceName: "Sample recipe", coverAsset: "salad", createdAt: created, updatedAt: created
+                sourceName: "Sample recipe", coverAsset: "salad", createdAt: created,
+                updatedAt: created
             ),
             Recipe(
                 id: UUID(uuidString: "C0010000-0000-4000-8000-000000000003")!,
@@ -112,19 +132,28 @@ public enum SampleRecipes {
                     .from(name: "Milk", amountText: "150 ml", category: .dairy),
                     .from(name: "Egg", amountText: "1", category: .dairy),
                     .from(name: "Baking powder", amountText: "1 tsp", category: .pantry),
-                    .from(name: "Butter", amountText: "10 g", category: .dairy)
+                    .from(name: "Butter", amountText: "10 g", category: .dairy),
                 ],
                 steps: [
-                    RecipeStep(title: "Mix", instruction: "Whisk the egg and milk, then stir in the oat flour and baking powder until combined."),
-                    RecipeStep(title: "Rest batter", instruction: "Let the batter stand for 5 minutes while a nonstick pan warms over medium-low heat.", durationSeconds: 300),
+                    RecipeStep(
+                        title: "Mix",
+                        instruction:
+                            "Whisk the egg and milk, then stir in the oat flour and baking powder until combined."
+                    ),
+                    RecipeStep(
+                        title: "Rest batter",
+                        instruction:
+                            "Let the batter stand for 5 minutes while a nonstick pan warms over medium-low heat.",
+                        durationSeconds: 300),
                     RecipeStep(
                         title: "Cook",
                         instruction: "Melt a little butter in the pan. Add small spoonfuls "
                             + "of batter. Turn when bubbles appear and the edges set, "
                             + "then cook until both sides are golden and the centers are set."
-                    )
+                    ),
                 ],
-                sourceName: "Sample recipe", coverAsset: "pancakes", createdAt: created, updatedAt: created
+                sourceName: "Sample recipe", coverAsset: "pancakes", createdAt: created,
+                updatedAt: created
             ),
             Recipe(
                 id: UUID(uuidString: "C0010000-0000-4000-8000-000000000004")!,
@@ -135,10 +164,14 @@ public enum SampleRecipes {
                     .from(name: "Salmon fillets", amountText: "300 g", category: .proteins),
                     .from(name: "Mixed salad leaves", amountText: "100 g", category: .produce),
                     .from(name: "Lemon", amountText: "1", category: .produce),
-                    .from(name: "Olive oil", amountText: "1 tbsp", category: .pantry)
+                    .from(name: "Olive oil", amountText: "1 tbsp", category: .pantry),
                 ],
                 steps: [
-                    RecipeStep(title: "Prepare", instruction: "Pat the salmon dry. Wash and dry the salad leaves. Cut the lemon into wedges."),
+                    RecipeStep(
+                        title: "Prepare",
+                        instruction:
+                            "Pat the salmon dry. Wash and dry the salad leaves. Cut the lemon into wedges."
+                    ),
                     RecipeStep(
                         title: "Cook salmon",
                         instruction: "Warm the oil in a pan over medium heat. Start with "
@@ -146,14 +179,20 @@ public enum SampleRecipes {
                             + "until opaque and cooked through; timing depends on the thickness.",
                         durationSeconds: 300
                     ),
-                    RecipeStep(title: "Serve", instruction: "Divide the leaves between plates, add the salmon, and finish with fresh lemon juice.")
+                    RecipeStep(
+                        title: "Serve",
+                        instruction:
+                            "Divide the leaves between plates, add the salmon, and finish with fresh lemon juice."
+                    ),
                 ],
-                sourceName: "Sample recipe", coverAsset: "salmon", createdAt: created, updatedAt: created
+                sourceName: "Sample recipe", coverAsset: "salmon", createdAt: created,
+                updatedAt: created
             ),
             Recipe(
                 id: UUID(uuidString: "C0010000-0000-4000-8000-000000000005")!,
                 title: "Roast chicken & potatoes",
-                summary: "A fuller cooking-mode sample with step ingredients, heat cues and overlapping timers.",
+                summary:
+                    "A fuller cooking-mode sample with step ingredients, heat cues and overlapping timers.",
                 servings: 4,
                 prepMinutes: 20,
                 cookMinutes: 45,
@@ -166,7 +205,8 @@ public enum SampleRecipes {
                     ),
                     RecipeStep(
                         title: "Season chicken",
-                        instruction: "Toss the chicken with half the olive oil, garlic and a squeeze of lemon. Let it stand for 10 minutes.",
+                        instruction:
+                            "Toss the chicken with half the olive oil, garlic and a squeeze of lemon. Let it stand for 10 minutes.",
                         linkedIngredientIDs: [roastChicken.id, oliveOil.id, garlic.id, lemon.id],
                         timers: [
                             RecipeStepTimer(
@@ -178,12 +218,14 @@ public enum SampleRecipes {
                     ),
                     RecipeStep(
                         title: "Prepare potatoes",
-                        instruction: "Halve the potatoes and toss with the remaining olive oil. Season to taste.",
+                        instruction:
+                            "Halve the potatoes and toss with the remaining olive oil. Season to taste.",
                         linkedIngredientIDs: [potatoes.id, oliveOil.id]
                     ),
                     RecipeStep(
                         title: "Start roasting",
-                        instruction: "Arrange the chicken and potatoes on the hot tray and roast at 220°C for 20 minutes.",
+                        instruction:
+                            "Arrange the chicken and potatoes on the hot tray and roast at 220°C for 20 minutes.",
                         linkedIngredientIDs: [roastChicken.id, potatoes.id],
                         temperature: CookingTemperature(text: "220°C"),
                         timers: [
@@ -196,12 +238,13 @@ public enum SampleRecipes {
                                 id: UUID(uuidString: "C0052000-0000-4000-8000-000000000003")!,
                                 label: "Check tray halfway",
                                 durationSeconds: 600
-                            )
+                            ),
                         ]
                     ),
                     RecipeStep(
                         title: "Turn and finish",
-                        instruction: "Turn the potatoes, spoon the pan juices over the chicken, then roast for 15 minutes more. Check doneness rather than relying on time alone.",
+                        instruction:
+                            "Turn the potatoes, spoon the pan juices over the chicken, then roast for 15 minutes more. Check doneness rather than relying on time alone.",
                         linkedIngredientIDs: [roastChicken.id, potatoes.id],
                         temperature: CookingTemperature(text: "220°C"),
                         timers: [
@@ -214,7 +257,8 @@ public enum SampleRecipes {
                     ),
                     RecipeStep(
                         title: "Rest",
-                        instruction: "Move the chicken to a board and rest for 5 minutes before serving.",
+                        instruction:
+                            "Move the chicken to a board and rest for 5 minutes before serving.",
                         linkedIngredientIDs: [roastChicken.id],
                         timers: [
                             RecipeStepTimer(
@@ -231,15 +275,16 @@ public enum SampleRecipes {
                     ),
                     RecipeStep(
                         title: "Serve",
-                        instruction: "Slice the chicken and serve with the potatoes and pan juices.",
+                        instruction:
+                            "Slice the chicken and serve with the potatoes and pan juices.",
                         linkedIngredientIDs: [roastChicken.id, potatoes.id]
-                    )
+                    ),
                 ],
                 sourceName: "Sample recipe",
                 coverAsset: "salmon",
                 createdAt: created,
                 updatedAt: created
-            )
+            ),
         ]
     }
 }

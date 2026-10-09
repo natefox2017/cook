@@ -3,6 +3,7 @@
 
 import Foundation
 import Testing
+
 @testable import RecipeCore
 
 @Test func portableJSONPreservesSourceAndCollectionMemberships() throws {
@@ -111,7 +112,7 @@ func offlineHTMLAssociatesCollectionsOnlyWithTheirRecipes() throws {
         collections: [zeta, alpha],
         collectionMemberships: [
             RecipeCollectionMembership(recipeID: first.id, collectionID: zeta.id),
-            RecipeCollectionMembership(recipeID: first.id, collectionID: alpha.id)
+            RecipeCollectionMembership(recipeID: first.id, collectionID: alpha.id),
         ]
     )
 

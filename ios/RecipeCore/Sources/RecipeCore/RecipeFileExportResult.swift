@@ -11,13 +11,14 @@ public enum RecipeFileExportResult: Equatable {
 
     public init(_ result: Result<URL, Error>) {
         switch result {
-        case let .success(url):
+        case .success(let url):
             self = .saved(filename: url.lastPathComponent)
 
-        case let .failure(error):
+        case .failure(let error):
             let cocoaError = error as NSError
             if cocoaError.domain == NSCocoaErrorDomain
-                && cocoaError.code == CocoaError.Code.userCancelled.rawValue {
+                && cocoaError.code == CocoaError.Code.userCancelled.rawValue
+            {
                 self = .cancelled
             } else {
                 self = .failed(message: error.localizedDescription)

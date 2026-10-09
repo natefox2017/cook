@@ -167,7 +167,8 @@ final class SubscriptionStore {
     ) async {
         let configuredIDs = Set(Self.productIDs)
         guard configuredIDs.contains(transaction.productID),
-              transaction.revocationDate == nil else {
+            transaction.revocationDate == nil
+        else {
             await refreshEntitlements()
             return
         }
@@ -175,7 +176,8 @@ final class SubscriptionStore {
         let entitledIDs = await refreshEntitlements()
         guard entitledIDs.contains(transaction.productID) else {
             if reportUnavailable {
-                message = "The App Store verified your purchase, but the entitlement is not yet available. "
+                message =
+                    "The App Store verified your purchase, but the entitlement is not yet available. "
                     + "Check your subscription status or try Restore Purchases."
             }
             return
@@ -212,8 +214,9 @@ final class SubscriptionStore {
             }
             for status in statuses {
                 guard case .verified(let transaction) = status.transaction,
-                      case .verified = status.renewalInfo,
-                      Self.productIDs.contains(transaction.productID) else {
+                    case .verified = status.renewalInfo,
+                    Self.productIDs.contains(transaction.productID)
+                else {
                     continue
                 }
                 renewalStates.append(status.state)
@@ -224,7 +227,8 @@ final class SubscriptionStore {
             if renewalStates.contains(.inGracePeriod) {
                 state = .gracePeriod
             } else if renewalStates.contains(.subscribed),
-                      await hasCurrentFreeTrial(in: entitledProductIDs) {
+                await hasCurrentFreeTrial(in: entitledProductIDs)
+            {
                 state = .trial
             } else {
                 state = .active
@@ -253,9 +257,10 @@ final class SubscriptionStore {
         var eligibleIDs = Set<String>()
         for product in products {
             guard let subscription = product.subscription,
-                  let offer = subscription.introductoryOffer,
-                  offer.paymentMode == .freeTrial,
-                  await subscription.isEligibleForIntroOffer else {
+                let offer = subscription.introductoryOffer,
+                offer.paymentMode == .freeTrial,
+                await subscription.isEligibleForIntroOffer
+            else {
                 continue
             }
             eligibleIDs.insert(product.id)
@@ -266,9 +271,10 @@ final class SubscriptionStore {
     private func hasCurrentFreeTrial(in productIDs: Set<String>) async -> Bool {
         for await entitlement in Transaction.currentEntitlements {
             guard case .verified(let transaction) = entitlement,
-                  productIDs.contains(transaction.productID),
-                  transaction.offer?.type == .introductory,
-                  transaction.offer?.paymentMode == .freeTrial else {
+                productIDs.contains(transaction.productID),
+                transaction.offer?.type == .introductory,
+                transaction.offer?.paymentMode == .freeTrial
+            else {
                 continue
             }
             return true
@@ -278,11 +284,12 @@ final class SubscriptionStore {
 
     static var productIDs: [String] {
         #if DEBUG
-        let processInfo = ProcessInfo.processInfo
-        if processInfo.arguments.contains("--uitesting"),
-           let testProductIDs = processInfo.environment["RECIPE_STOREKIT_TEST_PRODUCT_IDS"] {
-            return parseProductIDs(testProductIDs)
-        }
+            let processInfo = ProcessInfo.processInfo
+            if processInfo.arguments.contains("--uitesting"),
+                let testProductIDs = processInfo.environment["RECIPE_STOREKIT_TEST_PRODUCT_IDS"]
+            {
+                return parseProductIDs(testProductIDs)
+            }
         #endif
 
         let keys = [

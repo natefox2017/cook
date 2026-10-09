@@ -1,9 +1,9 @@
 // Developer: gengyun
 // Purpose: Creates the Recipe iOS app, shared services, compatibility migrations, and primary navigation.
 
+import RecipeCore
 import StoreKit
 import SwiftUI
-import RecipeCore
 
 @main
 @MainActor
@@ -32,8 +32,9 @@ struct RecipeApp: App {
 
         let libraryURL = RecipeStore.defaultFileURL()
         if !isUITesting,
-           FileManager.default.fileExists(atPath: libraryURL.path),
-           UserDefaults.standard.object(forKey: FirstLaunchFlowView.completionKey) == nil {
+            FileManager.default.fileExists(atPath: libraryURL.path),
+            UserDefaults.standard.object(forKey: FirstLaunchFlowView.completionKey) == nil
+        {
             // Existing installs with a persisted library should not be mistaken for new users
             // when this onboarding key is introduced for the first time.
             UserDefaults.standard.set(true, forKey: FirstLaunchFlowView.completionKey)
@@ -43,7 +44,8 @@ struct RecipeApp: App {
         if isUITesting {
             for key in UserDefaults.standard.dictionaryRepresentation().keys
             where key.hasPrefix("recipe.cookingSession.")
-                || key.hasPrefix("cook.cookingSession.") {
+                || key.hasPrefix("cook.cookingSession.")
+            {
                 UserDefaults.standard.removeObject(forKey: key)
             }
             do {
@@ -100,62 +102,63 @@ private struct RecipeRootView: View {
     var body: some View {
         Group {
             if let message = store.loadError {
-            NavigationStack {
-                EmptyStateView(
-                    title: "Your saved library needs attention",
-                    message: "RecipePouch couldn't read your saved library. The file has been left unchanged.\n\n\(message)",
-                    systemImage: "externaldrive.badge.exclamationmark",
-                    actionTitle: "Try again",
-                    action: { store.reload() },
-                    messageLineLimit: nil
-                )
-                .padding()
-                .navigationTitle("RecipePouch")
-                .background(RecipeTheme.canvas)
-            }
-        } else if !hasCompletedOnboarding && !bypassOnboarding {
-            FirstLaunchGateView {
-                hasCompletedOnboarding = true
-            }
-        } else {
-            TabView(selection: $selectedTab) {
                 NavigationStack {
-                    RecipesView()
+                    EmptyStateView(
+                        title: "Your saved library needs attention",
+                        message:
+                            "RecipePouch couldn't read your saved library. The file has been left unchanged.\n\n\(message)",
+                        systemImage: "externaldrive.badge.exclamationmark",
+                        actionTitle: "Try again",
+                        action: { store.reload() },
+                        messageLineLimit: nil
+                    )
+                    .padding()
+                    .navigationTitle("RecipePouch")
+                    .background(RecipeTheme.canvas)
                 }
-                .tabItem {
-                    Label(RecipeTab.recipes.title, systemImage: RecipeTab.recipes.symbol)
-                        .accessibilityIdentifier("tab.\(RecipeTab.recipes.rawValue)")
+            } else if !hasCompletedOnboarding && !bypassOnboarding {
+                FirstLaunchGateView {
+                    hasCompletedOnboarding = true
                 }
-                .tag(RecipeTab.recipes)
+            } else {
+                TabView(selection: $selectedTab) {
+                    NavigationStack {
+                        RecipesView()
+                    }
+                    .tabItem {
+                        Label(RecipeTab.recipes.title, systemImage: RecipeTab.recipes.symbol)
+                            .accessibilityIdentifier("tab.\(RecipeTab.recipes.rawValue)")
+                    }
+                    .tag(RecipeTab.recipes)
 
-                NavigationStack {
-                    MealPlanView()
-                }
-                .tabItem {
-                    Label(RecipeTab.plan.title, systemImage: RecipeTab.plan.symbol)
-                        .accessibilityIdentifier("tab.\(RecipeTab.plan.rawValue)")
-                }
-                .tag(RecipeTab.plan)
+                    NavigationStack {
+                        MealPlanView()
+                    }
+                    .tabItem {
+                        Label(RecipeTab.plan.title, systemImage: RecipeTab.plan.symbol)
+                            .accessibilityIdentifier("tab.\(RecipeTab.plan.rawValue)")
+                    }
+                    .tag(RecipeTab.plan)
 
-                NavigationStack {
-                    GroceriesView()
-                }
-                .tabItem {
-                    Label(RecipeTab.groceries.title, systemImage: RecipeTab.groceries.symbol)
-                        .accessibilityIdentifier("tab.\(RecipeTab.groceries.rawValue)")
-                }
-                .tag(RecipeTab.groceries)
+                    NavigationStack {
+                        GroceriesView()
+                    }
+                    .tabItem {
+                        Label(RecipeTab.groceries.title, systemImage: RecipeTab.groceries.symbol)
+                            .accessibilityIdentifier("tab.\(RecipeTab.groceries.rawValue)")
+                    }
+                    .tag(RecipeTab.groceries)
 
-                NavigationStack {
-                    ProfileView(onOpenAccount: presentAccount)
+                    NavigationStack {
+                        ProfileView(onOpenAccount: presentAccount)
+                    }
+                    .tabItem {
+                        Label(RecipeTab.profile.title, systemImage: RecipeTab.profile.symbol)
+                            .accessibilityIdentifier("tab.\(RecipeTab.profile.rawValue)")
+                    }
+                    .tag(RecipeTab.profile)
                 }
-                .tabItem {
-                    Label(RecipeTab.profile.title, systemImage: RecipeTab.profile.symbol)
-                        .accessibilityIdentifier("tab.\(RecipeTab.profile.rawValue)")
-                }
-                .tag(RecipeTab.profile)
             }
-        }
         }
         .environment(shareInbox)
         .sheet(isPresented: $isAccountPresented) {
@@ -290,7 +293,8 @@ private struct FirstLaunchGateView: View {
             // appVersionID is nil for local/sandbox transactions. Apply the release
             // cutoff only to verified production App Store history.
             if appTransaction.appVersionID != nil,
-               appTransaction.originalPurchaseDate < Self.onboardingReleaseCutoff {
+                appTransaction.originalPurchaseDate < Self.onboardingReleaseCutoff
+            {
                 onComplete()
                 return
             }
@@ -328,21 +332,4 @@ private enum RecipeTab: String, Identifiable {
         case .profile: "person.crop.circle"
         }
     }
-}
-
-/// UI language policy for the English-only development build.
-/// Dedicated locale smoke tests may opt in to additional languages.
-enum RecipeLanguage {
-    static let active: Locale = {
-        let args = ProcessInfo.processInfo.arguments
-        if args.contains("--uitesting"),
-           let index = args.firstIndex(of: "--uitesting-locale"),
-           args.indices.contains(index + 1) {
-            let code = args[index + 1]
-            if ["en", "zh-Hans", "zh-Hant", "ja"].contains(code) {
-                return Locale(identifier: code)
-            }
-        }
-        return Locale(identifier: "en")
-    }()
 }

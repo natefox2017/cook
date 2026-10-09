@@ -28,6 +28,7 @@ public struct RecipePortableArchive: Codable, Sendable {
 }
 
 public enum RecipePortableExport {
+    /// Exports a deterministic recipe-only archive without photo bytes or bundled image references.
     public static func json(
         snapshot: RecipeLibrarySnapshot,
         exportedAt: Date = .now
@@ -90,7 +91,7 @@ public enum RecipePortableExport {
             "</head>",
             "<body>",
             "<h1>RecipePouch Recipes</h1>",
-            "<p class=\"muted\">Exported \(dateText). Recipe text only; photos, attachments, shopping lists, meal plans and app preferences are not included.</p>"
+            "<p class=\"muted\">Exported \(dateText). Recipe text only; photos, attachments, shopping lists, meal plans and app preferences are not included.</p>",
         ]
 
         if recipes.isEmpty {
@@ -170,7 +171,8 @@ public enum RecipePortableExport {
                         let timerLabels = step.timers.map {
                             "\($0.label): \($0.durationSeconds) seconds"
                         }
-                        lines.append("<p>Timers: \(escape(timerLabels.joined(separator: ", ")))</p>")
+                        lines.append(
+                            "<p>Timers: \(escape(timerLabels.joined(separator: ", ")))</p>")
                     }
                     lines.append("</li>")
                 }
@@ -217,9 +219,10 @@ public enum RecipePortableExport {
 
     private static func safeHTTPSURL(_ value: String) -> Bool {
         guard let components = URLComponents(string: value),
-              components.scheme?.lowercased() == "https",
-              let host = components.host, !host.isEmpty,
-              components.user == nil, components.password == nil else {
+            components.scheme?.lowercased() == "https",
+            let host = components.host, !host.isEmpty,
+            components.user == nil, components.password == nil
+        else {
             return false
         }
         return true

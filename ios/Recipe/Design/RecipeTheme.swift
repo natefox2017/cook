@@ -1,9 +1,9 @@
 // Developer: gengyun
 // Purpose: Defines RecipePouch colors, typography, spacing, and shared UI helpers.
 
+import RecipeCore
 import SwiftUI
 import UIKit
-import RecipeCore
 
 enum RecipeSpacing {
     static let xxSmall: CGFloat = 4
@@ -56,19 +56,23 @@ extension View {
 
 enum RecipeTheme {
     static let accent = Color(red: 66.0 / 255, green: 168.0 / 255, blue: 90.0 / 255)
-    static let accentForeground = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 66.0 / 255, green: 168.0 / 255, blue: 90.0 / 255, alpha: 1)
-            : UIColor(red: 0.13, green: 0.42, blue: 0.26, alpha: 1)
-    })
-    static let canvas = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.075, green: 0.09, blue: 0.078, alpha: 1)
-            : UIColor(red: 0.97, green: 0.965, blue: 0.943, alpha: 1)
-    })
+    static let accentForeground = Color(
+        uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 66.0 / 255, green: 168.0 / 255, blue: 90.0 / 255, alpha: 1)
+                : UIColor(red: 0.13, green: 0.42, blue: 0.26, alpha: 1)
+        })
+    static let canvas = Color(
+        uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 0.075, green: 0.09, blue: 0.078, alpha: 1)
+                : UIColor(red: 0.97, green: 0.965, blue: 0.943, alpha: 1)
+        })
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
 
-    static func text(_ size: CGFloat, weight: Font.Weight = .regular, relativeTo style: Font.TextStyle = .body) -> Font {
+    static func text(
+        _ size: CGFloat, weight: Font.Weight = .regular, relativeTo style: Font.TextStyle = .body
+    ) -> Font {
         .custom("Lora-Regular", size: size, relativeTo: style).weight(weight)
     }
 
@@ -98,16 +102,20 @@ enum RecipeTheme {
         navigation.prefersLargeTitles = true
         navigation.titleTextAttributes = [
             .font: UIFontMetrics(forTextStyle: .headline).scaledFont(for: regular),
-            .foregroundColor: UIColor.label
+            .foregroundColor: UIColor.label,
         ]
         navigation.largeTitleTextAttributes = [
             .font: UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: regular.withSize(34)),
-            .foregroundColor: UIColor.label
+            .foregroundColor: UIColor.label,
         ]
 
         let tabItem = UITabBarItem.appearance()
-        tabItem.setTitleTextAttributes([.font: UIFontMetrics(forTextStyle: .caption2).scaledFont(for: regular.withSize(10))], for: .normal)
-        tabItem.setTitleTextAttributes([.font: UIFontMetrics(forTextStyle: .caption2).scaledFont(for: regular.withSize(10))], for: .selected)
+        tabItem.setTitleTextAttributes(
+            [.font: UIFontMetrics(forTextStyle: .caption2).scaledFont(for: regular.withSize(10))],
+            for: .normal)
+        tabItem.setTitleTextAttributes(
+            [.font: UIFontMetrics(forTextStyle: .caption2).scaledFont(for: regular.withSize(10))],
+            for: .selected)
     }
 }
 
@@ -148,7 +156,8 @@ struct EmptyStateView: View {
                 .multilineTextAlignment(.center)
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : messageLineLimit)
             if let actionTitle, let action {
-                Button(action: action) { Text(LocalizedStringKey(actionTitle)) }.buttonStyle(PrimaryButtonStyle())
+                Button(action: action) { Text(LocalizedStringKey(actionTitle)) }.buttonStyle(
+                    PrimaryButtonStyle())
             }
         }
         .padding(.horizontal, RecipeSpacing.large)
@@ -188,7 +197,8 @@ struct RecipeImage: View {
     // the photo region is drawn; the complete mockup is never displayed as UI.
     private func samplePhoto(_ name: String) -> UIImage? {
         if name == "pasta", let image = UIImage(named: "SamplePastaReference")?.cgImage,
-           let crop = image.cropping(to: CGRect(x: 0, y: 145, width: 707, height: 325)) {
+            let crop = image.cropping(to: CGRect(x: 0, y: 145, width: 707, height: 325))
+        {
             return UIImage(cgImage: crop)
         }
         guard let image = UIImage(named: "SampleRecipeSheet")?.cgImage else { return nil }

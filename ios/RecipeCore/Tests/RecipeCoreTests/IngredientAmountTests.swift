@@ -3,6 +3,7 @@
 
 import Foundation
 import Testing
+
 @testable import RecipeCore
 
 @Test(arguments: ["适量", "少许", "未知", "", "1-2 汤匙"])
@@ -13,7 +14,8 @@ func qualitativeSourceIsNeverInvented(text: String) throws {
 }
 
 @Test func scalingPreservesEvidenceAndUnit() throws {
-    let amount = try IngredientAmount(originalText: "半汤匙", value: Decimal(string: "0.5")!, unit: "汤匙")
+    let amount = try IngredientAmount(
+        originalText: "半汤匙", value: Decimal(string: "0.5")!, unit: "汤匙")
     let scaled = try amount.scaled(by: 3)
     #expect(scaled.value == Decimal(string: "1.5"))
     #expect(scaled.originalText == "半汤匙")
@@ -35,8 +37,11 @@ func invalidValuesAreRejected(value: Decimal) {
 }
 
 @Test func overflowIsRejected() throws {
-    let amount = try IngredientAmount(originalText: "source", value: Decimal.greatestFiniteMagnitude)
-    #expect(throws: IngredientAmount.ValidationError.arithmeticFailure) { try amount.scaled(by: 10) }
+    let amount = try IngredientAmount(
+        originalText: "source", value: Decimal.greatestFiniteMagnitude)
+    #expect(throws: IngredientAmount.ValidationError.arithmeticFailure) {
+        try amount.scaled(by: 10)
+    }
 }
 
 @Test func zeroRemainsZero() throws {

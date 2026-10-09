@@ -80,9 +80,11 @@ public struct RecipeShareInbox: Sendable {
     private let root: URL
 
     public static func shared() throws -> RecipeShareInbox {
-        guard let container = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: appGroupID
-        ) else {
+        guard
+            let container = FileManager.default.containerURL(
+                forSecurityApplicationGroupIdentifier: appGroupID
+            )
+        else {
             throw RecipeShareInboxError.appGroupUnavailable
         }
         return try RecipeShareInbox(containerURL: container)
@@ -103,6 +105,8 @@ public struct RecipeShareInbox: Sendable {
         }
     }
 
+    /// Stores a public HTTPS URL or readable text and returns its stable local receipt.
+    /// Binary attachments must use `receiveFile` so their size and MIME type are checked.
     @discardableResult
     public func receive(
         _ rawSource: String,
@@ -112,10 +116,11 @@ public struct RecipeShareInbox: Sendable {
         switch type {
         case .url:
             guard original.utf8.count <= 8192,
-                  let url = URLComponents(string: original),
-                  url.scheme?.lowercased() == "https",
-                  let host = url.host, !host.isEmpty,
-                  url.user == nil, url.password == nil else {
+                let url = URLComponents(string: original),
+                url.scheme?.lowercased() == "https",
+                let host = url.host, !host.isEmpty,
+                url.user == nil, url.password == nil
+            else {
                 throw RecipeShareInboxError.invalidInput
             }
         case .text:
@@ -128,9 +133,11 @@ public struct RecipeShareInbox: Sendable {
 
         // Stable per-device key also deduplicates rapid concurrent shares and
         // preserves the same client_request_id when a failed upload retries.
-        let fingerprint = Array(SHA256.hash(data: Data(
-            (type.rawValue + "\n" + original).utf8
-        )))
+        let fingerprint = Array(
+            SHA256.hash(
+                data: Data(
+                    (type.rawValue + "\n" + original).utf8
+                )))
         let hex = fingerprint.map { String(format: "%02x", $0) }.joined()
         let identifier = try Self.stableReceiptID(from: fingerprint)
 
@@ -160,6 +167,7 @@ public struct RecipeShareInbox: Sendable {
         )
     }
 
+    /// Stores a bounded image or document attachment in immutable App Group storage.
     @discardableResult
     public func receiveFile(
         _ data: Data,
@@ -169,8 +177,9 @@ public struct RecipeShareInbox: Sendable {
         // A zero-byte receipt cannot be uploaded; fileData(for:) rejects it.
         // Reject here so the Share Extension does not falsely report "Saved".
         guard !data.isEmpty,
-              data.count <= 10 * 1024 * 1024,
-              (type == .image && ["image/jpeg", "image/png", "image/heic", "image/heif"].contains(mimeType)
+            data.count <= 10 * 1024 * 1024,
+            (type == .image
+                && ["image/jpeg", "image/png", "image/heic", "image/heif"].contains(mimeType)
                 || type == .file && ["application/pdf", "text/plain"].contains(mimeType))
         else {
             throw RecipeShareInboxError.invalidInput
@@ -206,7 +215,8 @@ public struct RecipeShareInbox: Sendable {
             at: root.appendingPathComponent("receipts"),
             includingPropertiesForKeys: nil
         )
-        let results = try files
+        let results =
+            try files
             .filter { $0.pathExtension == "json" }
             .map {
                 try decoder().decode(
@@ -247,7 +257,8 @@ public struct RecipeShareInbox: Sendable {
                 return (receipt.id, receipt)
             }
         )
-        return try files
+        return
+            try files
             .filter { $0.lastPathComponent.hasSuffix(ownerSuffix) }
             .compactMap { file in
                 let record = try decoder().decode(
@@ -255,7 +266,8 @@ public struct RecipeShareInbox: Sendable {
                     from: Data(contentsOf: file)
                 )
                 guard record.ownerID == ownerID,
-                      record.queueConfirmedAt != nil else {
+                    record.queueConfirmedAt != nil
+                else {
                     return nil
                 }
                 let receiptIDText = String(
@@ -272,6 +284,7 @@ public struct RecipeShareInbox: Sendable {
     /// Keeps the durable server record ID owner-scoped without treating
     /// `received` as queued. Re-submission always uses the receipt's original
     /// client_request_id if the app restarts before queue admission.
+    /// Persists an owner-scoped job ID before queue acknowledgement, allowing safe recovery after relaunch.
     public func recordReceivedJob(
         _ jobID: UUID,
         for receipt: RecipeShareReceipt,
@@ -294,6 +307,7 @@ public struct RecipeShareInbox: Sendable {
         }
     }
 
+    /// Returns a previously recorded job ID only for the account that submitted the receipt.
     public func receivedJobID(
         for receipt: RecipeShareReceipt,
         ownerID: UUID
@@ -328,6 +342,7 @@ public struct RecipeShareInbox: Sendable {
         }
     }
 
+    /// Reads text sources as UTF-8 and returns a validated file reference for binary sources.
     public func source(for receipt: RecipeShareReceipt) throws -> String {
         let ref = receipt.payload.reference
         guard ref.hasPrefix("sources/") else {
@@ -350,14 +365,15 @@ public struct RecipeShareInbox: Sendable {
         return source
     }
 
+    /// Loads binary source bytes after rechecking the receipt type, MIME type, name, and size.
     public func fileData(for receipt: RecipeShareReceipt) throws -> Data {
         guard receipt.inputType == .image || receipt.inputType == .file,
-              receipt.payload.reference.hasPrefix("sources/"),
-              validSourceName(
+            receipt.payload.reference.hasPrefix("sources/"),
+            validSourceName(
                 String(receipt.payload.reference.dropFirst("sources/".count))
-              ),
-              let mimeType = receipt.payload.mimeType,
-              DataSourceType.isSupported(mimeType, for: receipt.inputType)
+            ),
+            let mimeType = receipt.payload.mimeType,
+            DataSourceType.isSupported(mimeType, for: receipt.inputType)
         else {
             throw RecipeShareInboxError.sourceMissing
         }
@@ -380,12 +396,13 @@ public struct RecipeShareInbox: Sendable {
         let fractionalFormatter = ISO8601DateFormatter()
         fractionalFormatter.formatOptions = [
             .withInternetDateTime,
-            .withFractionalSeconds
+            .withFractionalSeconds,
         ]
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
-        guard fractionalFormatter.date(from: queueConfirmedAt) != nil
-            || formatter.date(from: queueConfirmedAt) != nil
+        guard
+            fractionalFormatter.date(from: queueConfirmedAt) != nil
+                || formatter.date(from: queueConfirmedAt) != nil
         else {
             throw RecipeShareInboxError.invalidInput
         }
@@ -452,7 +469,8 @@ public struct RecipeShareInbox: Sendable {
     ) -> Bool {
         let file = acknowledgementFile(for: receipt.id, ownerID: ownerID)
         guard let data = try? Data(contentsOf: file),
-              let record = try? decoder().decode(ServerAcknowledgement.self, from: data) else {
+            let record = try? decoder().decode(ServerAcknowledgement.self, from: data)
+        else {
             return false
         }
         return record.ownerID == ownerID && record.queueConfirmedAt != nil
@@ -468,7 +486,8 @@ public struct RecipeShareInbox: Sendable {
         uuidBytes[6] = (uuidBytes[6] & 0x0F) | 0x50
         uuidBytes[8] = (uuidBytes[8] & 0x3F) | 0x80
         let idHex = uuidBytes.map { String(format: "%02x", $0) }.joined()
-        let idString = String(idHex.prefix(8)) + "-"
+        let idString =
+            String(idHex.prefix(8)) + "-"
             + String(idHex.dropFirst(8).prefix(4)) + "-"
             + String(idHex.dropFirst(12).prefix(4)) + "-"
             + String(idHex.dropFirst(16).prefix(4)) + "-"

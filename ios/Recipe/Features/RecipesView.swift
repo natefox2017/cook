@@ -1,8 +1,8 @@
 // Developer: gengyun
 // Purpose: Implements RecipesView for the Recipe iOS app.
 
-import SwiftUI
 import RecipeCore
+import SwiftUI
 
 struct RecipesView: View {
     let titleDisplayMode: NavigationBarItem.TitleDisplayMode
@@ -40,9 +40,7 @@ struct RecipesView: View {
             } else {
                 matchesScope = filter.includes(recipe)
             }
-            return matchesScope && (
-                query.isEmpty || RecipeSearch.matches(recipe, query: query)
-            )
+            return matchesScope && (query.isEmpty || RecipeSearch.matches(recipe, query: query))
         }.sorted { lhs, rhs in
             switch sort {
             case .recent:
@@ -60,8 +58,9 @@ struct RecipesView: View {
     }
 
     private var columns: [GridItem] {
-        Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .top),
-              count: dynamicTypeSize.isAccessibilitySize ? 1 : 2)
+        Array(
+            repeating: GridItem(.flexible(), spacing: 16, alignment: .top),
+            count: dynamicTypeSize.isAccessibilitySize ? 1 : 2)
     }
 
     var body: some View {
@@ -100,7 +99,9 @@ struct RecipesView: View {
         }
         .alert("Unable to Update Recipe", isPresented: errorPresented) {
             Button("OK", role: .cancel) { errorMessage = nil }
-        } message: { Text(errorMessage ?? "") }
+        } message: {
+            Text(errorMessage ?? "")
+        }
         .onChange(of: store.collections.map(\.id)) { _, collectionIDs in
             if let selectedCollectionID, !collectionIDs.contains(selectedCollectionID) {
                 self.selectedCollectionID = nil
@@ -119,9 +120,16 @@ struct RecipesView: View {
                     Image(systemName: "tray.full")
                         .foregroundStyle(RecipeTheme.accentForeground)
                     VStack(alignment: .leading, spacing: RecipeSpacing.xxSmall) {
-                        Text("\(shareInbox.pendingReceipts.count) sources saved")
-                            .font(RecipeTheme.text(16, weight: .semibold))
-                            .foregroundStyle(.primary)
+                        Text(
+                            String(
+                                localized: LocalizedStringResource(
+                                    "\(shareInbox.pendingReceipts.count) sources saved",
+                                    locale: RecipeLanguage.active
+                                )
+                            )
+                        )
+                        .font(RecipeTheme.text(16, weight: .semibold))
+                        .foregroundStyle(.primary)
                     }
                     Spacer()
                     Image(systemName: "chevron.right")
@@ -181,8 +189,9 @@ struct RecipesView: View {
                     action: { isAdding = true }
                 )
                 Button("Try sample recipes") {
-                    do { try store.loadSampleRecipes() }
-                    catch { errorMessage = error.localizedDescription }
+                    do { try store.loadSampleRecipes() } catch {
+                        errorMessage = error.localizedDescription
+                    }
                 }
                 .frame(minHeight: 44)
                 .accessibilityIdentifier("loadSampleRecipes")
@@ -191,7 +200,8 @@ struct RecipesView: View {
         } else if recipes.isEmpty {
             EmptyStateView(
                 title: searchText.isEmpty ? emptyScopeTitle : "No recipes found",
-                message: searchText.isEmpty ? emptyScopeMessage : "Try another dish or ingredient, or clear your filters.",
+                message: searchText.isEmpty
+                    ? emptyScopeMessage : "Try another dish or ingredient, or clear your filters.",
                 systemImage: selectedCollectionID == nil ? "magnifyingglass" : "folder",
                 actionTitle: "Show All Recipes",
                 action: {
@@ -205,8 +215,9 @@ struct RecipesView: View {
             LazyVGrid(columns: columns, alignment: .leading, spacing: RecipeSpacing.large) {
                 ForEach(recipes) { recipe in
                     RecipeLibraryCard(recipe: recipe) {
-                        do { try store.toggleFavorite(id: recipe.id) }
-                        catch { errorMessage = error.localizedDescription }
+                        do { try store.toggleFavorite(id: recipe.id) } catch {
+                            errorMessage = error.localizedDescription
+                        }
                     }
                 }
             }
@@ -223,11 +234,13 @@ struct RecipesView: View {
                         filter = item
                     } label: {
                         Text(LocalizedStringKey(item.title))
-                            .font(RecipeTheme.text(
-                                15,
-                                weight: isSelected ? .semibold : .regular,
-                                relativeTo: .subheadline
-                            ))
+                            .font(
+                                RecipeTheme.text(
+                                    15,
+                                    weight: isSelected ? .semibold : .regular,
+                                    relativeTo: .subheadline
+                                )
+                            )
                             .padding(.horizontal, 18)
                             .frame(minHeight: 44)
                             .background(
@@ -247,11 +260,13 @@ struct RecipesView: View {
                         selectedCollectionID = collection.id
                     } label: {
                         Label(collection.name, systemImage: "folder")
-                            .font(RecipeTheme.text(
-                                15,
-                                weight: isSelected ? .semibold : .regular,
-                                relativeTo: .subheadline
-                            ))
+                            .font(
+                                RecipeTheme.text(
+                                    15,
+                                    weight: isSelected ? .semibold : .regular,
+                                    relativeTo: .subheadline
+                                )
+                            )
                             .padding(.horizontal, 18)
                             .frame(minHeight: 44)
                             .background(
@@ -269,7 +284,8 @@ struct RecipesView: View {
 
     private var emptyScopeTitle: String {
         if let selectedCollectionID,
-           let collection = store.collection(id: selectedCollectionID) {
+            let collection = store.collection(id: selectedCollectionID)
+        {
             return String(
                 localized: LocalizedStringResource("\(collection.name) is empty", locale: locale)
             )
@@ -279,21 +295,29 @@ struct RecipesView: View {
 
     private var emptyScopeMessage: String {
         if selectedCollectionID != nil {
-            return String(localized: LocalizedStringResource("Add recipes to this collection.", locale: RecipeLanguage.active))
+            return String(
+                localized: LocalizedStringResource(
+                    "Add recipes to this collection.", locale: RecipeLanguage.active))
         }
         return filter.emptyMessage
     }
 
     private func resultsHeader(count: Int) -> some View {
         HStack {
-            Text("\(count) Recipes", comment: "Recipe library count. Plural forms are chosen by the String Catalog for the current language.")
-                .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
-                .foregroundStyle(.secondary)
-                .accessibilityIdentifier("recipeCount")
+            Text(
+                "\(count) Recipes",
+                comment:
+                    "Recipe library count. Plural forms are chosen by the String Catalog for the current language."
+            )
+            .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
+            .foregroundStyle(.secondary)
+            .accessibilityIdentifier("recipeCount")
             Spacer()
             Menu {
                 Picker("Sort recipes", selection: $sort) {
-                    ForEach(RecipeLibrarySort.allCases) { item in Text(LocalizedStringKey(item.rawValue)).tag(item) }
+                    ForEach(RecipeLibrarySort.allCases) { item in
+                        Text(LocalizedStringKey(item.rawValue)).tag(item)
+                    }
                 }
             } label: {
                 Label("Sort", systemImage: "arrow.up.arrow.down")
@@ -324,11 +348,17 @@ private struct RecipeLibraryCard: View {
                     }
                     .aspectRatio(1.4, contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 18))
-                    Text(recipe.title.isEmpty ? String(localized: LocalizedStringResource("Untitled Recipe", locale: RecipeLanguage.active)) : recipe.title)
-                        .font(RecipeTheme.heading(.card))
-                        .foregroundStyle(.primary)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Text(
+                        recipe.title.isEmpty
+                            ? String(
+                                localized: LocalizedStringResource(
+                                    "Untitled Recipe", locale: RecipeLanguage.active))
+                            : recipe.title
+                    )
+                    .font(RecipeTheme.heading(.card))
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: 6) {
                         if let minutes = recipe.totalMinutes {
                             Label(
@@ -368,7 +398,9 @@ private struct RecipeLibraryCard: View {
                     ? LocalizedStringKey("Remove \(recipe.title) from favorites")
                     : LocalizedStringKey("Favorite \(recipe.title)")
             )
-            .accessibilityValue(recipe.isFavorite ? LocalizedStringKey("Favorite") : LocalizedStringKey("Not favorite"))
+            .accessibilityValue(
+                recipe.isFavorite
+                    ? LocalizedStringKey("Favorite") : LocalizedStringKey("Not favorite"))
         }
     }
 }

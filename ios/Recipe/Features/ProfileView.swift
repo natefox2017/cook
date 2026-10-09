@@ -3,9 +3,9 @@
 
 import RecipeCore
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 @preconcurrency import UserNotifications
-import UIKit
 
 struct ProfileView: View {
     let onOpenAccount: () -> Void
@@ -22,7 +22,10 @@ struct ProfileView: View {
 
     private var displayName: String {
         let name = store.settings.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return name.isEmpty ? String(localized: LocalizedStringResource("Your kitchen", locale: RecipeLanguage.active)) : name
+        return name.isEmpty
+            ? String(
+                localized: LocalizedStringResource("Your kitchen", locale: RecipeLanguage.active))
+            : name
     }
 
     var body: some View {
@@ -38,14 +41,19 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                         Text(displayName).font(RecipeTheme.heading(.title))
                         if !store.settings.email.isEmpty {
-                            Text(store.settings.email).font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline)).foregroundStyle(.secondary)
+                            Text(store.settings.email).font(
+                                RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline)
+                            ).foregroundStyle(.secondary)
                                 .textSelection(.enabled)
                         }
                         Button {
                             editsProfile = true
                         } label: {
                             Label("Edit Profile", systemImage: "pencil")
-                                .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+                                .font(
+                                    RecipeTheme.text(
+                                        15, weight: .semibold, relativeTo: .subheadline)
+                                )
                                 .frame(minHeight: 44)
                         }
                         .buttonStyle(.borderless)
@@ -59,7 +67,11 @@ struct ProfileView: View {
             )
 
             Section {
-                NavigationLink { SettingsHubView() } label: { ProfileRowLabel(title: "Settings", systemImage: "gearshape") }
+                NavigationLink {
+                    SettingsHubView()
+                } label: {
+                    ProfileRowLabel(title: "Settings", systemImage: "gearshape")
+                }
             }
             .listRowBackground(RecipeTheme.card)
 
@@ -72,7 +84,11 @@ struct ProfileView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("profile.account")
-                NavigationLink { SubscriptionView() } label: { ProfileRowLabel(title: "Premium", systemImage: "sparkles") }
+                NavigationLink {
+                    SubscriptionView()
+                } label: {
+                    ProfileRowLabel(title: "Premium", systemImage: "sparkles")
+                }
             }
             .listRowBackground(RecipeTheme.card)
 
@@ -151,7 +167,9 @@ struct ProfileView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("profile.export")
-                Button(role: .destructive) { confirmsReset = true } label: {
+                Button(role: .destructive) {
+                    confirmsReset = true
+                } label: {
                     Label("Delete All Local Data", systemImage: "trash")
                         .frame(minHeight: 44)
                 }
@@ -191,9 +209,13 @@ struct ProfileView: View {
             Button("All Local Library Data (JSON)") { prepareExport(.allLibraryJSON) }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Recipe JSON/HTML includes sources and Collections but not photos. Full library JSON also includes groceries, meal plan and local preferences. This app cannot restore these exports.")
+            Text(
+                "Recipe JSON/HTML includes sources and Collections but not photos. Full library JSON also includes groceries, meal plan and local preferences. This app cannot restore these exports."
+            )
         }
-        .confirmationDialog("Delete all local data?", isPresented: $confirmsReset, titleVisibility: .visible) {
+        .confirmationDialog(
+            "Delete all local data?", isPresented: $confirmsReset, titleVisibility: .visible
+        ) {
             Button("Delete All RecipePouch Data", role: .destructive) {
                 guard !isDeletingLocalData else { return }
                 isDeletingLocalData = true
@@ -212,32 +234,44 @@ struct ProfileView: View {
             }
             .disabled(isDeletingLocalData)
         } message: {
-            Text("This deletes only data on this iPhone. Sign out first; cloud data and your App Store subscription remain intact. Signing in again may restore cloud recipes. Export local data first if needed.")
+            Text(
+                "This deletes only data on this iPhone. Sign out first; cloud data and your App Store subscription remain intact. Signing in again may restore cloud recipes. Export local data first if needed."
+            )
         }
-        .alert("RecipePouch", isPresented: Binding(
-            get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
-        )) {
+        .alert(
+            "RecipePouch",
+            isPresented: Binding(
+                get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
+            )
+        ) {
             Button("OK", role: .cancel) { errorMessage = nil }
-        } message: { Text(errorMessage ?? "Please try again.") }
+        } message: {
+            Text(errorMessage ?? "Please try again.")
+        }
     }
 
     private var appearanceBinding: Binding<AppAppearance> {
-        Binding(get: { store.settings.appearance }, set: { value in
-            updateSettings { $0.appearance = value }
-        })
+        Binding(
+            get: { store.settings.appearance },
+            set: { value in
+                updateSettings { $0.appearance = value }
+            })
     }
 
     private var keepAwakeBinding: Binding<Bool> {
-        Binding(get: { store.settings.keepScreenAwake }, set: { value in
-            updateSettings { $0.keepScreenAwake = value }
-        })
+        Binding(
+            get: { store.settings.keepScreenAwake },
+            set: { value in
+                updateSettings { $0.keepScreenAwake = value }
+            })
     }
 
     private func updateSettings(_ update: (inout RecipeSettings) -> Void) {
         var settings = store.settings
         update(&settings)
-        do { try store.updateSettings(settings) }
-        catch { errorMessage = error.localizedDescription }
+        do { try store.updateSettings(settings) } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     private func prepareExport(_ format: RecipeExportFormat) {
@@ -245,7 +279,9 @@ struct ProfileView: View {
             exportDocument = try format.makeDocument(from: store)
             exportsData = true
         } catch {
-            errorMessage = String(localized: LocalizedStringResource("Export failed: \(error.localizedDescription)", locale: RecipeLanguage.active))
+            errorMessage = String(
+                localized: LocalizedStringResource(
+                    "Export failed: \(error.localizedDescription)", locale: RecipeLanguage.active))
         }
     }
 }
@@ -297,13 +333,14 @@ private struct LocalProfileEditorView: View {
             .scrollContentBackground(.hidden)
             .background(RecipeTheme.canvas)
             .navigationTitle("Edit Profile")
-        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
+            .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         var settings = store.settings
-                        settings.displayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+                        settings.displayName = displayName.trimmingCharacters(
+                            in: .whitespacesAndNewlines)
                         settings.email = email.trimmingCharacters(in: .whitespacesAndNewlines)
                         do {
                             try store.updateSettings(settings)
@@ -320,11 +357,16 @@ private struct LocalProfileEditorView: View {
                 email = store.settings.email
                 didLoad = true
             }
-            .alert("Couldn’t save profile", isPresented: Binding(
-                get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
-            )) {
+            .alert(
+                "Couldn’t save profile",
+                isPresented: Binding(
+                    get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
+                )
+            ) {
                 Button("OK", role: .cancel) { errorMessage = nil }
-            } message: { Text(errorMessage ?? "Please try again.") }
+            } message: {
+                Text(errorMessage ?? "Please try again.")
+            }
         }
         .tint(RecipeTheme.accent)
     }
@@ -344,14 +386,32 @@ struct NotificationPreferencesView: View {
     }
 
     private var permissionDescription: String {
-        guard hasLoaded else { return String(localized: LocalizedStringResource("Checking…", locale: RecipeLanguage.active)) }
+        guard hasLoaded else {
+            return String(
+                localized: LocalizedStringResource("Checking…", locale: RecipeLanguage.active))
+        }
         switch authorization {
-        case .notDetermined: return String(localized: LocalizedStringResource("Not requested", locale: RecipeLanguage.active))
-        case .denied: return String(localized: LocalizedStringResource("Off in iOS Settings", locale: RecipeLanguage.active))
-        case .authorized: return String(localized: LocalizedStringResource("Allowed", locale: RecipeLanguage.active))
-        case .provisional: return String(localized: LocalizedStringResource("Quiet delivery", locale: RecipeLanguage.active))
-        case .ephemeral: return String(localized: LocalizedStringResource("Temporarily allowed", locale: RecipeLanguage.active))
-        @unknown default: return String(localized: LocalizedStringResource("Check iOS Settings", locale: RecipeLanguage.active))
+        case .notDetermined:
+            return String(
+                localized: LocalizedStringResource("Not requested", locale: RecipeLanguage.active))
+        case .denied:
+            return String(
+                localized: LocalizedStringResource(
+                    "Off in iOS Settings", locale: RecipeLanguage.active))
+        case .authorized:
+            return String(
+                localized: LocalizedStringResource("Allowed", locale: RecipeLanguage.active))
+        case .provisional:
+            return String(
+                localized: LocalizedStringResource("Quiet delivery", locale: RecipeLanguage.active))
+        case .ephemeral:
+            return String(
+                localized: LocalizedStringResource(
+                    "Temporarily allowed", locale: RecipeLanguage.active))
+        @unknown default:
+            return String(
+                localized: LocalizedStringResource(
+                    "Check iOS Settings", locale: RecipeLanguage.active))
         }
     }
 
@@ -362,17 +422,21 @@ struct NotificationPreferencesView: View {
                 if !hasLoaded || requestsPermission {
                     ProgressView("Checking notification access")
                 } else if isAuthorized {
-                    Toggle("Cooking timer reminders", isOn: Binding(
-                        get: { store.settings.timerNotifications },
-                        set: { value in setTimerReminders(value) }
-                    ))
+                    Toggle(
+                        "Cooking timer reminders",
+                        isOn: Binding(
+                            get: { store.settings.timerNotifications },
+                            set: { value in setTimerReminders(value) }
+                        ))
                 } else if authorization == .notDetermined {
                     Button("Allow Timer Reminders") {
                         Task { await requestPermission() }
                     }
                 } else {
                     Button("Open iOS Settings") {
-                        if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            openURL(url)
+                        }
                     }
                 }
             } header: {
@@ -388,11 +452,16 @@ struct NotificationPreferencesView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await refreshPermission() } }
         }
-        .alert("Couldn’t update reminders", isPresented: Binding(
-            get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
-        )) {
+        .alert(
+            "Couldn’t update reminders",
+            isPresented: Binding(
+                get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
+            )
+        ) {
             Button("OK", role: .cancel) { errorMessage = nil }
-        } message: { Text(errorMessage ?? "Please try again.") }
+        } message: {
+            Text(errorMessage ?? "Please try again.")
+        }
     }
 
     @MainActor
@@ -487,7 +556,7 @@ enum RecipeLocalDataDeletion {
         let defaults = UserDefaults.standard
         let prefixes = [
             "recipe.cookingSession.",
-            "cook.cookingSession."
+            "cook.cookingSession.",
         ]
         for key in defaults.dictionaryRepresentation().keys
         where prefixes.contains(where: { key.hasPrefix($0) }) {
@@ -503,7 +572,7 @@ enum RecipeLocalDataDeletion {
             "recipe.collections",
             "cook.collections",
             "recipe.shareInbox",
-            "cook.shareInbox"
+            "cook.shareInbox",
         ] {
             defaults.removeObject(forKey: key)
         }
@@ -577,7 +646,8 @@ private struct RecipeAboutView: View {
 
 enum RecipeVersion {
     static var display: String {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
+        let version =
+            Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
         return build.map { "\(version) (\($0))" } ?? version
     }
@@ -634,11 +704,11 @@ enum RecipeExportFormat {
     /// Only the system exporter's completion callback can report a successful save.
     static func feedback(for result: Result<URL, Error>) -> String? {
         switch RecipeFileExportResult(result) {
-        case let .saved(filename):
+        case .saved(let filename):
             return "Export saved as \(filename)."
         case .cancelled:
             return nil
-        case let .failed(message):
+        case .failed(let message):
             return "Export failed: \(message)"
         }
     }

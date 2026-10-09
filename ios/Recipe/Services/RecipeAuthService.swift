@@ -11,6 +11,7 @@ enum RecipeAuthState: Equatable, Sendable {
     case loading
     case signedOut
     case authenticating
+    case emailCodeSent(String)
     case needsEmailVerification(String)
     case signedIn(userID: UUID, email: String?)
     case passwordResetSent(String)
@@ -22,7 +23,8 @@ enum RecipeAuthState: Equatable, Sendable {
 final class RecipeAuthService {
     static let shared = RecipeAuthService()
     private static let pendingPasswordRecoveryKey = "recipe.auth.pending_password_recovery"
-    private static let pendingPasswordRecoveryEmailKey = "recipe.auth.pending_password_recovery_email_hash"
+    private static let pendingPasswordRecoveryEmailKey =
+        "recipe.auth.pending_password_recovery_email_hash"
 
     private(set) var state: RecipeAuthState = .loading
     private(set) var nonblockingNotice: String?
@@ -44,7 +46,8 @@ final class RecipeAuthService {
                     self.state = .passwordRecovery(userID: session.user.id)
                 } else if let session {
                     if case .passwordRecovery(let recoveryUserID) = self.state,
-                       recoveryUserID == session.user.id {
+                        recoveryUserID == session.user.id
+                    {
                         continue
                     }
                     self.state = .signedIn(userID: session.user.id, email: session.user.email)
@@ -78,6 +81,42 @@ final class RecipeAuthService {
         state = .authenticating
         do {
             let session = try await client.auth.signIn(email: email, password: password)
+            state = .signedIn(userID: session.user.id, email: session.user.email)
+        } catch {
+            state = .error(error.localizedDescription)
+            throw error
+        }
+    }
+
+    /// Sends a passwordless sign-in code and allows Supabase to create a first-time account.
+    func sendEmailCode(to email: String) async throws {
+        state = .authenticating
+        do {
+            try await client.auth.signInWithOTP(
+                email: email,
+                redirectTo: RecipeSupabase.redirectURL,
+                shouldCreateUser: true
+            )
+            state = .emailCodeSent(email)
+        } catch {
+            state = .error(error.localizedDescription)
+            throw error
+        }
+    }
+
+    /// Completes passwordless sign-in only when verification returns a persisted session.
+    func verifyEmailCode(email: String, code: String) async throws {
+        state = .authenticating
+        do {
+            let response = try await client.auth.verifyOTP(
+                email: email,
+                token: code,
+                type: .email,
+                redirectTo: RecipeSupabase.redirectURL
+            )
+            guard let session = response.session else {
+                throw RecipeAuthError.missingEmailCodeSession
+            }
             state = .signedIn(userID: session.user.id, email: session.user.email)
         } catch {
             state = .error(error.localizedDescription)
@@ -147,7 +186,9 @@ final class RecipeAuthService {
         }
     }
 
-    func signInWithApple(identityToken: String, rawNonce: String, fullName: String? = nil) async throws {
+    func signInWithApple(identityToken: String, rawNonce: String, fullName: String? = nil)
+        async throws
+    {
         state = .authenticating
         do {
             let session = try await client.auth.signInWithIdToken(
@@ -167,7 +208,8 @@ final class RecipeAuthService {
                         user: UserAttributes(data: ["full_name": .string(fullName)])
                     )
                 } catch {
-                    nonblockingNotice = "Signed in successfully, but your name couldn't be saved. You can update your profile later."
+                    nonblockingNotice =
+                        "Signed in successfully, but your name couldn't be saved. You can update your profile later."
                 }
             }
         } catch {
@@ -203,8 +245,9 @@ final class RecipeAuthService {
 
     func handleAuthCallback(_ url: URL) {
         guard url.scheme == RecipeSupabase.redirectURL.scheme,
-              url.host == RecipeSupabase.redirectURL.host,
-              url.path == RecipeSupabase.redirectURL.path else { return }
+            url.host == RecipeSupabase.redirectURL.host,
+            url.path == RecipeSupabase.redirectURL.path
+        else { return }
 
         let isExplicitRecoveryCallback = callbackType(in: url) == "recovery"
         Task {
@@ -213,10 +256,12 @@ final class RecipeAuthService {
                 let pendingRecoveryEmailHash = defaults.string(
                     forKey: Self.pendingPasswordRecoveryEmailKey
                 )
-                let callbackEmailMatchesPendingReset = session.user.email.map {
-                    passwordRecoveryEmailHash(for: $0) == pendingRecoveryEmailHash
-                } ?? false
-                let isPasswordRecovery = isExplicitRecoveryCallback
+                let callbackEmailMatchesPendingReset =
+                    session.user.email.map {
+                        passwordRecoveryEmailHash(for: $0) == pendingRecoveryEmailHash
+                    } ?? false
+                let isPasswordRecovery =
+                    isExplicitRecoveryCallback
                     || (defaults.bool(forKey: Self.pendingPasswordRecoveryKey)
                         && callbackEmailMatchesPendingReset)
 
@@ -246,7 +291,8 @@ final class RecipeAuthService {
             return flow
         }
         guard let fragment = components.fragment,
-              let fragmentComponents = URLComponents(string: "?\(fragment)") else {
+            let fragmentComponents = URLComponents(string: "?\(fragment)")
+        else {
             return nil
         }
         let fragmentItems = fragmentComponents.queryItems ?? []
@@ -255,7 +301,8 @@ final class RecipeAuthService {
     }
 
     private func passwordRecoveryEmailHash(for email: String) -> String {
-        let normalizedEmail = email
+        let normalizedEmail =
+            email
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
         let digest = SHA256.hash(data: Data(normalizedEmail.utf8))
@@ -266,5 +313,21 @@ final class RecipeAuthService {
         let raw = UUID().uuidString.replacingOccurrences(of: "-", with: "")
         let digest = SHA256.hash(data: Data(raw.utf8))
         return (raw, digest.map { String(format: "%02x", $0) }.joined())
+    }
+}
+
+private enum RecipeAuthError: LocalizedError {
+    case missingEmailCodeSession
+
+    var errorDescription: String? {
+        switch self {
+        case .missingEmailCodeSession:
+            String(
+                localized: LocalizedStringResource(
+                    "The email code was accepted, but no signed-in session was returned. Try again.",
+                    locale: RecipeLanguage.active
+                )
+            )
+        }
     }
 }

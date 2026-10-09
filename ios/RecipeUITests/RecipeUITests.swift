@@ -106,7 +106,7 @@ final class RecipeUITests: XCTestCase {
         search.typeText(recipeTitle)
         let result = app.buttons.matching(
             NSPredicate(
-            format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "recipe.", recipeTitle
+                format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "recipe.", recipeTitle
             )
         ).firstMatch
         waitUntilReady(result)
@@ -430,8 +430,9 @@ final class RecipeUITests: XCTestCase {
         emailEntry.tap()
         XCTAssertTrue(app.buttons["account.submit"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.textFields["Email"].exists)
-        XCTAssertTrue(app.secureTextFields["Password"].exists)
-        XCTAssertTrue(app.buttons["Forgot Password?"].exists)
+        XCTAssertFalse(app.secureTextFields["Password"].exists)
+        XCTAssertTrue(app.buttons["account.passwordAlternative"].exists)
+        XCTAssertFalse(app.textFields["account.emailCode"].exists)
         attachScreenshot("Expanded account sign in sheet", app: app)
 
         app.buttons["account.close"].tap()
@@ -588,7 +589,8 @@ final class RecipeUITests: XCTestCase {
         openSubscription(in: app)
 
         XCTAssertTrue(
-            app.staticTexts["Premium plans aren’t available right now."].waitForExistence(timeout: 8)
+            app.staticTexts["Premium plans aren’t available right now."].waitForExistence(
+                timeout: 8)
         )
         let restore = app.buttons["subscription.restore"]
         waitUntilReady(restore)
@@ -653,53 +655,45 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
-    func testChineseDeviceLanguageStillDisplaysEnglishByDefault() {
+    func testSimplifiedChineseLocaleDisplaysLocalizedUI() {
         let app = XCUIApplication()
-        app.launchArguments = [
-            "--uitesting",
-            "-AppleLanguages", "(zh-Hans)",
-            "-AppleLocale", "zh_CN",
-        ]
+        app.launchArguments = ["--uitesting", "--uitesting-locale", "zh-Hans"]
         app.launch()
         defer { app.terminate() }
 
-        // Only --uitesting-locale may opt in to non-English smoke testing.
-        XCTAssertTrue(app.tabBars.buttons["Recipes"].waitForExistence(timeout: 10))
-        let profile = app.tabBars.buttons["Profile"]
+        // The selected locale is explicit so the result does not depend on simulator settings.
+        XCTAssertTrue(app.tabBars.buttons["食谱"].waitForExistence(timeout: 10))
+        let profile = app.tabBars.buttons["我的"]
         XCTAssertTrue(profile.waitForExistence(timeout: 8))
         profile.tap()
-        XCTAssertTrue(app.staticTexts["Your kitchen"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["Account"].exists)
-        XCTAssertTrue(app.buttons["Premium"].exists)
-        app.buttons["Settings"].tap()
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["Account"].exists)
-        attachScreenshot("English UI on Chinese-language iPhone", app: app)
+        XCTAssertTrue(app.staticTexts["我的厨房"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["账号"].exists)
+        XCTAssertTrue(app.buttons["会员"].exists)
+        app.buttons["设置"].tap()
+        XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["账号"].exists)
+        attachScreenshot("Simplified Chinese interface", app: app)
     }
 
     @MainActor
     func testFourLocaleTabLabelsUseStringCatalog() {
-        // Each launch uses --uitesting fixtures, but only explicit locale
-        // smoke cases override the usual deterministic English UI policy.
-        let examples: [(String, String, String, String, String, String, String, String, String)] = [
-            ("en", "en_US", "Recipes", "Recipe", "Profile", "Settings", "Account", "Premium", "Your kitchen"),
-            ("zh-Hans", "zh_CN", "食谱", "份食谱", "我的", "设置", "账号", "会员", "我的厨房"),
-            ("zh-Hant", "zh_TW", "食譜", "份食譜", "個人", "設定", "帳號", "會員", "我的廚房"),
-            ("ja", "ja_JP", "レシピ", "件のレシピ", "マイページ", "設定", "アカウント", "プレミアム", "マイキッチン"),
+        // Locale overrides stay scoped to the app and never change global AppleLanguages.
+        let examples: [(String, String, String, String, String, String, String, String)] = [
+            (
+                "en", "Recipes", "Recipe", "Profile", "Settings", "Account", "Premium",
+                "Your kitchen"
+            ),
+            ("zh-Hans", "食谱", "份食谱", "我的", "设置", "账号", "会员", "我的厨房"),
+            ("zh-Hant", "食譜", "份食譜", "個人", "設定", "帳號", "會員", "我的廚房"),
+            ("ja", "レシピ", "件のレシピ", "マイページ", "設定", "アカウント", "プレミアム", "マイキッチン"),
         ]
 
         for (
-            language, region, recipesLabel, countNoun, profileLabel, settingsTitle,
+            language, recipesLabel, countNoun, profileLabel, settingsTitle,
             accountLabel, premiumLabel, kitchenLabel
-        ) in examples
-        {
+        ) in examples {
             let app = XCUIApplication()
-            app.launchArguments = [
-                "--uitesting",
-                "--uitesting-locale", language,
-                "-AppleLanguages", "(\(language))",
-                "-AppleLocale", region,
-            ]
+            app.launchArguments = ["--uitesting", "--uitesting-locale", language]
             app.launch()
             XCTAssertTrue(
                 app.tabBars.buttons[recipesLabel].waitForExistence(timeout: 10),
@@ -749,28 +743,23 @@ final class RecipeUITests: XCTestCase {
 
     @MainActor
     func testSettingsRemainReachableAtAccessibilityDynamicType() {
-        let locales: [(String, String, String, String, String, String, String)] = [
+        let locales: [(String, String, String, String, String, String)] = [
             (
-                "en", "en_US", "Profile", "Settings", "Account", "Subscription",
+                "en", "Profile", "Settings", "Account", "Subscription",
                 "Cloud Sync"
             ),
             (
-                "ja", "ja_JP", "マイページ", "設定", "アカウント", "サブスクリプション",
+                "ja", "マイページ", "設定", "アカウント", "サブスクリプション",
                 "クラウド同期"
             ),
         ]
 
         for (
-            language, region, profileLabel, settingsTitle, accountLabel, subscriptionLabel,
+            language, profileLabel, settingsTitle, accountLabel, subscriptionLabel,
             cloudSyncLabel
         ) in locales {
             let app = XCUIApplication()
-            app.launchArguments = [
-                "--uitesting",
-                "--uitesting-locale", language,
-                "-AppleLanguages", "(\(language))",
-                "-AppleLocale", region,
-            ]
+            app.launchArguments = ["--uitesting", "--uitesting-locale", language]
             app.launchEnvironment["UIPreferredContentSizeCategoryName"] =
                 "UICTContentSizeCategoryAccessibilityXXXL"
             app.launch()
@@ -810,7 +799,7 @@ final class RecipeUITests: XCTestCase {
     @MainActor
     private func launchSeededApp(storeKitTestProductID: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["--uitesting", "--uitesting-locale", "en"]
         if let storeKitTestProductID {
             app.launchEnvironment["RECIPE_STOREKIT_TEST_PRODUCT_IDS"] = storeKitTestProductID
         }
@@ -884,7 +873,8 @@ final class RecipeUITests: XCTestCase {
     private func waitUntilReady(
         _ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line
     ) {
-        let predicate = NSPredicate(format: "exists == true AND hittable == true AND enabled == true")
+        let predicate = NSPredicate(
+            format: "exists == true AND hittable == true AND enabled == true")
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
         XCTAssertEqual(
             XCTWaiter.wait(for: [expectation], timeout: 10), .completed,
@@ -945,7 +935,9 @@ final class RecipeUITests: XCTestCase {
                 XCTFail("No visible form can scroll to \(element)", file: file, line: line)
                 return
             }
-            if element.exists && element.frame.height > 0 && element.frame.maxY <= form.frame.minY + 12 {
+            if element.exists && element.frame.height > 0
+                && element.frame.maxY <= form.frame.minY + 12
+            {
                 form.swipeDown(velocity: .slow)
             } else {
                 form.swipeUp(velocity: .slow)

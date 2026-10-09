@@ -3,6 +3,7 @@
 
 import Foundation
 import Testing
+
 @testable import RecipeCore
 
 @MainActor
@@ -144,39 +145,39 @@ func importJobResponseDecodesFrozenTextResultWithOptionalReviewFields() throws {
     let recipeID = UUID(uuidString: "5a555950-29fa-48b8-8083-e3864b7defa6")!
     let evidenceID = UUID(uuidString: "4c274cfe-701e-4cc3-9ba4-10cf5d10e807")!
     let json = """
-    {
-      "job_id": "\(jobID)",
-      "client_request_id": "\(requestID)",
-      "status": "completed",
-      "attempt_count": 1,
-      "queue_confirmed_at": "2026-10-08T00:00:00Z",
-      "recipe_id": "\(recipeID)",
-      "result": {
-        "recipe_id": "\(recipeID)",
-        "status": "needs_review",
-        "source": { "input_type": "text" },
-        "fields": {
-          "title": {
-            "raw_value": "Soup",
-            "normalized_value": null,
-            "evidence_ids": ["\(evidenceID)"],
-            "confidence": 1,
-            "user_confirmed": false,
-            "origin": "extracted",
-            "updated_at": "2026-10-08T00:00:00Z"
+        {
+          "job_id": "\(jobID)",
+          "client_request_id": "\(requestID)",
+          "status": "completed",
+          "attempt_count": 1,
+          "queue_confirmed_at": "2026-10-08T00:00:00Z",
+          "recipe_id": "\(recipeID)",
+          "result": {
+            "recipe_id": "\(recipeID)",
+            "status": "needs_review",
+            "source": { "input_type": "text" },
+            "fields": {
+              "title": {
+                "raw_value": "Soup",
+                "normalized_value": null,
+                "evidence_ids": ["\(evidenceID)"],
+                "confidence": 1,
+                "user_confirmed": false,
+                "origin": "extracted",
+                "updated_at": "2026-10-08T00:00:00Z"
+              }
+            },
+            "evidence": [{
+              "id": "\(evidenceID)",
+              "source_type": "user",
+              "origin": "user",
+              "excerpt": "Soup",
+              "confidence": 1,
+              "captured_at": "2026-10-08T00:00:00Z"
+            }]
           }
-        },
-        "evidence": [{
-          "id": "\(evidenceID)",
-          "source_type": "user",
-          "origin": "user",
-          "excerpt": "Soup",
-          "confidence": 1,
-          "captured_at": "2026-10-08T00:00:00Z"
-        }]
-      }
-    }
-    """
+        }
+        """
 
     let response = try JSONDecoder().decode(
         RecipeImportJobResponse.self,
@@ -230,7 +231,8 @@ func completedTextIsSavedWithSourceAndReplayPreservesUserEdits() async throws {
     let fixture = try ShareWorkflowFixture()
     defer { fixture.removeFiles() }
     let ownerID = UUID()
-    let source = "Lemon dressing\nIngredients:\nOlive oil, about a little\nSalt to taste\nDirections:\nMix and serve."
+    let source =
+        "Lemon dressing\nIngredients:\nOlive oil, about a little\nSalt to taste\nDirections:\nMix and serve."
     let receipt = try fixture.inbox.receive(source, as: .text)
     let jobID = UUID()
     let recipeID = UUID()
@@ -270,10 +272,11 @@ func completedTextIsSavedWithSourceAndReplayPreservesUserEdits() async throws {
     let imported = try #require(fixture.store.recipe(id: recipeID))
     #expect(imported.sourceText == source)
     #expect(imported.sourceName == "Shared source")
-    #expect(imported.ingredients.map(\.name) == [
-        "Olive oil, about a little",
-        "Salt to taste"
-    ])
+    #expect(
+        imported.ingredients.map(\.name) == [
+            "Olive oil, about a little",
+            "Salt to taste",
+        ])
     #expect(imported.ingredients.allSatisfy { $0.quantity == nil })
 
     var edited = imported
@@ -534,7 +537,7 @@ func lateCompletionFillsOnlyUneditedMissingSections() async throws {
                 rawValue: "Simmer until tender",
                 evidenceIDs: [evidenceID],
                 confidence: 0.95
-            )
+            ),
         ],
         evidence: [
             .init(
@@ -592,8 +595,9 @@ func lateCompletionFillsOnlyUneditedMissingSections() async throws {
     #expect(savedAfter.ingredients.first?.name.contains("to taste") == true)
     #expect(savedAfter.steps.first?.instruction == "Simmer until tender")
     #expect(savedAfter.importRecord?.result.fields["title"]?.rawValue == "Soup")
-    #expect(savedAfter.importRecord?.result.fields["ingredients[0].raw_text"]?
-        .evidenceIDs == [evidenceID])
+    #expect(
+        savedAfter.importRecord?.result.fields["ingredients[0].raw_text"]?
+            .evidenceIDs == [evidenceID])
 
     _ = await RecipeShareImportWorkflow.synchronize(
         inbox: fixture.inbox, store: fixture.store, client: client,

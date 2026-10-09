@@ -284,7 +284,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         let fractionalFormatter = ISO8601DateFormatter()
         fractionalFormatter.formatOptions = [
             .withInternetDateTime,
-            .withFractionalSeconds
+            .withFractionalSeconds,
         ]
         if fractionalFormatter.date(from: queueConfirmedAt) != nil {
             return true

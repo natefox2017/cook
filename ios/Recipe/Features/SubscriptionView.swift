@@ -70,9 +70,10 @@ struct PremiumPaywallContent: View {
                 Button {
                     onContinue?()
                 } label: {
-                    Text(LocalizedStringKey(
-                        subscriptions.state.hasEntitlement ? "Continue" : "Continue with Free"
-                    ))
+                    Text(
+                        LocalizedStringKey(
+                            subscriptions.state.hasEntitlement ? "Continue" : "Continue with Free"
+                        ))
                 }
                 .frame(minHeight: 50)
                 .accessibilityIdentifier("onboarding.continueFree")
@@ -132,7 +133,7 @@ struct PremiumPaywallContent: View {
                         .accessibilityHidden(true)
                     Text("Premium plans aren’t available right now.")
                         .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
-                    }
+                }
                 .frame(maxWidth: .infinity)
                 .padding(RecipeSpacing.pageInset)
                 .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 22))
@@ -151,7 +152,9 @@ struct PremiumPaywallContent: View {
                         VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                             planHeader(for: product)
 
-                            if !product.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            if !product.description.trimmingCharacters(in: .whitespacesAndNewlines)
+                                .isEmpty
+                            {
                                 Text(product.description)
                                     .font(RecipeTheme.text(15, relativeTo: .subheadline))
                                     .foregroundStyle(.secondary)
@@ -160,11 +163,17 @@ struct PremiumPaywallContent: View {
                             }
 
                             if subscriptions.isTrialEligible(for: product),
-                               let offer = product.subscription?.introductoryOffer {
-                                Text("Start \(periodLabel(offer.period, count: offer.periodCount)) free, then \(priceLine(for: product)).")
-                                    .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
-                                    .foregroundStyle(RecipeTheme.accentForeground)
-                                    .fixedSize(horizontal: false, vertical: true)
+                                let offer = product.subscription?.introductoryOffer
+                            {
+                                Text(
+                                    "Start \(periodLabel(offer.period, count: offer.periodCount)) free, then \(priceLine(for: product))."
+                                )
+                                .font(
+                                    RecipeTheme.text(
+                                        15, weight: .semibold, relativeTo: .subheadline)
+                                )
+                                .foregroundStyle(RecipeTheme.accentForeground)
+                                .fixedSize(horizontal: false, vertical: true)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -205,7 +214,8 @@ struct PremiumPaywallContent: View {
             HStack(spacing: 18) {
                 Link(
                     "Terms of Use",
-                    destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
+                    destination: URL(
+                        string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
                 )
                 NavigationLink("Privacy") {
                     PrivacySummaryView()
@@ -245,22 +255,34 @@ struct PremiumPaywallContent: View {
     private var activeStatusTitle: String {
         switch subscriptions.state {
         case .trial:
-            String(localized: LocalizedStringResource("Free trial active", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "Free trial active", locale: RecipeLanguage.active))
         case .gracePeriod:
-            String(localized: LocalizedStringResource("Subscription in billing grace period", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "Subscription in billing grace period", locale: RecipeLanguage.active))
         default:
-            String(localized: LocalizedStringResource("Subscription active", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "Subscription active", locale: RecipeLanguage.active))
         }
     }
 
     private var statusMessage: String? {
         switch subscriptions.state {
         case .billingRetry:
-            String(localized: LocalizedStringResource("Payment issue. Premium is inactive.", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "Payment issue. Premium is inactive.", locale: RecipeLanguage.active))
         case .expired:
-            String(localized: LocalizedStringResource("Subscription expired.", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "Subscription expired.", locale: RecipeLanguage.active))
         case .revoked:
-            String(localized: LocalizedStringResource("Subscription revoked by App Store.", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "Subscription revoked by App Store.", locale: RecipeLanguage.active))
         case .unavailable(let reason):
             reason
         default:
@@ -279,7 +301,9 @@ struct PremiumPaywallContent: View {
         case .year:
             return String(localized: LocalizedStringResource("\(count) year", locale: locale))
         @unknown default:
-            return String(localized: LocalizedStringResource("Subscription period", locale: RecipeLanguage.active))
+            return String(
+                localized: LocalizedStringResource(
+                    "Subscription period", locale: RecipeLanguage.active))
         }
     }
 
@@ -294,7 +318,9 @@ struct PremiumPaywallContent: View {
         case .year:
             String(localized: LocalizedStringResource("\(period.value) year", locale: locale))
         @unknown default:
-            String(localized: LocalizedStringResource("Subscription period", locale: RecipeLanguage.active))
+            String(
+                localized: LocalizedStringResource(
+                    "Subscription period", locale: RecipeLanguage.active))
         }
     }
 }

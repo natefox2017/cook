@@ -7514,7 +7514,7 @@
       "localizations": {
         "en": {
           "stringUnit": {
-            "state": "new",
+            "state": "translated",
             "value": "%1$@ · %2$@"
           }
         },
@@ -7542,7 +7542,7 @@
       "localizations": {
         "en": {
           "stringUnit": {
-            "state": "new",
+            "state": "translated",
             "value": "%1$@. %2$@"
           }
         },
@@ -8128,7 +8128,7 @@
       "localizations": {
         "en": {
           "stringUnit": {
-            "state": "new",
+            "state": "translated",
             "value": "Step %1$@ of %2$@"
           }
         },
@@ -8224,7 +8224,7 @@
       "localizations": {
         "en": {
           "stringUnit": {
-            "state": "new",
+            "state": "translated",
             "value": "This changes %1$@ for %2$@. Both recipes stay in your library."
           }
         },
@@ -8455,7 +8455,7 @@
       "localizations": {
         "en": {
           "stringUnit": {
-            "state": "new",
+            "state": "translated",
             "value": "You completed %1$@ of %2$@ steps for %3$@."
           }
         },
@@ -14286,6 +14286,52 @@
           "stringUnit": {
             "state": "translated",
             "value": "附件已刪除，食譜已保留。"
+          }
+        }
+      }
+    },
+    "Continue with Email": {
+      "comment": "Account sign-in action.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メールで続ける"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用邮箱继续"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用電子郵件繼續"
+          }
+        }
+      }
+    },
+    "Verify Code": {
+      "comment": "Account sign-in action.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コードを確認"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "验证邮箱验证码"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "驗證電子郵件代碼"
           }
         }
       }
