@@ -522,7 +522,8 @@ private struct PendingShareRow: View {
         }
         .task {
             if receipt.inputType == .url || receipt.inputType == .text {
-                originalSource = inbox.source(for: receipt) ?? "Source unavailable"
+                originalSource = inbox.source(for: receipt)
+                    ?? RecipeLanguage.localized("Source unavailable")
             }
         }
     }
