@@ -490,6 +490,7 @@
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = "NO";
 				INFOPLIST_FILE = "Recipe/Info.plist";
+				RECIPE_SUBSCRIPTION_PRODUCT_IDS = "com.shopkivoo.recipe.pro.monthly,com.shopkivoo.recipe.pro.yearly";
 				MARKETING_VERSION = "0.1.0";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.shopkivoo.recipe";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -510,6 +511,7 @@
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = "NO";
 				INFOPLIST_FILE = "Recipe/Info.plist";
+				RECIPE_SUBSCRIPTION_PRODUCT_IDS = "com.shopkivoo.recipe.pro.monthly,com.shopkivoo.recipe.pro.yearly";
 				MARKETING_VERSION = "0.1.0";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.shopkivoo.recipe";
 				PRODUCT_NAME = "$(TARGET_NAME)";
