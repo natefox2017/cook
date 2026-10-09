@@ -4958,24 +4958,24 @@
         }
       }
     },
-    "RecipePouch Premium": {
+    "Recipe Pals Premium": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch Premium"
+            "value": "Recipe Pals Premium"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 高级版"
+            "value": "Recipe Pals 高级版"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "RecipePouch 進階版"
+            "value": "Recipe Pals 進階版"
           }
         }
       }
@@ -15502,46 +15502,46 @@
         }
       }
     },
-    "Create with AI": {
+    "Collect recipes on any plan": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "AIで作成"
+            "value": "どのプランでもレシピを保存"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "用 AI 创作"
+            "value": "所有套餐均可收藏食谱"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "用 AI 創作"
+            "value": "所有方案皆可收藏食譜"
           }
         }
       }
     },
-    "Tell AI what you’re craving or list the ingredients you have. Start with a recipe idea.": {
+    "Collect recipes from links, photos, or text, then cook from your personal library.": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "食べたいものや手元の食材をAIに伝えて、レシピのアイデアを作りましょう。"
+            "value": "リンク、写真、テキストからレシピを保存し、自分のライブラリで料理しましょう。"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "告诉 AI 你想吃什么或手头有哪些食材，先获得一道菜谱灵感。"
+            "value": "从链接、照片或文字收集食谱，再从个人食谱库中开始烹饪。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "告訴 AI 你想吃什麼或手邊有哪些食材，先獲得一道食譜靈感。"
+            "value": "從連結、照片或文字收集食譜，再從個人食譜庫中開始烹飪。"
           }
         }
       }
@@ -19044,6 +19044,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "人数分：%lld"
+          }
+        }
+      }
+    },
+    "Save recipes your way": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピを自分らしく保存"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用你喜欢的方式收藏食谱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用你喜歡的方式收藏食譜"
           }
         }
       }

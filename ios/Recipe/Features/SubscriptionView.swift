@@ -120,7 +120,7 @@ struct PremiumPaywallContent: View {
     private func onboardingContent(imageHeight: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
             HStack {
-                Text("RecipePouch Premium")
+                Text("Recipe Pals Premium")
                     .font(RecipeTheme.heading(.card))
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -290,7 +290,7 @@ struct PremiumPaywallContent: View {
 
     private var premiumFeatures: some View {
         VStack(alignment: .leading, spacing: 10) {
-            premiumFeature("sparkles", title: "Create with AI")
+            premiumFeature("bookmark", title: "Collect recipes on any plan")
             premiumFeature("link", title: "Links & social")
             premiumFeature("fork.knife", title: "Cook & plan")
         }
@@ -421,7 +421,7 @@ struct PremiumPaywallContent: View {
 
     private var premiumHero: some View {
         VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
-            Text("RecipePouch Premium")
+            Text("Recipe Pals Premium")
                 .font(RecipeTheme.heading(.card))
             Image("OnboardingAI")
                 .resizable()
