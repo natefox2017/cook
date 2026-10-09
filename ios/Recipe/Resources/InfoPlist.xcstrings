@@ -28,6 +28,48 @@
             "state": "translated",
             "value": "Recipe Pals"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
         }
       }
     },
@@ -54,6 +96,48 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "Recipe Pals"
@@ -87,6 +171,48 @@
           "stringUnit": {
             "state": "translated",
             "value": "拍攝食譜照片，辨識其中的文字並儲存到您的食譜庫。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografiere ein Rezept, um den Text zu lesen und es in deiner Rezeptsammlung zu speichern."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photographiez une recette pour lire son texte et l’enregistrer dans votre bibliothèque."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografía una receta para leer su texto y guardarla en tu biblioteca de recetas."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografa una ricetta per leggerne il testo e salvarla nella tua raccolta di ricette."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografe uma receita para ler o texto e guardá-la na sua biblioteca de receitas."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografeer een recept om de tekst te lezen en het op te slaan in je receptenbibliotheek."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "레시피를 촬영하여 텍스트를 읽고 레시피 보관함에 저장합니다."
           }
         }
       }
