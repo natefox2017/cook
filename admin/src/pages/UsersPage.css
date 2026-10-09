@@ -62,7 +62,7 @@
 
 .users-filters { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 12px; padding: 0 24px 18px; }
 .users-filter { display: grid; min-width: 116px; gap: 5px; color: var(--users-muted); font-size: 11px; font-weight: 600; }
-.users-filter select { min-width: 116px; height: 38px; padding: 0 10px; border: 1px solid var(--users-border); border-radius: 6px; color: #515868; background: #fff; font-size: 12px; }
+.users-filter select { min-width: 116px; height: 38px; padding: 0 34px 0 10px; border: 1px solid var(--users-border); border-radius: 6px; color: #515868; background-color: #fff; font-size: 12px; }
 .users-filter select:focus-visible,
 .users-search:focus-within,
 .users-page button:focus-visible { outline: 3px solid rgb(104 85 219 / 28%); outline-offset: 2px; }

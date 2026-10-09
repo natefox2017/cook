@@ -297,7 +297,7 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
         <div className="billing-header-actions">
           <label className="billing-platform-select">
             <span>Platform</span>
-            <select value={platform} onChange={(event) => setPlatform(event.target.value as Platform)}>
+            <select className="admin-select" value={platform} onChange={(event) => setPlatform(event.target.value as Platform)}>
               <option value="all">All platforms</option>
               <option value="app_store">App Store</option>
               <option value="play_store">Google Play</option>
@@ -436,8 +436,8 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
               <div className="billing-form-grid">
                 <label className="billing-field"><span>Display name</span><input required value={planDraft.displayName} onChange={(event) => setPlanDraft({ ...planDraft, displayName: event.target.value })} /></label>
                 <label className="billing-field"><span>Plan key</span><input required value={planDraft.planKey} onChange={(event) => setPlanDraft({ ...planDraft, planKey: event.target.value })} /></label>
-                <label className="billing-field"><span>Platform</span><select value={planDraft.platform} onChange={(event) => setPlanDraft({ ...planDraft, platform: event.target.value as SubscriptionPlan["platform"] })}><option value="app_store">App Store</option><option value="play_store">Google Play</option></select></label>
-                <label className="billing-field"><span>Billing period</span><select value={planDraft.billingPeriod} onChange={(event) => setPlanDraft({ ...planDraft, billingPeriod: event.target.value as PlanDraft["billingPeriod"] })}><option value="monthly">Monthly</option><option value="yearly">Yearly</option><option value="lifetime">Lifetime</option></select></label>
+                <label className="billing-field"><span>Platform</span><select className="admin-select" value={planDraft.platform} onChange={(event) => setPlanDraft({ ...planDraft, platform: event.target.value as SubscriptionPlan["platform"] })}><option value="app_store">App Store</option><option value="play_store">Google Play</option></select></label>
+                <label className="billing-field"><span>Billing period</span><select className="admin-select" value={planDraft.billingPeriod} onChange={(event) => setPlanDraft({ ...planDraft, billingPeriod: event.target.value as PlanDraft["billingPeriod"] })}><option value="monthly">Monthly</option><option value="yearly">Yearly</option><option value="lifetime">Lifetime</option></select></label>
                 <label className="billing-field billing-field-wide"><span>Store product ID</span><input required value={planDraft.productId} onChange={(event) => setPlanDraft({ ...planDraft, productId: event.target.value })} /></label>
                 <label className="billing-field"><span>Price</span><input type="number" min="0" step="0.01" required value={planDraft.price} onChange={(event) => setPlanDraft({ ...planDraft, price: Number(event.target.value) })} /></label>
                 <label className="billing-field"><span>Currency</span><input required maxLength={3} value={planDraft.currency} onChange={(event) => setPlanDraft({ ...planDraft, currency: event.target.value.toUpperCase() })} /></label>

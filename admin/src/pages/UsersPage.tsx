@@ -260,7 +260,7 @@ function Filter({ label, value, onChange, options }: {
   onChange: (value: string) => void;
   options: Array<[string, string]>;
 }) {
-  return <label className="users-filter"><span>{label}</span><select aria-label={label} value={value} onChange={(event) => onChange(event.target.value)}>
+  return <label className="users-filter"><span>{label}</span><select className="admin-select" aria-label={label} value={value} onChange={(event) => onChange(event.target.value)}>
     {options.map(([option, text]) => <option key={option} value={option}>{text}</option>)}
   </select></label>;
 }

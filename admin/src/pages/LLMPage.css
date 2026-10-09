@@ -18,11 +18,11 @@
 .llm-range-select select {
   min-width: 110px;
   height: 40px;
-  padding: 0 10px;
+  padding: 0 34px 0 10px;
   color: #48524b;
   border: 1px solid var(--border-strong);
   border-radius: 7px;
-  background: #fff;
+  background-color: #fff;
   font-size: 11px;
   outline: none;
 }
@@ -36,7 +36,7 @@
 .llm-period-pill,
 .llm-count-pill { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 9px; color: #6f7b72; border: 1px solid #e8ece8; border-radius: 99px; background: #fff; font-size: 9px; white-space: nowrap; }
 .llm-count-pill { color: #247942; border-color: #dcecdf; background: #f5faf5; }
-.llm-metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px; }
+.llm-metric-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 11px; }
 .llm-metric { min-height: 88px; padding: 12px 13px; }
 .llm-metric-top { display: flex; align-items: center; justify-content: space-between; color: #7a847d; font-size: 10px; }
 .llm-metric-icon { display: grid; width: 27px; height: 27px; place-items: center; color: #277b41; border-radius: 8px; background: #edf7ef; }
@@ -128,6 +128,7 @@
 
 @media (max-width: 960px) {
   .llm-usage-grid { grid-template-columns: minmax(0, 1.2fr) minmax(245px, .9fr); }
+  .llm-metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .llm-heading { align-items: flex-start; flex-direction: column; }

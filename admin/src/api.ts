@@ -8,7 +8,6 @@ import type {
   DashboardData,
   LLMProvider,
   LLMProviderInput,
-  LLMUsage,
   LLMUsageRange,
   RevenueData,
   SubscriptionPlan,
@@ -196,7 +195,7 @@ export const adminApi = {
     return request<{ ok: boolean }>("admin-ai", `/providers/${encodeURIComponent(id)}`, token, { method: "DELETE" });
   },
   llmUsage(token: string, range: LLMUsageRange) {
-    return request<LLMUsage>("admin-ai", `/usage?range=${range}`, token);
+    return request<unknown>("admin-ai", `/usage?range=${range}`, token);
   },
 };
 

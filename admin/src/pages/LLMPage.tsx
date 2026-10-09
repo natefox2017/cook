@@ -65,30 +65,88 @@ function formatDate(value: string) {
     : new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(date);
 }
 
-function validUsage(usage: LLMUsage | null): usage is LLMUsage {
-  if (
-    !usage || !usage.totals || !Array.isArray(usage.series) ||
-    !Array.isArray(usage.byModel)
-  ) return false;
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
 
-  const validTotals = [
-    usage.totals.requests,
-    usage.totals.inputTokens,
-    usage.totals.outputTokens,
-    usage.totals.totalTokens,
-  ].every(Number.isFinite);
-  const validSeries = usage.series.every((row) =>
-    row && typeof row.date === "string" &&
-    [row.requests, row.inputTokens, row.outputTokens, row.totalTokens].every(
-      Number.isFinite,
-    )
-  );
-  const validModels = usage.byModel.every((row) =>
-    row && typeof row.provider === "string" && typeof row.model === "string" &&
-    [row.requests, row.totalTokens].every(Number.isFinite)
-  );
+function numberFrom(record: Record<string, unknown>, ...keys: string[]): number | null {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+  }
+  return null;
+}
 
-  return validTotals && validSeries && validModels;
+function normalizeUsage(value: unknown): LLMUsage | null {
+  const payload = asRecord(value);
+  if (!payload) return null;
+
+  const sourceTotals = asRecord(payload.totals) ?? asRecord(payload.summary);
+  const events = Array.isArray(payload.events)
+    ? payload.events.map(asRecord).filter((event): event is Record<string, unknown> => event !== null)
+    : [];
+  if (!sourceTotals && events.length === 0) return null;
+
+  const eventTotals = events.reduce<{
+    requests: number;
+    inputTokens: number;
+    outputTokens: number;
+    cachedInputTokens: number;
+    cachedTokenCount: number;
+    latencyTotal: number;
+    latencyCount: number;
+  }>((totals, event) => ({
+    requests: totals.requests + 1,
+    inputTokens: totals.inputTokens + (numberFrom(event, "inputTokens", "input_tokens") ?? 0),
+    outputTokens: totals.outputTokens + (numberFrom(event, "outputTokens", "output_tokens") ?? 0),
+    cachedInputTokens: totals.cachedInputTokens + (numberFrom(event, "cachedInputTokens", "cached_input_tokens", "cacheReadInputTokens", "cache_read_input_tokens") ?? 0),
+    cachedTokenCount: totals.cachedTokenCount + (numberFrom(event, "cachedInputTokens", "cached_input_tokens", "cacheReadInputTokens", "cache_read_input_tokens") === null ? 0 : 1),
+    latencyTotal: totals.latencyTotal + (numberFrom(event, "latencyMs", "latency_ms") ?? 0),
+    latencyCount: totals.latencyCount + (numberFrom(event, "latencyMs", "latency_ms") === null ? 0 : 1),
+  }), { requests: 0, inputTokens: 0, outputTokens: 0, cachedInputTokens: 0, cachedTokenCount: 0, latencyTotal: 0, latencyCount: 0 });
+
+  const requests = sourceTotals
+    ? numberFrom(sourceTotals, "requests", "requestCount", "request_count")
+    : eventTotals.requests;
+  const inputTokens = sourceTotals
+    ? numberFrom(sourceTotals, "inputTokens", "input_tokens")
+    : eventTotals.inputTokens;
+  const outputTokens = sourceTotals
+    ? numberFrom(sourceTotals, "outputTokens", "output_tokens")
+    : eventTotals.outputTokens;
+  if (requests === null || inputTokens === null || outputTokens === null) return null;
+
+  const series = Array.isArray(payload.series) ? payload.series.filter((item) => {
+    const row = asRecord(item);
+    return row && typeof row.date === "string" &&
+      [row.requests, row.inputTokens, row.outputTokens, row.totalTokens].every(Number.isFinite);
+  }) : [];
+  const byModel = Array.isArray(payload.byModel) ? payload.byModel.filter((item) => {
+    const row = asRecord(item);
+    return row && typeof row.provider === "string" && typeof row.model === "string" &&
+      [row.requests, row.totalTokens].every(Number.isFinite);
+  }) : [];
+  const cachedInputTokens = sourceTotals
+    ? numberFrom(sourceTotals, "cachedInputTokens", "cached_input_tokens", "cacheReadInputTokens", "cache_read_input_tokens")
+    : eventTotals.cachedTokenCount ? eventTotals.cachedInputTokens : null;
+  const averageLatencyMs = sourceTotals
+    ? numberFrom(sourceTotals, "averageLatencyMs", "avgLatencyMs", "average_latency_ms", "avg_latency_ms")
+    : eventTotals.latencyCount ? eventTotals.latencyTotal / eventTotals.latencyCount : null;
+
+  return {
+    totals: {
+      requests,
+      inputTokens,
+      outputTokens,
+      totalTokens: numberFrom(sourceTotals ?? {}, "totalTokens", "total_tokens") ?? inputTokens + outputTokens,
+      cachedInputTokens,
+      averageLatencyMs,
+    },
+    series: series as LLMUsage["series"],
+    byModel: byModel as LLMUsage["byModel"],
+  };
 }
 
 function ErrorNotice({ message, onRetry }: { message: string; onRetry: () => void }) {
@@ -133,8 +191,17 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
         adminApi.llmProviders(token),
         adminApi.llmUsage(token, range),
       ]);
-      setProviders(providerResult.data);
-      setUsage(usageResult);
+      const providerData = Array.isArray(providerResult)
+        ? providerResult
+        : Array.isArray(providerResult.data)
+        ? providerResult.data
+        : null;
+      const normalizedUsage = normalizeUsage(usageResult);
+      if (!providerData || !normalizedUsage) {
+        throw new Error("The model service returned incomplete usage data.");
+      }
+      setProviders(providerData);
+      setUsage(normalizedUsage);
     } catch (cause) {
       handleExpiredSession(cause, onAuthExpired);
       setError(cause instanceof Error ? cause.message : "Unable to load model administration data.");
@@ -217,8 +284,7 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
     }
   }
 
-  const usageIsValid = validUsage(usage);
-  const hasUsage = usageIsValid && usage.totals.requests > 0;
+  const hasUsage = usage !== null && usage.totals.requests > 0;
 
   return (
     <main className="llm-page">
@@ -231,7 +297,7 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
         <div className="llm-heading-actions">
           <label className="llm-range-select">
             <span>Usage range</span>
-            <select value={range} onChange={(event) => setRange(event.target.value as LLMUsageRange)}>
+            <select className="admin-select" value={range} onChange={(event) => setRange(event.target.value as LLMUsageRange)}>
               {ranges.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </label>
@@ -246,20 +312,19 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
 
       <section className="llm-usage-section" aria-labelledby="llm-usage-title">
         <div className="llm-section-heading">
-          <div><h2 id="llm-usage-title">Token usage</h2><p>Requests and tokens recorded by the model worker.</p></div>
+          <div><h2 id="llm-usage-title">Token usage</h2><p>Requests, tokens, and response time recorded by the model worker. Cached input is included in input tokens.</p></div>
           <span className="llm-period-pill"><Activity size={14} aria-hidden="true" /> Last {range.replace("d", " days")}</span>
         </div>
         {loading ? (
           <div className="llm-loading"><LoaderCircle size={18} className="llm-spin" aria-hidden="true" /> Loading usage…</div>
-        ) : !usageIsValid ? (
-          <ErrorNotice message="The usage service returned incomplete data." onRetry={() => void load()} />
         ) : hasUsage && usage ? (
           <>
             <div className="llm-metric-grid">
               <Metric label="Requests" value={formatNumber(usage.totals.requests)} icon={Zap} />
               <Metric label="Input tokens" value={formatNumber(usage.totals.inputTokens)} icon={ArrowDownToLine} />
               <Metric label="Output tokens" value={formatNumber(usage.totals.outputTokens)} icon={ArrowUpToLine} />
-              <Metric label="Total tokens" value={formatNumber(usage.totals.totalTokens)} icon={Cpu} />
+              <Metric label="Cached input tokens" value={usage.totals.cachedInputTokens === null || usage.totals.cachedInputTokens === undefined ? "—" : formatNumber(usage.totals.cachedInputTokens)} icon={Cpu} />
+              <Metric label="Avg. response time" value={usage.totals.averageLatencyMs === null || usage.totals.averageLatencyMs === undefined ? "—" : `${formatNumber(usage.totals.averageLatencyMs)} ms`} icon={Activity} />
             </div>
             <div className="llm-usage-grid">
               <section className="llm-panel card">

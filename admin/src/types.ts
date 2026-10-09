@@ -131,6 +131,8 @@ export type LLMUsage = {
     inputTokens: number;
     outputTokens: number;
     totalTokens: number;
+    cachedInputTokens?: number | null;
+    averageLatencyMs?: number | null;
   };
   series: Array<{
     date: string;
