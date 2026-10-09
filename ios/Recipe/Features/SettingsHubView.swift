@@ -566,9 +566,13 @@ struct LocalePreferencesView: View {
     private var countryCodes: [String] {
         Locale.Region.isoRegions
             .map(\.identifier)
+            .filter { code in
+                code.count == 2 && code.allSatisfy { $0.isASCII && $0.isLetter }
+            }
             .sorted {
-                Locale.current.localizedString(forRegionCode: $0) ?? $0
-                    < Locale.current.localizedString(forRegionCode: $1) ?? $1
+                let lhs = RecipeLanguage.active.localizedString(forRegionCode: $0) ?? $0
+                let rhs = RecipeLanguage.active.localizedString(forRegionCode: $1) ?? $1
+                return lhs.localizedStandardCompare(rhs) == .orderedAscending
             }
     }
 
@@ -586,7 +590,7 @@ struct LocalePreferencesView: View {
                 Picker("Country or region", selection: $countryOverride) {
                     Text("Use device region").tag("")
                     ForEach(countryCodes, id: \.self) { code in
-                        Text(Locale.current.localizedString(forRegionCode: code) ?? code)
+                        Text(RecipeLanguage.active.localizedString(forRegionCode: code) ?? code)
                             .tag(code)
                     }
                 }
