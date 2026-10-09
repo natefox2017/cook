@@ -31,6 +31,23 @@ On 2026-10-09 the user requested new cooking interaction work. These are **new d
 
 Localization expansion and manual language/country selection are separately tracked under [#230](https://github.com/natefox2017/cook/issues/230). Do not merge a feature PR merely because the lightweight merge workflow is green; require the specific functional checks and device evidence in each Issue. Do not duplicate the already-recorded basic Cooking acceptance in #136.
 
+## Additional next-phase development approved by the user (2026-10-09)
+
+The previous seven Issue rows above are **historical testing scope**, not the live development task count. The user requested **new features** requiring independent implementation; none below is implicitly complete just because its ticket exists. Details and dependencies live in [ROADMAP.md](../ROADMAP.md) and:
+[AI experience](../PRODUCT/AI_RECIPE_EXPERIENCE_2026-10-09.md),
+[Share / Web / Growth](../PRODUCT/RECIPE_PUBLIC_SHARING_V1.md),
+[Recipe Detail audit](../PRODUCT/RECIPE_DETAIL_COMPETITOR_AUDIT_2026-10-09.md).
+
+| Priority | Open development issues | Status |
+| --- | --- | --- |
+| P0 | [#238 AI dialog draft](https://github.com/natefox2017/cook/issues/238), [#241 AI substitution](https://github.com/natefox2017/cook/issues/241) | SCOPE WRITTEN / NOT IMPLEMENTED |
+| P1 | [#239 lawful video/audio/keyframes](https://github.com/natefox2017/cook/issues/239), [#240 multi-recipe separation](https://github.com/natefox2017/cook/issues/240) | SCOPE WRITTEN / NOT IMPLEMENTED |
+| P0 | [#242 opt-in share snapshots](https://github.com/natefox2017/cook/issues/242), [#243 public recipe Web](https://github.com/natefox2017/cook/issues/243), [#244 poster and QR](https://github.com/natefox2017/cook/issues/244) | SCOPE WRITTEN / NOT IMPLEMENTED |
+| P1/P2 | [#245 privacy-safe inviter attribution](https://github.com/natefox2017/cook/issues/245), [#246 eventual reward ledger](https://github.com/natefox2017/cook/issues/246) | SCOPE WRITTEN / NOT IMPLEMENTED |
+| P0 | [#247 recipe detail data](https://github.com/natefox2017/cook/issues/247), [#248 detail UI](https://github.com/natefox2017/cook/issues/248) | SCOPE WRITTEN / NOT IMPLEMENTED |
+
+Scope nuance: public Web is the **single-recipe read-only opt-in sharing landing**, not a community or the full Web client formerly excluded by V1. Previously closed import Issues stay closed; these new tickets are the user's explicitly renewed/extended scope. Do not reclassify aggregate App Store campaign clicks as confirmed user invitations, or publish source-site photos/instructions without rights.
+
 ## Coverage inventory and exact follow-up
 
 1. **Auth (#131):** `RecipeAuthService.swift`, `RecipeAuthServiceTests.swift`, `RecipeUITests.swift`. Mock authentication, login UI and real OAuth are distinct layers; capture actual App session, callback URL result and sanitized identity on a real provider environment.
