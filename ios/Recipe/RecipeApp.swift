@@ -478,10 +478,8 @@ private struct RecipeRootView: View {
                 }
             } else {
                 TabView(selection: $selectedTab) {
-                    // Each root explicitly restores the tab bar after a hidden pushed page.
                     NavigationStack {
                         RecipesView()
-                            .toolbarVisibility(.visible, for: .tabBar)
                     }
                     .tabItem {
                         Label(RecipeTab.recipes.title, systemImage: RecipeTab.recipes.symbol)
@@ -491,7 +489,6 @@ private struct RecipeRootView: View {
 
                     NavigationStack {
                         MealPlanView()
-                            .toolbarVisibility(.visible, for: .tabBar)
                     }
                     .tabItem {
                         Label(RecipeTab.plan.title, systemImage: RecipeTab.plan.symbol)
@@ -501,7 +498,6 @@ private struct RecipeRootView: View {
 
                     NavigationStack {
                         GroceriesView()
-                            .toolbarVisibility(.visible, for: .tabBar)
                     }
                     .tabItem {
                         Label(RecipeTab.groceries.title, systemImage: RecipeTab.groceries.symbol)
@@ -511,7 +507,6 @@ private struct RecipeRootView: View {
 
                     NavigationStack {
                         ProfileView(onOpenAccount: presentAccount)
-                            .toolbarVisibility(.visible, for: .tabBar)
                     }
                     .tabItem {
                         Label(RecipeTab.profile.title, systemImage: RecipeTab.profile.symbol)
