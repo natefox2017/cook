@@ -2,6 +2,7 @@
 // Purpose: Schedules and cancels local cooking timer notifications.
 
 import Foundation
+import RecipeCore
 import UserNotifications
 
 @MainActor
