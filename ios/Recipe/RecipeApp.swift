@@ -12,6 +12,7 @@ struct RecipeApp: App {
     @State private var subscriptions = SubscriptionStore()
     @State private var cloudSync = CloudSyncCoordinator()
     private let isUITesting: Bool
+    private let bypassOnboarding: Bool
 
     init() {
         let defaults = UserDefaults.standard
@@ -26,7 +27,16 @@ struct RecipeApp: App {
 
         let arguments = ProcessInfo.processInfo.arguments
         let isUITesting = arguments.contains("--uitesting")
+        var bypassOnboarding = isUITesting
+        #if DEBUG
+            if isUITesting && arguments.contains("--uitesting-onboarding") {
+                // Exercise the real first-launch flow with isolated UI-test fixtures.
+                bypassOnboarding = false
+                defaults.set(false, forKey: FirstLaunchFlowView.completionKey)
+            }
+        #endif
         self.isUITesting = isUITesting
+        self.bypassOnboarding = bypassOnboarding
 
         _ = RecipeAuthService.shared
 
@@ -60,11 +70,13 @@ struct RecipeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RecipeRootView(bypassOnboarding: isUITesting)
+            RecipeRootView(isUITesting: isUITesting, bypassOnboarding: bypassOnboarding)
                 .environment(store)
                 .environment(subscriptions)
                 .environment(cloudSync)
-                .onOpenURL { RecipeAuthService.shared.handleAuthCallback($0) }
+                .onOpenURL { url in
+                    RecipeAuthService.shared.handleAuthCallback(url)
+                }
                 .tint(RecipeTheme.accent)
                 .font(RecipeTheme.body())
                 .preferredColorScheme(colorScheme)
@@ -97,6 +109,7 @@ private struct RecipeRootView: View {
     @State private var isAccountPresented = false
     @State private var accountDetent: PresentationDetent = .medium
 
+    let isUITesting: Bool
     let bypassOnboarding: Bool
 
     var body: some View {
@@ -109,7 +122,9 @@ private struct RecipeRootView: View {
                             "RecipePouch couldn't read your saved library. The file has been left unchanged.\n\n\(message)",
                         systemImage: "externaldrive.badge.exclamationmark",
                         actionTitle: "Try again",
-                        action: { store.reload() },
+                        action: {
+                            store.reload()
+                        },
                         messageLineLimit: nil
                     )
                     .padding()
@@ -177,7 +192,7 @@ private struct RecipeRootView: View {
         .task {
             // In UI-test mode App Group provisioning may not be installed.
             // Normal installs read durable receipts from the shared container.
-            if !bypassOnboarding {
+            if !isUITesting {
                 await shareInbox.synchronize(store: store)
             }
         }
@@ -198,14 +213,14 @@ private struct RecipeRootView: View {
         .onChange(of: auth.state) { _, state in
             // An ACK from the previous account must not hide a receipt from
             // the newly signed-in account after an authentication transition.
-            if !bypassOnboarding {
+            if !isUITesting {
                 shareInbox.refresh()
             }
             Task {
                 await cloudSync.authenticationChanged(state)
             }
             Task {
-                if !bypassOnboarding {
+                if !isUITesting {
                     await shareInbox.synchronize(store: store)
                 }
             }
@@ -219,15 +234,17 @@ private struct RecipeRootView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
-            guard phase == .active else { return }
-            if !bypassOnboarding {
+            guard phase == .active else {
+                return
+            }
+            if !isUITesting {
                 shareInbox.refresh()
             }
             Task {
                 await cloudSync.appBecameActive()
             }
             Task {
-                if !bypassOnboarding {
+                if !isUITesting {
                     await shareInbox.synchronize(store: store)
                 }
             }
@@ -274,7 +291,9 @@ private struct FirstLaunchGateView: View {
                 ProgressView("Preparing RecipePouch…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(RecipeTheme.canvas)
-                    .task { await resolveExistingInstall() }
+                    .task {
+                        await resolveExistingInstall()
+                    }
 
             case .show:
                 FirstLaunchFlowView(onComplete: onComplete)
@@ -313,7 +332,9 @@ private enum RecipeTab: String, Identifiable {
     case groceries
     case profile
 
-    var id: Self { self }
+    var id: Self {
+        self
+    }
 
     var title: LocalizedStringKey {
         switch self {
