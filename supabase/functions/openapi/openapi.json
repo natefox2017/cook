@@ -3,11 +3,11 @@
   "info": {
     "title": "RecipePouch Edge API — Repository Replacement",
     "version": "2026-10-09.2",
-    "description": "Repository-scoped replacement contract assembled from implemented Edge Function handlers. It is not a parity reconstruction of the unavailable production OpenAPI v23. The existing handler contract is sourced from current main. Six admin-ai operations freeze the current admin UI types and unmerged PR #211 contract; they do not assert that the PR is merged, deployed, or runtime-verified.",
+    "description": "Repository-scoped replacement contract assembled from implemented Edge Function handlers. It is not a parity reconstruction of the unavailable production OpenAPI v23. The existing handler contract is sourced from current main. Six admin-ai operations freeze the current admin UI types and PR #211 handler contract; they do not assert production deployment parity.",
     "x_contract_kind": "repository-current-handler-and-frozen-admin-ai-contract",
     "x_source_revisions": {
-      "main": "2ad6cc6d40de7265476a0dccd0571fdb306bdad7",
-      "admin_ai_pr_211": "cbd5617a1f2b8508afd13d5ac91031bb16eac2ee"
+      "main": "ceff8616e4a0433a45ad3731c0fc2c36b6e075f6",
+      "admin_ai_pr_211": "01e81cfddcae71779dd843ca66e4d13050f0b1fb"
     },
     "x_source_catalog": "supabase/ISSUE_155_EDGE_FUNCTION_SOURCE_MANIFEST.md#admin-ai-recovery-plan-and-source-gap"
   },
@@ -865,7 +865,7 @@
     "/admin-ai/usage": {
       "get": {
         "summary": "Read AI usage aggregates",
-        "description": "Requires owner or admin. Cached input tokens remain null because the catalog has no cached-input column; average latency is nullable.",
+        "description": "Requires owner or admin. cachedInputTokens sums reported cache-read input tokens, is null when no event reports a value, and is zero when reported values sum to zero. averageLatencyMs is nullable.",
         "tags": [
           "Admin AI"
         ],
@@ -4842,6 +4842,7 @@
                 ]
               },
               "cachedInputTokens": {
+                "description": "Sum of reported cache-read input tokens. Null means no event reported a value; zero means reported values summed to zero.",
                 "type": [
                   "number",
                   "null"

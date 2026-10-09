@@ -292,7 +292,18 @@ Deno.test("Admin AI contract freezes roles, types, and unsupported outcomes", ()
   );
   expect(
     !((totals.required as string[]).includes("cachedInputTokens")),
-    "Cached input tokens remain optional when the live schema has no column",
+    "Cached input tokens remain optional in the response contract",
+  );
+  const cachedInput = totalProperties.cachedInputTokens as {
+    type: string[];
+    description: string;
+  };
+  expect(
+    JSON.stringify(cachedInput.type) === JSON.stringify(["number", "null"]) &&
+      cachedInput.description.includes(
+        "zero means reported values summed to zero",
+      ),
+    "Cached input distinguishes unknown values from reported zero",
   );
   const usageSeries = usageProperties.series.items as Record<
     string,
