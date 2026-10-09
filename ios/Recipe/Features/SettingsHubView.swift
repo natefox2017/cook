@@ -9,7 +9,7 @@ struct SettingsHubView: View {
         List {
             Section("Account") {
                 NavigationLink {
-                    AccountView()
+                    AccountView(onExpand: {})
                 } label: {
                     SettingsRow("Account", "person.crop.circle")
                 }
