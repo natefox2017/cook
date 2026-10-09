@@ -77,9 +77,10 @@ export async function handleRequest(
       );
     }
     if (providerMatch && req.method === "DELETE") {
-      return await deleteProvider(
-        decodeURIComponent(providerMatch[1]),
-        dependencies.createServiceClient(),
+      throw new AppError(
+        "conflict",
+        "Provider deletion is disabled until it has an atomic history guard",
+        409,
       );
     }
     if (path.startsWith("/providers") || path === "/usage") {
@@ -166,82 +167,27 @@ async function updateProvider(
     current as ProviderRow,
     models as ModelRow[] ?? [],
   );
-  if (
-    provider.model !== currentView.model ||
-    provider.active !== currentView.active
-  ) {
+  if (provider.model !== currentView.model) {
     throw new AppError(
       "conflict",
-      "Model and active-state changes are unavailable until model mapping is restored",
+      "Model changes are unavailable until an atomic model mapping is restored",
       409,
     );
   }
 
   const { data: updated, error: updateError } = await admin
     .from("ai_providers")
-    .update({ name: provider.name, base_url: provider.baseUrl })
+    .update({
+      name: provider.name,
+      base_url: provider.baseUrl,
+      enabled: provider.active,
+    })
     .eq("id", id)
     .select("id, name, base_url, secret_ref, enabled, updated_at")
     .maybeSingle();
   if (updateError) throw unavailable("Failed to update provider");
   if (!updated) throw new AppError("not_found", "Provider not found", 404);
   return json(providerView(updated as ProviderRow, models as ModelRow[] ?? []));
-}
-
-async function deleteProvider(
-  id: string,
-  admin: AdminClient,
-): Promise<Response> {
-  const { data: current, error: currentError } = await admin
-    .from("ai_providers")
-    .select("id, secret_ref")
-    .eq("id", id)
-    .maybeSingle();
-  if (currentError) throw unavailable("Failed to load provider");
-  if (!current) throw new AppError("not_found", "Provider not found", 404);
-  if (current.secret_ref) {
-    throw new AppError(
-      "conflict",
-      "Provider deletion is unavailable while a stored key is attached",
-      409,
-    );
-  }
-
-  const [
-    { count: modelCount, error: modelError },
-    { count: healthCount, error: healthError },
-    { count: usageCount, error: usageError },
-  ] = await Promise.all([
-    admin.from("ai_models").select("id", { count: "exact", head: true }).eq(
-      "provider_id",
-      id,
-    ),
-    admin.from("ai_provider_health").select("provider_id", {
-      count: "exact",
-      head: true,
-    }).eq("provider_id", id),
-    admin.from("ai_usage_events").select("id", {
-      count: "exact",
-      head: true,
-    }).eq("provider_id", id),
-  ]);
-  if (modelError || healthError || usageError) {
-    throw unavailable("Failed to check provider references");
-  }
-  if (
-    (modelCount ?? 0) > 0 || (healthCount ?? 0) > 0 ||
-    (usageCount ?? 0) > 0
-  ) {
-    throw new AppError(
-      "conflict",
-      "Provider deletion is unavailable while models or provider history are attached",
-      409,
-    );
-  }
-
-  const { error } = await admin.from("ai_providers").delete().eq("id", id);
-  if (error) throw unavailable("Failed to delete provider");
-  return json({ ok: true });
 }
 
 async function testProviderRequest(

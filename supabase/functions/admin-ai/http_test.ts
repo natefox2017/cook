@@ -140,27 +140,62 @@ Deno.test("provider test never persists or echoes the one-time key", async () =>
   assertEquals(fixture.serviceClientCalls(), 0);
 });
 
-Deno.test("provider deletion preserves usage-event attribution", async () => {
-  let deleteCalled = false;
+Deno.test("provider deletion is rejected before service-role access", async () => {
+  const fixture = dependencies();
+  const response = await handleRequest(
+    new Request(
+      "http://127.0.0.1/functions/v1/admin-ai/providers/provider-1",
+      { method: "DELETE", headers: { Authorization: "Bearer owner" } },
+    ),
+    fixture,
+  );
+
+  assertEquals(response.status, 409);
+  assertEquals(fixture.serviceClientCalls(), 0);
+});
+
+Deno.test("provider active state can change without touching secret storage", async () => {
+  const original = {
+    id: "provider-1",
+    name: "Example",
+    base_url: "https://example.com/v1",
+    secret_ref: "opaque-ref",
+    enabled: true,
+    updated_at: "2026-10-09T00:00:00Z",
+  };
+  const model = {
+    id: "model-1",
+    provider_id: "provider-1",
+    upstream_model_id: "model-x",
+    display_name: "Model X",
+    enabled: true,
+    created_at: "2026-10-09T00:00:00Z",
+  };
+  let updatedFields: Record<string, unknown> | null = null;
+  const accessedTables = new Set<string>();
   const serviceClient = () => ({
     from(table: string) {
+      accessedTables.add(table);
       const query = {
         select: () => query,
         eq: () => query,
-        maybeSingle: async () => ({
-          data: { id: "provider-1", secret_ref: null },
-          error: null,
-        }),
-        delete: () => {
-          deleteCalled = true;
+        order: () => query,
+        update: (fields: Record<string, unknown>) => {
+          updatedFields = fields;
           return query;
         },
+        maybeSingle: async () => ({
+          data: table === "ai_providers"
+            ? { ...original, ...(updatedFields ?? {}) }
+            : null,
+          error: null,
+        }),
         then: (
-          resolve: (value: { count: number; error: null }) => unknown,
+          resolve: (value: { data: unknown[]; error: null }) => unknown,
           reject?: (reason: unknown) => unknown,
         ) =>
           Promise.resolve({
-            count: table === "ai_usage_events" ? 1 : 0,
+            data: table === "ai_models" ? [model] : [],
             error: null,
           }).then(resolve, reject),
       };
@@ -171,11 +206,33 @@ Deno.test("provider deletion preserves usage-event attribution", async () => {
   const response = await handleRequest(
     new Request(
       "http://127.0.0.1/functions/v1/admin-ai/providers/provider-1",
-      { method: "DELETE", headers: { Authorization: "Bearer owner" } },
+      {
+        method: "PUT",
+        headers: {
+          Authorization: "Bearer owner",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "Example",
+          baseUrl: "https://example.com/v1",
+          model: "model-x",
+          apiKey: "",
+          active: false,
+        }),
+      },
     ),
     fixture,
   );
+  const body = await response.json();
 
-  assertEquals(response.status, 409);
-  assertEquals(deleteCalled, false);
+  assertEquals(response.status, 200);
+  assertEquals(body.active, false);
+  assertEquals(body.apiKeyConfigured, true);
+  assertEquals(updatedFields, {
+    name: "Example",
+    base_url: "https://example.com/v1",
+    enabled: false,
+  });
+  assertEquals("secret_ref" in (updatedFields ?? {}), false);
+  assertEquals(accessedTables.has("ai_secrets"), false);
 });
