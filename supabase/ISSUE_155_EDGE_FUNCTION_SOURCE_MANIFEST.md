@@ -110,7 +110,7 @@ After the successful metadata update, a separate local SQL predicate verified th
 - `git log --all --full-history -- supabase/functions/admin-ai` and `git rev-list --all --objects` contain no tracked `admin-ai` source path or blob. The scoped search of the known #155 worktrees found only the downloaded production wrapper under `.tmp/issue-155-live`; that 399-byte file imports implementation from the inaccessible `natefox2017/cookapp` feature branch. The wrapper's raw GitHub URL and authenticated repository lookup both returned 404.
 - A read-only production catalog query on 2026-10-09 found six AI tables: `ai_providers`, `ai_models`, `ai_routes`, `ai_secrets`, `ai_provider_health`, and `ai_usage_events`. RLS is enabled (not forced) on each. No policies were listed. `anon` and `authenticated` have no SELECT privilege; `service_role` has SELECT/INSERT/UPDATE/DELETE on all six. No public routines named `ai_*` or `llm_*` were found. The queried catalog had no `ai_provider_secrets` table.
 - Catalog columns are: `ai_providers` — `id`, `name`, `protocol`, `base_url`, `secret_ref`, `enabled`, `request_timeout_ms`, `max_retries`, `status`, `last_health_check_at`, `environment`, `metadata`, timestamps; `ai_models` — `id`, `provider_id`, `display_name`, `upstream_model_id`, `enabled`, `capabilities`, `context_window`, `max_output_tokens`, input/output cost fields, `metadata`, timestamps; `ai_routes` — `id`, `route_key`, `primary_model_id`, `fallback_model_ids`, timeout/retry/temperature/output limits, `structured_schema_key`, `enabled`, `reserved`, timestamps; `ai_secrets` — `id uuid` primary key, `secret_ref text` unique and non-null, `ciphertext text` and `nonce text` non-null, `key_version integer` non-null default 1, and timestamps; `ai_provider_health` — `provider_id`, `status`, success/error timestamps, `last_error`, `consecutive_failures`, `circuit_open_until`, `updated_at`; `ai_usage_events` — request/route/provider/model IDs, status, latency, input/output tokens, estimated cost, retry/error/attempt metadata, user/admin IDs, source job ID, timestamp. No secret row values were read.
-- The live `ai_usage_events` schema records request/route/provider/model IDs, final model, status, latency, input/output tokens, estimated cost, retries, error code, attempted models, user/admin IDs, source job ID and timestamp. It has no cached-input-token column. The UI treats cached input and average latency as optional; average latency can be aggregated from `latency_ms`, while cached-input usage must remain absent/null unless the source owner confirms another telemetry source.
+- The live `ai_usage_events` schema records request/route/provider/model IDs, final model, status, latency, input/output tokens, estimated cost, retries, error code, attempted models, user/admin IDs, source job ID and timestamp. That historical capture predates the repository migration `20261009133000_ai_usage_cache_read_tokens.sql`. The current canonical local schema includes nullable `cache_read_input_tokens`; the replacement sums reported cache reads without adding them to input totals. Unknown values remain null and reported zero remains zero. Apply that migration before deploying the handler; this is not evidence of its production application.
 - `ai_models.provider_id` and `ai_provider_health.provider_id` cascade from providers; `ai_routes.primary_model_id` and usage-event model/provider references use `ON DELETE SET NULL`. Provider `secret_ref` references `ai_secrets.secret_ref` with `ON DELETE SET NULL`. The provider/model/route schema contains enabled flags, retry/timeout bounds, model capabilities, cost fields and fallback model IDs. The UI exposes only a single provider/model projection, so the exact CRUD mapping must preserve the broader routing data.
 
 ### Recoverable admin UI contract
@@ -144,7 +144,8 @@ service-role-only invoker save/delete RPC migration. Secret/provider/model
 writes are atomic. Model renames preserve identity and reject multiple-model or
 historical/routing dependencies. Delete guards primary/fallback routes,
 provider/model/final/attempted usage and audit history under transaction locks;
-old secrets remain intact. Cached-token aggregation remains unchanged/null.
+old secrets remain intact. Cached-token aggregation uses the canonical nullable
+`cache_read_input_tokens` column, preserving unknown versus reported zero.
 
 The v2 contract is approved for this local implementation, not deployed:
 `COOKAPP_AI_SECRET_KEY_V2` is canonical unpadded base64url for 32 key bytes;
@@ -155,13 +156,16 @@ reference and retains old rows. Blank edits preserve v1 byte-for-byte; saved v1
 probes return 409 unsupported-version. The old master-key format remains
 unknown, and the external legacy worker has not been adapted or verified for v2.
 
-2026-10-09 local verification: 14 Deno tests, 44 pgTAP assertions and 151 actual
+2026-10-09 local verification at `cbd5617`: 14 Deno tests, 44 pgTAP assertions and 151 actual
 Edge HTTP assertions passed with synthetic local accounts/sessions/keys. The
 complete original 17 migrations plus the new transaction migration replayed from
 an empty isolated Supabase project. Concurrent fallback/attempted-history
 insertion tests confirmed delete waits for the writer and then returns 409. No
 successful real provider authentication/generation is claimed. Earlier
 integration results above remain historical evidence for their tested revisions.
+The cache-column follow-up adds three targeted unit cases (17 Deno total) and a
+separate real local usage GET with synthetic reported, zero and unknown values;
+the full 44/151 matrix was not repeated for that projection-only change.
 
 ## Staging rollout and production rollback plan
 

@@ -36,6 +36,7 @@ export type UsageEvent = {
   latency_ms: number | null;
   input_tokens: number | null;
   output_tokens: number | null;
+  cache_read_input_tokens?: number | null;
   created_at: string;
 };
 
@@ -155,6 +156,8 @@ export function buildUsageResponse(
   let inputCount = 0;
   let outputTotal = 0;
   let outputCount = 0;
+  let cachedInputTotal = 0;
+  let cachedInputCount = 0;
   let latencyTotal = 0;
   let latencyCount = 0;
   const byDate = new Map<string, {
@@ -188,6 +191,11 @@ export function buildUsageResponse(
     if (event.output_tokens !== null) {
       outputTotal += event.output_tokens;
       outputCount += 1;
+    }
+    // Cache reads are a subset of input tokens; sum only reported values.
+    if (event.cache_read_input_tokens != null) {
+      cachedInputTotal += event.cache_read_input_tokens;
+      cachedInputCount += 1;
     }
     if (event.latency_ms !== null) {
       latencyTotal += event.latency_ms;
@@ -232,7 +240,7 @@ export function buildUsageResponse(
       totalTokens: inputTokens === null || outputTokens === null
         ? null
         : inputTokens + outputTokens,
-      cachedInputTokens: null,
+      cachedInputTokens: cachedInputCount ? cachedInputTotal : null,
       averageLatencyMs: latencyCount ? latencyTotal / latencyCount : null,
     },
     series,

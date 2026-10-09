@@ -88,3 +88,53 @@ Deno.test("usage aggregation preserves unknown cached-token telemetry", () => {
   assertEquals(response.series[0].totalTokens, 15);
   assertEquals(response.byModel[0].provider, "Example");
 });
+
+const cacheEvent: UsageEvent = {
+  provider_id: null,
+  model_id: null,
+  final_model_id: null,
+  status: "success",
+  latency_ms: null,
+  input_tokens: 20,
+  output_tokens: 5,
+  created_at: "2026-10-09T12:00:00Z",
+};
+
+Deno.test("cached-input totals sum reported counts without adding to input tokens", () => {
+  const response = buildUsageResponse(
+    [
+      { ...cacheEvent, cache_read_input_tokens: 7 },
+      { ...cacheEvent, cache_read_input_tokens: 13 },
+      { ...cacheEvent, cache_read_input_tokens: null },
+    ],
+    new Map(),
+    new Map(),
+  );
+  assertEquals(response.totals.cachedInputTokens, 20);
+  assertEquals(response.totals.inputTokens, 60);
+  assertEquals(response.totals.totalTokens, 75);
+});
+
+Deno.test("cached-input totals remain unknown when no event reports a value", () => {
+  const response = buildUsageResponse(
+    [
+      cacheEvent,
+      { ...cacheEvent, cache_read_input_tokens: null },
+    ],
+    new Map(),
+    new Map(),
+  );
+  assertEquals(response.totals.cachedInputTokens, null);
+});
+
+Deno.test("reported zero cached input remains zero rather than unknown", () => {
+  const response = buildUsageResponse(
+    [
+      cacheEvent,
+      { ...cacheEvent, cache_read_input_tokens: 0 },
+    ],
+    new Map(),
+    new Map(),
+  );
+  assertEquals(response.totals.cachedInputTokens, 0);
+});

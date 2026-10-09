@@ -271,7 +271,7 @@ async function readUsage(req: Request, admin: AdminClient): Promise<Response> {
     const { data, error } = await admin
       .from("ai_usage_events")
       .select(
-        "provider_id, model_id, final_model_id, status, latency_ms, input_tokens, output_tokens, created_at",
+        "provider_id, model_id, final_model_id, status, latency_ms, input_tokens, output_tokens, cache_read_input_tokens, created_at",
       )
       .gte("created_at", since)
       .order("created_at", { ascending: true })

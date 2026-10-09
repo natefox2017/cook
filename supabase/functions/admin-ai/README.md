@@ -46,8 +46,12 @@ Errors use the existing AppError envelope: 400 invalid inputs, 401 invalid
 sessions, 403 denied roles, 404 missing providers, 409 model/history conflicts
 or unsupported secret versions, and sanitized 503 configuration/database/secret
 failures. No upstream response body or internal database error is returned or
-logged. Usage retains the existing nullable cached-token response; this change
-does not add cache-token aggregation.
+logged. Usage sums reported `cache_read_input_tokens` into nullable
+`cachedInputTokens`; unreported values remain unknown and a reported zero stays
+zero. Cache reads are a subset of input tokens and do not inflate other totals.
+Apply `20261009133000_ai_usage_cache_read_tokens.sql` before deploying this
+handler; missing columns and other database errors fail closed with sanitized
+503 responses.
 
 ## Approved v2 secret protocol
 
@@ -90,6 +94,12 @@ concurrent fallback/attempted-history insertions. Logs and a source-hashed
 report remain in `.tmp/`; only its own stack is stopped and deleted. Ports must
 be available. `--existing` is for iteration against an already isolated fixture
 project, not a production or shared stack.
+
+For the focused cache-token projection check, run the same harness with
+`--usage-only`. It creates a fresh isolated stack and exercises a real GET with
+reported, zero and unknown synthetic values, without provider calls. The full 44
+pgTAP / 151 HTTP matrix was run at `cbd5617`; the cache projection follow-up has
+separate source-hashed evidence and does not claim a full matrix rerun.
 
 The public example.com probes are negative checks with synthetic credentials; no
 successful commercial provider authentication, generation, external worker

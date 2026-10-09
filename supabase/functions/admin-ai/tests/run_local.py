@@ -157,10 +157,24 @@ def http_checks():
     check("provider deletes after references removed", api("/providers/" + provider, method="DELETE")[0] == 200)
 
 
+def usage_checks():
+    fixtures()
+    sql("insert into public.ai_usage_events(request_id,route_key,status,input_tokens,output_tokens,cache_read_input_tokens,latency_ms) values "
+        "('cache-known','fixture','success',20,5,13,120),"
+        "('cache-zero','fixture','success',20,5,0,120),"
+        "('cache-unknown','fixture','success',20,5,null,120);")
+    code, response = api("/usage?range=7d", method="GET")
+    check("real GET usage returns reported cache reads with unchanged other totals", code == 200 and response["totals"] == {
+        "requests": 3, "inputTokens": 60, "outputTokens": 15, "totalTokens": 75,
+        "cachedInputTokens": 13, "averageLatencyMs": 120})
+    check("cache reads do not inflate series or model totals", response["series"][0]["totalTokens"] == 75 and response["byModel"][0]["totalTokens"] == 75)
+
+
 def main():
     global WORK, PROJECT, STATUS
     parser = argparse.ArgumentParser()
     parser.add_argument("--existing", help="Use an already prepared isolated workdir for iteration")
+    parser.add_argument("--usage-only", action="store_true", help="Run only the focused cache-token GET check")
     args = parser.parse_args()
     PROJECT = "recipe-ai-" + secrets.token_hex(5)
     WORK = Path(args.existing).resolve() if args.existing else ROOT / ".tmp" / PROJECT
@@ -185,9 +199,10 @@ def main():
         STATUS = json.loads(subprocess.check_output(["supabase", "status", "--workdir", str(WORK), "-o", "json"], stderr=subprocess.DEVNULL))
         check("stack is isolated on loopback", STATUS["API_URL"] == f"http://127.0.0.1:{BASE_PORT}")
         check("complete 18 migration chain applied", sql("select count(*) from supabase_migrations.schema_migrations") == "18")
-        tap = sql((ROOT / "supabase/tests/database/admin_ai_provider_transactions.sql").read_text())
-        (WORK / "pgtap.log").write_text(tap)
-        check("all 44 pgTAP assertions pass", "not ok" not in tap and "1..44" in tap)
+        if not args.usage_only:
+            tap = sql((ROOT / "supabase/tests/database/admin_ai_provider_transactions.sql").read_text())
+            (WORK / "pgtap.log").write_text(tap)
+            check("all 44 pgTAP assertions pass", "not ok" not in tap and "1..44" in tap)
         env_file = WORK / "edge.env"
         env_file.touch(mode=0o600)
         env_file.write_text("COOKAPP_AI_SECRET_KEY_V2=" + base64.urlsafe_b64encode(secrets.token_bytes(32)).decode().rstrip("=") + "\n")
@@ -205,9 +220,12 @@ def main():
                 time.sleep(0.2)
             else:
                 raise RuntimeError("Local Edge did not become ready")
-            http_checks()
+            if args.usage_only:
+                usage_checks()
+            else:
+                http_checks()
         source_files = list(MODULE.glob("*.ts")) + [ROOT / "supabase/functions/_shared/ai-secret.ts", ROOT / "supabase/migrations/20261009160000_admin_ai_provider_transactions.sql"]
-        (WORK / "report.json").write_text(json.dumps({"checks": CHECKS, "source_sha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in source_files},
+        (WORK / "report.json").write_text(json.dumps({"mode": "usage-only" if args.usage_only else "full-matrix", "checks": CHECKS, "source_sha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in source_files},
             "git_sha": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
             "limitations": "Synthetic local database/admin sessions/keys and public example.com negative probes. No production deployment, real provider credentials, or external v1 worker resolver verification."}, indent=2) + "\n")
     finally:
