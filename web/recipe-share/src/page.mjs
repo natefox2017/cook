@@ -1,7 +1,27 @@
 const ALLOWED = new Set(["title","summary","sourceURL","servings","prepMinutes","cookMinutes","ingredients","steps"]);
 export const escapeHTML = v => String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const str = (v,n) => typeof v === "string" && v.length <= n ? v : null;
-const sourceURL = v => { try { const u=new URL(v);return ["http:","https:"].includes(u.protocol)&&u.hostname&&!u.username&&!u.password?u.href:null; }catch{return null;} };
+const publicSourceKeys = new Set(["v", "p", "id"]);
+function sourceURL(value) {
+  // Public recipe pages must never turn private source URLs into shareable links.
+  if (typeof value !== "string" || value.length > 2048 || value.trim() !== value ||
+      /[\u0000-\u001f\u007f-\u009f]/.test(value) || value.includes("#")) return null;
+  const authority = /^https:\/\/([^/?#]+)/i.exec(value)?.[1];
+  if (!authority || /:\d+$/.test(authority)) return null;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    if (url.protocol !== "https:" || !host.includes(".") ||
+        host.endsWith(".local") || host.includes(":") || !/[a-z]/i.test(host) ||
+        url.username || url.password || url.port ||
+        [...url.searchParams.keys()].some(key => !publicSourceKeys.has(key.toLowerCase()))) {
+      return null;
+    }
+    return value;
+  } catch {
+    return null;
+  }
+}
 const safeStoreURL = v => { try{const u=new URL(v);return u.protocol==="https:"&&u.hostname==="apps.apple.com"&&/\/id\d+(?:$|\/)/.test(u.pathname)?u.href:null;}catch{return null;} };
 
 export function validatePublicRecipe(raw) {
@@ -14,7 +34,9 @@ export function validatePublicRecipe(raw) {
   const ingredients=raw.ingredients.map(x=>x&&typeof x==="object"&&!Array.isArray(x)&&Object.keys(x).every(k=>["name","amountText"].includes(k))&&str(x.name,180)&&str(x.amountText,120)!==null?{name:x.name,amountText:x.amountText}:null);
   const steps=raw.steps.map(x=>x&&typeof x==="object"&&!Array.isArray(x)&&Object.keys(x).every(k=>["title","instruction"].includes(k))&&str(x.title,220)!==null&&str(x.instruction,6000)?{title:x.title,instruction:x.instruction}:null);
   if(ingredients.some(x=>!x)||steps.some(x=>!x)) return null;
-  return {title,summary,sourceURL:raw.sourceURL?sourceURL(raw.sourceURL):null,servings:raw.servings??null,prepMinutes:raw.prepMinutes??null,cookMinutes:raw.cookMinutes??null,ingredients,steps};
+  const citation = raw.sourceURL == null ? null : sourceURL(raw.sourceURL);
+  if (raw.sourceURL != null && citation === null) return null;
+  return {title,summary,sourceURL:citation,servings:raw.servings??null,prepMinutes:raw.prepMinutes??null,cookMinutes:raw.cookMinutes??null,ingredients,steps};
 }
 
 export function renderRecipePage(raw,{appStoreURL=null}={}) {
