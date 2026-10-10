@@ -104,5 +104,58 @@ class IOSBrandingValidationTests(unittest.TestCase):
         )
 
 
+    def test_untranslated_or_unreviewed_state_is_rejected_for_both_targets(self) -> None:
+        for _, catalog_name in BUNDLES:
+            path = self.root / catalog_name
+            original = json.loads(path.read_text(encoding="utf-8"))
+            for key in ("CFBundleName", "CFBundleDisplayName"):
+                for locale in NAMES:
+                    for state in ("needs_review", "needs-translation", "new", ""):
+                        with self.subTest(
+                            target=catalog_name, key=key, locale=locale, state=state
+                        ):
+                            changed = json.loads(json.dumps(original))
+                            unit = changed["strings"][key]["localizations"][locale][
+                                "stringUnit"
+                            ]
+                            unit["state"] = state
+                            self.write_catalog(path, changed)
+                            try:
+                                errors = validate(self.root)
+                                self.assertTrue(
+                                    any(
+                                        f"{catalog_name}: {key}[{locale}]" in error
+                                        and "state" in error
+                                        for error in errors
+                                    ), errors
+                                )
+                            finally:
+                                self.write_catalog(path, original)
+
+    def test_missing_state_and_string_unit_fail_closed(self) -> None:
+        for _, catalog_name in BUNDLES:
+            path = self.root / catalog_name
+            original = json.loads(path.read_text(encoding="utf-8"))
+            for missing in ("state", "stringUnit"):
+                with self.subTest(target=catalog_name, missing=missing):
+                    changed = json.loads(json.dumps(original))
+                    localization = changed["strings"]["CFBundleDisplayName"][
+                        "localizations"
+                    ]["ja"]
+                    if missing == "state":
+                        del localization["stringUnit"]["state"]
+                    else:
+                        del localization["stringUnit"]
+                    self.write_catalog(path, changed)
+                    errors = validate(self.root)
+                    self.assertTrue(
+                        any(
+                            f"{catalog_name}: CFBundleDisplayName[ja]" in error
+                            for error in errors
+                        ), errors
+                    )
+                    self.write_catalog(path, original)
+
+
 if __name__ == "__main__":
     unittest.main()
