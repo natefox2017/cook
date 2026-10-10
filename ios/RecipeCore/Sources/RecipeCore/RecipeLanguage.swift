@@ -28,12 +28,12 @@ public enum RecipeLanguage {
     }
 
     /// An .appex has a different standard defaults container from its containing app.
-    /// The host owns the preference; only extensions consume its App Group mirror.
+    /// The host owns the choice; stale extension-private defaults are never a fallback.
     public static func selectedIdentifier(
         processDefaults: UserDefaults, groupDefaults: UserDefaults?, isExtension: Bool
     ) -> String? {
-        if isExtension, let shared = groupDefaults?.string(forKey: preferenceKey) {
-            return shared
+        if isExtension {
+            return groupDefaults?.string(forKey: preferenceKey)
         }
         return processDefaults.string(forKey: preferenceKey)
     }
