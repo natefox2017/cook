@@ -1580,7 +1580,7 @@ struct RecipeEditProposalReviewSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
-                    if preview != nil {
+                    if !isStale {
                         Text("Review every proposed change before saving.")
                             .foregroundStyle(.secondary)
                         ForEach(reviewRows) { row in
@@ -1631,14 +1631,15 @@ struct RecipeEditProposalReviewSheet: View {
                                 lines: proposal.warnings
                             )
                         }
-                    } else if isStale {
+                        if preview == nil {
+                            Text("Check the proposed text. It cannot be empty or too long.")
+                                .foregroundStyle(.secondary)
+                                .accessibilityIdentifier("invalidRecipeProposal")
+                        }
+                    } else {
                         Text("This recipe changed. Get a new suggestion before saving.")
                             .foregroundStyle(.secondary)
                             .accessibilityIdentifier("staleRecipeProposal")
-                    } else {
-                        Text("Check the proposed text. It cannot be empty or too long.")
-                            .foregroundStyle(.secondary)
-                            .accessibilityIdentifier("invalidRecipeProposal")
                     }
                 }
                 .recipePageContentInsets()
