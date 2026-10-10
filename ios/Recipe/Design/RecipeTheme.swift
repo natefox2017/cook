@@ -190,6 +190,10 @@ struct RecipeFavoriteArtwork: View {
                     reduceMotion ? .identity : .symbolEffect(.replace)
                 )
                 .symbolEffect(.bounce, value: isFavorite && !reduceMotion)
+                .animation(
+                    reduceMotion ? nil : .spring(response: 0.31, dampingFraction: 0.67),
+                    value: isFavorite
+                )
         }
         .frame(width: 32, height: 32)
         .accessibilityHidden(true)
