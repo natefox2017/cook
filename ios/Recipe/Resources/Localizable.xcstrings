@@ -1072,25 +1072,67 @@
         }
       }
     },
-    "About Recipe Pals": {
-      "extractionState": "stale",
+    "About": {
+      "comment": "Concise About navigation title and Settings row; do not append the app name.",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recipe Pals について"
+            "value": "このアプリについて"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "关于私人菜谱"
+            "value": "关于"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "關於私人菜譜"
+            "value": "關於"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Über"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À propos"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acerca de"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informazioni"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sobre"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "앱 정보"
           }
         }
       }
