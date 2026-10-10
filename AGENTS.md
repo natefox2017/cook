@@ -27,10 +27,19 @@ Recipe is the native iOS codebase for Recipe Pals, a private recipe collection a
 - **Live Issue state is GitHub**, not unchecked boxes or `OPEN` text in closed historical tickets. Review [current snapshot](docs/DEVELOPMENT/CURRENT_BACKLOG_2026-10-09.md) and the latest GitHub Issue/PR before claiming work. The former release umbrella #139 and older device/test Issues #126–#129/#134 are closed and retained as historical evidence; current selected-release acceptance is #251.
 - The user's approved **next-phase** extensions are AI-assisted source/evidence drafts and edit (#238–#241), opt-in **single-recipe** Web/long-image sharing (#242–#245), optional later invite rewards (#246), and detail metadata/UI (#247–#248). These are **planned, not shipped**. They do not authorize a public feed/community, automatically publishing imported private/copyrighted material, user fingerprinting or real reward payouts.
 - Import deployment tickets #116–#120/#130/#135/#138/#141/#164 were closed as `not_planned`; **do not reopen them or treat them as passing integration tests**. For the newly approved functionality use #250 for controlled staging and #251 for release-scope acceptance. Changes to production infrastructure require separate owner approval.
-- Keep historical dated design/QA/provenance documents as evidence; put corrections in a dated note rather than rewriting the tests they describe. For operative development decisions use `docs/ROADMAP.md`, `docs/PRODUCT_BASELINE_V1.md`, relevant new `docs/PRODUCT/*.md`, and the current Issue.
+- Keep historical design/QA/provenance records as read-only evidence; place corrections, missing test evidence, and current execution status in the relevant GitHub Issue, not a new dated Markdown note. Use `docs/ROADMAP.md`, `docs/PRODUCT_BASELINE_V1.md`, and `docs/PRODUCT/*.md` only for durable product requirements; GitHub Issues own the live work state.
 - During testing, English is the default unless the user explicitly selects a bundled language under Settings → Language & Country. Manual language and country preferences are partially implemented; additional language packs and automatic system-language release fallback remain **open in #230**.
 
 
+
+## Documentation vs. Issues (mandatory)
+
+- **Requirements belong in documentation.** `docs/` is for approved, durable product requirements, user flows, design rules, and stable behavioral/API/data contracts. Do not use it as a development diary, bug tracker, changelog, progress report, test log, or PR summary.
+- **Everything else belongs in GitHub Issues.** Track bugs, regressions, UX copy fixes, performance, security, refactoring, tests, QA, integration, deployment, and operational work in an Issue. Search for an existing matching Issue first; update it instead of creating duplicates. Create a focused Issue only if no suitable one exists.
+- **Write execution evidence to the Issue, not a new Markdown file.** Record the cause, affected code, fix/PR/commit references, exact tests run and their results (or `NOT RUN`), outstanding risks, and verification/deployment status in the Issue body or comments. Only mark work complete when its stated acceptance criteria are actually met.
+- **Documentation updates are exceptional, not routine.** Change a requirements document only when the user approves a new or changed requirement, design rule, or long-lived contract, or explicitly requests that document edit. Link the corresponding Issue. A routine code or UI fix, PR review, test run, or bug resolution does **not** require any `docs/` or README update.
+- **Keep PRs and Issues aligned.** Every non-requirement code change references its Issue. Use `Refs #...` for partial implementation and `Closes #...` only when the Issue's full accepted scope is satisfied. A merged PR alone is not proof of signed-device, staging, or production acceptance.
+- **Leave legacy reports alone.** Do not create more dated `*_QA_*.md`, `*_validation.md`, `*_fix.md`, status snapshots, or handoff notes merely to record a change. If an old document is misleading, clarify it in its linked Issue unless an approved requirement truly changes.
 
 Read the relevant documents before substantial product or architecture changes:
 
@@ -83,7 +92,7 @@ Read the relevant documents before substantial product or architecture changes:
 - `ios/RecipeUITests/` — native UI regression tests
 - `ios/ShareExtension/` — native share extension
 - `supabase/` — backend configuration, migrations, and functions
-- `docs/` — product, design, architecture, and implementation references
+- `docs/` — durable approved product requirements and specifications, not work logs or bug-fix reports
 
 ## Change Workflow
 
@@ -93,7 +102,7 @@ Read the relevant documents before substantial product or architecture changes:
 - Draft PRs are only for genuine work in progress. If a completed PR was already opened as Draft, append the exact completion marker `<!-- auto-ready: complete -->` to its PR body, or apply the `auto-ready` label; the workflow promotes it and merges it without a manual UI click. Do not set either marker before work is complete.
 - Do not overwrite an approved design with copy/layout taken from stale history. The first onboarding story remains **OnboardingAI / Create with AI** and Premium retains the AI feature row unless the user expressly approves a change. The merge workflow blocks those regressions and obsolete user-facing RecipePouch naming.
 
-- GitHub Issues are the project task entry point. Keep issue status aligned with the actual merged code.
+- GitHub Issues are the task and delivery record for all bug fixes and non-requirement changes. Before coding, link an existing Issue or create one; after coding, update its change, test, and acceptance status. Do not generate a documentation-update task for every PR.
 - Freeze shared API/schema decisions before parallel work; avoid simultaneous edits to the same core file.
 - Inspect the current implementation before changing it. Do not apply review comments mechanically.
 - Make the smallest safe change that satisfies the request. Preserve existing behavior and user data.
