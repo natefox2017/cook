@@ -238,6 +238,9 @@ struct RecipesView: View {
                         RecipePerformanceSignposts.measure("Favorite Write") {
                             do {
                                 try store.toggleFavorite(id: recipe.id)
+                                RecipeInteractionFeedback.favorite(
+                                    isFavorite: !recipe.isFavorite
+                                )
                             } catch {
                                 errorMessage = error.localizedDescription
                             }
@@ -422,14 +425,13 @@ private struct RecipeLibraryCard: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("recipe.\(recipe.id.uuidString)")
             Button(action: toggleFavorite) {
-                Image(systemName: recipe.isFavorite ? "heart.fill" : "heart")
-                    .font(.system(size: 20))
-                    .foregroundStyle(RecipeTheme.accentForeground)
+                RecipeFavoriteArtwork(isFavorite: recipe.isFavorite)
                     .frame(width: 44, height: 44)
                     .background(.regularMaterial, in: Circle())
             }
             .buttonStyle(.plain)
             .padding(8)
+            .accessibilityIdentifier("favorite.\(recipe.id.uuidString)")
             .accessibilityLabel(
                 recipe.isFavorite
                     ? LocalizedStringKey("Remove \(recipe.title) from favorites")

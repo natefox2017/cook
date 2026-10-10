@@ -11,6 +11,85 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testFavoritesToggleInLibraryAndDetailWithoutChangingCookingActions() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let cardFavorite = app.buttons["favorite.C0010000-0000-4000-8000-000000000001"]
+        XCTAssertTrue(cardFavorite.waitForExistence(timeout: 8), app.debugDescription)
+        guard let originalValue = cardFavorite.value as? String else {
+            XCTFail("Favorite control should expose a localizable accessibility value.")
+            return
+        }
+        XCTAssertTrue(["Favorite", "Not favorite"].contains(originalValue))
+
+        cardFavorite.tap()
+        let toggledValue = originalValue == "Favorite" ? "Not favorite" : "Favorite"
+        XCTAssertEqual(
+            XCTWaiter.wait(
+                for: [
+                    XCTNSPredicateExpectation(
+                        predicate: NSPredicate(format: "value == %@", toggledValue),
+                        object: cardFavorite
+                    )
+                ],
+                timeout: 5
+            ),
+            .completed
+        )
+
+        cardFavorite.tap()
+        XCTAssertEqual(
+            XCTWaiter.wait(
+                for: [
+                    XCTNSPredicateExpectation(
+                        predicate: NSPredicate(format: "value == %@", originalValue),
+                        object: cardFavorite
+                    )
+                ],
+                timeout: 5
+            ),
+            .completed
+        )
+
+        openSamplePasta(in: app)
+        let detailFavorite = app.buttons["recipeFavoriteToggle"]
+        XCTAssertTrue(detailFavorite.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertEqual(detailFavorite.value as? String, originalValue)
+        detailFavorite.tap()
+        XCTAssertEqual(
+            XCTWaiter.wait(
+                for: [
+                    XCTNSPredicateExpectation(
+                        predicate: NSPredicate(format: "value == %@", toggledValue),
+                        object: detailFavorite
+                    )
+                ],
+                timeout: 5
+            ),
+            .completed
+        )
+
+        detailFavorite.tap()
+        XCTAssertEqual(
+            XCTWaiter.wait(
+                for: [
+                    XCTNSPredicateExpectation(
+                        predicate: NSPredicate(format: "value == %@", originalValue),
+                        object: detailFavorite
+                    )
+                ],
+                timeout: 5
+            ),
+            .completed
+        )
+
+        XCTAssertTrue(app.buttons["startCooking"].isEnabled)
+        XCTAssertTrue(app.buttons["addToGroceries"].exists)
+        attachScreenshot("Recipe detail favorite and primary action", app: app)
+    }
+
+    @MainActor
     func testRecipeIngredientsBecomeRealGroceryItems() {
         let app = launchSeededApp()
         defer {

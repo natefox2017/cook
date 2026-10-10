@@ -136,13 +136,14 @@ struct RecipeDetailView: View {
         .accessibilityIdentifier("recipeDetailScroll")
         .safeAreaInset(edge: .bottom) {
             Button {
+                RecipeInteractionFeedback.action()
                 cookingStartStepID = nil
                 isCooking = true
             } label: {
                 Label("Start Cooking", systemImage: "play.fill")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(PrimaryButtonStyle())
+            .buttonStyle(RecipeDetailActionButtonStyle(variant: .primary))
             .disabled(recipe.steps.isEmpty)
             .accessibilityIdentifier("startCooking")
             .padding(.horizontal, RecipeSpacing.pageInset)
@@ -298,12 +299,13 @@ struct RecipeDetailView: View {
                     }
                 }
                 Button {
+                    RecipeInteractionFeedback.action()
                     isChoosingIngredients = true
                 } label: {
                     Label("Add to Groceries", systemImage: "cart.badge.plus")
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(RecipeDetailActionButtonStyle(variant: .secondary))
                 .accessibilityIdentifier("addToGroceries")
             }
         }
@@ -467,13 +469,14 @@ struct RecipeDetailView: View {
                         }
 
                         Button {
+                            RecipeInteractionFeedback.action()
                             cookingStartStepID = step.id
                             isCooking = true
                         } label: {
                             Label("Cook from Step \(index + 1)", systemImage: "play")
                                 .frame(minHeight: 44)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(RecipeDetailActionButtonStyle(variant: .secondary))
                         .accessibilityIdentifier("cookFromStep.\(index + 1)")
                     }
                     .padding(16)
@@ -681,17 +684,27 @@ struct RecipeDetailView: View {
                     RecipePerformanceSignposts.measure("Favorite Write") {
                         do {
                             try store.toggleFavorite(id: recipeID)
+                            RecipeInteractionFeedback.favorite(
+                                isFavorite: !recipe.isFavorite
+                            )
                         } catch {
                             feedbackMessage = error.localizedDescription
                         }
                     }
                 } label: {
-                    Image(systemName: recipe.isFavorite ? "heart.fill" : "heart")
+                    RecipeFavoriteArtwork(isFavorite: recipe.isFavorite)
                 }
                 .accessibilityLabel(
                     LocalizedStringKey(
                         recipe.isFavorite ? "Remove from Favorites" : "Add to Favorites"
-                    ))
+                    )
+                )
+                .accessibilityValue(
+                    recipe.isFavorite
+                        ? LocalizedStringKey("Favorite")
+                        : LocalizedStringKey("Not favorite")
+                )
+                .accessibilityIdentifier("recipeFavoriteToggle")
                 Menu {
                     Button("Add to Meal Plan", systemImage: "calendar.badge.plus") {
                         isPlanningMeal = true

@@ -131,6 +131,167 @@ struct PrimaryButtonStyle: ButtonStyle {
     }
 }
 
+
+// Tiny native micro-interactions shared by the library and recipe detail.
+// Animations are event-driven; no looping effects or timers run while scrolling.
+enum RecipeInteractionFeedback {
+    @MainActor
+    static func favorite(isFavorite: Bool) {
+        UIImpactFeedbackGenerator(style: isFavorite ? .soft : .light).impactOccurred()
+    }
+
+    @MainActor
+    static func action() {
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+    }
+}
+
+private struct FavoriteBurstFrame {
+    // Invisible at rest. Each successful save resets the keyframes to the center.
+    var reach: CGFloat = 1
+    var opacity: CGFloat = 0
+}
+
+struct RecipeFavoriteArtwork: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    let isFavorite: Bool
+    var symbolSize: CGFloat = 20
+
+    @State private var celebrationCount = 0
+
+    var body: some View {
+        ZStack {
+            if !reduceMotion {
+                Color.clear
+                    .keyframeAnimator(
+                        initialValue: FavoriteBurstFrame(),
+                        trigger: celebrationCount
+                    ) { _, frame in
+                        particles(reach: frame.reach, opacity: frame.opacity)
+                    } keyframes: {
+                        KeyframeTrack(\.reach) {
+                            LinearKeyframe(0, duration: 0.01)
+                            CubicKeyframe(1, duration: 0.44)
+                        }
+                        KeyframeTrack(\.opacity) {
+                            LinearKeyframe(1, duration: 0.01)
+                            LinearKeyframe(0.85, duration: 0.14)
+                            LinearKeyframe(0, duration: 0.30)
+                        }
+                    }
+                    .allowsHitTesting(false)
+            }
+
+            Image(systemName: isFavorite ? "heart.fill" : "heart")
+                .font(.system(size: symbolSize, weight: .semibold))
+                .foregroundStyle(RecipeTheme.accentForeground)
+                .contentTransition(
+                    reduceMotion ? .identity : .symbolEffect(.replace)
+                )
+                .symbolEffect(.bounce, value: isFavorite && !reduceMotion)
+        }
+        .frame(width: 32, height: 32)
+        .accessibilityHidden(true)
+        .onChange(of: isFavorite) { previous, current in
+            // A leaf-and-sparkle burst celebrates saving, not opening a saved recipe.
+            if current && !previous && !reduceMotion {
+                celebrationCount += 1
+            }
+        }
+    }
+
+    private func particles(reach: CGFloat, opacity: CGFloat) -> some View {
+        ZStack {
+            ForEach(0..<8, id: \.self) { index in
+                let angle = Double(index) * .pi / 4
+                let isLeaf = index.isMultiple(of: 2)
+
+                Image(systemName: isLeaf ? "leaf.fill" : "sparkle")
+                    .font(.system(size: isLeaf ? 7 : 6, weight: .semibold))
+                    .foregroundStyle(
+                        isLeaf
+                            ? RecipeTheme.accentForeground
+                            : RecipeTheme.accent
+                    )
+                    .offset(
+                        x: CGFloat(cos(angle)) * 20 * reach,
+                        y: CGFloat(sin(angle)) * 20 * reach
+                    )
+            }
+        }
+        .opacity(opacity)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Scoped to recipe-detail calls to action so existing app-wide buttons retain
+/// their approved appearance. The short spring tracks the finger while pressing.
+struct RecipeDetailActionButtonStyle: ButtonStyle {
+    enum Variant {
+        case primary
+        case secondary
+    }
+
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    let variant: Variant
+
+    func makeBody(configuration: Configuration) -> some View {
+        let isPrimary = variant == .primary
+
+        configuration.label
+            .font(
+                RecipeTheme.text(
+                    isPrimary ? 17 : 15,
+                    weight: .semibold,
+                    relativeTo: isPrimary ? .headline : .subheadline
+                )
+            )
+            .frame(
+                maxWidth: isPrimary ? .infinity : nil,
+                minHeight: isPrimary ? 52 : 44
+            )
+            .padding(.horizontal, isPrimary ? 0 : 16)
+            .foregroundStyle(
+                isPrimary ? Color.white : RecipeTheme.accentForeground
+            )
+            .background {
+                Capsule()
+                    .fill(
+                        isPrimary
+                            ? RecipeTheme.accent
+                            : RecipeTheme.accent.opacity(0.10)
+                    )
+                    .overlay {
+                        Capsule()
+                            .strokeBorder(
+                                isPrimary
+                                    ? Color.white.opacity(0.22)
+                                    : RecipeTheme.accent.opacity(0.23),
+                                lineWidth: 1
+                            )
+                    }
+            }
+            .shadow(
+                color: RecipeTheme.accent.opacity(
+                    isPrimary && isEnabled ? (configuration.isPressed ? 0.08 : 0.18) : 0
+                ),
+                radius: configuration.isPressed ? 3 : 9,
+                y: configuration.isPressed ? 1 : 4
+            )
+            .scaleEffect(
+                reduceMotion || !isEnabled ? 1 : (configuration.isPressed ? 0.967 : 1)
+            )
+            .opacity(isEnabled ? (configuration.isPressed ? 0.94 : 1) : 0.45)
+            .animation(
+                reduceMotion ? nil : .spring(response: 0.28, dampingFraction: 0.64),
+                value: configuration.isPressed
+            )
+    }
+}
+
 struct EmptyStateView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
