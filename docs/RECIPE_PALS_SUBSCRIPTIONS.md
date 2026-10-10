@@ -190,7 +190,14 @@ are inferred from nullable MRR. This change is source-only and not a deployment.
 
 ### Recorded currency-safe purchase aggregates (2026-10-10)
 
-Admin recorded purchase reports now preserve the **original event currency**.
+Admin recorded purchase reports preserve the **original event currency**.
+RevenueCat webhook `price_in_purchased_currency` is denominated in `currency`,
+whereas `price` is a USD amount. The latter may be used as a fallback **only
+for USD purchases**; a non-USD event without its native amount stays unavailable
+and flags the report as incomplete. This contract is shared by the revenue
+ledger, latest subscription purchase amount and Dashboard recent payments.
+See [RevenueCat webhook fields](https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields)
+and [DEV-47](https://linear.app/gengyun/issue/DEV-47).
 `byCurrency` lists native purchase totals per ISO-style three-letter code, with
 App Store and Google Play subtotal columns; no automatic FX conversion is used.
 The scalar totals and six-month charts are only shown when every included
@@ -201,7 +208,7 @@ meaningless combined total. A null figure is not a zero-dollar result.
 
 These are **recorded positive purchase-event amounts**, not verified net
 settlement revenue. Refund/reversal, event deduplication, sandbox filtering,
-full pagination, MRR and finance reconciliation are still OPEN in #276.
+full pagination, MRR and finance reconciliation require further DEV-47 acceptance.
 A `byCurrency` array may itself be **partial** if any source record was
 unusable or the query reached its cap; never use it as an authoritative report
 without its completeness metadata. No production data has been modified.
@@ -219,7 +226,7 @@ complete-looking report.
 
 This is fail-closed detection, **not full pagination**. If the dataset grows
 beyond these bounds, use an authorized, bounded paginated query or server-side
-aggregation and retest #276 before claiming a complete finance report.
+aggregation and complete DEV-47 acceptance before claiming a complete finance report.
 The existing recent-activity limits remain intentional. Live billing and
 account data were not read or modified as part of this code change.
 
