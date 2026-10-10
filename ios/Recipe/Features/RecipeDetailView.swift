@@ -21,6 +21,7 @@ struct RecipeDetailView: View {
     @State private var isChoosingIngredients = false
     @State private var isDeleting = false
     @State private var parameterInfo: RecipeParameterInfo?
+    @State private var proposalToReview: RecipeEditProposal?
     @State private var feedbackMessage: String?
     @State private var addedIngredientCount: Int?
     @State private var isPlanningMeal = false
@@ -59,6 +60,23 @@ struct RecipeDetailView: View {
         }
         .sheet(item: $parameterInfo) { info in
             RecipeParameterSheet(info: info)
+        }
+        .sheet(isPresented: Binding(
+            get: { proposalToReview != nil },
+            set: { if !$0 { proposalToReview = nil } }
+        )) {
+            if let proposal = proposalToReview {
+                RecipeEditProposalReviewSheet(proposal: proposal) { saved in
+                    if saved.id != recipeID {
+                        feedbackMessage = String(
+                            localized: LocalizedStringResource(
+                                "Saved a new private recipe.",
+                                locale: RecipeLanguage.active
+                            )
+                        )
+                    }
+                }
+            }
         }
         .sheet(isPresented: $isChoosingIngredients, onDismiss: showAddedFeedback) {
             RecipeIngredientsSelectionView(recipeID: recipeID, initialServings: servings) {
@@ -718,6 +736,36 @@ struct RecipeDetailView: View {
                     Button("Edit Recipe", systemImage: "pencil") {
                         isEditing = true
                     }
+                    #if DEBUG
+                        // Never expose a synthetic AI action to real users.
+                        if RecipeUITestNamespace.isUITesting,
+                            ProcessInfo.processInfo.arguments.contains(
+                                "--uitesting-ai-edit-preview"
+                            ),
+                            let ingredient = recipe.ingredients.first,
+                            !ingredient.name.isEmpty
+                        {
+                            Button("Review changes", systemImage: "checklist") {
+                                let stale = ProcessInfo.processInfo.arguments.contains(
+                                    "--uitesting-ai-edit-stale"
+                                )
+                                proposalToReview = RecipeEditProposal(
+                                    recipeID: recipe.id,
+                                    basedOnUpdate: stale ? .distantPast : recipe.updatedAt,
+                                    changes: [
+                                        .ingredientName(
+                                            id: ingredient.id,
+                                            original: ingredient.name,
+                                            proposed: "QA Changed " + ingredient.name
+                                        )
+                                    ],
+                                    reasons: ["Synthetic QA preview; no AI provider is called."],
+                                    warnings: ["Confirm ingredient suitability before cooking."]
+                                )
+                            }
+                            .accessibilityIdentifier("qaReviewRecipeProposal")
+                        }
+                    #endif
                     Button("Delete Recipe", systemImage: "trash", role: .destructive) {
                         isDeleting = true
                     }
@@ -1437,4 +1485,241 @@ private struct RecipeCandidateSelectionView: View {
             digest[12], digest[13], digest[14], digest[15]
         ))
     }
+}
+
+    
+/// Review an untrusted proposal without mutating private recipe data until consent.
+/// This view intentionally has no production entry point until an authenticated
+/// proposal provider has passed its separate contract and deployment checks.
+struct RecipeEditProposalReviewSheet: View {
+    let proposal: RecipeEditProposal
+    let onSaved: (Recipe) -> Void
+
+    @Environment(RecipeStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var errorMessage: String?
+    @State private var proposedTexts: [String]
+
+    init(
+        proposal: RecipeEditProposal,
+        onSaved: @escaping (Recipe) -> Void = { _ in }
+    ) {
+        self.proposal = proposal
+        self.onSaved = onSaved
+        _proposedTexts = State(initialValue: proposal.changes.map { change in
+            switch change {
+            case .ingredientName(_, _, let proposed),
+                .ingredientAmount(_, _, let proposed),
+                .stepInstruction(_, _, let proposed):
+                return proposed
+            }
+        })
+    }
+
+    // Only allow edits to the three already approved RecipeEditChange cases.
+    // Rebuild the validated proposal instead of directly saving edited text.
+    private var reviewedProposal: RecipeEditProposal {
+        let changes: [RecipeEditChange] = proposal.changes.enumerated().map { index, change in
+            let text = proposedTexts.indices.contains(index) ? proposedTexts[index] : ""
+            switch change {
+            case .ingredientName(let id, let original, _):
+                return .ingredientName(id: id, original: original, proposed: text)
+            case .ingredientAmount(let id, let original, _):
+                return .ingredientAmount(id: id, original: original, proposed: text)
+            case .stepInstruction(let id, let original, _):
+                return .stepInstruction(id: id, original: original, proposed: text)
+            }
+        }
+        return RecipeEditProposal(
+            recipeID: proposal.recipeID,
+            basedOnUpdate: proposal.basedOnUpdate,
+            changes: changes,
+            reasons: proposal.reasons,
+            warnings: proposal.warnings
+        )
+    }
+
+    private var isStale: Bool {
+        guard let current = store.recipe(id: proposal.recipeID) else {
+            return true
+        }
+        return current.updatedAt != proposal.basedOnUpdate
+    }
+
+    // Always derive the preview from the live Store. This is display-only;
+    // applyApprovedRecipeEdit performs the revision check again at commit time.
+    private var preview: RecipeEditPreview? {
+        guard let current = store.recipe(id: proposal.recipeID) else {
+            return nil
+        }
+        return try? reviewedProposal.preview(on: current)
+    }
+
+    private var reviewRows: [RecipeEditReviewRow] {
+        proposal.changes.enumerated().map { index, change in
+            let field: String
+            let before: String
+            switch change {
+            case .ingredientName(_, let original, _):
+                field = "Ingredient name"
+                before = original
+            case .ingredientAmount(_, let original, _):
+                field = "Ingredient amount"
+                before = original
+            case .stepInstruction(_, let original, _):
+                field = "Step instruction"
+                before = original
+            }
+            return RecipeEditReviewRow(
+                id: index, field: field, before: before
+            )
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
+                    if !isStale {
+                        Text("Review every proposed change before saving.")
+                            .foregroundStyle(.secondary)
+                        ForEach(reviewRows) { row in
+                            VStack(alignment: .leading, spacing: RecipeSpacing.small) {
+                                Text(LocalizedStringKey(row.field))
+                                    .font(RecipeTheme.heading(.card))
+                                Text("Original")
+                                    .font(RecipeTheme.text(
+                                        13, weight: .semibold, relativeTo: .footnote
+                                    ))
+                                    .foregroundStyle(.secondary)
+                                Text(row.before)
+                                    .strikethrough()
+                                    .accessibilityIdentifier("reviewProposalBefore.\(row.id)")
+                                Text("Proposed")
+                                    .font(RecipeTheme.text(
+                                        13, weight: .semibold, relativeTo: .footnote
+                                    ))
+                                    .foregroundStyle(.secondary)
+                                TextField(
+                                    "Proposed",
+                                    text: $proposedTexts[row.id],
+                                    axis: .vertical
+                                )
+                                .lineLimit(2...6)
+                                .font(RecipeTheme.text(
+                                    17, weight: .semibold, relativeTo: .body
+                                ))
+                                .accessibilityIdentifier("reviewProposalAfter.\(row.id)")
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(RecipeSpacing.medium)
+                            .background(
+                                RecipeTheme.card,
+                                in: RoundedRectangle(cornerRadius: 18)
+                            )
+                        }
+
+                        if !proposal.reasons.isEmpty {
+                            explanation(
+                                title: "Why this was suggested",
+                                lines: proposal.reasons
+                            )
+                        }
+                        if !proposal.warnings.isEmpty {
+                            explanation(
+                                title: "Check before saving",
+                                lines: proposal.warnings
+                            )
+                        }
+                        if preview == nil {
+                            Text("Check the proposed text. It cannot be empty or too long.")
+                                .foregroundStyle(.secondary)
+                                .accessibilityIdentifier("invalidRecipeProposal")
+                        }
+                    } else {
+                        Text("This recipe changed. Get a new suggestion before saving.")
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("staleRecipeProposal")
+                    }
+                }
+                .recipePageContentInsets()
+            }
+            .background(RecipeTheme.canvas)
+            .navigationTitle("Review changes")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: RecipeSpacing.small) {
+                    Button("Apply to recipe") { save(asVariant: false) }
+                        .buttonStyle(RecipeDetailActionButtonStyle(variant: .primary))
+                        .disabled(preview == nil)
+                        .accessibilityIdentifier("applyRecipeProposal")
+                    Button("Save as new recipe") { save(asVariant: true) }
+                        .buttonStyle(RecipeDetailActionButtonStyle(variant: .secondary))
+                        .disabled(preview == nil)
+                        .accessibilityIdentifier("saveRecipeProposalVariant")
+                    Button("Discard changes") { dismiss() }
+                        .accessibilityIdentifier("discardRecipeProposal")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, RecipeSpacing.pageInset)
+                .padding(.vertical, RecipeSpacing.small)
+                .background(.regularMaterial)
+            }
+            .alert(
+                "Couldn't save changes",
+                isPresented: Binding(
+                    get: { errorMessage != nil },
+                    set: { if !$0 { errorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "Please try again.")
+            }
+        }
+    }
+
+    private func explanation(title: LocalizedStringKey, lines: [String]) -> some View {
+        VStack(alignment: .leading, spacing: RecipeSpacing.small) {
+            Text(title)
+                .font(RecipeTheme.heading(.card))
+            ForEach(Array(lines.enumerated()), id: \.offset) { item in
+                Text(item.element)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func save(asVariant: Bool) {
+        // Never persist a proposal that is already stale on screen.
+        guard preview != nil else {
+            return
+        }
+        do {
+            let saved = try store.applyApprovedRecipeEdit(
+                reviewedProposal, asVariant: asVariant
+            )
+            onSaved(saved)
+            dismiss()
+        } catch {
+            errorMessage = String(
+                localized: LocalizedStringResource(
+                    "The recipe changed or could not be saved. Review it and try again.",
+                    locale: RecipeLanguage.active
+                )
+            )
+        }
+    }
+}
+
+private struct RecipeEditReviewRow: Identifiable {
+    let id: Int
+    let field: String
+    let before: String
 }
