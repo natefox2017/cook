@@ -72,3 +72,154 @@ func malformedSourceURLNeverBecomesPublicHyperlink() throws {
     let result = try PublicRecipeSnapshot.preview(of: recipe, approvedBy: approval)
     #expect(result.sourceURL == nil)
 }
+
+@Test
+func publicSnapshotSerializesExactlyEightFieldsIncludingNulls() throws {
+    let recipe = Recipe(
+        title: "Private soup", servings: nil, prepMinutes: nil, cookMinutes: nil)
+    let approval = RecipeShareApproval(
+        recipeID: recipe.id, expectedUpdatedAt: recipe.updatedAt,
+        scope: .summaryAndSource, hasDistributionRights: false)
+    let preview = try PublicRecipeSnapshot.preview(of: recipe, approvedBy: approval)
+    let payload = try #require(
+        JSONSerialization.jsonObject(with: JSONEncoder().encode(preview)) as? [String: Any])
+    let requiredFields: Set<String> = [
+        "title", "summary", "sourceURL", "servings",
+        "prepMinutes", "cookMinutes", "ingredients", "steps",
+    ]
+    #expect(Set(payload.keys) == requiredFields)
+    for field in ["sourceURL", "servings", "prepMinutes", "cookMinutes"] {
+        #expect(payload[field] is NSNull)
+    }
+    #expect((payload["ingredients"] as? [Any])?.isEmpty == true)
+    #expect((payload["steps"] as? [Any])?.isEmpty == true)
+    #expect(try JSONDecoder().decode(
+        PublicRecipeSnapshot.self, from: JSONEncoder().encode(preview)) == preview)
+}
+
+@Test
+func publicSnapshotAcceptsNumberBoundariesAndOmitsPrivateSteps() throws {
+    let privateRecipe = Recipe(
+        title: "Summary", servings: 100, prepMinutes: 0, cookMinutes: 10_080,
+        ingredients: Array(repeating: .from(name: "", amountText: ""), count: 201),
+        steps: Array(repeating: .init(instruction: " "), count: 101))
+    let before = privateRecipe
+    let summaryApproval = RecipeShareApproval(
+        recipeID: privateRecipe.id, expectedUpdatedAt: privateRecipe.updatedAt,
+        scope: .summaryAndSource, hasDistributionRights: false)
+    let summary = try PublicRecipeSnapshot.preview(
+        of: privateRecipe, approvedBy: summaryApproval)
+    #expect(summary.servings == 100)
+    #expect(summary.prepMinutes == 0)
+    #expect(summary.cookMinutes == 10_080)
+    #expect(summary.ingredients.isEmpty)
+    #expect(summary.steps.isEmpty)
+    #expect(privateRecipe == before)
+
+    let fullRecipe = Recipe(
+        title: "Full", servings: 1, prepMinutes: 10_080, cookMinutes: 0,
+        ingredients: [.from(name: "Rice", amountText: "1 cup")],
+        steps: [.init(title: "Boil", instruction: "Boil the water.")])
+    let fullApproval = RecipeShareApproval(
+        recipeID: fullRecipe.id, expectedUpdatedAt: fullRecipe.updatedAt,
+        scope: .fullInstructions, hasDistributionRights: true)
+    let full = try PublicRecipeSnapshot.preview(of: fullRecipe, approvedBy: fullApproval)
+    #expect(full.servings == 1)
+    #expect(full.steps.count == 1)
+    #expect(full.ingredients.count == 1)
+}
+
+@Test
+func publicSnapshotRejectsOutOfRangeNumbers() {
+    let invalid: [(Int?, Int?, Int?)] = [
+        (0, nil, nil), (101, nil, nil),
+        (nil, -1, nil), (nil, 10_081, nil),
+        (nil, nil, -1), (nil, nil, 10_081),
+    ]
+    for (servings, prep, cook) in invalid {
+        let recipe = Recipe(
+            title: "Numbers", servings: servings, prepMinutes: prep, cookMinutes: cook)
+        let approval = RecipeShareApproval(
+            recipeID: recipe.id, expectedUpdatedAt: recipe.updatedAt,
+            scope: .summaryAndSource, hasDistributionRights: false)
+        #expect(throws: RecipeShareValidationError.contentTooLarge) {
+            _ = try PublicRecipeSnapshot.preview(of: recipe, approvedBy: approval)
+        }
+    }
+}
+
+@Test
+func publicSnapshotRejectsWhitespaceOnlyFullInstructions() {
+    let recipes = [
+        Recipe(
+            title: "Blank ingredient",
+            ingredients: [.from(name: " \n ", amountText: "1")],
+            steps: [.init(instruction: "Stir.")]),
+        Recipe(
+            title: "Blank step",
+            ingredients: [.from(name: "Onion", amountText: "1")],
+            steps: [.init(title: "Slice", instruction: " \t ")]),
+    ]
+    for recipe in recipes {
+        let before = recipe
+        let approval = RecipeShareApproval(
+            recipeID: recipe.id, expectedUpdatedAt: recipe.updatedAt,
+            scope: .fullInstructions, hasDistributionRights: true)
+        #expect(throws: RecipeShareValidationError.contentTooLarge) {
+            _ = try PublicRecipeSnapshot.preview(of: recipe, approvedBy: approval)
+        }
+        #expect(recipe == before)
+    }
+}
+
+@Test
+func publicSnapshotRejectsUTF16OverlongEmojiEvenWhenCharacterCountFits() {
+    let emoji = "🧑‍🍳"
+    let summaryRecipes = [
+        Recipe(title: String(repeating: emoji, count: 91)),
+        Recipe(title: "Summary", summary: String(repeating: emoji, count: 1_001)),
+    ]
+    for recipe in summaryRecipes {
+        let approval = RecipeShareApproval(
+            recipeID: recipe.id, expectedUpdatedAt: recipe.updatedAt,
+            scope: .summaryAndSource, hasDistributionRights: false)
+        #expect(throws: RecipeShareValidationError.contentTooLarge) {
+            _ = try PublicRecipeSnapshot.preview(of: recipe, approvedBy: approval)
+        }
+    }
+    let fullRecipes = [
+        Recipe(
+            title: "Ingredient",
+            ingredients: [.from(name: String(repeating: emoji, count: 91), amountText: "")],
+            steps: [.init(instruction: "Cook.")]),
+        Recipe(
+            title: "Step",
+            ingredients: [.from(name: "Pasta", amountText: "1 cup")],
+            steps: [.init(instruction: String(repeating: emoji, count: 1_250))]),
+    ]
+    for recipe in fullRecipes {
+        let approval = RecipeShareApproval(
+            recipeID: recipe.id, expectedUpdatedAt: recipe.updatedAt,
+            scope: .fullInstructions, hasDistributionRights: true)
+        #expect(throws: RecipeShareValidationError.contentTooLarge) {
+            _ = try PublicRecipeSnapshot.preview(of: recipe, approvedBy: approval)
+        }
+    }
+}
+
+@Test
+func publicSnapshotRejectsEncodedJSONLargerThanGuestLimit() {
+    // JSON escapes null scalars to six bytes, exceeding 2 MiB after encoding.
+    let escapedNull = String(UnicodeScalar(0)!)
+    let recipe = Recipe(
+        title: "JSON size",
+        steps: Array(
+            repeating: RecipeStep(instruction: String(repeating: escapedNull, count: 4_000)),
+            count: 100))
+    let approval = RecipeShareApproval(
+        recipeID: recipe.id, expectedUpdatedAt: recipe.updatedAt,
+        scope: .fullInstructions, hasDistributionRights: true)
+    #expect(throws: RecipeShareValidationError.contentTooLarge) {
+        _ = try PublicRecipeSnapshot.preview(of: recipe, approvedBy: approval)
+    }
+}
