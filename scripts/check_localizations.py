@@ -12,11 +12,22 @@ from pathlib import Path
 
 REQUIRED_LOCALES = ("ja", "zh-Hans", "zh-Hant")
 XLIFF_NAMESPACE = {"xliff": "urn:oasis:names:tc:xliff:document:1.2"}
-PLACEHOLDER = re.compile(r"%(?:\d+\$)?(?:@|lld|ld|d|f|s)")
+PLACEHOLDER = re.compile(
+    r"%(?:(?P<position>[1-9]\d*)\$)?[-+ #0]*\d*(?:\.\d+)?"
+    r"(?P<kind>lld|llu|ld|lu|d|u|@|s|f|g)"
+)
+
+
+def placeholders(value: str) -> list[tuple[int, str]]:
+    """Pair each format argument position with its type; ignore escaped percents."""
+    return sorted(
+        (int(match.group("position") or index), match.group("kind"))
+        for index, match in enumerate(PLACEHOLDER.finditer(value.replace("%%", "")), 1)
+    )
 
 
 def is_placeholder_only(value: str) -> bool:
-    remainder = PLACEHOLDER.sub("", value)
+    remainder = PLACEHOLDER.sub("", value.replace("%%", ""))
     return not any(
         not character.isspace() and not unicodedata.category(character).startswith("P")
         for character in remainder
@@ -52,12 +63,12 @@ def check_locale(export_root: Path, locale: str) -> list[str]:
             errors.append(f"{locale}: missing translation for {source!r}")
             continue
 
-        source_placeholders = PLACEHOLDER.findall(source)
-        target_placeholders = PLACEHOLDER.findall(target)
-        if len(source_placeholders) != len(target_placeholders):
+        source_placeholders = placeholders(source)
+        target_placeholders = placeholders(target)
+        if source_placeholders != target_placeholders:
             errors.append(
-                f"{locale}: placeholder count changed for {source!r}: "
-                f"expected {len(source_placeholders)}, found {len(target_placeholders)}"
+                f"{locale}: placeholder signature changed for {source!r}: "
+                f"expected {source_placeholders}, found {target_placeholders}"
             )
 
     return errors
