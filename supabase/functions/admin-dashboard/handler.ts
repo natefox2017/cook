@@ -161,7 +161,7 @@ export async function handleRequest(
       collectionsError, activePaidError, profilesError, subscriptionsError,
     ].some(Boolean) || [totalUsers, newUsersThisMonth, suspendedUsers, totalRecipes,
       collections, activePaidUsers, profileCount, subscriptionCount, downloadsCount]
-      .some((count) => count === null)) {
+      .some((count) => count == null)) {
       throw new AppError("internal_error", "Dashboard counts unavailable", 503);
     }
     if (!hasCompletePage(profiles, Number.MAX_SAFE_INTEGER, profileCount) ||
@@ -215,7 +215,7 @@ export async function handleRequest(
       .select("created_at", { count: "exact" })
       .order("created_at", { ascending: true })
       .limit(10000);
-    if (growthUserError || growthUserCount === null ||
+    if (growthUserError || growthUserCount == null ||
       !hasCompletePage(allProfilesForGrowth, 10000, growthUserCount)) {
       throw new AppError("internal_error", "User growth history is incomplete", 503);
     }
@@ -233,7 +233,7 @@ export async function handleRequest(
       .select("created_at", { count: "exact" })
       .order("created_at", { ascending: true })
       .limit(10000);
-    if (growthRecipeError || growthRecipeCount === null ||
+    if (growthRecipeError || growthRecipeCount == null ||
       !hasCompletePage(allRecipesForGrowth, 10000, growthRecipeCount)) {
       throw new AppError("internal_error", "Recipe growth history is incomplete", 503);
     }
