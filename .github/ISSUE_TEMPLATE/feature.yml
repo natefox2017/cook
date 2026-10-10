@@ -3,6 +3,10 @@ description: 功能开发任务
 title: "[Feature] "
 labels: []
 body:
+  - type: markdown
+    attributes:
+      value: |
+        需求必须以带 Todo 的 Issue 入库，并先加入唯一 GitHub Projects Kanban 的 Todo 栏。**只能在看板领取**（Claimed + Claim ID + Assignee）；未确认领取前不得开始实现。每完成一项 Todo 立即更新 Issue 与看板。
   - type: textarea
     id: goal
     attributes:
@@ -63,3 +67,19 @@ body:
     attributes:
       label: 当前实现状态与分层验收
       description: CODE / TEST / SIGNED DEVICE / STAGING / PROD，未运行填 NOT RUN。指定需要真实权限/设备/外部服务的阻塞条件。
+  - type: textarea
+    id: todos
+    attributes:
+      label: Todo（逐项可勾选、验收与回写）
+      description: 使用 - [ ] T01、T02 等独立可验收子项；完成后勾选并写证据。可以分别领取的子任务须拆独立子 Issue 并分别入板。
+      placeholder: |
+        - [ ] T01 — 需求/现有代码/同类开源方案核对
+        - [ ] T02 — 实现最小可交付功能并提交关联 PR
+        - [ ] T03 — 根据验收标准验证并同步 Kanban 状态
+    validations:
+      required: true
+  - type: textarea
+    id: tracking
+    attributes:
+      label: 查重、依赖、任务交接
+      description: 关联已有 Issue/PR 与待完成子项；不得重复领取已 Claim 或已 Done 的工作。

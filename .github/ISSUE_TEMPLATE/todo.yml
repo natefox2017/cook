@@ -1,0 +1,51 @@
+name: Todo / Task
+description: 新需求、性能优化、安全、测试、发布和其他工作，按 Kanban 领取
+title: "[TODO] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **本表只创建 Todo，不表示领取成功。** 首先检查既有 Issues/PR 和唯一的 Cook GitHub Projects Kanban；新 Issue 必须加入 Todo 栏。只有把 Project 项状态改为 Claimed、写入独立会话 Claim ID / Claimed At / Assignee 且回读无冲突后，才能实施。处理每个 Todo 后即时勾选并回写看板。
+  - type: textarea
+    id: goal
+    attributes:
+      label: 需求 / 目标
+      description: 用户希望完成什么，做到什么程度。
+    validations:
+      required: true
+  - type: textarea
+    id: existing
+    attributes:
+      label: 既有 Issue/PR 与当前代码检查
+      description: 优先复用既有任务；如发现重叠或正在处理，不创建重复任务。
+    validations:
+      required: true
+  - type: textarea
+    id: todo
+    attributes:
+      label: Todo（逐项跟踪）
+      description: 用 - [ ] T01、T02 ...；完成一项立刻打勾并记录验证。可分别领取的任务拆成子 Issue。
+      placeholder: |
+        - [ ] T01 — 检查当前基线与需求/已有方案
+        - [ ] T02 — 完成具体实现、提交 PR
+        - [ ] T03 — 验证验收条件、回写 Kanban
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收条件 / 测试证据
+      description: 区分代码合并、单元测试、真机、staging 和生产；未测写 NOT RUN，禁止虚报完成。
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: 依赖 / 阻塞 / 风险
+      description: 指明需要外部授权、资源或其他 Issue 的条件。
+  - type: textarea
+    id: scope
+    attributes:
+      label: 修改文件 / 影响范围
+      description: 对代码类任务明确最小文件范围；只改文档需是真正新需求。
