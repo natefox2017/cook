@@ -1610,6 +1610,7 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
     private var cycle: UUID?
     private var tapInstalled = false
     private var wantsListening = false
+    private var startGate = CookingVoiceStartGate()
     private let speaker = AVSpeechSynthesizer()
 
     override init() {
@@ -1618,13 +1619,18 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
     }
 
     func start() async {
-        guard !wantsListening else { return }
+        // Reserve before the permission await; rapid taps cannot install two taps.
+        guard !wantsListening, let attempt = startGate.reserve() else { return }
+        defer { startGate.complete(attempt) }
+
         let authorization = await withCheckedContinuation {
             (continuation: CheckedContinuation<SFSpeechRecognizerAuthorizationStatus, Never>) in
             SFSpeechRecognizer.requestAuthorization {
                 continuation.resume(returning: $0)
             }
         }
+        // Stop/background may invalidate the attempt while iOS presents consent.
+        guard startGate.isCurrent(attempt) else { return }
         guard authorization == .authorized else {
             status = "Enable speech recognition in iOS Settings to use hands-free control."
             return
@@ -1635,6 +1641,7 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
                 continuation.resume(returning: $0)
             }
         }
+        guard startGate.isCurrent(attempt) else { return }
         guard micGranted else {
             status = "Microphone access is off. Step buttons still work."
             return
@@ -1780,6 +1787,8 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
     }
 
     func stop() {
+        // Prevent an older permission callback from starting after Cooking closes.
+        startGate.cancel()
         wantsListening = false
         isListening = false
         endCycle()
