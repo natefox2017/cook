@@ -29,16 +29,21 @@ public enum RecipeImportReviewPlan {
         from result: RecipeImportJobResponse.Result, maximum: Int = 3
     ) -> [RecipeImportReviewQuestion] {
         guard result.resultStatus == .needsReview, maximum > 0 else { return [] }
-        let requested = Set((result.reviewFields ?? []).map { groupName($0) })
+        let requestedPaths = result.reviewFields ?? []
         return orderedQuestions.compactMap { candidate -> RecipeImportReviewQuestion? in
-            guard requested.contains(candidate.key) else { return nil }
+            let reviewPaths = requestedPaths.filter { groupName($0) == candidate.key }
+            guard !reviewPaths.isEmpty else { return nil }
             let relevant = result.fields.filter { groupName($0.key) == candidate.key }
             // Explicitly confirmed fields win over an older server review flag.
             // A user-confirmed ingredient must not suppress a question about
             // another still-unconfirmed ingredient in the same group.
             let allKnownFieldsConfirmed = !relevant.isEmpty
                 && relevant.values.allSatisfy(\.userConfirmed)
-            guard !allKnownFieldsConfirmed else { return nil }
+            // Confirmation of one indexed field cannot resolve a different missing field.
+            let missingSpecificField = reviewPaths.contains { path in
+                path != candidate.key && result.fields[path]?.userConfirmed != true
+            }
+            guard missingSpecificField || !allKnownFieldsConfirmed else { return nil }
             let identifiers = Array(
                 Set(relevant.values.flatMap(\.evidenceIDs))
             ).sorted { $0.uuidString < $1.uuidString }

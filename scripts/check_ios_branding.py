@@ -35,9 +35,19 @@ def validate(root: Path) -> list[str]:
                 errors.append(f"{plist_path}: {key} must be {NAMES['en']!r}")
             localizations = catalog.get("strings", {}).get(key, {}).get("localizations", {})
             for locale, expected in NAMES.items():
-                actual = localizations.get(locale, {}).get("stringUnit", {}).get("value")
+                localization = localizations.get(locale, {})
+                unit = localization.get("stringUnit", {}) if isinstance(localization, dict) else {}
+                if not isinstance(unit, dict):
+                    unit = {}
+                actual = unit.get("value")
                 if actual != expected:
                     errors.append(f"{catalog_path}: {key}[{locale}] is {actual!r}; expected {expected!r}")
+                elif unit.get("state") != "translated":
+                    state = unit.get("state")
+                    errors.append(
+                        f"{catalog_path}: {key}[{locale}] state is {state!r}; "
+                        "expected 'translated'"
+                    )
 
     return errors
 

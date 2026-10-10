@@ -58,7 +58,7 @@ export function proposeExplicitInvitationClaim({
   confirmedByInvitee,
   existingInvitationClaim
 }) {
-  if (!confirmedByInvitee) {
+  if (confirmedByInvitee !== true) {
     throw new ReferralValidationError("consent_required");
   }
   if (!isValidAccountID(authenticatedInviteeID) ||
