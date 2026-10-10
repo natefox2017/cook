@@ -63,11 +63,10 @@ xcodebuild -project ios/Recipe.xcodeproj -scheme Recipe \
 
 CI 只保留轻量 PR 自动合并状态，不自动运行 Xcode/Simulator/Swift Test。需要的构建、模拟器和真机验收按 Issue 手动执行并如实记录。签名安装需在 Xcode 中选择自己的开发团队。
 
-总入口 Issue: #1
+唯一当前任务入口：[Linear Recipe Pals Development](https://linear.app/gengyun/project/recipe-pals-development-8c015c72cb6a)（DEV 团队）。领取只通过 Todo → In Progress；旧 GitHub Issues 不再用于任务管理。
 
-## 当前任务与文档状态（2026-10-09 审计）
+## 当前任务与长期文档
 
-- [开放任务快照及领取顺序](docs/DEVELOPMENT/CURRENT_BACKLOG_2026-10-09.md)（快照，不代替 GitHub 的实时 Issue 状态）。
-- [文档/Issue 全量审计与修复记录](docs/DEVELOPMENT/DOCUMENTATION_ISSUE_AUDIT_2026-10-09.md)。
-- [下一阶段 AI / 分享 Web / 食谱详情路线](docs/ROADMAP.md)；设计和任务已规划，**不是功能已上线**。
-- 历史发布总表 #139 已关闭且正文包含过期 OPEN 文字；**本次发布验收用 [#251](https://github.com/natefox2017/cook/issues/251)**，新 AI/分享服务的受控部署使用 [#250](https://github.com/natefox2017/cook/issues/250)。
+- [Linear Recipe Pals Development](https://linear.app/gengyun/project/recipe-pals-development-8c015c72cb6a)：唯一有效的需求、Bug、Todo、测试、负责人及进度来源；不得从 GitHub Issues 或过期 Markdown 快照领取任务。
+- [下一阶段产品路线](docs/ROADMAP.md)：只描述长期产品能力与依赖原则，不代表当前实现或验收状态。
+- [发布验收 DEV-49](https://linear.app/gengyun/issue/DEV-49) 和 [受控 Staging DEV-50](https://linear.app/gengyun/issue/DEV-50)：在 Linear 记录实际测试、阻塞与发布前检查。历史 GitHub Issues #251/#250 仅用于追溯。
