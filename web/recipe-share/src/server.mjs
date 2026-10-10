@@ -65,7 +65,13 @@ export function createRecipeServer({
       return;
     }
 
-    const pathname = new URL(req.url ?? '/', 'http://placeholder.invalid').pathname;
+    let pathname;
+    try {
+      pathname = new URL(req.url ?? '/', 'http://placeholder.invalid').pathname;
+    } catch {
+      // Treat malformed raw request targets as unknown routes, not rejected promises.
+      pathname = '';
+    }
     const match = pathname.match(/^\/r\/([A-Za-z0-9_-]{8,128})$/);
     if (!match) {
       res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' })
