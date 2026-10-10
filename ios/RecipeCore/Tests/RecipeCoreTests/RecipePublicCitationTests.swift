@@ -19,6 +19,10 @@ func publicCitationAllowsOnlyKnownPublicSourceLookups() {
         RecipePublicCitation.eligibleURL("https://example.org/recipe?p=42&id=2")
             == "https://example.org/recipe?p=42&id=2"
     )
+    #expect(
+        RecipePublicCitation.eligibleURL("https://recipes.example.com/recipe")
+            == "https://recipes.example.com/recipe"
+    )
 }
 
 @Test
@@ -45,6 +49,22 @@ func publicCitationExcludesLocalAndNonHTTPSAddresses() {
         "https://[::1]/recipe",
         "https://example.org:8443/recipe",
         "javascript:alert(1)",
+    ] {
+        #expect(RecipePublicCitation.eligibleURL(url) == nil)
+    }
+}
+
+@Test
+func publicCitationRejectsTrailingDotsAndLocalDomainAliases() {
+    for url in [
+        "https://localhost./recipe",
+        "https://printer.local./recipe",
+        "https://PrInTeR.LoCaL./recipe",
+        "https://example.org./recipe",
+        "https://router.localhost/recipe",
+        "https://ROUTER.LoCaLhOsT/recipe",
+        "https://localhost.localdomain/recipe",
+        "https://printer.localdomain/recipe",
     ] {
         #expect(RecipePublicCitation.eligibleURL(url) == nil)
     }
