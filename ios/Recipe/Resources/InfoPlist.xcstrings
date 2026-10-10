@@ -262,6 +262,12 @@
             "state": "translated",
             "value": "Permitir comandos de voz en el modo Cocina después de activar el control manos libres. El audio se procesa únicamente en este dispositivo."
           }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consenti i comandi vocali in modalità Cucina dopo aver attivato il controllo a mani libere. L’audio viene elaborato solo su questo dispositivo."
+          }
         }
       }
     },
@@ -309,6 +315,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reconocer los comandos de voz opcionales «Siguiente», «Anterior» y «Repetir» mientras esté abierto el modo Cocina."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riconoscere i comandi vocali facoltativi «Avanti», «Indietro» e «Ripeti» mentre è aperta la modalità Cucina."
           }
         }
       }
