@@ -1,4 +1,4 @@
-> **Historical focused optimization audit (2026-10-08).** Previously observed performance risks are not fresh profiling results, and previous `RecipePouch` branding is superseded by current **Recipe Pals**. Use live #137 for current performance evidence, [latest Issue snapshot](CURRENT_BACKLOG_2026-10-09.md) for planning, and current `main` before modifying code. Do not treat this report as an instruction to rewrite already shipped features.
+> **Historical optimization audit (2026-10-08), not fresh profiling or an active task list.** Prior RecipePouch branding is superseded by Recipe Pals. For real current library performance evidence, consult [DEV-95](https://linear.app/gengyun/issue/DEV-95); for the live backlog use [Linear DEV Recipe Pals Development](https://linear.app/gengyun/project/recipe-pals-development-8c015c72cb6a), and re-read latest main before modifying code. Historic snapshots are preserved in Git history indexed by DEV-40.
 
 # RecipePouch code-health review — 2026-10-08
 
