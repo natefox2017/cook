@@ -902,3 +902,73 @@ func optionalMetadataSurvivesLegacyAndNewRecipeRoundTrips() throws {
     #expect(changed.nutrition?.caloriesKcal == Decimal(240))
     #expect(changed.ingredientSections?.first?.ingredientIDs == [ingredient.id])
 }
+
+@Test @MainActor
+func professionalRecipeMetadataSurvivesDiskAndCloudJSONRoundTrips() throws {
+    let url = try libraryURL()
+    defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+    let flour = RecipeIngredient.from(name: "Flour", amountText: "200 g")
+    let water = RecipeIngredient.from(name: "水", amountText: "100 ml")
+    let firstStep = RecipeStep(
+        instruction: "Mix slowly.", linkedIngredientIDs: [flour.id, water.id]
+    )
+    let secondStep = RecipeStep(instruction: "焼く until golden.")
+    let sections = [
+        RecipeIngredientSection(title: "Dry", ingredientIDs: [flour.id]),
+        RecipeIngredientSection(title: "液体", ingredientIDs: [water.id]),
+    ]
+    let images = [
+        RecipeStepImageReference(
+            stepID: firstStep.id, privateAssetPath: "private/mix.jpg",
+            credit: "Recipe owner", license: "Original"
+        ),
+        RecipeStepImageReference(
+            stepID: secondStep.id, privateAssetPath: "private/bake.jpg",
+            credit: "Recipe owner", license: "Original"
+        ),
+    ]
+    let recipe = Recipe(
+        title: "Bread / パン / 面包",
+        ingredients: [flour, water],
+        steps: [firstStep, secondStep],
+        sourceURL: "https://example.com/bread",
+        sourceName: "Original creator",
+        cuisine: "Japanese",
+        dietaryTags: ["Vegetarian"],
+        equipment: ["Oven"],
+        ingredientSections: sections,
+        stepImages: images,
+        preparationTips: "Mix gently.",
+        storageNotes: "Store covered.",
+        yieldDescription: "12 slices",
+        authorCredit: "Original creator",
+        nutrition: RecipeNutrition(
+            caloriesKcal: 220, perServings: 1, source: "Owner-entered label"
+        )
+    )
+    let store = RecipeStore(fileURL: url)
+    try store.upsert(recipe)
+    let saved = try #require(store.recipe(id: recipe.id))
+
+    // A new process can read the on-disk library without losing optional metadata.
+    let reloaded = RecipeStore(fileURL: url)
+    #expect(reloaded.loadError == nil)
+    #expect(reloaded.recipe(id: recipe.id) == saved)
+    #expect(try reloaded.exportData() == Data(contentsOf: url))
+
+    // Cloud snapshot JSON must retain the same stable ingredient/step IDs.
+    // This is a typed serialization test, not a live Supabase CAS test.
+    let snapshotJSON = try JSONEncoder().encode(reloaded.exportCloudSnapshot())
+    let decodedSnapshot = try JSONDecoder().decode(
+        RecipeLibrarySnapshot.self, from: snapshotJSON
+    )
+    let receiver = RecipeStore()
+    try receiver.replaceLibrary(with: decodedSnapshot)
+    let received = try #require(receiver.recipe(id: recipe.id))
+    #expect(received == saved)
+    #expect(received.ingredientSections == sections)
+    #expect(received.stepImages == images)
+    #expect(received.steps[0].linkedIngredientIDs == [flour.id, water.id])
+    #expect(received.nutrition?.caloriesKcal == 220)
+}
