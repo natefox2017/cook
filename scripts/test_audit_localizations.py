@@ -25,6 +25,69 @@ class LocalizationAuditTests(unittest.TestCase):
         self.assertNotEqual(audit.placeholders("%lld"), audit.placeholders("%@"))
         self.assertEqual(audit.placeholders("100%% %@"), ["%@"])
 
+    def test_positional_arguments_bind_types_to_original_argument_indexes(self):
+        source = "%lld rows and %@"
+        self.assertEqual(
+            audit.placeholder_arguments(source),
+            audit.placeholder_arguments("%2$@ and %1$lld"),
+        )
+        for invalid in (
+            "%1$@ and %2$lld",
+            "%@ and %lld",
+            "%1$@ and %lld",
+            "%0$lld and %2$@",
+        ):
+            with self.subTest(invalid=invalid):
+                self.assertNotEqual(
+                    audit.placeholder_arguments(source),
+                    audit.placeholder_arguments(invalid),
+                )
+        self.assertIsNone(audit.placeholder_arguments("%1$@ and %lld"))
+        self.assertIsNone(audit.placeholder_arguments("%0$@"))
+        self.assertEqual(audit.placeholder_arguments("100%% complete: %@"), [(1, "%@")])
+        self.assertNotEqual(
+            audit.placeholder_arguments("%@ %@"),
+            audit.placeholder_arguments("%1$@ %1$@"),
+        )
+
+    def test_non_strict_audit_rejects_wrong_positional_types(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            plist = root / "app.plist"
+            plist.write_bytes(plistlib.dumps({"CFBundleLocalizations": ["en", "de"]}))
+            catalog = root / "strings.xcstrings"
+            source = "%lld rows and %@"
+            contents = {
+                "sourceLanguage": "en",
+                "strings": {
+                    source: {
+                        "localizations": {
+                            "de": {
+                                "stringUnit": {
+                                    "state": "translated",
+                                    "value": "%1$@ und %2$lld",
+                                }
+                            }
+                        }
+                    }
+                },
+            }
+            catalog.write_text(json.dumps(contents), encoding="utf-8")
+            with (
+                patch.object(audit, "PLISTS", (plist, plist)),
+                patch.object(audit, "CATALOGS", (("Recipe", catalog),)),
+                redirect_stdout(io.StringIO()) as output,
+            ):
+                self.assertEqual(audit.run(strict=False), 1)
+                self.assertEqual(audit.run(strict=True), 1)
+                contents["strings"][source]["localizations"]["de"]["stringUnit"]["value"] = (
+                    "%2$@ und %1$lld"
+                )
+                catalog.write_text(json.dumps(contents), encoding="utf-8")
+                self.assertEqual(audit.run(strict=True), 0)
+            self.assertIn("de: placeholders differ", output.getvalue())
+            self.assertIn(repr(source), output.getvalue())
+
     def test_plural_requires_every_declared_variant_to_be_translated(self):
         entry = {
             "variations": {
