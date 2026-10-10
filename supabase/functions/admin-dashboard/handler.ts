@@ -10,6 +10,7 @@ import { requireAdminSession } from "../_shared/admin-session.ts";
 import { requireDashboardRole } from "./access.ts";
 import { utcMonthKey, displayUTCMonth } from "../_shared/monthBuckets.ts";
 import { RecordedRevenueLedger } from "../_shared/recordedRevenue.ts";
+import { hasCompletePage } from "../_shared/reportPage.ts";
 
 const PAID_TYPES = new Set([
   "INITIAL_PURCHASE",
@@ -82,16 +83,16 @@ export async function handleRequest(
       .toISOString();
 
     const [
-      { count: totalUsers },
-      { count: newUsersThisMonth },
-      { count: suspendedUsers },
-      { count: totalRecipes },
-      { count: collections },
-      { count: activePaidUsers },
-      { data: profiles },
-      { data: subscriptions },
+      { count: totalUsers, error: totalUsersError },
+      { count: newUsersThisMonth, error: newUsersError },
+      { count: suspendedUsers, error: suspendedUsersError },
+      { count: totalRecipes, error: totalRecipesError },
+      { count: collections, error: collectionsError },
+      { count: activePaidUsers, error: activePaidError },
+      { data: profiles, count: profileCount, error: profilesError },
+      { data: subscriptions, count: subscriptionCount, error: subscriptionsError },
       { data: purchaseEvents, error: purchaseError },
-      { data: downloadRows, error: downloadError },
+      { data: downloadRows, count: downloadsCount, error: downloadError },
       { data: recentProfiles },
       { data: recentRecipes },
     ] = await Promise.all([
@@ -111,8 +112,8 @@ export async function handleRequest(
         .select("*", { count: "exact", head: true })
         .in("status", ["active", "trialing"])
         .neq("plan", "free"),
-      admin.from("profiles").select("registration_type, device_type"),
-      admin.from("subscriptions").select("user_id, plan, product_id, status"),
+      admin.from("profiles").select("registration_type, device_type", { count: "exact" }),
+      admin.from("subscriptions").select("user_id, plan, product_id, status", { count: "exact" }),
       admin
         .from("purchase_events")
         .select(
@@ -122,7 +123,7 @@ export async function handleRequest(
         .limit(5000),
       admin
         .from("app_download_stats")
-        .select("platform, year_month, downloads")
+        .select("platform, year_month, downloads", { count: "exact" })
         .order("year_month", { ascending: true }),
       admin
         .from("profiles")
@@ -151,6 +152,22 @@ export async function handleRequest(
         "Failed to load download statistics",
         500,
       );
+    }
+
+    // The database may return a default-limited page even without .limit().
+    // Never turn failed/partial counts into apparently complete zero-valued charts.
+    if ([
+      totalUsersError, newUsersError, suspendedUsersError, totalRecipesError,
+      collectionsError, activePaidError, profilesError, subscriptionsError,
+    ].some(Boolean) || [totalUsers, newUsersThisMonth, suspendedUsers, totalRecipes,
+      collections, activePaidUsers, profileCount, subscriptionCount, downloadsCount]
+      .some((count) => count === null)) {
+      throw new AppError("internal_error", "Dashboard counts unavailable", 503);
+    }
+    if (!hasCompletePage(profiles, Number.MAX_SAFE_INTEGER, profileCount) ||
+      !hasCompletePage(subscriptions, Number.MAX_SAFE_INTEGER, subscriptionCount) ||
+      !hasCompletePage(downloadRows, Number.MAX_SAFE_INTEGER, downloadsCount)) {
+      throw new AppError("internal_error", "Dashboard summaries are incomplete", 503);
     }
 
     const byRegistrationType = {
@@ -193,11 +210,15 @@ export async function handleRequest(
     const usersByMonth = new Map<string, { count: number; order: number }>();
     const recipesByMonth = new Map<string, { count: number; order: number }>();
 
-    const { data: allProfilesForGrowth } = await admin
+    const { data: allProfilesForGrowth, count: growthUserCount, error: growthUserError } = await admin
       .from("profiles")
-      .select("created_at")
+      .select("created_at", { count: "exact" })
       .order("created_at", { ascending: true })
       .limit(10000);
+    if (growthUserError || growthUserCount === null ||
+      !hasCompletePage(allProfilesForGrowth, 10000, growthUserCount)) {
+      throw new AppError("internal_error", "User growth history is incomplete", 503);
+    }
     for (const row of allProfilesForGrowth ?? []) {
       const created = String(row.created_at);
       const key = utcMonthKey(created);
@@ -207,11 +228,15 @@ export async function handleRequest(
       usersByMonth.set(key, bucket);
     }
 
-    const { data: allRecipesForGrowth } = await admin
+    const { data: allRecipesForGrowth, count: growthRecipeCount, error: growthRecipeError } = await admin
       .from("recipes")
-      .select("created_at")
+      .select("created_at", { count: "exact" })
       .order("created_at", { ascending: true })
       .limit(10000);
+    if (growthRecipeError || growthRecipeCount === null ||
+      !hasCompletePage(allRecipesForGrowth, 10000, growthRecipeCount)) {
+      throw new AppError("internal_error", "Recipe growth history is incomplete", 503);
+    }
     for (const row of allRecipesForGrowth ?? []) {
       const created = String(row.created_at);
       const key = utcMonthKey(created);
