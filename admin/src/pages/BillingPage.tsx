@@ -137,29 +137,6 @@ function StatCard({
   );
 }
 
-function mergeRevenue(first: RevenueData, second: RevenueData): RevenueData {
-  const byMonth = new Map<string, RevenueData["series"][number]>();
-  for (const row of first.series) {
-    byMonth.set(row.month, { month: row.month, apple: row.apple, android: 0, total: row.apple });
-  }
-  for (const row of second.series) {
-    const previous = byMonth.get(row.month) ?? { month: row.month, apple: 0, android: 0, total: 0 };
-    previous.android = row.android;
-    previous.total = previous.apple + previous.android;
-    byMonth.set(row.month, previous);
-  }
-  return {
-    stats: {
-      // Never combine unavailable recurring revenue estimates from catalog prices.
-      mrr: null,
-      appleRevenue: first.stats.appleRevenue,
-      androidRevenue: second.stats.androidRevenue,
-      activePaid: Math.max(first.stats.activePaid, second.stats.activePaid),
-    },
-    series: [...byMonth.values()],
-  };
-}
-
 export default function BillingPage({ token, role, onAuthExpired }: BillingPageProps) {
   const canManagePlans = role === "owner" || role === "admin";
   const canReadFinancials = canManagePlans;
@@ -191,14 +168,9 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
       } else if (tab === "subscriptions") {
         const nextRecords = await adminApi.records(token, platformFilter);
         if (loadId.current === currentLoadId) setRecords(nextRecords);
-      } else if (platform === "all") {
-        const [apple, android] = await Promise.all([
-          adminApi.revenue(token, "app_store"),
-          adminApi.revenue(token, "play_store"),
-        ]);
-        if (loadId.current === currentLoadId) setRevenue(mergeRevenue(apple, android));
       } else {
-        const nextRevenue = await adminApi.revenue(token, platform);
+        // Use the server's currency-aware aggregation even for both stores.
+        const nextRevenue = await adminApi.revenue(token, platformFilter);
         if (loadId.current === currentLoadId) setRevenue(nextRevenue);
       }
     } catch (cause) {
@@ -361,9 +333,9 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
         {loading ? <LoadingState /> : !error && tab === "revenue" && revenue && (
           <>
             <div className="billing-stat-grid">
-              <StatCard label="Monthly recurring revenue" value={formatAmount(revenue.stats.mrr)} detail="Requires verified subscriber-level recurring amounts" icon={WalletCards} />
-              <StatCard label="App Store revenue" value={formatAmount(revenue.stats.appleRevenue)} detail="Recorded purchase events" icon={Apple} />
-              <StatCard label="Google Play revenue" value={formatAmount(revenue.stats.androidRevenue)} detail="Recorded purchase events" icon={Smartphone} />
+              <StatCard label="Monthly recurring revenue" value={formatAmount(revenue.stats.mrr)} detail="Requires verified entitlement-level amounts" icon={WalletCards} />
+              <StatCard label="App Store revenue" value={formatAmount(revenue.stats.appleRevenue, revenue.stats.currency)} detail="Recorded purchases, not settled revenue" icon={Apple} />
+              <StatCard label="Google Play revenue" value={formatAmount(revenue.stats.androidRevenue, revenue.stats.currency)} detail="Recorded purchases, not settled revenue" icon={Smartphone} />
               <StatCard label="Active paid subscribers" value={new Intl.NumberFormat().format(revenue.stats.activePaid)} detail="Active or trialing plans" icon={Users} />
             </div>
             <section className="billing-panel billing-chart-panel">
@@ -371,7 +343,19 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
                 <div><h3>Revenue over time</h3><p>Monthly sales by app store</p></div>
                 <span className="billing-period-label"><CalendarDays size={15} aria-hidden="true" /> Last 6 months</span>
               </div>
-              {revenue.series.length === 0 ? (
+              {!revenue.stats.currency ? (
+                <div className="billing-empty">
+                  <strong>Currency totals cannot be combined</strong>
+                  <span>Mixed, unknown or incomplete currencies. No FX rate was assumed.</span>
+                  {revenue.stats.byCurrency.map((row) => (
+                    <span key={row.currency}>
+                      {row.currency}: {formatAmount(row.total, row.currency)} recorded
+                      (App Store {formatAmount(row.appleRevenue, row.currency)};
+                      Google Play {formatAmount(row.androidRevenue, row.currency)})
+                    </span>
+                  ))}
+                </div>
+              ) : revenue.series.length === 0 ? (
                 <div className="billing-empty"><ArrowDownToLine size={22} aria-hidden="true" /><strong>No purchase events yet</strong><span>Revenue appears here after the billing service records store purchases.</span></div>
               ) : (
                 <div className="billing-chart">
@@ -380,7 +364,7 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
                       <CartesianGrid vertical={false} stroke="var(--billing-border)" strokeDasharray="3 5" />
                       <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "var(--billing-muted)", fontSize: 12 }} dy={8} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--billing-muted)", fontSize: 12 }} tickFormatter={(value: number) => new Intl.NumberFormat(undefined, { notation: "compact" }).format(value)} width={45} />
-                      <Tooltip formatter={(value) => [formatAmount(Number(value)), ""]} cursor={{ fill: "var(--billing-hover)" }} contentStyle={{ borderRadius: 10, borderColor: "var(--billing-border)", boxShadow: "0 8px 24px rgba(22, 26, 36, .08)" }} />
+                      <Tooltip formatter={(value) => [formatAmount(Number(value), revenue.stats.currency), ""]} cursor={{ fill: "var(--billing-hover)" }} contentStyle={{ borderRadius: 10, borderColor: "var(--billing-border)", boxShadow: "0 8px 24px rgba(22, 26, 36, .08)" }} />
                       <Bar dataKey="apple" name="App Store" fill="var(--billing-apple)" radius={[4, 4, 0, 0]} maxBarSize={28} />
                       <Bar dataKey="android" name="Google Play" fill="var(--billing-android)" radius={[4, 4, 0, 0]} maxBarSize={28} />
                     </BarChart>
