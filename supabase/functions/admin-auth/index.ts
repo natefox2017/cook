@@ -388,9 +388,8 @@ async function startPasskeyLogin(req: Request, body: Record<string, unknown>) {
     const challenge = await findLoginChallenge(body.challengeToken);
     adminId = challenge.admin_id;
     loginChallengeId = challenge.id;
-    if ((await enabledLoginFactors(adminId)).includes("totp")) {
-      throw new AppError("unauthorized", "TOTP verification is required", 401);
-    }
+    // A user-verified passkey is an independent login method, even after a
+    // password challenge. TOTP remains mandatory for completing password login.
   } else {
     const username = requireString(body, "username").toLowerCase();
     const { data, error } = await admin.from("admin_accounts")
