@@ -144,6 +144,10 @@ Deno.test("local HTTP subscription role matrix", async () => {
           role === "owner" || role === "admin" ? 200 : 403,
           `${role} GET ${resource} authorization`,
         );
+        if (resource === "revenue" && response.status === 200) {
+          const report = await response.json();
+          assertEquals(report.stats.mrr, null);
+        }
         if (role === "operator" || role === "readonly") {
           assertEquals(
             fixture.serviceClientCalls(),
