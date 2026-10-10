@@ -274,6 +274,12 @@
             "state": "translated",
             "value": "핸즈프리 제어를 켠 경우에만 요리 모드에서 음성 명령을 위해 마이크를 사용합니다. 오디오는 이 기기에서만 처리됩니다."
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sta spraakopdrachten in de kookmodus toe nadat je handsfree bediening hebt ingeschakeld. Audio wordt alleen op dit apparaat verwerkt."
+          }
         }
       }
     },
@@ -333,6 +339,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "요리 모드가 열려 있는 동안 선택적으로 ‘다음’, ‘이전’, ‘반복’ 음성 명령을 인식합니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optionele spraakopdrachten zoals ‘Volgende’, ‘Vorige’ en ‘Herhalen’ herkennen zolang de kookmodus geopend is."
           }
         }
       }
