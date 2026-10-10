@@ -1498,6 +1498,7 @@ struct RecipeEditProposalReviewSheet: View {
     @Environment(RecipeStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var errorMessage: String?
+    @State private var proposedTexts: [String]
 
     init(
         proposal: RecipeEditProposal,
@@ -1505,6 +1506,44 @@ struct RecipeEditProposalReviewSheet: View {
     ) {
         self.proposal = proposal
         self.onSaved = onSaved
+        _proposedTexts = State(initialValue: proposal.changes.map { change in
+            switch change {
+            case .ingredientName(_, _, let proposed),
+                .ingredientAmount(_, _, let proposed),
+                .stepInstruction(_, _, let proposed):
+                return proposed
+            }
+        })
+    }
+
+    // Only allow edits to the three already approved RecipeEditChange cases.
+    // Rebuild the validated proposal instead of directly saving edited text.
+    private var reviewedProposal: RecipeEditProposal {
+        let changes: [RecipeEditChange] = proposal.changes.enumerated().map { index, change in
+            let text = proposedTexts.indices.contains(index) ? proposedTexts[index] : ""
+            switch change {
+            case .ingredientName(let id, let original, _):
+                return .ingredientName(id: id, original: original, proposed: text)
+            case .ingredientAmount(let id, let original, _):
+                return .ingredientAmount(id: id, original: original, proposed: text)
+            case .stepInstruction(let id, let original, _):
+                return .stepInstruction(id: id, original: original, proposed: text)
+            }
+        }
+        return RecipeEditProposal(
+            recipeID: proposal.recipeID,
+            basedOnUpdate: proposal.basedOnUpdate,
+            changes: changes,
+            reasons: proposal.reasons,
+            warnings: proposal.warnings
+        )
+    }
+
+    private var isStale: Bool {
+        guard let current = store.recipe(id: proposal.recipeID) else {
+            return true
+        }
+        return current.updatedAt != proposal.basedOnUpdate
     }
 
     // Always derive the preview from the live Store. This is display-only;
@@ -1513,30 +1552,26 @@ struct RecipeEditProposalReviewSheet: View {
         guard let current = store.recipe(id: proposal.recipeID) else {
             return nil
         }
-        return try? proposal.preview(on: current)
+        return try? reviewedProposal.preview(on: current)
     }
 
     private var reviewRows: [RecipeEditReviewRow] {
         proposal.changes.enumerated().map { index, change in
             let field: String
             let before: String
-            let after: String
             switch change {
-            case .ingredientName(_, let original, let proposed):
+            case .ingredientName(_, let original, _):
                 field = "Ingredient name"
                 before = original
-                after = proposed
-            case .ingredientAmount(_, let original, let proposed):
+            case .ingredientAmount(_, let original, _):
                 field = "Ingredient amount"
                 before = original
-                after = proposed
-            case .stepInstruction(_, let original, let proposed):
+            case .stepInstruction(_, let original, _):
                 field = "Step instruction"
                 before = original
-                after = proposed
             }
             return RecipeEditReviewRow(
-                id: index, field: field, before: before, after: after
+                id: index, field: field, before: before
             )
         }
     }
@@ -1565,11 +1600,16 @@ struct RecipeEditProposalReviewSheet: View {
                                         13, weight: .semibold, relativeTo: .footnote
                                     ))
                                     .foregroundStyle(.secondary)
-                                Text(row.after)
-                                    .font(RecipeTheme.text(
-                                        17, weight: .semibold, relativeTo: .body
-                                    ))
-                                    .accessibilityIdentifier("reviewProposalAfter.\(row.id)")
+                                TextField(
+                                    "Proposed",
+                                    text: $proposedTexts[row.id],
+                                    axis: .vertical
+                                )
+                                .lineLimit(2...6)
+                                .font(RecipeTheme.text(
+                                    17, weight: .semibold, relativeTo: .body
+                                ))
+                                .accessibilityIdentifier("reviewProposalAfter.\(row.id)")
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(RecipeSpacing.medium)
@@ -1591,10 +1631,14 @@ struct RecipeEditProposalReviewSheet: View {
                                 lines: proposal.warnings
                             )
                         }
-                    } else {
+                    } else if isStale {
                         Text("This recipe changed. Get a new suggestion before saving.")
                             .foregroundStyle(.secondary)
                             .accessibilityIdentifier("staleRecipeProposal")
+                    } else {
+                        Text("Check the proposed text. It cannot be empty or too long.")
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("invalidRecipeProposal")
                     }
                 }
                 .recipePageContentInsets()
@@ -1658,7 +1702,7 @@ struct RecipeEditProposalReviewSheet: View {
         }
         do {
             let saved = try store.applyApprovedRecipeEdit(
-                proposal, asVariant: asVariant
+                reviewedProposal, asVariant: asVariant
             )
             onSaved(saved)
             dismiss()
@@ -1677,5 +1721,4 @@ private struct RecipeEditReviewRow: Identifiable {
     let id: Int
     let field: String
     let before: String
-    let after: String
 }
