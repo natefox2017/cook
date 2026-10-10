@@ -3,7 +3,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { RecordedRevenueLedger, isRecordedPurchaseEvent } from "./recordedRevenue.ts";
+import { RecordedRevenueLedger, isRecordedPurchaseEvent, recordedPurchaseAmount } from "./recordedRevenue.ts";
 
 test("single currency keeps platform totals separate across calendar years", () => {
   const ledger = new RecordedRevenueLedger();
@@ -20,7 +20,9 @@ test("single currency keeps platform totals separate across calendar years", () 
 test("USD and JPY are never combined into fabricated USD revenue", () => {
   const ledger = new RecordedRevenueLedger();
   ledger.record({ price: 4.99, currency: "USD" }, "app_store", "2026-01");
-  ledger.record({ price: 1200, currency: "JPY" }, "play_store", "2026-01");
+  ledger.record({
+    price_in_purchased_currency: 1200, price: 8.5, currency: "JPY",
+  }, "play_store", "2026-01");
   const summary = ledger.summary();
   assert.equal(summary.currency, null);
   assert.equal(summary.total, null);
@@ -71,4 +73,46 @@ test("only actual purchase webhooks contribute to recorded sales", () => {
     }
   }
   assert.equal(ledger.summary().total, 10);
+});
+
+test("RevenueCat USD fallback must never be mislabeled as the purchase currency", () => {
+  // RevenueCat `price` is USD. JPY is valid only alongside the native amount.
+  const missingNative = { price: 8.5, price_in_purchased_currency: null, currency: "JPY" };
+  assert.equal(recordedPurchaseAmount(missingNative), null);
+
+  const ledger = new RecordedRevenueLedger();
+  ledger.record(missingNative, "app_store", "2026-03");
+  assert.equal(ledger.summary().incompleteEvents, 1);
+  assert.equal(ledger.summary().total, null);
+  assert.deepEqual(ledger.summary().byCurrency, []);
+
+  const native = {
+    price: 8.5, price_in_purchased_currency: 1200, currency: "JPY",
+  };
+  assert.deepEqual(recordedPurchaseAmount(native), { amount: 1200, currency: "JPY" });
+  assert.deepEqual(recordedPurchaseAmount({
+    price: 4.99, price_in_purchased_currency: null, currency: "USD",
+  }), { amount: 4.99, currency: "USD" });
+  assert.deepEqual(recordedPurchaseAmount({
+    price: 8.5, price_in_purchased_currency: 0, currency: "JPY",
+  }), { amount: 0, currency: "JPY" });
+});
+
+test("purchased currency and amounts must be present, nonnegative and numeric", () => {
+  for (const raw of [
+    { price: 0.99, currency: "EUR" },
+    { price_in_purchased_currency: -10, currency: "JPY" },
+    { price_in_purchased_currency: "", currency: "GBP" },
+    { price_in_purchased_currency: "nope", currency: "GBP" },
+    { price_in_purchased_currency: 5, currency: "?" },
+    { price_in_purchased_currency: 5, currency: null },
+    { price_in_purchased_currency: false, currency: "USD" },
+    null,
+  ]) {
+    assert.equal(recordedPurchaseAmount(raw), null);
+  }
+
+  assert.deepEqual(recordedPurchaseAmount({
+    price: 5, price_in_purchased_currency: 3.50, currency: "eur",
+  }), { amount: 3.5, currency: "EUR" });
 });
