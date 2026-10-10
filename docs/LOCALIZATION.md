@@ -6,12 +6,12 @@ Updated: 2026-10-09
 
 ## Runtime policy
 
-> **Scope separation:** the currently shipping client/source still forces English for normal test-stage launches. New owner-approved [#230](https://github.com/natefox2017/cook/issues/230) will introduce **manual App language AND country choices**, with automatic system-language fallback when no override is selected for international release. Do not conflate choosing a country with changing UI language. Existing four-language string catalogs are **not** completed coverage of every European/American language. New UI copy from #231–#248 also needs extraction/QA.
+> **Scope separation (updated 2026-10-10):** [#230](https://github.com/natefox2017/cook/issues/230) now has a partially implemented manual App language and country preference. Manual choice works for the four bundled languages and takes priority over the test-stage English default; automatic system-language selection and further European/American/Korean translations remain pending. Choosing a country does not change the UI language or App Store billing region. New UI copy from #231–#248 also needs extraction/QA.
 
 
 
-- **Temporary test-stage setting (2026-10-08):** Recipe Pals app UI is forced to English (en), regardless of the iPhone's preferred language. This applies to the SwiftUI environment and computed strings resolved with `LocalizedStringResource(locale:)`.
-- Explicit `--uitesting-locale en|zh-Hans|zh-Hant|ja` is retained solely for localization smoke tests; ordinary UI tests and normal app launches default to English.
+- **Temporary test-stage setting (updated 2026-10-10):** With no manual selection, Recipe Pals defaults to English (en) regardless of the iPhone's preferred language. The explicitly saved four-language choice overrides this default in the SwiftUI environment and in computed strings using `LocalizedStringResource(locale:)`.
+- Explicit `--uitesting-locale en|zh-Hans|zh-Hant|ja` has highest priority for deterministic localization smoke tests. UI tests without that flag allow manual changes; they default to English when no choice was saved.
 - The Share Extension uses its own English locale. Core display errors remain in English during the test stage.
 - **Before international launch:** deliberately remove this test-stage restriction and restore system-language selection for the app, Core, and Share Extension after multi-language visual QA.
 - English remains the development/source language; translation catalogs are retained.
@@ -90,3 +90,20 @@ The country/region preference uses ISO regions but is separate from language and
 is not a claim to change Apple/App Store billing region or content restrictions.
 Additional European, American and Korean language packs, strings translation
 quality, country-specific units/terms and real-device smoke remain **OPEN #230**.
+
+## Destructive alerts and manual-language behavior (2026-10-10)
+
+- Both local-delete entry points (Profile and Settings → Data & Privacy) and
+  signed-in account/cloud deletion now use native centered SwiftUI alerts with
+  an explicit Cancel action, rather than container-attached action sheets.
+  The local-delete flow still requires confirmation and warns about local
+  versus cloud data and subscription preservation.
+- Settings → Language & Country uses a navigation-style language picker.
+  Saving a choice changes the UI locale and `RecipeLanguage.active`; the
+  setting persists across regular launches. In a `--uitesting` run, an
+  explicit `--uitesting-locale` continues to take priority; without it, the
+  user's manual choice applies. `--uitesting-reset-language` is a DEBUG-only
+  test fixture reset, not a production setting.
+- Source checks and UI regression cases were added for native alert placement,
+  cancellation and the manual-selection path. **An iOS simulator/device run is
+  still required**; a source-level test is not confirmation of rendered layout.

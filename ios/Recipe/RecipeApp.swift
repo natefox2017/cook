@@ -300,6 +300,13 @@ struct RecipeApp: App {
         let arguments = ProcessInfo.processInfo.arguments
         let isUITesting = RecipeUITestNamespace.isUITesting
 
+        #if DEBUG
+            // Keep the manual language UI smoke test independent of prior runs.
+            if isUITesting && arguments.contains("--uitesting-reset-language") {
+                defaults.removeObject(forKey: RecipeLanguage.preferenceKey)
+            }
+        #endif
+
         if !isUITesting {
             for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("cook.") {
                 let recipeKey = "recipe." + key.dropFirst("cook.".count)

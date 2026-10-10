@@ -235,6 +235,39 @@ struct ProfileView: View {
                         .frame(minHeight: 44)
                 }
                 .accessibilityIdentifier("profile.delete-data")
+                .alert(
+                    "Delete all local data?",
+                    isPresented: $confirmsReset
+                ) {
+                    Button("Delete Local Data", role: .destructive) {
+                        guard !isDeletingLocalData else { return }
+                        isDeletingLocalData = true
+                        Task {
+                            defer { isDeletingLocalData = false }
+                            do {
+                                try await RecipeLocalDataDeletion.erase(
+                                    store: store,
+                                    cloudSync: cloudSync
+                                )
+                                exportDocument = RecipeExportDocument(data: Data())
+                                errorMessage = String(
+                                    localized: LocalizedStringResource(
+                                        "Local Recipe Pals data deleted.",
+                                        locale: RecipeLanguage.active
+                                    )
+                                )
+                            } catch {
+                                errorMessage = error.localizedDescription
+                            }
+                        }
+                    }
+                    .disabled(isDeletingLocalData)
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text(
+                        "This deletes only data on this iPhone. Sign out first; cloud data and your App Store subscription remain intact. Signing in again may restore cloud recipes. Export local data first if needed."
+                    )
+                }
             } header: {
                 Text("On this iPhone")
             }
@@ -261,41 +294,6 @@ struct ProfileView: View {
             if let feedback = RecipeExportFormat.feedback(for: result) {
                 errorMessage = feedback
             }
-        }
-        .confirmationDialog(
-            "Delete all local data?",
-            isPresented: $confirmsReset,
-            titleVisibility: .visible
-        ) {
-            Button("Delete All Recipe Pals Data", role: .destructive) {
-                guard !isDeletingLocalData else { return }
-                isDeletingLocalData = true
-                Task {
-                    defer {
-                        isDeletingLocalData = false
-                    }
-                    do {
-                        try await RecipeLocalDataDeletion.erase(
-                            store: store,
-                            cloudSync: cloudSync
-                        )
-                        exportDocument = RecipeExportDocument(data: Data())
-                        errorMessage = String(
-                            localized: LocalizedStringResource(
-                                "Local Recipe Pals data deleted.",
-                                locale: RecipeLanguage.active
-                            )
-                        )
-                    } catch {
-                        errorMessage = error.localizedDescription
-                    }
-                }
-            }
-            .disabled(isDeletingLocalData)
-        } message: {
-            Text(
-                "This deletes only data on this iPhone. Sign out first; cloud data and your App Store subscription remain intact. Signing in again may restore cloud recipes. Export local data first if needed."
-            )
         }
         .alert(
             "Recipe Pals",

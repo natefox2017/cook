@@ -28,7 +28,7 @@ Recipe is the native iOS codebase for Recipe Pals, a private recipe collection a
 - The user's approved **next-phase** extensions are AI-assisted source/evidence drafts and edit (#238–#241), opt-in **single-recipe** Web/long-image sharing (#242–#245), optional later invite rewards (#246), and detail metadata/UI (#247–#248). These are **planned, not shipped**. They do not authorize a public feed/community, automatically publishing imported private/copyrighted material, user fingerprinting or real reward payouts.
 - Import deployment tickets #116–#120/#130/#135/#138/#141/#164 were closed as `not_planned`; **do not reopen them or treat them as passing integration tests**. For the newly approved functionality use #250 for controlled staging and #251 for release-scope acceptance. Changes to production infrastructure require separate owner approval.
 - Keep historical dated design/QA/provenance documents as evidence; put corrections in a dated note rather than rewriting the tests they describe. For operative development decisions use `docs/ROADMAP.md`, `docs/PRODUCT_BASELINE_V1.md`, relevant new `docs/PRODUCT/*.md`, and the current Issue.
-- During testing normal App launches remain English; manually selectable language/country and international locale fallback remain **unimplemented until #230**. Do not confuse translated string catalogs with a finished locale UI.
+- During testing, English is the default unless the user explicitly selects a bundled language under Settings → Language & Country. Manual language and country preferences are partially implemented; additional language packs and automatic system-language release fallback remain **open in #230**.
 
 
 
@@ -104,7 +104,7 @@ Read the relevant documents before substantial product or architecture changes:
 ## Language During Development
 
 - Until the user explicitly approves multilingual release, default to English for all user-facing Recipe Pals UI regardless of the iPhone's preferred language.
-- Keep four-language String Catalogs intact. Only explicit UI-locale smoke-test launch arguments may select a non-English locale.
+- Keep the four fully translated UI languages (en, zh-Hans, zh-Hant, ja) available for manual selection. Explicit `--uitesting-locale` wins for deterministic UI smoke tests; ordinary launches and UI tests without a forced locale respect manual selection, defaulting to English when unset.
 - When computing displayed strings, use a `LocalizedStringResource` with the app's explicit locale. A bare `String(localized:)` can fall back to the device language even when SwiftUI's locale is overridden.
 - Do not globally override system `AppleLanguages` or remove translation resources as a test shortcut.
 

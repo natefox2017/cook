@@ -774,6 +774,75 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testBothLocalDeletionEntryPointsPresentCenteredCancelableAlerts() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let profileDelete = app.buttons["profile.delete-data"]
+        reveal(profileDelete, in: app, maximumSwipes: 5)
+        profileDelete.tap()
+
+        let profileAlert = app.alerts["Delete all local data?"]
+        XCTAssertTrue(profileAlert.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(profileAlert.buttons["Delete Local Data"].exists)
+        XCTAssertLessThan(
+            abs(profileAlert.frame.midY - app.frame.midY),
+            app.frame.height * 0.20
+        )
+        profileAlert.buttons["Cancel"].tap()
+
+        openDataAndPrivacy(in: app)
+        let settingsDelete = app.buttons["privacy.delete-local"]
+        reveal(settingsDelete, in: app, maximumSwipes: 5)
+        settingsDelete.tap()
+
+        let settingsAlert = app.alerts["Delete all local data?"]
+        XCTAssertTrue(settingsAlert.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(settingsAlert.buttons["Delete Local Data"].exists)
+        XCTAssertLessThan(
+            abs(settingsAlert.frame.midY - app.frame.midY),
+            app.frame.height * 0.20
+        )
+        settingsAlert.buttons["Cancel"].tap()
+        XCTAssertTrue(settingsDelete.exists)
+    }
+
+    @MainActor
+    func testManualLanguageSelectionOverridesEnglishTestDefault() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--uitesting-reset-language"]
+        app.launch()
+        defer { app.terminate() }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let settings = app.buttons["Settings"]
+        reveal(settings, in: app, maximumSwipes: 5)
+        settings.tap()
+        let languageAndCountry = app.buttons["Language & Country"]
+        reveal(languageAndCountry, in: app, maximumSwipes: 6)
+        languageAndCountry.tap()
+
+        let picker = app.buttons["settings.languagePicker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5), app.debugDescription)
+        picker.tap()
+        let japanese = app.staticTexts["日本語"].firstMatch
+        XCTAssertTrue(japanese.waitForExistence(timeout: 5), app.debugDescription)
+        japanese.tap()
+        XCTAssertTrue(
+            app.navigationBars["言語と国・地域"].waitForExistence(timeout: 8),
+            app.debugDescription
+        )
+        XCTAssertTrue(app.staticTexts["アプリの言語"].exists)
+    }
+
+    @MainActor
     func testExportFormatsAreAvailableInBothEntryPoints() {
         let app = launchSeededApp()
         defer {
@@ -907,10 +976,10 @@ final class RecipeUITests: XCTestCase {
         let app = launchExportQAApp()
         openDataAndPrivacy(in: app)
 
-        let delete = app.buttons["Delete Local Data"]
+        let delete = app.buttons["privacy.delete-local"]
         reveal(delete, in: app, maximumSwipes: 5)
         delete.tap()
-        let confirm = app.buttons["Delete Local Data"]
+        let confirm = app.alerts["Delete all local data?"].buttons["Delete Local Data"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 5), app.debugDescription)
         confirm.tap()
         XCTAssertTrue(
@@ -986,7 +1055,7 @@ final class RecipeUITests: XCTestCase {
         let delete = app.buttons["profile.delete-data"]
         reveal(delete, in: app, maximumSwipes: 5)
         delete.tap()
-        let confirm = app.buttons["Delete All Recipe Pals Data"]
+        let confirm = app.alerts["Delete all local data?"].buttons["Delete Local Data"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 5), app.debugDescription)
         confirm.tap()
         XCTAssertTrue(

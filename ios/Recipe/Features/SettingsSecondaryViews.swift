@@ -56,6 +56,41 @@ struct DataPrivacySettingsView: View {
                 Button("Delete All Local Data", role: .destructive) {
                     confirmsLocalDelete = true
                 }
+                .accessibilityIdentifier("privacy.delete-local")
+                // Native alerts stay centered on iPhone, unlike the action sheet.
+                .alert(
+                    "Delete all local data?",
+                    isPresented: $confirmsLocalDelete
+                ) {
+                    Button("Delete Local Data", role: .destructive) {
+                        guard !isDeletingLocalData else { return }
+                        isDeletingLocalData = true
+                        Task {
+                            defer { isDeletingLocalData = false }
+                            do {
+                                try await RecipeLocalDataDeletion.erase(
+                                    store: store,
+                                    cloudSync: cloudSync
+                                )
+                                exportDocument = RecipeExportDocument(data: Data())
+                                message = String(
+                                    localized: LocalizedStringResource(
+                                        "Local Recipe Pals data deleted.",
+                                        locale: RecipeLanguage.active
+                                    )
+                                )
+                            } catch {
+                                message = error.localizedDescription
+                            }
+                        }
+                    }
+                    .disabled(isDeletingLocalData)
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text(
+                        "Sign out first to erase only this iPhone's data. Cloud data and your subscription are not deleted; signing in again may restore synced recipes."
+                    )
+                }
 
                 if isSignedIn {
                     Button(
@@ -63,6 +98,36 @@ struct DataPrivacySettingsView: View {
                         role: .destructive
                     ) {
                         confirmsAccountDelete = true
+                    }
+                    .alert(
+                        "Delete Account & Cloud Data",
+                        isPresented: $confirmsAccountDelete
+                    ) {
+                        Button("Delete Account & Cloud Data", role: .destructive) {
+                            Task {
+                                do {
+                                    try await cloudSync.deleteAccountAndCloudData()
+                                    message = String(
+                                        localized: LocalizedStringResource(
+                                            "Recipe Pals account and cloud data deleted. Local data on this iPhone was kept.",
+                                            locale: RecipeLanguage.active
+                                        )
+                                    )
+                                } catch {
+                                    message = error.localizedDescription
+                                }
+                            }
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text(
+                            String(
+                                localized: LocalizedStringResource(
+                                    "This deletes the signed-in Recipe Pals account and cloud data. Local data on this iPhone stays until you delete it separately. This does not cancel an App Store subscription.",
+                                    locale: RecipeLanguage.active
+                                )
+                            )
+                        )
                     }
                 } else {
                     HStack {
@@ -98,64 +163,6 @@ struct DataPrivacySettingsView: View {
             if let feedback = RecipeExportFormat.feedback(for: result) {
                 message = feedback
             }
-        }
-        .confirmationDialog(
-            "Delete all local Recipe Pals data?",
-            isPresented: $confirmsLocalDelete,
-            titleVisibility: .visible
-        ) {
-            Button("Delete Local Data", role: .destructive) {
-                guard !isDeletingLocalData else { return }
-                isDeletingLocalData = true
-                Task {
-                    defer { isDeletingLocalData = false }
-                    do {
-                        try await RecipeLocalDataDeletion.erase(
-                            store: store,
-                            cloudSync: cloudSync
-                        )
-                        exportDocument = RecipeExportDocument(data: Data())
-                        message = String(
-                            localized: LocalizedStringResource(
-                                "Local Recipe Pals data deleted.",
-                                locale: RecipeLanguage.active
-                            )
-                        )
-                    } catch {
-                        message = error.localizedDescription
-                    }
-                }
-            }
-            .disabled(isDeletingLocalData)
-        } message: {
-            Text(
-                "Sign out first to erase only this iPhone's data. Cloud data and your subscription are not deleted; signing in again may restore synced recipes."
-            )
-        }
-        .confirmationDialog(
-            "Delete Recipe Pals account?",
-            isPresented: $confirmsAccountDelete,
-            titleVisibility: .visible
-        ) {
-            Button("Delete Account & Cloud Data", role: .destructive) {
-                Task {
-                    do {
-                        try await cloudSync.deleteAccountAndCloudData()
-                        message = String(
-                            localized: LocalizedStringResource(
-                                "Recipe Pals account and cloud data deleted. Local data on this iPhone was kept.",
-                                locale: RecipeLanguage.active))
-                    } catch {
-                        message = error.localizedDescription
-                    }
-                }
-            }
-        } message: {
-            Text(
-                String(
-                    localized: LocalizedStringResource(
-                        "This deletes the signed-in Recipe Pals account and cloud data. Local data on this iPhone stays until you delete it separately. This does not cancel an App Store subscription.",
-                        locale: RecipeLanguage.active)))
         }
         .alert(
             "Data & Privacy",
