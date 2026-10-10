@@ -93,7 +93,6 @@ export async function handleRequest(
       { data: downloadRows, error: downloadError },
       { data: recentProfiles },
       { data: recentRecipes },
-      { data: monthlyPlans },
     ] = await Promise.all([
       admin.from("profiles").select("*", { count: "exact", head: true }),
       admin
@@ -136,11 +135,6 @@ export async function handleRequest(
         .select("id, title, user_id, created_at")
         .order("created_at", { ascending: false })
         .limit(5),
-      admin
-        .from("subscription_plans")
-        .select("price")
-        .eq("billing_period", "monthly")
-        .eq("active", true),
     ]);
 
     if (purchaseError) {
@@ -323,10 +317,9 @@ export async function handleRequest(
       recipes: p.recipes,
     }));
 
-    const avgMonthly = (monthlyPlans ?? []).reduce((sum, p) =>
-      sum + Number(p.price), 0) /
-      Math.max((monthlyPlans ?? []).length, 1);
-    const revenueMrr = round2(avgMonthly * (activePaidUsers ?? 0));
+    // No verified entitlement-level monthly recurring amount is available.
+    // A catalog-price average across trial/yearly/lifetime users is not MRR.
+    const revenueMrr: number | null = null;
 
     const recentPaid = (purchaseEvents ?? [])
       .filter((e) => PAID_TYPES.has(String(e.event_type ?? "").toUpperCase()))
