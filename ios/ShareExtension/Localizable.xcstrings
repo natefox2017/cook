@@ -754,6 +754,12 @@
             "state": "translated",
             "value": "El almacenamiento compartido de Recipe Pals no está disponible. Comprueba la configuración de firma de App Group."
           }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo spazio di archiviazione condiviso di Recipe Pals non è disponibile. Controlla la configurazione della firma di App Group."
+          }
         }
       }
     },
@@ -794,6 +800,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Comparte con Recipe Pals un enlace HTTPS público, texto legible, una imagen o un PDF."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condividi con Recipe Pals un link HTTPS pubblico, testo leggibile, un’immagine o un PDF."
           }
         }
       }
