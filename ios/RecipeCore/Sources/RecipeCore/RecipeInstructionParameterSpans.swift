@@ -51,8 +51,10 @@ public enum RecipeInstructionParameterSpans {
         let linked = ingredients.filter { linkedIDs.contains($0.id) }
         let byName = Dictionary(grouping: linked) {
             $0.name.trimmingCharacters(in: .whitespacesAndNewlines)
-                .folding(options: [.caseInsensitive, .diacriticInsensitive],
-                         locale: Locale(identifier: "en_US_POSIX"))
+                .folding(
+                    options: [.caseInsensitive, .diacriticInsensitive],
+                    locale: Locale(identifier: "en_US_POSIX")
+                )
         }
 
         for ingredientsWithName in byName.values where ingredientsWithName.count == 1 {
