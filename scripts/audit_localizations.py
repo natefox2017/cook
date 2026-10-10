@@ -124,7 +124,7 @@ def run(strict: bool, languages: tuple[str, ...] = ()) -> int:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--strict", action="store_true", help="Require 100% coverage")
+    parser.add_argument("--strict", action="store_true", help="Require 100%% coverage")
     parser.add_argument(
         "--language", action="append", type=locale_code, default=[], metavar="CODE",
         help="Also audit a not-yet-shipped language (repeatable, e.g. --language pt-BR)",
