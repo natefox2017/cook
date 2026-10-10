@@ -205,3 +205,20 @@ full pagination, MRR and finance reconciliation are still OPEN in #276.
 A `byCurrency` array may itself be **partial** if any source record was
 unusable or the query reached its cap; never use it as an authoritative report
 without its completeness metadata. No production data has been modified.
+
+### Partial-report detection (2026-10-10)
+
+The Admin subscriptions list (500-row ceiling) and its 2,000-event
+purchase-enrichment query now reject a page at the configured limit instead
+of implying all matching records are shown. The read-only Dashboard
+requires successful exact counts and confirms that the fetched profile,
+subscription, download, user-growth and recipe-growth rows cover those counts.
+Missing SQL results or a default PostgREST row cap produce an **explicit
+service-unavailable/error state** in the Admin UI, not a fabricated zero or a
+complete-looking report.
+
+This is fail-closed detection, **not full pagination**. If the dataset grows
+beyond these bounds, use an authorized, bounded paginated query or server-side
+aggregation and retest #276 before claiming a complete finance report.
+The existing recent-activity limits remain intentional. Live billing and
+account data were not read or modified as part of this code change.
