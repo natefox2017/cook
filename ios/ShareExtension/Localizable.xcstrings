@@ -736,6 +736,12 @@
             "state": "translated",
             "value": "Recipe Pals の共有ストレージにアクセスできません。App Group の署名設定を確認してください。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der gemeinsame Speicher von Recipe Pals ist nicht verfügbar. Überprüfe die App-Group-Signierung."
+          }
         }
       }
     },
@@ -758,6 +764,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "公開 HTTPS リンク、読み取り可能なテキスト、画像、PDF を Recipe Pals に共有してください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teile einen öffentlichen HTTPS-Link, lesbaren Text, ein Bild oder ein PDF mit Recipe Pals."
           }
         }
       }
