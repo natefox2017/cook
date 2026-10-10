@@ -179,16 +179,16 @@ struct ProfileView: View {
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(
-                        title: "Using Recipe Pals",
+                        title: "Help",
                         systemImage: "questionmark.circle"
                     )
                 }
                 NavigationLink {
-                    RecipeAboutView()
+                    AboutSettingsView()
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(
-                        title: "About & Your Data",
+                        title: "About",
                         systemImage: "info.circle"
                     )
                 }
@@ -267,7 +267,7 @@ struct ProfileView: View {
             isPresented: $confirmsReset,
             titleVisibility: .visible
         ) {
-            Button("Delete All Recipe Pals Data", role: .destructive) {
+            Button("Delete All Local Data", role: .destructive) {
                 guard !isDeletingLocalData else { return }
                 isDeletingLocalData = true
                 Task {
@@ -298,7 +298,7 @@ struct ProfileView: View {
             )
         }
         .alert(
-            "Recipe Pals",
+            "Data & Privacy",
             isPresented: Binding(
                 get: {
                     errorMessage != nil
@@ -717,30 +717,7 @@ private struct RecipeHelpView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("Using Recipe Pals")
-        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
-    }
-}
-
-private struct RecipeAboutView: View {
-    var body: some View {
-        List {
-            Section("Recipe Pals") {
-                LabeledContent("Version", value: RecipeVersion.display)
-            }
-            Section("Data & Privacy") {
-                NavigationLink("What Recipe Pals Stores") {
-                    StoredDataView()
-                }
-                NavigationLink("Privacy Summary") {
-                    PrivacySummaryView()
-                }
-            }
-        }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
-        .background(RecipeTheme.canvas)
-        .navigationTitle("About & Your Data")
+        .navigationTitle("Help")
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }
