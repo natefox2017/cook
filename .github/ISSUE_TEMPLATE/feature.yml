@@ -1,85 +1,118 @@
-name: Feature
-description: 功能开发任务
+name: "Feature"
+description: "零上下文可执行的 Recipe Pals 功能需求 / 独立 PR 任务"
 title: "[Feature] "
 labels: []
 body:
   - type: markdown
     attributes:
       value: |
-        需求必须以带 Todo 的 Issue 入库，并先加入唯一 GitHub Projects Kanban 的 Todo 栏。**只能在看板领取**（Claimed + Claim ID + Assignee）；未确认领取前不得开始实现。每完成一项 Todo 立即更新 Issue 与看板。
+        先查重和已有 PR，再创建此 Issue；一个独立 Issue 对应一张 Cook Todoist Board 卡片。
+        只有 Ready 可领取：移动到 In Progress 并立即重新读取确认。Todoist 领取不是原子锁，发现并发竞争须停止。
+        六态且仅六态：Backlog / Ready / In Progress / In Review / Blocked / Done。Done 只移动栏目，禁止点击 Todoist 完成任务。
+        GitHub Issues 保存完整需求和 Todo；Todoist 仅保存领取/状态及 Issue/PR 链接；PR 负责交付。
+        Board: https://app.todoist.com/app/project/6hj76CCMgwhrRp6m 。
+        新建不等于领取；未知信息写“待核实”，通过零上下文检查后才能进入 Ready。
+  - type: textarea
+    id: background
+    attributes:
+      label: "1. 背景 / 当前问题"
+      description: "为什么需要这项任务；实际现象、影响用户和复现条件。"
+      placeholder: "现在存在：...；相关现象/证据：..."
+    validations:
+      required: true
   - type: textarea
     id: goal
     attributes:
-      label: 目标
-      description: 这项功能解决什么问题？
+      label: "2. 目标 / 独立交付"
+      description: "完成后有哪些可观察的功能、修复或研究交付？"
+      placeholder: "目标行为：...；不在本 Issue 范围内：..."
     validations:
       required: true
   - type: textarea
-    id: input
+    id: current
     attributes:
-      label: 输入
+      label: "3. 当前状态 / 去重结果"
+      description: "阅读最新默认分支、相同/历史 Issue、已合并及开放 PR，说明已有实现与遗漏，防止重复造轮子。"
+      placeholder: "基线 commit：待核实；已有实现路径：...；关联 # / PR：...；缺口：..."
     validations:
       required: true
   - type: textarea
-    id: output
+    id: scope
     attributes:
-      label: 输出
+      label: "4. 修改范围"
+      description: "列出真实文件路径、模块、UI 页面、API、数据表/数据流（无则写 N/A）。"
+      placeholder: "允许文件：...；涉及接口/DB：... 或 N/A；禁止触碰：..."
     validations:
       required: true
   - type: textarea
-    id: files
+    id: requirements
     attributes:
-      label: 文件范围
-      description: 允许修改的目录/文件。
+      label: "5. 具体逻辑、输入输出、边界与异常"
+      description: "写出用户/系统流程、交互、输入/输出样例、失败/重试/安全/兼容场景。"
+      placeholder: "输入示例：... → 预期输出：...；无数据/权限失败/重复操作：..."
     validations:
       required: true
-  - type: input
+  - type: textarea
     id: design
     attributes:
-      label: 设计资源 ID
-      description: UI 任务填写相关 UI-xxx 和当前状态（APPROVED/SCOPED/PENDING）；用户明确要求可直接开发，非 UI 填 N/A。不要把功能方向 SCOPED 假称定版视觉 APPROVED。
+      label: "设计方案 / 用户流程证据"
+      description: "UI 任务记录 DESIGN_SYSTEM、参考设计资源及批准状态；非 UI 写 N/A。"
+      placeholder: "设计路径或资源 ID：...；状态：APPROVED / SCOPED / PENDING 或 N/A"
     validations:
       required: true
   - type: textarea
-    id: acceptance
+    id: reference
     attributes:
-      label: 验收标准
+      label: "成熟方案及复用审计"
+      description: "研发前确认已有本项目实现和可复用的成熟框架/开源方案、许可证与版本。"
+      placeholder: "已验证的开源/标准库：...；许可证：...；复用组件路径：..."
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: "6. 技术约束与禁止事项"
+      description: "现有架构、版本、编码/设计/安全要求、迁移兼容、优先复用现有代码和成熟可用开源方案。"
+      placeholder: "技术/兼容约束：...；禁止修改：...；复用方案/许可证：..."
     validations:
       required: true
   - type: textarea
     id: dependencies
     attributes:
-      label: 依赖
-      description: Issue/API/Schema/设计等依赖。
+      label: "7. 前置依赖与真实引用"
+      description: "关联 Issue、PR、需求和设计/架构路径，注明与其他任务冲突文件、可并行范围。"
+      placeholder: "前置 Issue：...或无；PR：...或无；文档：...；冲突/并行：..."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: "8. 验收 Todo / Checkbox"
+      description: "使用具体、可独立检验的 - [ ] T01/T02；完成一个马上勾选，附关联 commit/PR/测试证据。"
+      placeholder: "- [ ] T01 — 在 X 场景输入 Y，输出 Z；验证命令/页面：...\n- [ ] T02 — Y 失败/边界有明确处理；验证方法：...\n- [ ] T03 — 所需测试 PASS 并提交交付证据"
+    validations:
+      required: true
   - type: textarea
     id: tests
     attributes:
-      label: 测试要求
+      label: "9. 测试要求"
+      description: "准确命令、fixtures、测试环境、场景与预期；真机、staging、prod、CI 未运行必须 NOT RUN。"
+      placeholder: "命令/步骤：...；预期结果：...；实际 PASS/FAIL/NOT RUN：...；失败恢复：..."
     validations:
       required: true
   - type: textarea
-    id: competitor
+    id: delivery
     attributes:
-      label: 已上线同行与可复用开源方案
-      description: 优先引用长期运营产品的真实做法、官方链接与候选开源许可证；说明现有仓库中可复用的组件。纯修复无需新的竞品结论。
-  - type: textarea
-    id: verification
-    attributes:
-      label: 当前实现状态与分层验收
-      description: CODE / TEST / SIGNED DEVICE / STAGING / PROD，未运行填 NOT RUN。指定需要真实权限/设备/外部服务的阻塞条件。
-  - type: textarea
-    id: todos
-    attributes:
-      label: Todo（逐项可勾选、验收与回写）
-      description: 使用 - [ ] T01、T02 等独立可验收子项；完成后勾选并写证据。可以分别领取的子任务须拆独立子 Issue 并分别入板。
-      placeholder: |
-        - [ ] T01 — 需求/现有代码/同类开源方案核对
-        - [ ] T02 — 实现最小可交付功能并提交关联 PR
-        - [ ] T03 — 根据验收标准验证并同步 Kanban 状态
+      label: "10. 交付与 Todoist 状态同步"
+      description: "独立分支、原则上单 Issue/PR、证据/Commit、Issue Todo 更新、Todoist 领取和六态回读要求。"
+      placeholder: "仓库：natefox2017/cook；Todoist 卡片链接：待创建；PR：待提交；提交/验收证据：待处理。只移动 Done 栏，不完成 Todoist 任务。"
     validations:
       required: true
   - type: textarea
-    id: tracking
+    id: zero_context_check
     attributes:
-      label: 查重、依赖、任务交接
-      description: 关联已有 Issue/PR 与待完成子项；不得重复领取已 Claim 或已 Done 的工作。
+      label: "零上下文可执行性复核（必填）"
+      description: "假设新 AI 不知道任何历史对话：能从最新 GitHub 代码和本 Issue 独立实现、测试、判定完成吗？缺口标待核实，未补齐不能 Ready。"
+      placeholder: "实际复核：...；真实文件存在：是/待核实；完整输入输出/约束/测试：是/待核实；可独立验收：是/待核实。"
+    validations:
+      required: true

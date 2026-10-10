@@ -1,58 +1,61 @@
-## 对应 Issue / Todo
+## GitHub Issue / 可独立交付的 Todo
+
 Refs #
 
-- 已完成的 Todo ID：T__
-- 剩余 Todo ID：T__（如无填 None）
-- 完成的 Todo 已在 Issue 勾选并附上 PR/测试证据：是 / 否
+- GitHub Issue URL：
+- 已完成 Todo 编号（需在 Issue 逐项 `[x]` 并附 commit/test）：
+- 未完成 Todo 编号（没有写 None；部分完成不得 Done）：
+- 本 PR 是否只对应一个独立交付 Issue：是 / 否（如否说明耦合原因）：
 
-## GitHub Projects Kanban 领取信息（必填）
-- Project URL：
-- Project item URL：
-- Claim ID（独立会话，不只填 GitHub 用户名）：
-- Claimed At（UTC）：
-- 领取后再次读取并确认独占：PASS / BLOCKED
-- 当前看板状态：In Review / Blocked / Done
-- 本次处理 Todo 后已同步 Kanban：PASS / BLOCKED
+## 唯一 Todoist Board 领取与状态（必填）
 
-> GitHub Projects Kanban 是**唯一领取入口**：未在 Project 中领取且回读确认成功，不允许提交业务开发 PR。Issue 关联、评论、标签及 GitHub assignee 不能代替 Kanban 领取。仅为创建看板而进行的 #299 治理引导 PR 属一次性例外，不能借此开展产品功能。
+- 官方看板：[Cook — Development Kanban](https://app.todoist.com/app/project/6hj76CCMgwhrRp6m)
+- 对应**唯一** Todoist 卡片链接：
+- 领取前卡片状态：Ready
+- 领取操作：Ready → In Progress，随后 `fetch_object` 回读：PASS / BLOCKED
+- Claim / 会话标识（记在 GitHub Issue，并非原生 Todoist assignee）：
+- 领取时间 UTC：
+- 已核对最新默认分支/分支/Issue/PR、依赖及其他 AI 任务：PASS / BLOCKED
+- PR 提交后将 Todoist 卡片移至 **In Review** 并回读状态：PASS / BLOCKED
+- 本次提交后 Issue Checkbox/PR 链接与 Todoist 卡片同步：PASS / BLOCKED
 
-> 非需求变更（Bug、UI 修复、性能、安全、重构、测试、运维）必须关联 GitHub Issue；优先复用已有 Issue，没有才新建。修复原因、进度、验收证据与未完成项写在 Issue，不另建 Markdown 记录。
+> 仅可从 Todoist **Ready** 领取；Backlog、In Progress、In Review、Blocked、Done 都不能直接领取。移动/回读不是原子互斥锁；如发现冲突，立即停止并在 Issue 记下恢复方式。GitHub Issue labels/assignee、聊天记录或分支名不能代替真实 Todoist 领取。
+> Todoist 的 **Done 是 Section，不是任务完成操作**：验收通过后只移动到 Done，并回读 `checked=false`、保留卡片可见；严禁调用 Todoist 任务完成。
 
-> 仅当 Issue 的**完整约定验收范围**已满足、允许结案时，才改为 `Closes #...`；只有源码/设计文档落地但真实运行仍阻塞时用 `Refs #...`，不要触发自动关闭。
+## 改动摘要与边界
 
-## 改动
--
+- 背景/现有实现（按本次 Issue，不能依赖历史聊天）：
+- 本次做了什么（输入/输出、边界/异常）：
+- 修改的真实路径 / API / 数据结构：
+- 禁止修改/兼容性及已核对的相关需求或技术规范：
+- 已检查的可复用代码/成熟开源方案及许可证（非新增功能填 N/A）：
 
-## 文件范围
--
+## 独立验收 / 运行证据
 
-## 验证
-- [ ] 单元/集成测试
-- [ ] 每完成一项 Todo 已立即勾选 Issue，并同步 Projects Kanban 的状态/领取字段；未执行的测试如实写 NOT RUN
-- [ ] 无无关重构
+- 已执行的准确测试命令、fixture、环境与 PASS/FAIL：
+- 未执行的测试（明确 **NOT RUN**）、设备/staging/production 前置要求：
+- 必要设计稿状态与资源 ID（非 UI 填 N/A）：
+- UI 截图 / 录屏（非 UI 填 N/A）：
+- 是否产生新用户可见文字以及多语言要求：
+- 原行为回归、失败处理和待审核项：
 
-> **文档不是每次 PR 的必选修改。** 只有用户确认需求、设计规范或长期接口契约发生变化，或明确要求修改文档时，才更新对应需求文档；普通修 Bug/优化不修改 `docs/`、README。
+## 安全与风险检查
 
-## UI
-- [ ] 非 UI 改动
-- [ ] 已核对 `docs/UI_DESIGN_APPROVALS.md` 对应 UI 状态（APPROVED / SCOPED / PENDING），不把用户明确要求开发误当成额外审批门禁
-- 设计资源 ID：
+- [ ] 未泄露 secret、令牌和个人数据
+- [ ] 不包含未授权生产数据库/RLS/权限、计费、CI/发布策略、破坏性迁移（涉及任何一项必须说明并提前获得授权）
+- [ ] 没有无关重构、恢复旧分支覆盖已合并功能或删除失败测试
+- [ ] 对每个已完成 Todo，Issue Checkbox、实际测试及 Commit/PR 证据已即时同步
+- [ ] 已向 Todoist 卡片补上本 PR 链接并更新 In Review 后实际回读
 
-## 运行证据（如实写 NOT RUN）
-- 静态/单元验证：
-- Xcode / signed iPhone：
-- 后端 / staging / 生产：
-- 新功能是否仍 feature-gated（未交付时不得露出可点击死入口）：
+## Done 后操作（当前 PR 合并≠全部验收）
 
-## 高风险检查
-- [ ] 无权限/RLS变化
-- [ ] 无数据库破坏性迁移
-- [ ] 无 CI/发布策略变化
-- [ ] 无 secret/凭据
+- 所有必要测试、审核和验收通过、PR 合并、Issue 的全部必要 Todo 都被 `[x]` 勾选，才允许将 Todoist 卡片**移动到 Done Section**。
+- Done 卡片保持 Todoist **未完成** 状态、可见；回读验证后关闭 GitHub Issue；必要子 Issue 未全完成时不能关闭父 Issue。
+- 尚欠验收/存在阻塞则保持 **In Review / Blocked** 并更新 Issue，不得宣称整个任务完成。
 
-如勾选不了以上任意一项，请在 PR 正文解释并走人工确认。
+## 原项目 PR/CI 约定（保留）
 
-## 自动合并交付约定
-- **已领取且完成实现 Todo 的任务才提交普通 PR**。提交前确认 GitHub Projects 项目状态为 `In Review`、Claim ID 为当前会话并已更新 Issue 的 Todo。自动合并机器人主要校验代码/PR条件，不会替你证明 Projects 已领取或验收；如未能读写 Projects，应停止业务开发，不能借自动合并绕过。
-- 若代码还未完成，保留 Draft；完成后由提交者根据 `AGENTS.md` 的完成标记或标签让机器人自动转为 Ready。不要提前把未完成任务标记为可合并。
-- 本仓库轻量自动合并并非 Xcode / 真机测试通过证明；PR 正文必须写清已跑和未跑的测试。
+- `main` 只接受独立分支 PR；依仓库可信轻量自动合并流程处理符合条件的普通 PR，不把自动合并当成 Xcode/真机/生产验收证明。
+- 真正未完成的工作使用 Draft；仅在完成实施任务后，按 `AGENTS.md` 指定的 `<!-- auto-ready: complete -->` 或 `auto-ready` 标签允许自动转 Ready，不得提前设置。
+- PR 前同步最新 main，核对入门、品牌、导航、订阅合同；不得通过旧分支覆盖它们。不要为普通 Bug 强制更新 docs/README；长期需求/技术规范变化时才更新并相互引用 Issue。
+- 仅当 Issue 的**完整约定范围已经满足并可以结案**才使用 `Closes #...`；部分源代码交付使用 `Refs #...`。
