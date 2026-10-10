@@ -166,3 +166,67 @@ Deno.test("multi-recipe IDs survive source reordering and unrelated insertion", 
   assertEquals(duplicates[1].candidate_id, duplicates[0].candidate_id + "-2");
   assertEquals(new Set(duplicates.map((candidate) => candidate.candidate_id)).size, 2);
 });
+
+Deno.test("caps preview at eight recipes and reports additional candidates", () => {
+  const recipes = Array.from({ length: 9 }, (_, index) => ({
+    "@type": "Recipe",
+    name: `Dish ${index + 1}`,
+    recipeIngredient: [`${index + 1} g ingredient ${index + 1}`],
+    recipeInstructions: [{
+      "@type": "HowToStep",
+      text: `Prepare dish ${index + 1}.`,
+    }],
+  }));
+  const result = parseSchemaOrgRecipePage({
+    id: "123e4567-e89b-12d3-a456-426614174004",
+    html: `<html><script type="application/ld+json">${JSON.stringify({
+      "@context": "https://schema.org", "@graph": recipes,
+    })}</script></html>`,
+    source,
+  });
+
+  assertEquals(result.status, "needs_review");
+  assertEquals(result.fields, {});
+  assertEquals(result.candidate_recipes?.length, 8);
+  assertEquals(result.candidate_recipes?.map((candidate) => candidate.title), [
+    "Dish 1", "Dish 2", "Dish 3", "Dish 4",
+    "Dish 5", "Dish 6", "Dish 7", "Dish 8",
+  ]);
+  assertEquals(result.review_fields.includes("recipe_selection_truncated"), true);
+  assertEquals(result.evidence.length, 9); // Parent evidence plus eight candidates.
+});
+
+Deno.test("partially populated sibling recipe never borrows another candidate's facts", () => {
+  const recipes = [
+    {
+      "@type": "Recipe",
+      name: "Full soup",
+      recipeIngredient: ["250 ml broth"],
+      recipeInstructions: [{ "@type": "HowToStep", text: "Simmer." }],
+    },
+    { "@type": "Recipe", name: "Untested draft" },
+  ];
+  const result = parseSchemaOrgRecipePage({
+    id: "123e4567-e89b-12d3-a456-426614174005",
+    html: `<script type="application/ld+json">${JSON.stringify({
+      "@context": "https://schema.org", "@graph": recipes,
+    })}</script>`,
+    source,
+  });
+
+  assertEquals(result.status, "needs_review");
+  assertEquals(result.fields, {});
+  assertEquals(result.candidate_recipes?.length, 2);
+  assertEquals(result.candidate_recipes?.[0].ingredients, ["250 ml broth"]);
+  assertEquals(result.candidate_recipes?.[0].steps, ["Simmer."]);
+  assertEquals(result.candidate_recipes?.[0].review_fields, []);
+  assertEquals(result.candidate_recipes?.[1].title, "Untested draft");
+  assertEquals(result.candidate_recipes?.[1].ingredients, []);
+  assertEquals(result.candidate_recipes?.[1].steps, []);
+  assertEquals(result.candidate_recipes?.[1].review_fields, ["ingredients", "steps"]);
+  assertEquals(
+    result.candidate_recipes?.[0].evidence_ids[0] ===
+      result.candidate_recipes?.[1].evidence_ids[0],
+    false,
+  );
+});
