@@ -49,10 +49,7 @@ test("changing saved recipe facts changes only that candidate fingerprint", () =
   ]);
   assert.notEqual(original[0], changed[0]);
   assert.equal(original[1], changed[1]);
-  // Saved v1 candidate IDs are external historical records; this helper never
-  // mutates them or regenerates them as though they were stable v2 IDs.
-  const historic = "candidate-0-deadbeef";
-  assert.equal(historic, "candidate-0-deadbeef");
+  assert.deepEqual(stableCandidateIDs([soup, pasta]), original);
 });
 
 test("Unicode canonical equivalents generate the same identity", () => {
