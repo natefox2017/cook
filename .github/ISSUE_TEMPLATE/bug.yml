@@ -8,6 +8,7 @@ body:
       value: |
         先查重和已有 PR，再创建此 Issue；一个独立 Issue 对应一张 Cook Todoist Board 卡片。
         只有 Ready 可领取：移动到 In Progress 并立即重新读取确认。Todoist 领取不是原子锁，发现并发竞争须停止。
+        六态且仅六态：Backlog / Ready / In Progress / In Review / Blocked / Done。Done 只移动栏目，禁止点击 Todoist 完成任务。
         GitHub Issues 保存完整需求和 Todo；Todoist 仅保存领取/状态及 Issue/PR 链接；PR 负责交付。
         Board: https://app.todoist.com/app/project/6hj76CCMgwhrRp6m 。
         新建不等于领取；未知信息写“待核实”，通过零上下文检查后才能进入 Ready。
