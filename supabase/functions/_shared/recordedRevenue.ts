@@ -41,6 +41,27 @@ function currencyCode(value: unknown): string | null {
   return /^[A-Z]{3}$/.test(currency) ? currency : null;
 }
 
+/**
+ * RevenueCat's `price` is USD; `price_in_purchased_currency` uses the
+ * declared ISO currency. A non-USD event without its native amount cannot be
+ * shown as local revenue just because a USD estimate is present.
+ * https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields
+ */
+export function recordedPurchaseAmount(
+  raw: unknown,
+): { amount: number; currency: string } | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const event = raw as Record<string, unknown>;
+  const currency = currencyCode(event.currency ?? event.currency_code);
+  if (!currency) return null;
+  const source = event.price_in_purchased_currency ??
+    (currency === "USD" ? event.price : null);
+  if (typeof source !== "number" && typeof source !== "string") return null;
+  if (typeof source === "string" && source.trim() === "") return null;
+  const amount = Number(source);
+  return Number.isFinite(amount) && amount >= 0 ? { amount, currency } : null;
+}
+
 /** Figures are recorded event amounts, not reconciled settled or net revenue. */
 export class RecordedRevenueLedger {
   private readonly groups = new Map<string, RunningTotals>();
@@ -53,25 +74,17 @@ export class RecordedRevenueLedger {
       return;
     }
     const event = raw as Record<string, unknown>;
-    const rawAmount = event.price_in_purchased_currency ?? event.price;
-    if (rawAmount === null || rawAmount === undefined || rawAmount === "") {
-      this.missing++;
-      return;
-    }
-    const amount = typeof rawAmount === "number" || typeof rawAmount === "string"
-      ? Number(rawAmount)
-      : NaN;
-    if (!Number.isFinite(amount) || amount < 0) {
-      this.missing++;
-      return;
-    }
-    if (amount === 0) return;
-    const currency = currencyCode(event.currency ?? event.currency_code);
-    if (!currency || (store !== "app_store" && store !== "play_store") ||
+    // An explicit zero-valued trial is not revenue, even without a currency.
+    if (event.price_in_purchased_currency === 0 ||
+      (event.price_in_purchased_currency == null && event.price === 0)) return;
+    const purchase = recordedPurchaseAmount(event);
+    if (!purchase || (store !== "app_store" && store !== "play_store") ||
       !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
       this.missing++;
       return;
     }
+    if (purchase.amount === 0) return;
+    const { amount, currency } = purchase;
     const totals = this.groups.get(currency) ?? { apple: 0, android: 0 };
     const monthGroups = this.months.get(month) ?? new Map<string, RunningTotals>();
     const monthTotals = monthGroups.get(currency) ?? { apple: 0, android: 0 };
