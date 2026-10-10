@@ -16,6 +16,12 @@
             "value": "Recipe Pals"
           }
         },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -82,6 +88,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "pt-BR": {
           "stringUnit": {
             "state": "translated",
             "value": "Recipe Pals"
