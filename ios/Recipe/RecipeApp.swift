@@ -439,13 +439,46 @@ struct RecipeApp: App {
     }
 }
 
+// Shared direction classifier for deliberate horizontal navigation on native pages.
+enum RecipeHorizontalSwipe: Equatable {
+    case previous
+    case next
+
+    init?(translation: CGSize, minimumDistance: CGFloat = 96) {
+        let horizontal = translation.width
+        guard abs(horizontal) >= minimumDistance,
+            abs(horizontal) > abs(translation.height) * 1.8
+        else {
+            return nil
+        }
+
+        self = horizontal < 0 ? .next : .previous
+    }
+}
+
 private struct RecipeRootTabVisibility: ViewModifier {
+    @Binding var selectedTab: RecipeTab
+    let tab: RecipeTab
     @State private var isRootVisible = false
 
     func body(content: Content) -> some View {
         content
             // Inactive roots must relinquish their preference to the current page.
             .toolbarVisibility(isRootVisible ? .visible : .automatic, for: .tabBar)
+            // Lower precedence preserves child horizontal strips and native row actions.
+            // Only root screens carry this gesture; pushed pages keep system back-swipe.
+            .gesture(
+                DragGesture(minimumDistance: 55)
+                    .onEnded { value in
+                        guard isRootVisible, selectedTab == tab,
+                            let direction = RecipeHorizontalSwipe(translation: value.translation),
+                            let destination = tab.neighbor(in: direction)
+                        else {
+                            return
+                        }
+                        selectedTab = destination
+                    }
+            )
             .onAppear {
                 isRootVisible = true
             }
@@ -501,7 +534,7 @@ private struct RecipeRootView: View {
                 TabView(selection: $selectedTab) {
                     NavigationStack {
                         RecipesView()
-                            .modifier(RecipeRootTabVisibility())
+                            .modifier(RecipeRootTabVisibility(selectedTab: $selectedTab, tab: .recipes))
                     }
                     .tabItem {
                         Label(RecipeTab.recipes.title, systemImage: RecipeTab.recipes.symbol)
@@ -511,7 +544,7 @@ private struct RecipeRootView: View {
 
                     NavigationStack {
                         MealPlanView()
-                            .modifier(RecipeRootTabVisibility())
+                            .modifier(RecipeRootTabVisibility(selectedTab: $selectedTab, tab: .plan))
                     }
                     .tabItem {
                         Label(RecipeTab.plan.title, systemImage: RecipeTab.plan.symbol)
@@ -521,7 +554,7 @@ private struct RecipeRootView: View {
 
                     NavigationStack {
                         GroceriesView()
-                            .modifier(RecipeRootTabVisibility())
+                            .modifier(RecipeRootTabVisibility(selectedTab: $selectedTab, tab: .groceries))
                     }
                     .tabItem {
                         Label(RecipeTab.groceries.title, systemImage: RecipeTab.groceries.symbol)
@@ -531,7 +564,7 @@ private struct RecipeRootView: View {
 
                     NavigationStack {
                         ProfileView(onOpenAccount: presentAccount)
-                            .modifier(RecipeRootTabVisibility())
+                            .modifier(RecipeRootTabVisibility(selectedTab: $selectedTab, tab: .profile))
                     }
                     .tabItem {
                         Label(RecipeTab.profile.title, systemImage: RecipeTab.profile.symbol)
@@ -699,7 +732,7 @@ private struct FirstLaunchGateView: View {
     }
 }
 
-private enum RecipeTab: String, Identifiable {
+private enum RecipeTab: String, CaseIterable, Identifiable {
     case recipes
     case plan
     case groceries
@@ -707,6 +740,18 @@ private enum RecipeTab: String, Identifiable {
 
     var id: Self {
         self
+    }
+
+    func neighbor(in direction: RecipeHorizontalSwipe) -> Self? {
+        let tabs = Self.allCases
+        guard let index = tabs.firstIndex(of: self) else {
+            return nil
+        }
+        let adjacentIndex = index + (direction == .next ? 1 : -1)
+        guard tabs.indices.contains(adjacentIndex) else {
+            return nil
+        }
+        return tabs[adjacentIndex]
     }
 
     var title: LocalizedStringKey {
