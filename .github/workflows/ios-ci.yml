@@ -161,8 +161,14 @@ jobs:
                   errors.append(f"Approved first-launch story changed: {name}")
           if 'Save recipes your way' in first:
               errors.append("Superseded onboarding copy reintroduced.")
-          for phrase in (
+          # Transitional support for the owner-approved shorter page title.
+          # Keep all AI, plan-selection, and default-period protections intact.
+          if not any(heading in premium for heading in (
+              'Text("Premium")',
               'Text("Recipe Pals Premium")',
+          )):
+              errors.append("Approved Premium heading missing.")
+          for phrase in (
               'premiumFeature("sparkles", title: "Create with AI")',
               'paidPlanChoice(for: .monthly)',
               'paidPlanChoice(for: .yearly)',
