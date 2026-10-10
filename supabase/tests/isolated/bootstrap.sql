@@ -5,6 +5,7 @@ create role anon nologin;
 create role authenticated nologin;
 create role service_role nologin bypassrls;
 create schema auth;
+create schema extensions;
 create schema storage;
 create table auth.users (
     id uuid primary key,
@@ -57,9 +58,12 @@ create table public.admin_sessions (
     created_at timestamptz not null default now(),
     revoked_at timestamptz
 );
-create function public.crypt(password text, salt text) returns text
+-- These pgcrypto-shaped helpers exist only in this disposable fixture. The
+-- deterministic output lets the real bootstrap migration exercise its
+-- extensions-qualified search path; it is not a cryptographic implementation.
+create function extensions.crypt(password text, salt text) returns text
 language sql immutable as $$ select 'fixture-hash:' || password $$;
-create function public.gen_salt(kind text) returns text
+create function extensions.gen_salt(kind text) returns text
 language sql immutable as $$ select 'fixture-salt' $$;
 create function public.admin_password_is_strong(password text) returns boolean
 language sql immutable as $$
