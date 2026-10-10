@@ -41,6 +41,9 @@ public enum RecipePortableExport {
                 var portable = recipe
                 portable.coverData = nil
                 portable.coverAsset = nil
+                // Text-only exports must not expose private step-media storage paths.
+                // Full-library backups and typed cloud snapshots retain these references.
+                portable.stepImages = nil
                 return portable
             },
             collections: snapshot.collections.sorted {
