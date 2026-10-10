@@ -1,14 +1,14 @@
 ## Linear Issue (single authoritative task)
 
-- Linear issue: [GEN-___](https://linear.app/gengyun/issue/GEN-___)
-- Cook Board: https://linear.app/gengyun/project/cook-recipe-pals-development-8c015c72cb6a
+- Linear issue: [DEV-___](https://linear.app/gengyun/issue/DEV-___)
+- Cook Board: https://linear.app/gengyun/project/recipe-pals-development-8c015c72cb6a
 - Issue assignee / claim session and UTC timestamp:
-- Claim check: verified **Ready → In Progress**, assignee + status re-read; if bootstrap migration, name its explicit issue:
+- Claim check: verified eligible unassigned **Todo → In Progress**, assignee + status re-read, no duplicate PR or unmet dependencies:
 - Linked prior changes or dependencies (Linear issue identifiers):
 - Completed acceptance Todo IDs / evidence in Linear:
 - Remaining Todo IDs / NOT RUN (write None if fully accepted):
 
-> New tasks, bugs, testing, acceptance and Todo checkboxes belong only in **Linear Issues**, not GitHub Issues, Todoist or Markdown. Prefix a focused branch such as `gen-40-...`, include `GEN-40` in PR title/description to link GitHub ↔ Linear. Do not use `Closes #123` on historical GitHub issues. A merged PR alone is not Linear Done.
+> New tasks, bugs, testing, acceptance and Todo checkboxes belong only in **Linear Issues**, not GitHub Issues, Todoist or Markdown. Prefix each branch with the matching `dev-<number>-...`, and include `DEV-<number>` in PR title/body so GitHub links to Linear. Do not use `Closes #123` on historical GitHub issues. A merged PR alone is not Linear Done.
 
 ## Change scope
 
@@ -35,7 +35,7 @@
 
 ## Completion contract
 
-After PR merge, leave Linear **In Review** while necessary tests, approvals, acceptance checkboxes, dependencies or production gates are outstanding. Only accepted work becomes **Done** in Linear, after re-reading owner/status and recording the linked merge commit. A canceled or closed-unmerged PR is reviewed manually. Linear Ready/Blocked statuses must be configured before normal task claiming; do not silently replace with `Todo`.
+After PR merge, leave Linear **In Review** while necessary tests, approvals, acceptance checkboxes, dependencies or production gates are outstanding. Only accepted work becomes **Done** after verifying the linked merge commit and re-reading issue owner/status. A canceled or closed-unmerged PR is reviewed manually. Do not create Ready or Blocked statuses: only a vetted unassigned `Todo` issue may be claimed, with blockers recorded on the Linear issue.
 
 ## Existing Cook release and CI contract
 
