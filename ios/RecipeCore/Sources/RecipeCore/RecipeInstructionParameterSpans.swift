@@ -180,9 +180,13 @@ public enum RecipeInstructionParameterSpans {
     private static func isApproximateOrRangePrefix(
         _ prefix: Substring
     ) -> Bool {
-        let lower = String(prefix.suffix(32)).lowercased()
-        if ["about ", "around ", "roughly ", "approx ", "approximately ",
-            "circa ", "to ", "or "].contains(where: lower.hasSuffix) {
+        let lower = String(prefix.suffix(48)).lowercased()
+        // Compare complete words: "for 20 min" is exact, unlike "10 to 20 min".
+        if let word = lower.split(whereSeparator: {
+            $0.isWhitespace || $0 == ","
+        }).last,
+            ["about", "around", "roughly", "approx", "approx.",
+             "approximately", "circa", "to", "or"].contains(String(word)) {
             return true
         }
         guard let last = prefix.last(where: { !$0.isWhitespace }) else {
