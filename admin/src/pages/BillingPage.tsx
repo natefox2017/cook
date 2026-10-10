@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   Activity,
   Apple,
@@ -174,38 +174,49 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
   const [planDraft, setPlanDraft] = useState<PlanDraft>(emptyPlan);
   const [savingPlan, setSavingPlan] = useState(false);
   const [planError, setPlanError] = useState("");
+  const loadId = useRef(0);
 
   const load = async () => {
+    const currentLoadId = ++loadId.current;
     setLoading(true);
     setError("");
     try {
       const platformFilter = platform === "all" ? undefined : platform;
       if (tab === "plans") {
-        setPlans(await adminApi.plans(token));
+        const nextPlans = await adminApi.plans(token);
+        if (loadId.current === currentLoadId) setPlans(nextPlans);
       } else if (!canReadFinancials) {
-        setError("Billing records and revenue are available to owners and admins.");
+        if (loadId.current === currentLoadId) setError("Billing records and revenue are available to owners and admins.");
       } else if (tab === "subscriptions") {
-        setRecords(await adminApi.records(token, platformFilter));
+        const nextRecords = await adminApi.records(token, platformFilter);
+        if (loadId.current === currentLoadId) setRecords(nextRecords);
       } else if (platform === "all") {
         const [apple, android] = await Promise.all([
           adminApi.revenue(token, "app_store"),
           adminApi.revenue(token, "play_store"),
         ]);
-        setRevenue(mergeRevenue(apple, android));
+        if (loadId.current === currentLoadId) setRevenue(mergeRevenue(apple, android));
       } else {
-        setRevenue(await adminApi.revenue(token, platform));
+        const nextRevenue = await adminApi.revenue(token, platform);
+        if (loadId.current === currentLoadId) setRevenue(nextRevenue);
       }
     } catch (cause) {
+      if (loadId.current !== currentLoadId) return;
       handleExpiredSession(cause, onAuthExpired);
       setError(cause instanceof Error ? cause.message : "Unable to load billing data.");
     } finally {
-      setLoading(false);
+      if (loadId.current === currentLoadId) setLoading(false);
     }
   };
 
   useEffect(() => {
+    if (!canReadFinancials && tab !== "plans") {
+      setTab("plans");
+      return;
+    }
     void load();
-    // load depends on selected resource and platform. The page deliberately reloads only on those changes.
+    return () => { loadId.current += 1; };
+    // Reload only for the selected resource, platform, session or role.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, tab, platform, role]);
 

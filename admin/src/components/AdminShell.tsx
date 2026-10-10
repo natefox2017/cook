@@ -107,7 +107,7 @@ export default function AdminShell({ activePage, onNavigate, admin, onLogout, ch
           </div>
 
           <div className="admin-topbar-right">
-            <span className="admin-status-pill"><i aria-hidden="true" /> Connected</span>
+            <span className="admin-status-pill"><i aria-hidden="true" /> Admin session</span>
             <details
               className="admin-account-menu"
               open={accountMenuOpen}

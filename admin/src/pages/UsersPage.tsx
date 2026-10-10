@@ -89,6 +89,7 @@ export default function UsersPage({ token, onAuthExpired }: UsersPageProps) {
   const [detailError, setDetailError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const requestId = useRef(0);
+  const detailRequestId = useRef(0);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setQuery(search.trim()), 250);
@@ -110,6 +111,7 @@ export default function UsersPage({ token, onAuthExpired }: UsersPageProps) {
 
     setLoading(true);
     setError(null);
+    setUsers(null);
     const thisRequest = ++requestId.current;
     void adminApi.users(token, params)
       .then((result) => {
@@ -134,17 +136,27 @@ export default function UsersPage({ token, onAuthExpired }: UsersPageProps) {
   }, [selectedUser]);
 
   async function openUser(user: AdminUser) {
+    const thisRequest = ++detailRequestId.current;
     setSelectedUser(user);
     setDetailLoading(true);
     setDetailError(null);
     try {
-      setSelectedUser(await adminApi.user(token, user.id));
+      const details = await adminApi.user(token, user.id);
+      if (detailRequestId.current === thisRequest) setSelectedUser(details);
     } catch (reason) {
+      if (detailRequestId.current !== thisRequest) return;
       handleExpiredSession(reason, onAuthExpired);
       setDetailError(reason instanceof Error ? reason.message : "Could not load user details.");
     } finally {
-      setDetailLoading(false);
+      if (detailRequestId.current === thisRequest) setDetailLoading(false);
     }
+  }
+
+  function closeUser() {
+    detailRequestId.current += 1;
+    setSelectedUser(null);
+    setDetailLoading(false);
+    setDetailError(null);
   }
 
   const totalPages = Math.max(1, Math.ceil((users?.total ?? 0) / pageSize));
@@ -202,10 +214,10 @@ export default function UsersPage({ token, onAuthExpired }: UsersPageProps) {
         <div className="users-table-wrap">
           <table className="users-table">
             <thead>
-              <tr><th scope="col">User</th><th scope="col">Registration platform</th><th scope="col">Last login</th><th scope="col">Login IP</th><th scope="col">Subscription</th><th scope="col">Status</th><th scope="col">Device</th><th scope="col">Joined</th><th scope="col"><span className="sr-only">Actions</span></th></tr>
+              <tr><th scope="col">User</th><th scope="col">Registration platform</th><th scope="col">Last login</th><th scope="col">Subscription</th><th scope="col">Status</th><th scope="col">Device</th><th scope="col">Joined</th><th scope="col"><span className="sr-only">Actions</span></th></tr>
             </thead>
             <tbody>
-              {loading && <tr><td className="users-empty" colSpan={9}>Loading users…</td></tr>}
+              {loading && <tr><td className="users-empty" colSpan={8}>Loading users…</td></tr>}
               {!loading && users?.data.map((user) => {
                 const row = user as AdminUserRow;
                 return (
@@ -218,7 +230,6 @@ export default function UsersPage({ token, onAuthExpired }: UsersPageProps) {
                     </td>
                     <td>{titleCase(user.registrationProvider)}</td>
                     <td>{formatDateTime(row.lastLoginAt)}</td>
-                    <td className="users-mono">{row.lastLoginIp || "—"}</td>
                     <td>{subscriptionSummary(row)}</td>
                     <td><span className={`users-status users-status-${user.status}`}><i />{titleCase(user.status)}</span></td>
                     <td>{user.deviceType === "ios" ? "iOS" : titleCase(user.deviceType)}</td>
@@ -227,7 +238,7 @@ export default function UsersPage({ token, onAuthExpired }: UsersPageProps) {
                   </tr>
                 );
               })}
-              {!loading && !error && !users?.data.length && <tr><td className="users-empty" colSpan={9}>No users match these filters.</td></tr>}
+              {!loading && !error && !users?.data.length && <tr><td className="users-empty" colSpan={8}>No users match these filters.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -242,14 +253,14 @@ export default function UsersPage({ token, onAuthExpired }: UsersPageProps) {
         </footer>
       </section>
 
-      <dialog className="users-drawer" ref={dialogRef} onClose={() => setSelectedUser(null)} aria-labelledby="user-detail-title">
+      <dialog className="users-drawer" ref={dialogRef} onClose={closeUser} aria-labelledby="user-detail-title">
         <div className="users-drawer-header">
           <div><p className="users-eyebrow">Account details</p><h2 id="user-detail-title">User profile</h2></div>
-          <button className="users-icon-button" type="button" onClick={() => setSelectedUser(null)} aria-label="Close user details"><X size={19} /></button>
+          <button className="users-icon-button" type="button" onClick={closeUser} aria-label="Close user details"><X size={19} /></button>
         </div>
         {detailLoading && <p className="users-detail-state">Loading account details…</p>}
         {detailError && <div className="users-alert" role="alert">{detailError}</div>}
-        {selectedUser && <UserDetails user={selectedUser} />}
+        {selectedUser && !detailLoading && !detailError && <UserDetails user={selectedUser} />}
       </dialog>
     </main>
   );
@@ -283,7 +294,7 @@ function UserDetails({ user }: { user: AdminUser | AdminUserDetail }) {
       <Detail label="Last login">{"lastLoginAt" in user ? formatDate(user.lastLoginAt) : "—"}</Detail>
       <Detail label="Provider">{titleCase(user.registrationProvider)}</Detail>
       <Detail label="Device">{user.deviceType === "ios" ? "iOS" : titleCase(user.deviceType)}</Detail>
-      <Detail label="Country">{user.registrationCountryCode || "Unavailable"}</Detail>
+      {user.registrationCountryCode && <Detail label="Country">{user.registrationCountryCode}</Detail>}
     </dl></section>
     <section className="users-detail-section"><h3>Payment history</h3>
       {"payments" in user && user.payments.length ? <ul className="users-payment-list">{user.payments.map((payment) => <li key={payment.id}>

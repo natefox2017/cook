@@ -1,7 +1,7 @@
 // Developer: gengyun
 // Purpose: Manage OpenAI-compatible model providers and inspect token usage.
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   Activity,
   ArrowDownToLine,
@@ -187,8 +187,10 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionResult, setConnectionResult] = useState("");
+  const loadId = useRef(0);
 
   async function load() {
+    const currentLoadId = ++loadId.current;
     setLoading(true);
     setError("");
     try {
@@ -196,6 +198,7 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
         adminApi.llmProviders(token),
         adminApi.llmUsage(token, range),
       ]);
+      if (loadId.current !== currentLoadId) return;
       if (providerResponse.status === "fulfilled") {
         const providerPayload = asRecord(providerResponse.value);
         const providerData = Array.isArray(providerResponse.value)
@@ -235,13 +238,14 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
         setError(usageResponse.reason instanceof Error ? usageResponse.reason.message : "Unable to load usage data.");
       }
     } finally {
-      setLoading(false);
+      if (loadId.current === currentLoadId) setLoading(false);
     }
   }
 
   useEffect(() => {
     void load();
-    // Reload only when the session or selected usage window changes.
+    // Ignore obsolete responses after unmount or a range/session change.
+    return () => { loadId.current += 1; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, range]);
 
@@ -329,15 +333,32 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
       return;
     }
 
+    // The backend intentionally ignores URL, model and key overrides when a
+    // providerId is supplied, so do not imply unsaved edits were tested.
+    if (editor !== "new" && (
+      providerUrl.toString() !== new URL(editor.baseUrl).toString() ||
+      draft.model.trim() !== editor.model ||
+      apiKey !== ""
+    )) {
+      setFormError("Save your endpoint, model or key changes before testing the saved provider.");
+      return;
+    }
+
     setTestingConnection(true);
     try {
-      const result = await adminApi.testLlmProvider(token, {
-        ...(editor === "new" ? {} : { providerId: editor.id }),
-        name: draft.name.trim(),
-        baseUrl: providerUrl.toString(),
-        model: draft.model.trim(),
-        ...(apiKey ? { apiKey } : {}),
-      });
+      const result = await adminApi.testLlmProvider(token, editor === "new"
+        ? {
+            name: draft.name.trim(),
+            baseUrl: providerUrl.toString(),
+            model: draft.model.trim(),
+            apiKey,
+          }
+        : {
+            providerId: editor.id,
+            name: editor.name,
+            baseUrl: editor.baseUrl,
+            model: editor.model,
+          });
       if (!result.ok) {
         setFormError("The provider could not verify the connection.");
       } else {
@@ -499,7 +520,7 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
               <label className="llm-field"><span>Model name</span><input required value={draft.model} onChange={(event) => setDraft({ ...draft, model: event.target.value })} placeholder="gpt-4o-mini" /></label>
               <label className="llm-field"><span>API key <small>{editor === "new" ? "Required" : "Optional · blank keeps the saved key"}</small></span><div className="llm-key-input"><input required={editor === "new"} type={apiKeyVisible ? "text" : "password"} autoComplete="new-password" value={draft.apiKey} onChange={(event) => setDraft({ ...draft, apiKey: event.target.value })} placeholder={editor !== "new" && editor.apiKeyConfigured ? "Key configured · enter a new key to replace" : "sk-…"} /><button type="button" className="llm-key-visibility" aria-label={apiKeyVisible ? "Hide API key" : "Show API key"} aria-pressed={apiKeyVisible} onClick={() => setApiKeyVisible((visible) => !visible)}><span aria-hidden="true">{apiKeyVisible ? <EyeOff size={16} /> : <Eye size={16} />}</span></button></div></label>
               {editor !== "new" && <p className="llm-key-hint">Saved API keys are never displayed. Leave this field blank to keep the current key.</p>}
-              <div className="llm-connection-row"><button type="button" className="button button-outline" onClick={() => void testConnection()} disabled={saving || testingConnection}><Zap size={15} aria-hidden="true" />{testingConnection ? "Testing…" : "Test connection"}</button>{connectionResult && <span role="status">{connectionResult}</span>}</div>
+              <div className="llm-connection-row"><button type="button" className="button button-outline" onClick={() => void testConnection()} disabled={saving || testingConnection}><Zap size={15} aria-hidden="true" />{testingConnection ? "Testing…" : editor === "new" ? "Test connection" : "Test saved connection"}</button>{connectionResult && <span role="status">{connectionResult}</span>}</div>
               <label className="llm-toggle"><input type="checkbox" checked={draft.active} onChange={(event) => setDraft({ ...draft, active: event.target.checked })} /><span><strong>Provider active</strong><small>Active providers can be selected for model calls.</small></span></label>
               {formError && <div className="llm-form-error" role="alert">{formError}</div>}
               <footer><button type="button" className="button button-outline" disabled={saving} onClick={closeEditor}>Cancel</button><button type="submit" className="button button-primary" disabled={saving || testingConnection}>{saving && <LoaderCircle size={15} className="llm-spin" aria-hidden="true" />}{saving ? "Saving…" : "Save provider"}</button></footer>
