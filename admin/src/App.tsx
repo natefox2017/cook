@@ -75,9 +75,15 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US", { notation: value > 9999 ? "compact" : "standard" }).format(value);
 }
 
-function formatMoney(value: number | null) {
-  if (value == null || !Number.isFinite(value)) return "—";
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+function formatMoney(value: number | null, currency: string | null) {
+  if (value == null || !Number.isFinite(value) || !currency) return "—";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency", currency, maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return `${value.toFixed(2)} ${currency}`;
+  }
 }
 
 function ChangePassword({ session, onUpdated }: { session: AdminSession; onUpdated: (next: AdminSession) => void }) {
@@ -177,7 +183,15 @@ function Overview({ token, onAuthExpired }: { token: string; onAuthExpired: () =
         <MetricCard label="Total users" value={formatNumber(data.stats.totalUsers)} note={`+${formatNumber(data.stats.newUsersThisMonth)} this month`} icon={Users} />
         <MetricCard label="Registrations this month" value={formatNumber(data.stats.newUsersThisMonth)} note="New app users" icon={ArrowUpRight} tone="blue" />
         <MetricCard label="Active paid" value={formatNumber(data.stats.activePaidUsers)} note={`${formatNumber(data.stats.suspendedUsers)} suspended accounts`} icon={ArrowUpRight} tone="amber" />
-        <MetricCard label="Revenue tracked" value={formatMoney(data.stats.revenueTotal)} note={data.stats.revenueMrr == null ? "MRR requires verified subscription amounts" : `${formatMoney(data.stats.revenueMrr)} verified MRR`} icon={CircleDollarSign} tone="violet" />
+        <MetricCard
+          label="Recorded purchases"
+          value={formatMoney(data.stats.revenueTotal, data.stats.revenueCurrency)}
+          note={data.stats.revenueRowsTruncated || data.stats.incompleteRevenueEvents > 0
+            ? "Incomplete purchase data — totals unavailable"
+            : !data.stats.revenueCurrency ? "Mixed/unknown currencies — see Billing" : "Unreconciled recorded purchase amounts"}
+          icon={CircleDollarSign}
+          tone="violet"
+        />
       </section>
 
       <section className="overview-grid">

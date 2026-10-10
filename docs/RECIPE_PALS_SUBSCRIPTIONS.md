@@ -187,3 +187,21 @@ finance acceptance, #276 must enforce native currency grouping or documented FX,
 test/sandbox/refund exclusion, event deduplication, pagination/error handling
 and settlement-vs-gross definitions. No actual payout, tax or refund values
 are inferred from nullable MRR. This change is source-only and not a deployment.
+
+### Recorded currency-safe purchase aggregates (2026-10-10)
+
+Admin recorded purchase reports now preserve the **original event currency**.
+`byCurrency` lists native purchase totals per ISO-style three-letter code, with
+App Store and Google Play subtotal columns; no automatic FX conversion is used.
+The scalar totals and six-month charts are only shown when every included
+purchase amount has a valid currency, exactly **one** currency is represented,
+and the fetched page is below its hard 5,000-event boundary. Otherwise the
+scalars are `null`, and Billing displays the currency groups without a
+meaningless combined total. A null figure is not a zero-dollar result.
+
+These are **recorded positive purchase-event amounts**, not verified net
+settlement revenue. Refund/reversal, event deduplication, sandbox filtering,
+full pagination, MRR and finance reconciliation are still OPEN in #276.
+A `byCurrency` array may itself be **partial** if any source record was
+unusable or the query reached its cap; never use it as an authoritative report
+without its completeness metadata. No production data has been modified.

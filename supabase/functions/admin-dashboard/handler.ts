@@ -9,6 +9,7 @@ import { createServiceClient } from "../_shared/auth.ts";
 import { requireAdminSession } from "../_shared/admin-session.ts";
 import { requireDashboardRole } from "./access.ts";
 import { utcMonthKey, displayUTCMonth } from "../_shared/monthBuckets.ts";
+import { RecordedRevenueLedger } from "../_shared/recordedRevenue.ts";
 
 const PAID_TYPES = new Set([
   "INITIAL_PURCHASE",
@@ -187,13 +188,8 @@ export async function handleRequest(
     const knownSubs = (subscriptions ?? []).length;
     byPlan.free += Math.max((totalUsers ?? 0) - knownSubs, 0);
 
-    let revenueApple = 0;
-    let revenueAndroid = 0;
     let paymentTransactions = 0;
-    const revenueByMonth = new Map<
-      string,
-      { apple: number; android: number; order: number }
-    >();
+    const recordedRevenue = new RecordedRevenueLedger();
     const usersByMonth = new Map<string, { count: number; order: number }>();
     const recipesByMonth = new Map<string, { count: number; order: number }>();
 
@@ -229,23 +225,16 @@ export async function handleRequest(
     for (const event of eventsAsc) {
       const type = String(event.event_type ?? "").toUpperCase();
       if (!PAID_TYPES.has(type)) continue;
-      const raw = (event.raw_event ?? {}) as Record<string, unknown>;
-      const amount = eventAmount(raw);
-      if (amount <= 0) continue;
-      paymentTransactions += 1;
-      const created = String(event.created_at);
-      const key = utcMonthKey(created);
-      const order = monthOrder(created);
-      const bucket = revenueByMonth.get(key) ?? { apple: 0, android: 0, order };
-      if (event.store === "app_store") {
-        bucket.apple += amount;
-        revenueApple += amount;
-      } else if (event.store === "play_store") {
-        bucket.android += amount;
-        revenueAndroid += amount;
-      }
-      revenueByMonth.set(key, bucket);
+      paymentTransactions++;
+      recordedRevenue.record(
+        event.raw_event,
+        event.store,
+        utcMonthKey(String(event.created_at)),
+      );
     }
+    // Currency totals are comparable only if every source row is usable and
+    // the result set is below its unverified pagination cap.
+    const monetary = recordedRevenue.summary((purchaseEvents ?? []).length === 5000);
 
     let downloadsIos = 0;
     let downloadsAndroid = 0;
@@ -272,7 +261,9 @@ export async function handleRequest(
     const allOrders = new Map<string, number>();
     for (const [k, v] of usersByMonth) allOrders.set(k, v.order);
     for (const [k, v] of recipesByMonth) allOrders.set(k, v.order);
-    for (const [k, v] of revenueByMonth) allOrders.set(k, v.order);
+    for (const month of recordedRevenue.monthKeys()) {
+      allOrders.set(month, monthOrder(month + "-01T00:00:00Z"));
+    }
     for (const [k, v] of downloadsByMonth) allOrders.set(k, v.order);
 
     const orderedMonths = [...allOrders.entries()]
@@ -295,17 +286,16 @@ export async function handleRequest(
     const series = orderedMonths.map((month) => {
       cumUsers += usersByMonth.get(month)?.count ?? 0;
       cumRecipes += recipesByMonth.get(month)?.count ?? 0;
-      const rev = revenueByMonth.get(month) ??
-        { apple: 0, android: 0, order: 0 };
+      const rev = recordedRevenue.monthly(month, monetary.currency);
       const dl = downloadsByMonth.get(month) ??
         { ios: 0, android: 0, order: 0 };
       return {
         month,
         users: cumUsers,
         recipes: cumRecipes,
-        revenue: round2(rev.apple + rev.android),
-        revenueApple: round2(rev.apple),
-        revenueAndroid: round2(rev.android),
+        revenue: rev ? round2(rev.apple + rev.android) : null,
+        revenueApple: rev?.apple ?? null,
+        revenueAndroid: rev?.android ?? null,
         downloadsIos: dl.ios,
         downloadsAndroid: dl.android,
       };
@@ -350,8 +340,11 @@ export async function handleRequest(
         userLabel: labelByUser.get(String(event.user_id)) ?? "Unknown user",
         eventType: String(event.event_type ?? ""),
         store: String(event.store ?? "unknown"),
-        amount: amount > 0 ? round2(amount) : amount === 0 ? 0 : null,
-        currency: String(raw.currency ?? "USD"),
+        // Do not invent USD when the original event omits its currency.
+        amount: amount > 0 && /^[A-Z]{3}$/.test(String(raw.currency ?? raw.currency_code ?? "").trim().toUpperCase())
+          ? round2(amount) : null,
+        currency: /^[A-Z]{3}$/.test(String(raw.currency ?? raw.currency_code ?? "").trim().toUpperCase())
+          ? String(raw.currency ?? raw.currency_code).trim().toUpperCase() : null,
         createdAt: String(event.created_at),
       };
     });
@@ -451,10 +444,14 @@ export async function handleRequest(
           newUsersThisMonth: newUsersThisMonth ?? 0,
           activePaidUsers: activePaidUsers ?? 0,
           suspendedUsers: suspendedUsers ?? 0,
-          revenueTotal: round2(revenueApple + revenueAndroid),
+          revenueTotal: monetary.total,
           revenueMrr,
-          revenueApple: round2(revenueApple),
-          revenueAndroid: round2(revenueAndroid),
+          revenueApple: monetary.appleRevenue,
+          revenueAndroid: monetary.androidRevenue,
+          revenueCurrency: monetary.currency,
+          revenueByCurrency: monetary.byCurrency,
+          incompleteRevenueEvents: monetary.incompleteEvents,
+          revenueRowsTruncated: monetary.sourceRowsTruncated,
           paymentTransactions,
           downloadsTotal: downloadsIos + downloadsAndroid,
           downloadsIos,

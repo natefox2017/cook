@@ -41,10 +41,14 @@ export type DashboardData = {
     newUsersThisMonth: number;
     activePaidUsers: number;
     suspendedUsers: number;
-    revenueTotal: number;
+    revenueTotal: number | null;
     revenueMrr: number | null;
-    revenueApple: number;
-    revenueAndroid: number;
+    revenueApple: number | null;
+    revenueAndroid: number | null;
+    revenueCurrency: string | null;
+    revenueByCurrency: Array<{ currency: string; appleRevenue: number; androidRevenue: number; total: number }>;
+    incompleteRevenueEvents: number;
+    revenueRowsTruncated: boolean;
     paymentTransactions: number;
     downloadsTotal: number;
     downloadsIos: number;
@@ -54,9 +58,9 @@ export type DashboardData = {
   series: Array<{
     month: string;
     users: number;
-    revenue: number;
-    revenueApple: number;
-    revenueAndroid: number;
+    revenue: number | null;
+    revenueApple: number | null;
+    revenueAndroid: number | null;
     downloadsIos: number;
     downloadsAndroid: number;
   }>;
@@ -179,14 +183,18 @@ export type SubscriptionRecord = {
 export type RevenueData = {
   stats: {
     mrr: number | null;
-    appleRevenue: number;
-    androidRevenue: number;
+    appleRevenue: number | null;
+    androidRevenue: number | null;
+    currency: string | null;
+    byCurrency: Array<{ currency: string; appleRevenue: number; androidRevenue: number; total: number }>;
+    incompleteEvents: number;
+    sourceRowsTruncated: boolean;
     activePaid: number;
   };
   series: Array<{
     month: string;
-    apple: number;
-    android: number;
-    total: number;
+    apple: number | null;
+    android: number | null;
+    total: number | null;
   }>;
 };
