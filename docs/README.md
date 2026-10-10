@@ -21,23 +21,18 @@ Not in V1:
 - Community feed
 - Posts/comments/followers
 
-## Current development and verification
+## Task and verification authority
 
-- **Live Issue state** must be read from GitHub. The dated [Open Issues snapshot](DEVELOPMENT/CURRENT_BACKLOG_2026-10-09.md) records priorities and dependencies, not a continuously updated issue count.
-- [2026-10-09 documentation and Issue inventory/corrections](DEVELOPMENT/DOCUMENTATION_ISSUE_AUDIT_2026-10-09.md) distinguishes code merged, actual device/service tests and closed historical records. Selected-release acceptance is [#251](https://github.com/natefox2017/cook/issues/251); controlled AI/share staging is [#250](https://github.com/natefox2017/cook/issues/250).
-- Manual, offline Markdown-relative-link verification: `python3 scripts/check_documentation_links.py` from the repository root. It does **not** check external URLs, production availability or render UI.
-
-
-
-- [Remaining development vs test backlog](DEVELOPMENT/REMAINING_DEV_AND_TEST_2026-10-09.md) — authoritative split of open code work, automated tests, local Mac checks, and Apple/Supabase integration acceptance.
-- [Release testing contract](TESTING_RELEASE.md) — required evidence and release gates.
+- The only live task, Todo, owner, issue state and test evidence source is [Recipe Pals Development in Linear DEV](https://linear.app/gengyun/project/recipe-pals-development-8c015c72cb6a). GitHub Issues, old Todoist and dated Markdown audits are historical references only.
+- Signed-iPhone, Auth, StoreKit, Supabase, privacy and release results belong in [DEV-49](https://linear.app/gengyun/issue/DEV-49); protected AI/import/share deployment and staging verification belong in [DEV-50](https://linear.app/gengyun/issue/DEV-50). PR merge is not acceptance.
+- A local documentation-link check is available from the repository root via `python3 scripts/check_documentation_links.py`; it does not verify external URLs, production services or rendered UI.
 
 ## New product planning (2026-10-09)
 
 - [AI import/chat/media/multiple recipe/edit scope](PRODUCT/AI_RECIPE_EXPERIENCE_2026-10-09.md)
 - [Private-by-default recipe share → image/QR → public Web → invite measurement](PRODUCT/RECIPE_PUBLIC_SHARING_V1.md)
 - [Current Recipe Detail field and UI competitive gap](PRODUCT/RECIPE_DETAIL_COMPETITOR_AUDIT_2026-10-09.md)
-- [Prioritized independent GitHub Issues and dependencies](ROADMAP.md)
+- [Durable product roadmap and capability dependencies](ROADMAP.md) — use the Linear DEV Board for current assignments
 
 ## Reading order
 
