@@ -340,8 +340,8 @@ struct RecipeDetailView: View {
         let hasYield = !(recipe.yieldDescription ?? "").isEmpty
         let hasAuthor = !(recipe.authorCredit ?? "").isEmpty
         let nutrition = recipe.nutrition
-        let hasNutrition = nutrition?.perServings == 1
-            && nutrition?.source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        // Invalid/unknown nutrition is still preserved privately, never shown as fact.
+        let hasNutrition = nutrition?.hasDisplayablePerServingValues == true
         if hasEquipment || hasTips || hasStorage || hasYield || hasAuthor || hasNutrition {
             VStack(alignment: .leading, spacing: RecipeSpacing.small) {
                 sectionTitle("More details")
