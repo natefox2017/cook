@@ -4211,7 +4211,6 @@
       }
     },
     "Delete Account & Cloud Data": {
-      "extractionState": "stale",
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -4229,6 +4228,48 @@
           "stringUnit": {
             "state": "translated",
             "value": "刪除帳號及雲端資料"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konto und Cloud-Daten löschen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer le compte et les données cloud"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar cuenta y datos en la nube"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elimina account e dati nel cloud"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Excluir conta e dados na nuvem"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account en cloudgegevens verwijderen"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "계정 및 클라우드 데이터 삭제"
           }
         }
       }
@@ -4321,28 +4362,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "刪除食譜"
-          }
-        }
-      }
-    },
-    "Delete Recipe Pals Account & Cloud Data": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recipe Palsアカウントとクラウドデータを削除"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "删除私人菜谱账号及云端数据"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "刪除私人菜譜帳號與雲端資料"
           }
         }
       }
@@ -13238,29 +13257,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "한 주의 시작 요일"
-          }
-        }
-      }
-    },
-    "What Recipe Pals Stores": {
-      "extractionState": "stale",
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recipe Palsが保存するデータ"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "私人菜谱保存哪些数据"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "私人菜譜儲存哪些資料"
           }
         }
       }
