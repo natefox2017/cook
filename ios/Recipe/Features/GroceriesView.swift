@@ -54,7 +54,7 @@ struct GroceriesView: View {
 
             if store.groceries.isEmpty {
                 emptyState(
-                    title: "Your next shop starts here",
+                    title: "Start your grocery list",
                     message: "Add ingredients from a recipe, or make a list of your own.",
                     actionTitle: "Add an item"
                 ) { editor = GroceryEditorPresentation(item: nil) }
@@ -63,7 +63,7 @@ struct GroceriesView: View {
                     title: filter == .remaining ? "All picked up" : "Nothing checked off yet",
                     message: filter == .remaining
                         ? "Everything on your list is bought. You can add an item or view the full list."
-                        : "Tap the circle beside an item as you shop.",
+                        : "Mark items as you pick them up.",
                     actionTitle: "Show all items"
                 ) { filter = .all }
             } else {

@@ -179,7 +179,7 @@ struct ProfileView: View {
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(
-                        title: "Using Recipe Pals",
+                        title: "Help & Support",
                         systemImage: "questionmark.circle"
                     )
                 }
@@ -188,7 +188,7 @@ struct ProfileView: View {
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(
-                        title: "About & Your Data",
+                        title: "About",
                         systemImage: "info.circle"
                     )
                 }
@@ -296,7 +296,7 @@ struct ProfileView: View {
             }
         }
         .alert(
-            "Recipe Pals",
+            "Profile",
             isPresented: Binding(
                 get: {
                     errorMessage != nil
@@ -715,7 +715,7 @@ private struct RecipeHelpView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("Using Recipe Pals")
+        .navigationTitle("Help & Support")
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }
@@ -723,11 +723,11 @@ private struct RecipeHelpView: View {
 private struct RecipeAboutView: View {
     var body: some View {
         List {
-            Section("Recipe Pals") {
+            Section("App") {
                 LabeledContent("Version", value: RecipeVersion.display)
             }
             Section("Data & Privacy") {
-                NavigationLink("What Recipe Pals Stores") {
+                NavigationLink("Your data") {
                     StoredDataView()
                 }
                 NavigationLink("Privacy Summary") {
@@ -738,7 +738,7 @@ private struct RecipeAboutView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("About & Your Data")
+        .navigationTitle("About")
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }

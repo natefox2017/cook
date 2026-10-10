@@ -247,9 +247,9 @@ struct HelpCenterView: View {
                         articleBody: "Open a recipe and start cooking with timers."
                     )
                 }
-                NavigationLink("Plan meals and shop") {
+                NavigationLink("Meal Plan & Groceries") {
                     HelpArticleView(
-                        title: "Plan meals and shop",
+                        title: "Meal Plan & Groceries",
                         articleBody: "Plan meals and add ingredients to Groceries."
                     )
                 }

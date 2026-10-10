@@ -1081,7 +1081,7 @@ final class RecipeUITests: XCTestCase {
         let premium = app.buttons["Premium"]
         reveal(premium, in: app, maximumSwipes: 4)
         premium.tap()
-        XCTAssertTrue(app.staticTexts["Recipe Pals Premium"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Premium"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["Restore Purchases"].exists)
         attachScreenshot("Subscription from Profile", app: app)
 
@@ -1094,7 +1094,7 @@ final class RecipeUITests: XCTestCase {
         reveal(subscription, in: app, maximumSwipes: 4)
         subscription.tap()
 
-        XCTAssertTrue(app.staticTexts["Recipe Pals Premium"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Premium"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["Restore Purchases"].exists)
         attachScreenshot("Subscription from Settings", app: app)
     }
@@ -1126,7 +1126,7 @@ final class RecipeUITests: XCTestCase {
         XCTAssertEqual(next.label, "See Plans")
 
         next.tap()
-        XCTAssertTrue(app.staticTexts["Recipe Pals Premium"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Premium"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.staticTexts["Create with AI"].exists)
         let annual = app.buttons["subscription.plan.annual.unavailable"]
         let monthly = app.buttons["subscription.plan.monthly.unavailable"]
@@ -1441,6 +1441,33 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testProfileAboutAndHelpUseConcisePageTitles() {
+        let app = launchSeededApp()
+        defer {
+            app.terminate()
+        }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let about = app.buttons["About"]
+        reveal(about, in: app, maximumSwipes: 6)
+        about.tap()
+        XCTAssertTrue(app.navigationBars["About"].waitForExistence(timeout: 8))
+        XCTAssertFalse(app.navigationBars["About & Your Data"].exists)
+        XCTAssertTrue(app.staticTexts["Version"].exists)
+
+        app.navigationBars.buttons.firstMatch.tap()
+
+        let help = app.buttons["Help & Support"]
+        reveal(help, in: app, maximumSwipes: 6)
+        help.tap()
+        XCTAssertTrue(app.navigationBars["Help & Support"].waitForExistence(timeout: 8))
+        XCTAssertFalse(app.navigationBars["Using Recipe Pals"].exists)
+    }
+
+    @MainActor
     func testAboutSettingsUsesShortTitleAndCurrentAppDetails() {
         let app = launchSeededApp()
         defer {
@@ -1651,7 +1678,7 @@ final class RecipeUITests: XCTestCase {
         let premium = app.buttons["Premium"]
         reveal(premium, in: app, maximumSwipes: 4)
         premium.tap()
-        XCTAssertTrue(app.staticTexts["Recipe Pals Premium"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Premium"].waitForExistence(timeout: 8))
     }
 
     @MainActor
