@@ -50,6 +50,22 @@ struct MealPlanView: View {
                         Text(weekDescription)
                             .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
                             .multilineTextAlignment(.center)
+                            .contentShape(Rectangle())
+                            // This date-range gesture has priority over root tab navigation.
+                            // Keep the horizontal seven-day ScrollView's drag untouched.
+                            .gesture(
+                                DragGesture(minimumDistance: 40)
+                                    .onEnded { value in
+                                        guard let direction = RecipeHorizontalSwipe(
+                                            translation: value.translation,
+                                            minimumDistance: 65
+                                        ) else {
+                                            return
+                                        }
+                                        moveWeek(by: direction == .next ? 1 : -1)
+                                    }
+                            )
+                            .accessibilityIdentifier("mealplan.weekRange")
                         Spacer(minLength: 0)
                         Button("Next week", systemImage: "chevron.right") { moveWeek(by: 1) }
                             .labelStyle(.iconOnly)

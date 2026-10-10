@@ -220,6 +220,25 @@ struct CookingView: View {
                         .textSelection(.enabled)
                         .accessibilityIdentifier("cookingStepInstruction")
                 }
+                .contentShape(Rectangle())
+                // Match the Previous / Done & Next buttons, including finish confirmation.
+                // Attach to the step text only; timers and ingredient controls retain their drags.
+                .gesture(
+                    DragGesture(minimumDistance: 55)
+                        .onEnded { value in
+                            guard let direction = RecipeHorizontalSwipe(translation: value.translation)
+                            else {
+                                return
+                            }
+                            switch direction {
+                            case .previous:
+                                moveToPreviousStep(recipe)
+                            case .next:
+                                moveToNextStep(recipe)
+                            }
+                        }
+                )
+                .accessibilityIdentifier("cookingStepSwipeSurface")
 
                 if let temperature = step.temperature, !temperature.text.isEmpty {
                     Button {

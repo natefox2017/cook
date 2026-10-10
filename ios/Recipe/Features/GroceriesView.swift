@@ -262,6 +262,20 @@ struct GroceriesView: View {
             )
         }
         .padding(.vertical, 3)
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button {
+                RecipePerformanceSignposts.measure("Grocery Write") {
+                    perform { try store.toggleGrocery(id: item.id) }
+                }
+            } label: {
+                if item.isChecked {
+                    Label("To buy", systemImage: "arrow.uturn.backward")
+                } else {
+                    Label("Bought", systemImage: "checkmark.circle")
+                }
+            }
+            .tint(RecipeTheme.accent)
+        }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button("Delete", role: .destructive) { itemToDelete = item }
             Button("Edit") { editor = GroceryEditorPresentation(item: item) }

@@ -453,6 +453,132 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testRootTabsSwipeBetweenAdjacentScreensWithoutWrapping() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        // Swipe from non-interactive regions so native row actions and
+        // horizontal date/filter controls keep ownership of their gestures.
+        let recipes = app.scrollViews["recipeLibraryScroll"]
+        swipeAcrossRoot(recipes, in: app, towardNext: true)
+        XCTAssertTrue(app.navigationBars["Meal Plan"].waitForExistence(timeout: 8))
+
+        let mealHeader = app.staticTexts["Breakfast"]
+        waitUntilReady(mealHeader)
+        swipeAcrossRoot(mealHeader, in: app, towardNext: true)
+        XCTAssertTrue(app.navigationBars["Groceries"].waitForExistence(timeout: 8))
+
+        let groceryHeader = app.staticTexts.matching(
+            NSPredicate(format: "label ENDSWITH %@", " items")
+        ).firstMatch
+        waitUntilReady(groceryHeader)
+        swipeAcrossRoot(groceryHeader, in: app, towardNext: true)
+        XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 8))
+
+        swipeAcrossRoot(app.buttons["Settings"], in: app, towardNext: true)
+        XCTAssertTrue(app.navigationBars["Profile"].exists, "The last tab must not wrap")
+
+        swipeAcrossRoot(app.buttons["Settings"], in: app, towardNext: false)
+        XCTAssertTrue(app.navigationBars["Groceries"].waitForExistence(timeout: 8))
+        swipeAcrossRoot(groceryHeader, in: app, towardNext: false)
+        XCTAssertTrue(app.navigationBars["Meal Plan"].waitForExistence(timeout: 8))
+        swipeAcrossRoot(mealHeader, in: app, towardNext: false)
+        XCTAssertTrue(app.navigationBars["My Recipes"].waitForExistence(timeout: 8))
+
+        swipeAcrossRoot(recipes, in: app, towardNext: false)
+        XCTAssertTrue(app.navigationBars["My Recipes"].exists, "The first tab must not wrap")
+        recipes.swipeUp()
+        XCTAssertTrue(app.navigationBars["My Recipes"].exists, "Vertical scroll must not change tabs")
+    }
+
+    @MainActor
+    func testMealPlanWeekHeaderCanSwipeWithoutChangingTabs() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        app.tabBars.buttons["Plan"].tap()
+        let heading = app.staticTexts["mealplan.weekRange"]
+        waitUntilReady(heading)
+        let initialWeek = heading.label
+
+        heading.swipeLeft()
+        XCTAssertNotEqual(heading.label, initialWeek)
+        XCTAssertTrue(app.navigationBars["Meal Plan"].exists)
+
+        heading.swipeRight()
+        XCTAssertEqual(heading.label, initialWeek)
+        XCTAssertTrue(app.navigationBars["Meal Plan"].exists)
+    }
+
+    @MainActor
+    func testCookingStepTextSwipesUseExistingStepControls() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        openSamplePasta(in: app)
+        app.buttons["startCooking"].tap()
+        assertCookingStep("Step 1 of 3", in: app)
+
+        let stepContent = app.otherElements["cookingStepSwipeSurface"]
+        waitUntilReady(stepContent)
+        stepContent.swipeLeft()
+        assertCookingStep("Step 2 of 3", in: app)
+
+        stepContent.swipeRight()
+        assertCookingStep("Step 1 of 3", in: app)
+        XCTAssertFalse(app.buttons["previousStep"].isEnabled)
+
+        app.buttons["nextStep"].tap()
+        assertCookingStep("Step 2 of 3", in: app)
+        XCTAssertFalse(app.tabBars.buttons["Recipes"].isHittable)
+    }
+
+    @MainActor
+    func testGroceryLeadingSwipeTogglesStateWithoutBreakingTrailingActions() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+
+        openSamplePasta(in: app)
+        let addIngredients = app.buttons["addToGroceries"]
+        reveal(
+            addIngredients, in: app, scrollView: app.scrollViews["recipeDetailScroll"],
+            maximumSwipes: 3
+        )
+        addIngredients.tap()
+        let confirm = app.buttons["confirmAddIngredientsButton"]
+        waitUntilReady(confirm)
+        confirm.tap()
+        let alert = app.alerts["Recipe"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 8))
+        alert.buttons["OK"].tap()
+        app.navigationBars.buttons.firstMatch.tap()
+        app.tabBars.buttons["Groceries"].tap()
+
+        let grocery = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "grocery.check.")
+        ).firstMatch
+        waitUntilReady(grocery)
+        let groceryID = grocery.identifier
+        XCTAssertEqual(grocery.value as? String, "To buy")
+
+        grocery.swipeRight()
+        let updatedGrocery = app.buttons[groceryID]
+        // Devices may reveal a leading action rather than complete a full swipe.
+        if updatedGrocery.value as? String == "To buy" {
+            let markBought = app.buttons["Bought"]
+            waitUntilReady(markBought)
+            markBought.tap()
+        }
+        XCTAssertEqual(updatedGrocery.value as? String, "Bought")
+        XCTAssertTrue(app.navigationBars["Groceries"].exists)
+
+        updatedGrocery.swipeLeft()
+        XCTAssertTrue(app.buttons["Edit"].exists)
+        XCTAssertTrue(app.buttons["Delete"].exists)
+        XCTAssertTrue(app.navigationBars["Groceries"].exists)
+    }
+
+    @MainActor
     func testAddRecipeSheetUsesSingleNativeTitleWithoutTagline() {
         let app = launchSeededApp()
         defer {
@@ -1485,6 +1611,24 @@ final class RecipeUITests: XCTestCase {
             XCTWaiter.wait(for: [expectation], timeout: 8), .completed,
             "Cooking did not reach \(label)",
             file: file, line: line)
+    }
+
+    @MainActor
+    private func swipeAcrossRoot(
+        _ element: XCUIElement,
+        in app: XCUIApplication,
+        towardNext: Bool
+    ) {
+        // Drag across the non-interactive portion of the same row. Short
+        // header labels are not wide enough for the intentional 96-pt threshold.
+        let normalizedY = (element.frame.midY - app.frame.minY) / app.frame.height
+        let start = app.coordinate(
+            withNormalizedOffset: CGVector(dx: towardNext ? 0.82 : 0.18, dy: normalizedY)
+        )
+        let end = app.coordinate(
+            withNormalizedOffset: CGVector(dx: towardNext ? 0.18 : 0.82, dy: normalizedY)
+        )
+        start.press(forDuration: 0.05, thenDragTo: end)
     }
 
     @MainActor
