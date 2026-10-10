@@ -40,6 +40,7 @@ public enum RecipeInstructionParameterSpans {
         let source = step.instruction
         guard !source.isEmpty,
             source.utf16.count <= 4_096,
+            ingredients.count <= 512,
             step.linkedIngredientIDs.count <= 64,
             step.timers.count <= 16
         else {
@@ -99,6 +100,11 @@ public enum RecipeInstructionParameterSpans {
                 guard timers.count == 1, let timer = timers.first else { continue }
                 matches.append(Match(range: range, parameter: .timer(timer.id)))
             }
+        }
+
+        // Bound the O(n²) overlap check on unusual imported instructions.
+        guard matches.count <= 128 else {
+            return [RecipeInstructionSpan(text: source)]
         }
 
         // Overlapping links are ambiguous (e.g. "salt" inside "sea salt").
