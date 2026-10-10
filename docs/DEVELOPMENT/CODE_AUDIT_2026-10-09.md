@@ -1,4 +1,4 @@
-> **Historical source audit.** This report examined `main@975f70b` as a scoped, earlier source snapshot, not the current tree or a full iPhone/hosted acceptance result. The current user-facing brand is **Recipe Pals**; old naming in this dated evidence is historical. Latest docs/Issue inventory is [the 2026-10-09 audit](DOCUMENTATION_ISSUE_AUDIT_2026-10-09.md) and [dated current backlog](CURRENT_BACKLOG_2026-10-09.md). Keep prior evidence and fixed-file lists intact for provenance.
+> **Historical source audit only (main@975f70b), not current implementation or device acceptance.** The current user-facing brand is Recipe Pals. Task/bug/QA status and fresh evidence belong in [Linear DEV Recipe Pals Development](https://linear.app/gengyun/project/recipe-pals-development-8c015c72cb6a); old dated backlog/issue-audit snapshots were indexed in [DEV-40](https://linear.app/gengyun/issue/DEV-40) as immutable Git history before retirement from main. Do not use the historical file list as new work instructions.
 
 # RecipePouch Full-Repository Code Audit — 2026-10-09
 
