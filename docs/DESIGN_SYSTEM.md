@@ -1,6 +1,8 @@
 # Design System
 
-状态：现有 RecipeTheme 视觉基础规范。**具体页面的用户批准、源码实现和真实设备验收是不同状态**，分别看 [UI_DESIGN_APPROVALS.md](UI_DESIGN_APPROVALS.md)、最新 `main` 和 [#251](https://github.com/natefox2017/cook/issues/251)。新增 AI/分享/详情体验属于 SCOPED（#238–#248），不等于已完成定版设计或已上线。
+本文仅定义长期视觉和交互规范，不管理任务、Bug 或交付进度。页面设计决策见 [UI Design Approvals](UI_DESIGN_APPROVALS.md)，实际实现以 GitHub 最新 `main` 为准；任务领取与状态以 [Linear Recipe Pals Development](https://linear.app/gengyun/project/recipe-pals-development-8c015c72cb6a)、发布验收以 [DEV-49](https://linear.app/gengyun/issue/DEV-49) 为准。**设计批准、代码合并、真机验收与生产发布是不同事实，不得互相替代。**
+
+AI 食谱、用户主动授权的单食谱分享和专业详情等扩展的长期范围见 [产品基线 V1](PRODUCT_BASELINE_V1.md) 及其产品专题；确认产品方向不代表最终视觉已定版、功能已交付或上线。
 
 ## 1. 设计读法
 
