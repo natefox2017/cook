@@ -19,8 +19,38 @@ public enum RecipeLanguage {
         resolve(
             arguments: ProcessInfo.processInfo.arguments,
             supportedIdentifiers: supportedIdentifiers,
-            selectedIdentifier: UserDefaults.standard.string(forKey: preferenceKey)
+            selectedIdentifier: selectedIdentifier(
+                processDefaults: .standard,
+                groupDefaults: UserDefaults(suiteName: RecipeShareInbox.appGroupID),
+                isExtension: Bundle.main.bundleURL.pathExtension == "appex"
+            )
         )
+    }
+
+    /// An .appex has a different standard defaults container from its containing app.
+    /// The host owns the preference; only extensions consume its App Group mirror.
+    public static func selectedIdentifier(
+        processDefaults: UserDefaults, groupDefaults: UserDefaults?, isExtension: Bool
+    ) -> String? {
+        if isExtension, let shared = groupDefaults?.string(forKey: preferenceKey) {
+            return shared
+        }
+        return processDefaults.string(forKey: preferenceKey)
+    }
+
+    /// Mirror only the language code; never copy accounts, recipes or country.
+    /// Missing App Group provisioning must not break the primary app's settings.
+    public static func mirrorManualSelection(
+        _ identifier: String,
+        groupDefaults: UserDefaults? = UserDefaults(suiteName: RecipeShareInbox.appGroupID)
+    ) {
+        guard let groupDefaults else { return }
+        if currentlyTranslatedLanguages.contains(identifier) {
+            groupDefaults.set(identifier, forKey: preferenceKey)
+        } else {
+            // Empty (test-stage English default) and unsupported languages reset.
+            groupDefaults.removeObject(forKey: preferenceKey)
+        }
     }
 
     /// Core is a Swift package; UI localization resources belong to the host.
