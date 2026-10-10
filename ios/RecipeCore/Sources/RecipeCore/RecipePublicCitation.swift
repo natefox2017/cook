@@ -7,6 +7,7 @@ public enum RecipePublicCitation {
     /// A source link is optional in a public snapshot. When the URL is uncertain,
     /// omit its public copy; the private recipe keeps the complete original.
     public static func eligibleURL(_ original: String?) -> String? {
+        // Keep the original URL unchanged, but fail closed on disguised local DNS names.
         guard let original,
               original.count <= 2_048,
               !original.unicodeScalars.contains(where: {
@@ -16,7 +17,10 @@ public enum RecipePublicCitation {
               components.scheme?.lowercased() == "https",
               let host = components.host?.lowercased(),
               host.contains("."),
+              !host.hasSuffix("."),
               !host.hasSuffix(".local"),
+              !host.hasSuffix(".localhost"),
+              !host.hasSuffix(".localdomain"),
               !host.contains(":"),
               host.unicodeScalars.contains(where: {
                   CharacterSet.letters.contains($0)
