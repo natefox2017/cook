@@ -742,6 +742,12 @@
             "state": "translated",
             "value": "Der gemeinsame Speicher von Recipe Pals ist nicht verfügbar. Überprüfe die App-Group-Signierung."
           }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le stockage partagé de Recipe Pals est indisponible. Vérifiez la configuration de signature App Group."
+          }
         }
       }
     },
@@ -770,6 +776,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Teile einen öffentlichen HTTPS-Link, lesbaren Text, ein Bild oder ein PDF mit Recipe Pals."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partagez avec Recipe Pals un lien HTTPS public, du texte lisible, une image ou un PDF."
           }
         }
       }
