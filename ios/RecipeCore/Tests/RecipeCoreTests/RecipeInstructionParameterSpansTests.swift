@@ -98,6 +98,22 @@ func mismatchedOrUnstructuredValuesCannotCreateInlineLinks() {
 }
 
 @Test
+func exactHoursSecondsAndForPrefixAreRecognized() {
+    let hour = RecipeStepTimer(label: "Rest", durationSeconds: 3_600)
+    let seconds = RecipeStepTimer(label: "Whisk", durationSeconds: 20)
+    let step = RecipeStep(
+        instruction: "Rest for 1 hour, then whisk for 20 secs.",
+        timers: [hour, seconds]
+    )
+    let spans = RecipeInstructionParameterSpans.spans(
+        for: step, ingredients: []
+    )
+    #expect(spans.map(\.text).joined() == step.instruction)
+    #expect(spans.filter { $0.parameter == .timer(hour.id) }.map(\.text) == ["1 hour"])
+    #expect(spans.filter { $0.parameter == .timer(seconds.id) }.map(\.text) == ["20 secs"])
+}
+
+@Test
 func rangedTimerExpressionsAndConflictingNumbersAreNotLinked() {
     let timer = RecipeStepTimer(label: "Bake", durationSeconds: 1_200)
     for raw in ["Bake 10–20 min", "Bake 10-20 min", "Bake about 20 minutes",
