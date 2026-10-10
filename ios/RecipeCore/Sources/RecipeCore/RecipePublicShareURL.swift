@@ -1,3 +1,4 @@
+// Developer: gengyun
 // Purpose: Reject non-public or malformed links before embedding them in shared QR codes.
 import Foundation
 
@@ -7,7 +8,8 @@ public enum RecipePublicShareURL {
             let host = url.host, host.contains("."),
             host.lowercased() != "localhost", !host.lowercased().hasSuffix(".local"),
             !host.allSatisfy({ $0.isNumber || $0 == "." }),
-            url.user == nil, url.password == nil, url.fragment == nil
+            url.user == nil, url.password == nil,
+            url.port == nil, url.query == nil, url.fragment == nil
         else { return false }
         let segments = url.path.split(separator: "/")
         guard segments.count == 2, segments[0] == "r" else { return false }
@@ -16,5 +18,6 @@ public enum RecipePublicShareURL {
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-")
         return (8...128).contains(slug.count)
             && slug.unicodeScalars.allSatisfy { safe.contains($0) }
+            && url.path == "/r/\(slug)"
     }
 }
