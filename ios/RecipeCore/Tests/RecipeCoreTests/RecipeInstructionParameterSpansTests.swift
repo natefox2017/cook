@@ -126,6 +126,23 @@ func rangedTimerExpressionsAndConflictingNumbersAreNotLinked() {
 }
 
 @Test
+func denseLinkedIngredientsUseBoundedFallbackWithoutDroppingSourceText() {
+    let ingredients = (0..<16).map {
+        RecipeIngredient(name: "item\($0)")
+    }
+    let instruction = (0..<10).flatMap { _ in
+        ingredients.map(\.name)
+    }.joined(separator: " ")
+    let step = RecipeStep(
+        instruction: instruction, linkedIngredientIDs: ingredients.map(\.id)
+    )
+    let spans = RecipeInstructionParameterSpans.spans(
+        for: step, ingredients: ingredients
+    )
+    #expect(spans == [RecipeInstructionSpan(text: instruction)])
+}
+
+@Test
 func enormousOrEmptyInstructionsFallBackWithoutParserWork() {
     let ingredient = RecipeIngredient(name: "salt")
     for source in ["", String(repeating: "salt ", count: 900)] {
