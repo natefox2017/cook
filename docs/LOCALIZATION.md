@@ -12,7 +12,7 @@ Updated: 2026-10-09
 
 - **Temporary test-stage setting (updated 2026-10-10):** With no manual selection, Recipe Pals defaults to English (en) regardless of the iPhone's preferred language. The explicitly saved four-language choice overrides this default in the SwiftUI environment and in computed strings using `LocalizedStringResource(locale:)`.
 - Explicit `--uitesting-locale en|zh-Hans|zh-Hant|ja` has highest priority for deterministic localization smoke tests. UI tests without that flag allow manual changes; they default to English when no choice was saved.
-- The Share Extension uses its own English locale. Core display errors remain in English during the test stage.
+- The Share Extension owns a separate four-language catalog (en, zh-Hans, zh-Hant, ja). Its default remains English during testing; when a user explicitly selects a supported language in the main App, the App mirrors only that language identifier into its existing App Group defaults. The Extension reads that shared value rather than its isolated standard defaults; clearing the choice returns the Extension to English. This requires valid signing and App Group provisioning on a real iPhone. See [DEV-212](https://linear.app/gengyun/issue/DEV-212); no unreleased language is enabled.
 - **Before international launch:** deliberately remove this test-stage restriction and restore system-language selection for the app, Core, and Share Extension after multi-language visual QA.
 - English remains the development/source language; translation catalogs are retained.
 
