@@ -136,6 +136,18 @@ struct CookingView: View {
         .interactiveDismissDisabled()
         .onAppear(perform: appear)
         .onDisappear(perform: disappear)
+        .onReceive(
+            NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification)
+        ) { notification in
+            guard
+                let rawType = notification.userInfo?[AVAudioSessionInterruptionTypeKey]
+                    as? UInt,
+                AVAudioSession.InterruptionType(rawValue: rawType) == .began
+            else {
+                return
+            }
+            voice.stopForAudioInterruption()
+        }
         .onChange(of: scenePhase) { _, phase in
             updateScreenAwake()
             if phase != .active {
@@ -1613,6 +1625,7 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
     private var tapInstalled = false
     private var wantsListening = false
     private var startGate = CookingVoiceStartGate()
+    private var pendingStartAttempt: UUID?
     private let speaker = AVSpeechSynthesizer()
 
     override init() {
@@ -1623,7 +1636,13 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
     func start() async {
         // Reserve before the permission await; rapid taps cannot install two taps.
         guard !wantsListening, let attempt = startGate.reserve() else { return }
-        defer { startGate.complete(attempt) }
+        pendingStartAttempt = attempt
+        defer {
+            if pendingStartAttempt == attempt {
+                pendingStartAttempt = nil
+            }
+            startGate.complete(attempt)
+        }
 
         let authorization = await withCheckedContinuation {
             (continuation: CheckedContinuation<SFSpeechRecognizerAuthorizationStatus, Never>) in
@@ -1788,9 +1807,22 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
         }
     }
 
+    func stopForAudioInterruption() {
+        // Audio interruption may arrive while the system's permission sheet is open.
+        guard isListening || pendingStartAttempt != nil else { return }
+        if isListening {
+            stop()
+        } else {
+            startGate.cancel()
+            pendingStartAttempt = nil
+        }
+        status = "Voice control interrupted. Use the step buttons."
+    }
+
     func stop() {
         // Prevent an older permission callback from starting after Cooking closes.
         startGate.cancel()
+        pendingStartAttempt = nil
         wantsListening = false
         isListening = false
         endCycle()
