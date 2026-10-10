@@ -104,6 +104,88 @@ enum RecipeUITestNamespace {
 }
 
 #if DEBUG
+    /// Synthetic, in-memory JSON-LD selection QA; never touches a user library or cloud account.
+    @MainActor
+    enum RecipeMultiCandidateQAFixture {
+        static let sourceID = UUID(uuidString: "E2080000-0000-4000-8000-000000000001")!
+        static let soupCandidateID = "candidate-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        static let pastaCandidateID = "candidate-v2-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+
+        static func install(into store: RecipeStore, includeOverflow: Bool) throws {
+            let sourceURL = "https://example.test/recipe-qa/multiple"
+            let soupEvidenceID = UUID(uuidString: "E2080000-0000-4000-8000-000000000011")!
+            let pastaEvidenceID = UUID(uuidString: "E2080000-0000-4000-8000-000000000012")!
+            var candidates: [RecipeImportJobResponse.Candidate] = [
+                .init(
+                    candidateID: soupCandidateID,
+                    title: "QA Tomato Soup",
+                    ingredients: ["2 cups stock", "1 tomato"],
+                    steps: ["Warm the stock.", "Simmer the tomato."],
+                    evidenceIDs: [soupEvidenceID]
+                ),
+                .init(
+                    candidateID: pastaCandidateID,
+                    title: "QA Lemon Pasta",
+                    ingredients: ["200 g pasta", "1 lemon"],
+                    steps: ["Boil the pasta.", "Toss with lemon."],
+                    evidenceIDs: [pastaEvidenceID],
+                    reviewFields: ["ingredients[1].amount"]
+                ),
+            ]
+            if includeOverflow {
+                // A ninth node tests the existing eight-candidate UI display cap.
+                for index in 3...9 {
+                    candidates.append(
+                        .init(
+                            candidateID: "candidate-v2-\(String(format: "%032x", index))",
+                            title: "QA Extra Dish \(index)",
+                            ingredients: ["1 synthetic item"],
+                            steps: ["Prepare item \(index)."]
+                        )
+                    )
+                }
+            }
+            let source = Recipe(
+                id: sourceID,
+                title: "QA Mixed Source Import",
+                summary: "Synthetic multi-dish import; private, offline UI-test data.",
+                servings: nil,
+                sourceURL: sourceURL,
+                sourceName: "Synthetic JSON-LD",
+                importRecord: RecipeImportRecord(
+                    jobID: UUID(uuidString: "E2080000-0000-4000-8000-000000000002")!,
+                    result: RecipeImportJobResponse.Result(
+                        recipeID: sourceID,
+                        status: "needs_review",
+                        source: RecipeImportJobResponse.Source(
+                            inputType: "url",
+                            originalURL: sourceURL,
+                            canonicalURL: sourceURL,
+                            platform: "web"
+                        ),
+                        fields: [:],
+                        evidence: [
+                            .init(
+                                id: soupEvidenceID,
+                                sourceType: "html",
+                                origin: sourceURL,
+                                excerpt: "QA Tomato Soup: stock, tomato"
+                            ),
+                            .init(
+                                id: pastaEvidenceID,
+                                sourceType: "html",
+                                origin: sourceURL,
+                                excerpt: "QA Lemon Pasta: pasta, lemon"
+                            ),
+                        ],
+                        candidateRecipes: candidates
+                    )
+                )
+            )
+            try store.upsert(source)
+        }
+    }
+
     enum RecipeExportQAFixture {
         static let seed: UInt64 = 127
         static let recipeIDs = (0..<5).map {
@@ -388,6 +470,12 @@ struct RecipeApp: App {
                 localStore = RecipeStore(fileURL: nil)
                 do {
                     try localStore.loadSampleRecipes()
+                    if arguments.contains("--uitesting-multi-candidate") {
+                        try RecipeMultiCandidateQAFixture.install(
+                            into: localStore,
+                            includeOverflow: arguments.contains("--uitesting-multi-candidate-overflow")
+                        )
+                    }
                 } catch {
                     assertionFailure("UI test fixtures could not be loaded: \(error)")
                 }
