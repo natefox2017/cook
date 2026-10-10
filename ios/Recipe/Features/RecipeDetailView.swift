@@ -68,7 +68,12 @@ struct RecipeDetailView: View {
             if let proposal = proposalToReview {
                 RecipeEditProposalReviewSheet(proposal: proposal) { saved in
                     if saved.id != recipeID {
-                        feedbackMessage = String(localized: "Saved a new private recipe.")
+                        feedbackMessage = String(
+                            localized: LocalizedStringResource(
+                                "Saved a new private recipe.",
+                                locale: RecipeLanguage.active
+                            )
+                        )
                     }
                 }
             }
@@ -1606,15 +1611,16 @@ struct RecipeEditProposalReviewSheet: View {
                 VStack(spacing: RecipeSpacing.small) {
                     Button("Apply to recipe") { save(asVariant: false) }
                         .buttonStyle(RecipeDetailActionButtonStyle(variant: .primary))
+                        .disabled(preview == nil)
                         .accessibilityIdentifier("applyRecipeProposal")
                     Button("Save as new recipe") { save(asVariant: true) }
                         .buttonStyle(RecipeDetailActionButtonStyle(variant: .secondary))
+                        .disabled(preview == nil)
                         .accessibilityIdentifier("saveRecipeProposalVariant")
                     Button("Discard changes") { dismiss() }
                         .accessibilityIdentifier("discardRecipeProposal")
                 }
                 .frame(maxWidth: .infinity)
-                .disabled(preview == nil)
                 .padding(.horizontal, RecipeSpacing.pageInset)
                 .padding(.vertical, RecipeSpacing.small)
                 .background(.regularMaterial)
@@ -1657,8 +1663,11 @@ struct RecipeEditProposalReviewSheet: View {
             onSaved(saved)
             dismiss()
         } catch {
-            errorMessage = String(localized:
-                "The recipe changed or could not be saved. Review it and try again."
+            errorMessage = String(
+                localized: LocalizedStringResource(
+                    "The recipe changed or could not be saved. Review it and try again.",
+                    locale: RecipeLanguage.active
+                )
             )
         }
     }
