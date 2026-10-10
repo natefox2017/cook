@@ -99,6 +99,8 @@ Read the relevant documents before substantial product or architecture changes:
 - Make the smallest safe change that satisfies the request. Preserve existing behavior and user data.
 - Do not remove failing tests just to make checks pass. Do not commit secrets, access tokens, passwords, or private credentials.
 - Keep UI changes consistent with `docs/DESIGN_SYSTEM.md` and the existing app.
+- Use short, localized screen titles and menu labels (`About`, `Help & Support`, `Premium`), without appending `Recipe Pals` to navigation titles. Keep the brand where identification matters, such as bundle names, sharing instructions, and About app identity.
+- Groceries is a private shopping checklist, **not** a storefront, marketplace, or checkout experience; do not advertise or add commerce functionality.
 - User-facing copy follows product language/localization rules. Source identifiers and technical documentation use consistent Recipe naming.
 
 ## Language During Development

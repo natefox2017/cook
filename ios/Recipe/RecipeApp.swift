@@ -530,7 +530,7 @@ private struct RecipeRootView: View {
                         messageLineLimit: nil
                     )
                     .padding()
-                    .navigationTitle("Recipe Pals")
+                    .navigationTitle("Recipes")
                     .background(RecipeTheme.canvas)
                 }
             } else if !hasCompletedOnboarding && !bypassOnboarding {

@@ -240,7 +240,7 @@ struct GettingStartedGuideContent: View {
                 Divider().padding(.leading, 56)
                 guideStep(
                     4, icon: "fork.knife",
-                    title: "Cook, plan, or shop",
+                    title: "Cook, plan, and make grocery lists",
                     detail: "Cook recipes or plan meals."
                 )
             }

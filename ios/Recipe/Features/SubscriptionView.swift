@@ -120,7 +120,7 @@ struct PremiumPaywallContent: View {
     private func onboardingContent(imageHeight: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
             HStack {
-                Text("Recipe Pals Premium")
+                Text("Premium")
                     .font(RecipeTheme.heading(.card))
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -421,7 +421,7 @@ struct PremiumPaywallContent: View {
 
     private var premiumHero: some View {
         VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
-            Text("Recipe Pals Premium")
+            Text("Premium")
                 .font(RecipeTheme.heading(.card))
             Image("OnboardingAI")
                 .resizable()
