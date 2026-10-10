@@ -192,6 +192,46 @@ func boundedAndApproximateDurationTextCannotLinkAnExactTimer() {
 }
 
 @Test
+func explicitDurationRangeEndpointsCannotBecomeExactTimerLinks() {
+    let twentyMinutes = RecipeStepTimer(label: "Bake", durationSeconds: 1_200)
+    let thirtyMinutes = RecipeStepTimer(label: "Rest", durationSeconds: 1_800)
+    for raw in [
+        "Bake between 10 and 20 min.",
+        "Bake between 10 & 20 min.",
+        "Bake from 10 through 20 min.",
+        "Bake for 20 min & 30 min.",
+        "Bake for 20 min and 30 min.",
+        "Bake for 20 min through 30 min.",
+    ] {
+        let step = RecipeStep(
+            instruction: raw,
+            timers: [twentyMinutes, thirtyMinutes]
+        )
+        let spans = RecipeInstructionParameterSpans.spans(
+            for: step, ingredients: []
+        )
+
+        #expect(spans.map(\.text).joined() == raw)
+        #expect(spans.allSatisfy { $0.parameter == nil }, "Unexpected range link: \(raw)")
+    }
+}
+
+@Test
+func unambiguousDurationsRemainLinkedAroundConjunctions() {
+    let bake = RecipeStepTimer(label: "Bake", durationSeconds: 1_200)
+    let rest = RecipeStepTimer(label: "Rest", durationSeconds: 1_800)
+    let instruction = "Bake for 20 min and then rest for 30 min."
+    let step = RecipeStep(instruction: instruction, timers: [bake, rest])
+    let spans = RecipeInstructionParameterSpans.spans(
+        for: step, ingredients: []
+    )
+
+    #expect(spans.map(\.text).joined() == instruction)
+    #expect(spans.filter { $0.parameter == .timer(bake.id) }.map(\.text) == ["20 min"])
+    #expect(spans.filter { $0.parameter == .timer(rest.id) }.map(\.text) == ["30 min"])
+}
+
+@Test
 func exactTimerLinksRemainAvailableWithPunctuationAndUnicode() {
     let timer = RecipeStepTimer(label: "Bake", durationSeconds: 1_200)
     for raw in [
