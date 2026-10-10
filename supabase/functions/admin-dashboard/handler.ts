@@ -8,6 +8,7 @@ import { AppError, errorResponse, json } from "../_shared/errors.ts";
 import { createServiceClient } from "../_shared/auth.ts";
 import { requireAdminSession } from "../_shared/admin-session.ts";
 import { requireDashboardRole } from "./access.ts";
+import { utcMonthKey, displayUTCMonth } from "../_shared/monthBuckets.ts";
 
 const PAID_TYPES = new Set([
   "INITIAL_PURCHASE",
@@ -15,13 +16,6 @@ const PAID_TYPES = new Set([
   "NON_RENEWING_PURCHASE",
   "PRODUCT_CHANGE",
 ]);
-
-function monthShort(iso: string): string {
-  return new Date(iso).toLocaleString("en-US", {
-    month: "short",
-    timeZone: "UTC",
-  });
-}
 
 function monthOrder(iso: string): number {
   const d = new Date(iso);
@@ -216,7 +210,7 @@ export async function handleRequest(
       .limit(10000);
     for (const row of allProfilesForGrowth ?? []) {
       const created = String(row.created_at);
-      const key = monthShort(created);
+      const key = utcMonthKey(created);
       const order = monthOrder(created);
       const bucket = usersByMonth.get(key) ?? { count: 0, order };
       bucket.count += 1;
@@ -230,7 +224,7 @@ export async function handleRequest(
       .limit(10000);
     for (const row of allRecipesForGrowth ?? []) {
       const created = String(row.created_at);
-      const key = monthShort(created);
+      const key = utcMonthKey(created);
       const order = monthOrder(created);
       const bucket = recipesByMonth.get(key) ?? { count: 0, order };
       bucket.count += 1;
@@ -246,7 +240,7 @@ export async function handleRequest(
       if (amount <= 0) continue;
       paymentTransactions += 1;
       const created = String(event.created_at);
-      const key = monthShort(created);
+      const key = utcMonthKey(created);
       const order = monthOrder(created);
       const bucket = revenueByMonth.get(key) ?? { apple: 0, android: 0, order };
       if (event.store === "app_store") {
@@ -267,7 +261,7 @@ export async function handleRequest(
     >();
     for (const row of downloadRows ?? []) {
       const ym = String(row.year_month);
-      const key = monthShort(ym);
+      const key = utcMonthKey(ym);
       const order = monthOrder(ym);
       const bucket = downloadsByMonth.get(key) ?? { ios: 0, android: 0, order };
       const count = Number(row.downloads) || 0;
@@ -446,7 +440,7 @@ export async function handleRequest(
         type: "download",
         title: `${latest.platform === "ios" ? "iOS" : "Android"} downloads`,
         subtitle: `${latest.downloads} installs · ${
-          monthShort(String(latest.year_month))
+          displayUTCMonth(String(latest.year_month))
         }`,
         createdAt: String(latest.year_month),
       });
