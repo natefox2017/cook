@@ -184,7 +184,7 @@ struct ProfileView: View {
                     )
                 }
                 NavigationLink {
-                    RecipeAboutView()
+                    AboutSettingsView()
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
                     ProfileRowLabel(
@@ -716,29 +716,6 @@ private struct RecipeHelpView: View {
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .navigationTitle("Help & Support")
-        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
-    }
-}
-
-private struct RecipeAboutView: View {
-    var body: some View {
-        List {
-            Section("App") {
-                LabeledContent("Version", value: RecipeVersion.display)
-            }
-            Section("Data & Privacy") {
-                NavigationLink("Your data") {
-                    StoredDataView()
-                }
-                NavigationLink("Privacy Summary") {
-                    PrivacySummaryView()
-                }
-            }
-        }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
-        .background(RecipeTheme.canvas)
-        .navigationTitle("About")
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }

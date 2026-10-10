@@ -1457,6 +1457,9 @@ final class RecipeUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["About"].waitForExistence(timeout: 8))
         XCTAssertFalse(app.navigationBars["About & Your Data"].exists)
         XCTAssertTrue(app.staticTexts["Version"].exists)
+        XCTAssertTrue(app.buttons["Open Source Licenses"].exists)
+        XCTAssertTrue(app.buttons["Acknowledgements"].exists)
+        XCTAssertFalse(app.buttons["Your data"].exists)
 
         app.navigationBars.buttons.firstMatch.tap()
 
