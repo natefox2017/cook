@@ -162,6 +162,68 @@ func reminderWarningUsesDeadlineAndSkipsShortPausedOrExpiredTimers() {
 }
 
 @Test
+func overlappingReminderPlansShareDeadlineRulesWithNotificationScheduler() throws {
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
+    var oven = CookingTimer(durationSeconds: 120)
+    var rice = CookingTimer(durationSeconds: 20)
+    oven.start(at: now)
+    rice.start(at: now.addingTimeInterval(10))
+
+    let ovenPlan = try #require(CookingReminderPlan(
+        timer: oven, warningSeconds: 30, now: now
+    ))
+    let ricePlan = try #require(CookingReminderPlan(
+        timer: rice, warningSeconds: 30, now: now.addingTimeInterval(10)
+    ))
+    #expect(ovenPlan.deadline == now.addingTimeInterval(120))
+    #expect(ovenPlan.earlyWarningAt == now.addingTimeInterval(90))
+    #expect(ricePlan.deadline == now.addingTimeInterval(30))
+    #expect(ricePlan.earlyWarningAt == nil)
+
+    // Native notification scheduling uses the same deadline-only initializer.
+    #expect(CookingReminderPlan(
+        deadline: ovenPlan.deadline, warningSeconds: 30, now: now
+    ) == ovenPlan)
+    #expect(CookingReminderPlan(
+        deadline: ricePlan.deadline, warningSeconds: 30,
+        now: now.addingTimeInterval(10)
+    ) == ricePlan)
+
+    // A late foreground refresh must not emit a stale early reminder.
+    let resumedView = try #require(CookingReminderPlan(
+        deadline: ovenPlan.deadline, warningSeconds: 30,
+        now: now.addingTimeInterval(95)
+    ))
+    #expect(resumedView.deadline == ovenPlan.deadline)
+    #expect(resumedView.earlyWarningAt == nil)
+
+    rice.pause(at: now.addingTimeInterval(15))
+    #expect(CookingReminderPlan(timer: rice, warningSeconds: 30, now: now) == nil)
+    #expect(CookingReminderPlan(
+        deadline: ovenPlan.deadline, warningSeconds: 30, now: now
+    ) == ovenPlan)
+}
+
+@Test
+func notificationWarningBoundariesAreStrictAndExpiredCompletionIsDiscarded() throws {
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
+    let barelyShort = try #require(CookingReminderPlan(
+        deadline: now.addingTimeInterval(31), warningSeconds: 30, now: now
+    ))
+    #expect(barelyShort.earlyWarningAt == nil)
+    let justLongEnough = try #require(CookingReminderPlan(
+        deadline: now.addingTimeInterval(32), warningSeconds: 30, now: now
+    ))
+    #expect(justLongEnough.earlyWarningAt == now.addingTimeInterval(2))
+    #expect(CookingReminderPlan(
+        deadline: now, warningSeconds: 30, now: now
+    ) == nil)
+    #expect(CookingReminderPlan(
+        deadline: now.addingTimeInterval(-5), warningSeconds: 30, now: now
+    ) == nil)
+}
+
+@Test
 func recipeTemperatureComparisonRequiresExplicitNumericSource() {
     #expect(RecipeTemperatureConversion.alternateUnit(for: "180°C") == "356°F")
     #expect(RecipeTemperatureConversion.alternateUnit(for: "95 °F") == "35°C")
