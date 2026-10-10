@@ -130,12 +130,18 @@ func offlineHTMLAssociatesCollectionsOnlyWithTheirRecipes() throws {
 @Test
 func portableJSONOmitsImagesWithoutMutatingOriginalRecipe() throws {
     let imageBytes = Data([0xFF, 0xD8, 0xFF, 0x01, 0x02, 0x03])
+    let step = RecipeStep(instruction: "Cook gently.")
+    let stepImage = RecipeStepImageReference(
+        stepID: step.id, privateAssetPath: "private/owner/step-1.jpg",
+        credit: "Recipe owner", license: "Original"
+    )
     let recipe = Recipe(
         title: "My saved recipe",
-        steps: [RecipeStep(instruction: "Cook gently.")],
+        steps: [step],
         sourceText: "Original cooking notes.",
         coverData: imageBytes,
         coverAsset: "SamplePastaReference",
+        stepImages: [stepImage],
         notes: "Keep the source wording."
     )
     let snapshot = RecipeLibrarySnapshot(recipes: [recipe])
@@ -149,6 +155,8 @@ func portableJSONOmitsImagesWithoutMutatingOriginalRecipe() throws {
     // Portable recipe exports must match the UI promise of no photos.
     #expect(exported.coverData == nil)
     #expect(exported.coverAsset == nil)
+    #expect(exported.stepImages == nil)
+    #expect(!String(decoding: portable, as: UTF8.self).contains(stepImage.privateAssetPath))
     #expect(exported.sourceText == recipe.sourceText)
     #expect(exported.notes == recipe.notes)
     #expect(exported.steps == recipe.steps)
@@ -156,4 +164,5 @@ func portableJSONOmitsImagesWithoutMutatingOriginalRecipe() throws {
     // The saved library and full-data export may still contain media.
     #expect(snapshot.recipes.first?.coverData == imageBytes)
     #expect(snapshot.recipes.first?.coverAsset == "SamplePastaReference")
+    #expect(snapshot.recipes.first?.stepImages == [stepImage])
 }
