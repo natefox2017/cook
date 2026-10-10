@@ -766,6 +766,12 @@
             "state": "translated",
             "value": "Recipe Pals의 공유 저장소를 사용할 수 없습니다. App Group 서명 설정을 확인하세요."
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De gedeelde opslag van Recipe Pals is niet beschikbaar. Controleer de ondertekeningsinstellingen van App Group."
+          }
         }
       }
     },
@@ -818,6 +824,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "공개 HTTPS 링크, 읽을 수 있는 텍스트, 이미지 또는 PDF를 Recipe Pals에 공유하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deel een openbare HTTPS-link, leesbare tekst, een afbeelding of een pdf met Recipe Pals."
           }
         }
       }
