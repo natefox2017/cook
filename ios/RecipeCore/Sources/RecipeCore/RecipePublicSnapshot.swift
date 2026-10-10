@@ -94,17 +94,9 @@ public struct PublicRecipeSnapshot: Codable, Equatable, Sendable {
             }
             : []
 
-        // Preserve attribution only for a syntactically valid public Web URL.
-        let validSource: String?
-        if let raw = recipe.sourceURL, let components = URLComponents(string: raw),
-            let scheme = components.scheme?.lowercased(),
-            ["https", "http"].contains(scheme),
-            components.host != nil, components.user == nil, components.password == nil
-        {
-            validSource = raw
-        } else {
-            validSource = nil
-        }
+        // The preview cannot imply permission to publish source access tokens.
+        // A private recipe always retains its original URL unchanged.
+        let validSource = RecipePublicCitation.eligibleURL(recipe.sourceURL)
 
         return PublicRecipeSnapshot(
             title: title, summary: recipe.summary,
