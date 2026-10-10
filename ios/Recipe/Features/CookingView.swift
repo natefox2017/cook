@@ -213,12 +213,14 @@ struct CookingView: View {
                         }
                     }
 
-                    Text(step.instruction)
-                        .font(RecipeTheme.body(25))
-                        .lineSpacing(RecipeSpacing.readingLine)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .textSelection(.enabled)
-                        .accessibilityIdentifier("cookingStepInstruction")
+                    RecipeInteractiveInstructionText(
+                        step: step, recipe: recipe,
+                        servings: session.servings,
+                        accessibilityID: "cookingStepInstruction",
+                        lineSpacing: RecipeSpacing.readingLine,
+                        selection: $parameterInfo
+                    )
+                    .font(RecipeTheme.body(25))
                 }
                 .contentShape(Rectangle())
                 // Match the Previous / Done & Next buttons, including finish confirmation.
