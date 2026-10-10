@@ -222,3 +222,19 @@ beyond these bounds, use an authorized, bounded paginated query or server-side
 aggregation and retest #276 before claiming a complete finance report.
 The existing recent-activity limits remain intentional. Live billing and
 account data were not read or modified as part of this code change.
+
+### Recorded purchase-event filter (2026-10-10)
+
+Only `INITIAL_PURCHASE`, `RENEWAL` and `NON_RENEWING_PURCHASE`
+contribute to preliminary **positive purchase-event** amounts.
+RevenueCat `PRODUCT_CHANGE` represents a plan/entitlement transition and
+may be emitted alongside a distinct renewal or initial purchase during an
+immediate change. Counting both can double-count the charge. See the
+[official event flows](https://www.revenuecat.com/docs/integrations/webhooks/event-flows).
+Historical source records are preserved, but product-change events no longer
+count as a new purchase in Admin dashboard totals or the per-subscription
+last-purchase display.
+
+This is **not net revenue**: refunded historical periods and refund reversals,
+duplicate deliveries, purchase environment, settlement timing and recognized
+financial currency remain separate unresolved reconciliation work under #276.
