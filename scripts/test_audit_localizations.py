@@ -5,6 +5,8 @@ import argparse
 import io
 import json
 import plistlib
+import subprocess
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -182,6 +184,15 @@ class LocalizationAuditTests(unittest.TestCase):
                 self.assertEqual(audit.run(strict=True, languages=("pt",)), 0)
             log = output.getvalue()
             self.assertIn("pt-BR: 0/1 translated; 1 English fallbacks", log)
+
+    def test_help_output_supports_literal_percent_and_new_locale_argument(self):
+        result = subprocess.run(
+            [sys.executable, str(Path(audit.__file__)), "--help"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("100% coverage", result.stdout)
+        self.assertIn("--language CODE", result.stdout)
 
     def test_cli_accepts_bcp47_language_tags_not_paths_or_injection(self):
         for valid in ["en", "de", "pt-BR", "zh-Hans", "en-US"]:
