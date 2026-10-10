@@ -233,7 +233,7 @@ export function AdminLogin({ onLogin, allowBootstrap }: AdminLoginProps) {
           </button>}
         </form>
 
-        {(factorChallenge?.methods.includes("passkey") || (!factorChallenge && mode === "login")) && (
+        {(mode === "login" || factorChallenge?.methods.includes("passkey")) && (
           <button className="button button-outline admin-login-submit" type="button" onClick={() => void signInWithPasskey()} disabled={loading || !isConfigured || !username.trim()}>
             {loading ? "Waiting for passkey…" : "Sign in with passkey"}
           </button>
