@@ -3,7 +3,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { RecordedRevenueLedger } from "./recordedRevenue.ts";
+import { RecordedRevenueLedger, isRecordedPurchaseEvent } from "./recordedRevenue.ts";
 
 test("single currency keeps platform totals separate across calendar years", () => {
   const ledger = new RecordedRevenueLedger();
@@ -50,4 +50,25 @@ test("free trial amount does not fabricate recorded money or a currency", () => 
   ledger.record({ price: 0 }, "app_store", "2026-01");
   assert.equal(ledger.summary().incompleteEvents, 0);
   assert.equal(ledger.summary().total, null);
+});
+
+test("only actual purchase webhooks contribute to recorded sales", () => {
+  for (const type of ["INITIAL_PURCHASE", "RENEWAL", "NON_RENEWING_PURCHASE"]) {
+    assert.equal(isRecordedPurchaseEvent(type), true);
+  }
+  for (const type of ["PRODUCT_CHANGE", "CANCELLATION", "REFUND_REVERSED", "TEST", "EXPIRATION", null]) {
+    assert.equal(isRecordedPurchaseEvent(type), false);
+  }
+  // A product-change event may accompany a separate renewal; it must not
+  // be treated as a second monetary purchase.
+  const ledger = new RecordedRevenueLedger();
+  for (const event of [
+    { event_type: "PRODUCT_CHANGE", price: 10, currency: "USD" },
+    { event_type: "RENEWAL", price: 10, currency: "USD" },
+  ]) {
+    if (isRecordedPurchaseEvent(event.event_type)) {
+      ledger.record(event, "app_store", "2026-10");
+    }
+  }
+  assert.equal(ledger.summary().total, 10);
 });
