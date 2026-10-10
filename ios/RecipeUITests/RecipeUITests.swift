@@ -684,6 +684,77 @@ final class RecipeUITests: XCTestCase {
         waitUntilReady(app.tabBars.buttons["Profile"])
     }
 
+    // DEV-76: exercise the proposal review UI without a real provider or cloud writes.
+    @MainActor
+    func testRecipeEditProposalDiscardAndPrivateVariantPreserveOriginal() {
+        let app = launchSeededApp(
+            additionalLaunchArguments: ["--uitesting-ai-edit-preview"]
+        )
+        defer { app.terminate() }
+        openSamplePasta(in: app)
+
+        openSyntheticRecipeProposal(in: app)
+        let original = app.staticTexts["reviewProposalBefore.0"].label
+        let suggested = app.staticTexts["reviewProposalAfter.0"].label
+        XCTAssertTrue(suggested.hasPrefix("QA Changed "))
+        XCTAssertNotEqual(original, suggested)
+
+        app.buttons["discardRecipeProposal"].tap()
+        waitUntilAbsent(app.navigationBars["Review changes"])
+
+        // A discarded proposal must not change the currently saved recipe.
+        openSyntheticRecipeProposal(in: app)
+        XCTAssertEqual(app.staticTexts["reviewProposalBefore.0"].label, original)
+        app.buttons["saveRecipeProposalVariant"].tap()
+        waitUntilAbsent(app.navigationBars["Review changes"])
+
+        // The new variant is private; the detail view still shows the original.
+        let feedback = app.alerts["Recipe"]
+        if feedback.waitForExistence(timeout: 2) {
+            feedback.buttons["OK"].tap()
+        }
+        openSyntheticRecipeProposal(in: app)
+        XCTAssertEqual(app.staticTexts["reviewProposalBefore.0"].label, original)
+        app.buttons["discardRecipeProposal"].tap()
+    }
+
+    @MainActor
+    func testRecipeEditProposalOnlyAppliesAfterApproval() {
+        let app = launchSeededApp(
+            additionalLaunchArguments: ["--uitesting-ai-edit-preview"]
+        )
+        defer { app.terminate() }
+        openSamplePasta(in: app)
+
+        openSyntheticRecipeProposal(in: app)
+        let suggested = app.staticTexts["reviewProposalAfter.0"].label
+        app.buttons["applyRecipeProposal"].tap()
+        waitUntilAbsent(app.navigationBars["Review changes"])
+
+        openSyntheticRecipeProposal(in: app)
+        XCTAssertEqual(app.staticTexts["reviewProposalBefore.0"].label, suggested)
+        app.buttons["discardRecipeProposal"].tap()
+    }
+
+    @MainActor
+    func testRecipeEditProposalRefusesStaleRevision() {
+        let app = launchSeededApp(
+            additionalLaunchArguments: [
+                "--uitesting-ai-edit-preview", "--uitesting-ai-edit-stale",
+            ]
+        )
+        defer { app.terminate() }
+        openSamplePasta(in: app)
+
+        openSyntheticRecipeProposal(in: app)
+        XCTAssertTrue(app.staticTexts["staleRecipeProposal"].exists)
+        XCTAssertFalse(app.buttons["applyRecipeProposal"].isEnabled)
+        XCTAssertFalse(app.buttons["saveRecipeProposalVariant"].isEnabled)
+        app.navigationBars["Review changes"].buttons["Cancel"].tap()
+        waitUntilAbsent(app.navigationBars["Review changes"])
+        XCTAssertTrue(app.buttons["startCooking"].exists)
+    }
+
     @MainActor
     func testRootTabsSwipeBetweenAdjacentScreensWithoutWrapping() {
         let app = launchSeededApp()
@@ -1941,7 +2012,10 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
-    private func launchSeededApp(storeKitTestProductID: String? = nil) -> XCUIApplication {
+    private func launchSeededApp(
+        storeKitTestProductID: String? = nil,
+        additionalLaunchArguments: [String] = []
+    ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
             "--uitesting",
@@ -1949,6 +2023,7 @@ final class RecipeUITests: XCTestCase {
             "--uitesting-locale",
             "en",
         ]
+        app.launchArguments += additionalLaunchArguments
         if let storeKitTestProductID {
             app.launchEnvironment["RECIPE_STOREKIT_TEST_PRODUCT_IDS"] = storeKitTestProductID
         }
@@ -1995,6 +2070,17 @@ final class RecipeUITests: XCTestCase {
         app.descendants(matching: .any)
             .matching(NSPredicate(format: "label IN %@", ["Cancel", "取消"]))
             .firstMatch
+    }
+
+    @MainActor
+    private func openSyntheticRecipeProposal(in app: XCUIApplication) {
+        app.buttons["Recipe Options"].tap()
+        let proposal = app.buttons["qaReviewRecipeProposal"]
+        waitUntilReady(proposal)
+        proposal.tap()
+        XCTAssertTrue(
+            app.navigationBars["Review changes"].waitForExistence(timeout: 8)
+        )
     }
 
     @MainActor
