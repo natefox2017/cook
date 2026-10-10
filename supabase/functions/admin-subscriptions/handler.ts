@@ -7,6 +7,7 @@ import { log } from "../_shared/logger.ts";
 import { authorizeSubscriptionRoute } from "./authorization.ts";
 import { utcMonthKey } from "../_shared/monthBuckets.ts";
 import { RecordedRevenueLedger } from "../_shared/recordedRevenue.ts";
+import { hasCompletePage } from "../_shared/reportPage.ts";
 
 type Platform = "app_store" | "play_store";
 
@@ -237,6 +238,14 @@ export async function handleRequest(
         );
       }
 
+      if (!hasCompletePage(data, 500)) {
+        throw new AppError(
+          "internal_error",
+          "Subscription records are incomplete. Narrow the filter or retry.",
+          503,
+        );
+      }
+
       const userIds = [
         ...new Set((data ?? []).map((row) => row.user_id as string)),
       ];
@@ -306,6 +315,13 @@ export async function handleRequest(
             500,
           );
         }
+        if (!hasCompletePage(events, 2000)) {
+          throw new AppError(
+            "internal_error",
+            "Purchase history is incomplete. Narrow the selection or retry.",
+            503,
+          );
+        }
         const latest = new Map<string, { amount: number; currency: string }>();
         for (const event of events ?? []) {
           const key = `${event.user_id}:${event.product_id ?? ""}`;
@@ -314,8 +330,12 @@ export async function handleRequest(
           const amount = Number(
             raw.price_in_purchased_currency ?? raw.price ?? NaN,
           );
-          const currency = String(raw.currency ?? "USD");
-          if (Number.isFinite(amount)) latest.set(key, { amount, currency });
+          const currency = String(raw.currency ?? raw.currency_code ?? "").trim()
+            .toUpperCase();
+          if (Number.isFinite(amount) && amount >= 0 &&
+            /^[A-Z]{3}$/.test(currency)) {
+            latest.set(key, { amount, currency });
+          }
         }
         for (const row of rows) {
           const purchase = latest.get(`${row.user.id}:${row.productId ?? ""}`);
