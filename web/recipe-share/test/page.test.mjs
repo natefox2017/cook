@@ -44,7 +44,11 @@ test("private, credentialed and malformed citations invalidate public recipes", 
     "https://127.0.0.1/soup",
     "https://[::1]/soup",
     "https://printer.local/soup",
+    "https://printer.local./soup",
+    "https://foo.local../soup",
     "https://localhost/soup",
+    "https://localhost./soup",
+    "https://@example.org/soup",
     "https://example.org/soup\nwith-control",
     "https://example.org/" + "x".repeat(2049),
     "",
@@ -53,6 +57,22 @@ test("private, credentialed and malformed citations invalidate public recipes", 
     const input = {...sample, sourceURL:url};
     assert.equal(validatePublicRecipe(input), null, String(url).slice(0, 80));
     assert.throws(() => renderRecipePage(input), /Invalid public recipe payload/);
+  }
+});
+test("invalid source fails at the guest HTTP boundary without reflecting secrets", async () => {
+  const secret = "private-source-token-test";
+  const server = createRecipeServer({
+    loadRecipe: async () => ({...sample, sourceURL:"https://example.org/soup?access_token=" + secret}),
+  });
+  await new Promise(resolve => server.listen(0, resolve));
+  try {
+    const response = await fetch("http://127.0.0.1:" + server.address().port + "/r/abcdefgh");
+    assert.equal(response.status, 503);
+    assert.equal(response.headers.get("cache-control"), "private, no-store, max-age=0");
+    assert.match(response.headers.get("content-security-policy"), /default-src 'none'/);
+    assert.doesNotMatch(await response.text(), new RegExp(secret));
+  } finally {
+    await new Promise(resolve => server.close(resolve));
   }
 });
 test("revoked and invalid recipe fail closed",async()=>{assert.equal(validatePublicRecipe({...sample,steps:"private"}),null);assert.match(renderUnavailable(),/Recipe unavailable/);const server=createRecipeServer({loadRecipe:async()=>null});await new Promise(r=>server.listen(0,r));try{const res=await fetch(`http://127.0.0.1:${server.address().port}/r/abcdefgh`);assert.equal(res.status,404);}finally{await new Promise(r=>server.close(r));}});
