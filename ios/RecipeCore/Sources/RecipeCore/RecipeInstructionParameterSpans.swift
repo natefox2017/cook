@@ -198,8 +198,8 @@ public enum RecipeInstructionParameterSpans {
             if [
                 // Never link only the upper bound of "between 10 and 20 min".
                 "about", "around", "roughly", "approx", "approximately", "circa",
-                "to", "or", "and", "through", "least", "most", "than", "under", "over", "within",
-                "below", "above",
+                "to", "or", "and", "through", "least", "most", "than", "under",
+                "over", "within", "below", "above",
             ].contains(normalized) {
                 return true
             }
@@ -224,7 +224,7 @@ public enum RecipeInstructionParameterSpans {
         }
         let nextWord = remaining.prefix(while: { $0.isLetter }).lowercased()
         if nextWord == "and" {
-            // "20 min and 30 min" is a range; "20 min and then rest" is not.
+            // "20 min and 30 min" is ambiguous; "20 min and then rest" is not.
             let afterConnector = remaining.dropFirst(nextWord.count).drop(while: {
                 $0.isWhitespace
             })
