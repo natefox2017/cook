@@ -514,6 +514,12 @@ struct RecipeApp: App {
                 .font(RecipeTheme.body())
                 .preferredColorScheme(colorScheme)
                 .environment(\.locale, appLocale)
+                .onChange(of: languageOverride, initial: true) { _, identifier in
+                    // UI-test launch flags must never overwrite a signed user's
+                    // App Group language preference in a separate share process.
+                    guard !isUITesting else { return }
+                    RecipeLanguage.mirrorManualSelection(identifier)
+                }
         }
     }
 
