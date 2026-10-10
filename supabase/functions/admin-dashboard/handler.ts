@@ -9,15 +9,8 @@ import { createServiceClient } from "../_shared/auth.ts";
 import { requireAdminSession } from "../_shared/admin-session.ts";
 import { requireDashboardRole } from "./access.ts";
 import { utcMonthKey, displayUTCMonth } from "../_shared/monthBuckets.ts";
-import { RecordedRevenueLedger } from "../_shared/recordedRevenue.ts";
+import { RecordedRevenueLedger, isRecordedPurchaseEvent } from "../_shared/recordedRevenue.ts";
 import { hasCompletePage } from "../_shared/reportPage.ts";
-
-const PAID_TYPES = new Set([
-  "INITIAL_PURCHASE",
-  "RENEWAL",
-  "NON_RENEWING_PURCHASE",
-  "PRODUCT_CHANGE",
-]);
 
 function monthOrder(iso: string): number {
   const d = new Date(iso);
@@ -249,7 +242,7 @@ export async function handleRequest(
     const eventsAsc = [...(purchaseEvents ?? [])].reverse();
     for (const event of eventsAsc) {
       const type = String(event.event_type ?? "").toUpperCase();
-      if (!PAID_TYPES.has(type)) continue;
+      if (!isRecordedPurchaseEvent(type)) continue;
       paymentTransactions++;
       recordedRevenue.record(
         event.raw_event,
@@ -337,7 +330,7 @@ export async function handleRequest(
     const revenueMrr: number | null = null;
 
     const recentPaid = (purchaseEvents ?? [])
-      .filter((e) => PAID_TYPES.has(String(e.event_type ?? "").toUpperCase()))
+      .filter((e) => isRecordedPurchaseEvent(e.event_type))
       .slice(0, 8);
 
     const payUserIds = [

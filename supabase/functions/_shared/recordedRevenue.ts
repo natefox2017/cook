@@ -1,6 +1,18 @@
 // Developer: gengyun
 // Purpose: Group recorded purchase amounts by declared currency; never invent FX conversion.
 
+/**
+ * A product change is a change of entitlement; RevenueCat may also emit a
+ * separate RENEWAL or INITIAL_PURCHASE for the same immediate upgrade.
+ * Do not count PRODUCT_CHANGE as an additional purchase event.
+ * https://www.revenuecat.com/docs/integrations/webhooks/event-flows
+ */
+export function isRecordedPurchaseEvent(eventType: unknown): boolean {
+  const value = typeof eventType === "string" ? eventType.toUpperCase() : "";
+  return value === "INITIAL_PURCHASE" || value === "RENEWAL" ||
+    value === "NON_RENEWING_PURCHASE";
+}
+
 export type RevenueStore = "app_store" | "play_store";
 export type RevenueCurrencyRow = {
   currency: string;
