@@ -196,8 +196,9 @@ public enum RecipeInstructionParameterSpans {
         }).last {
             let normalized = String(word).trimmingCharacters(in: .punctuationCharacters)
             if [
+                // Never link only the upper bound of "between 10 and 20 min".
                 "about", "around", "roughly", "approx", "approximately", "circa",
-                "to", "or", "least", "most", "than", "under", "over", "within",
+                "to", "or", "and", "through", "least", "most", "than", "under", "over", "within",
                 "below", "above",
             ].contains(normalized) {
                 return true
@@ -206,7 +207,7 @@ public enum RecipeInstructionParameterSpans {
         guard let last = prefix.last(where: { !$0.isWhitespace }) else {
             return false
         }
-        return ["-", "–", "—", "~", "<", ">", "≤", "≥", "≈"].contains(last)
+        return ["-", "–", "—", "~", "&", "<", ">", "≤", "≥", "≈"].contains(last)
     }
 
     private static func isApproximateOrRangeSuffix(
@@ -218,10 +219,17 @@ public enum RecipeInstructionParameterSpans {
         guard let first = remaining.first else {
             return false
         }
-        if ["+", "-", "–", "—", "~", "<", ">", "≤", "≥", "≈"].contains(first) {
+        if ["+", "-", "–", "—", "~", "&", "<", ">", "≤", "≥", "≈"].contains(first) {
             return true
         }
         let nextWord = remaining.prefix(while: { $0.isLetter }).lowercased()
-        return nextWord == "or" || nextWord == "to"
+        if nextWord == "and" {
+            // "20 min and 30 min" is a range; "20 min and then rest" is not.
+            let afterConnector = remaining.dropFirst(nextWord.count).drop(while: {
+                $0.isWhitespace
+            })
+            return afterConnector.first?.isNumber ?? false
+        }
+        return nextWord == "or" || nextWord == "to" || nextWord == "through"
     }
 }
