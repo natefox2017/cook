@@ -1,2 +1,5 @@
 blank_issues_enabled: false
-contact_links: []
+contact_links:
+  - name: "Create a Cook task in Linear"
+    url: "https://linear.app/gengyun/project/cook-recipe-pals-development-8c015c72cb6a"
+    about: "Use Linear Issues and the Cook Board for features, bugs, Todo, tests, review and task claiming. GitHub Issues are historical read-only records; use PRs for code delivery."
