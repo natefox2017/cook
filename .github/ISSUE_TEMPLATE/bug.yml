@@ -3,6 +3,10 @@ description: 缺陷修复
 title: "[Bug] "
 labels: []
 body:
+  - type: markdown
+    attributes:
+      value: |
+        所有 Bug 都以 Todo 管理：提交后先进入 Cook Kanban 的 Todo 栏，**只能在看板领取**（Claimed + Claim ID + Assignee）。Issue 创建 ≠ 领取；完成每项 Todo 立即勾选，更新看板状态与验证记录。
   - type: textarea
     id: actual
     attributes:
@@ -39,3 +43,19 @@ body:
       label: 验证
     validations:
       required: true
+  - type: textarea
+    id: todo
+    attributes:
+      label: Todo / 验收清单
+      description: 必须使用 - [ ] T01、T02 等独立验收任务；处理一项马上勾选，并同步 Kanban 状态。可以独立领取的工作请拆为子 Issue。
+      placeholder: |
+        - [ ] T01 — 复现并确认当前 main 仍存在的问题
+        - [ ] T02 — 按最小范围修复并关联 PR
+        - [ ] T03 — 验证修复与回归，记录 PASS / FAIL / NOT RUN
+    validations:
+      required: true
+  - type: textarea
+    id: blockers
+    attributes:
+      label: 依赖 / 阻塞 / 已有 Issue 和 PR
+      description: 不得重复处理已经完成或他人已在看板领取的任务。
