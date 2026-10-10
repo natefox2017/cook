@@ -88,10 +88,15 @@ final class RecipeUITests: XCTestCase {
         waitUntilAbsent(app.navigationBars["Select recipes"])
         returnFromRecipeDetail(in: app)
 
-        revealLibraryRecipe(app.buttons[Self.savedSoupIdentifier], in: app)
-        revealLibraryRecipe(app.buttons[Self.savedPastaIdentifier], in: app)
+        let savedSoup = app.buttons[Self.savedSoupIdentifier]
+        revealLibraryRecipe(savedSoup, in: app)
         XCTAssertEqual(app.buttons.matching(identifier: Self.savedSoupIdentifier).count, 1)
+        XCTAssertTrue(savedSoup.label.contains("QA Tomato Soup"))
+
+        let savedPasta = app.buttons[Self.savedPastaIdentifier]
+        revealLibraryRecipe(savedPasta, in: app)
         XCTAssertEqual(app.buttons.matching(identifier: Self.savedPastaIdentifier).count, 1)
+        XCTAssertTrue(savedPasta.label.contains("QA Lemon Pasta"))
     }
 
     @MainActor
