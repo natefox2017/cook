@@ -18,6 +18,7 @@ public enum RecipePublicShareURL {
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-")
         return (8...128).contains(slug.count)
             && slug.unicodeScalars.allSatisfy { safe.contains($0) }
-            && url.path == "/r/\(slug)"
+            && URLComponents(url: url, resolvingAgainstBaseURL: false)?.percentEncodedPath
+                == "/r/\(slug)"
     }
 }
