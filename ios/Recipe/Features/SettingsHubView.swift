@@ -585,6 +585,8 @@ struct LocalePreferencesView: View {
                         Text(language.label).tag(language.id)
                     }
                 }
+                .pickerStyle(.navigationLink)
+                .accessibilityIdentifier("settings.languagePicker")
             }
             Section("Country or region") {
                 Picker("Country or region", selection: $countryOverride) {

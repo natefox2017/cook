@@ -5,7 +5,7 @@ import Foundation
 
 /// Locale policy is shared by SwiftUI, service errors and the Share extension.
 /// In test-stage normal launches the default remains English. A user's explicit
-/// supported choice wins outside test runs; UI tests can force their own fixture.
+/// supported choice wins unless a UI test explicitly forces its own fixture.
 public enum RecipeLanguage {
     public static let preferenceKey = "recipe.languageOverride"
     public static let currentlyTranslatedLanguages: [String] = [
@@ -41,14 +41,15 @@ public enum RecipeLanguage {
         arguments: [String], supportedIdentifiers: [String],
         selectedIdentifier: String? = nil
     ) -> Locale {
-        if arguments.contains("--uitesting") {
-            if let index = arguments.firstIndex(of: "--uitesting-locale"),
-                arguments.indices.contains(index + 1),
-                supportedIdentifiers.contains(arguments[index + 1])
-            {
-                return Locale(identifier: arguments[index + 1])
-            }
-            return Locale(identifier: "en")
+        // Explicit UI-test locales remain deterministic. Otherwise a deliberate
+        // manual choice must work even in a UI-test launch.
+        if arguments.contains("--uitesting"),
+            let index = arguments.firstIndex(of: "--uitesting-locale"),
+            arguments.indices.contains(index + 1),
+            supportedIdentifiers.contains(arguments[index + 1]),
+            currentlyTranslatedLanguages.contains(arguments[index + 1])
+        {
+            return Locale(identifier: arguments[index + 1])
         }
 
         if let selectedIdentifier,
