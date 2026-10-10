@@ -54,10 +54,9 @@ public struct CookingReminderPlan: Equatable, Sendable {
     public let deadline: Date
     public let earlyWarningAt: Date?
 
-    public init?(timer: CookingTimer, warningSeconds: Int, now: Date = .now) {
-        guard let deadline = timer.deadline, timer.remaining(at: now) > 0 else {
-            return nil
-        }
+    /// Shared by notification scheduling and deterministic deadline tests.
+    public init?(deadline: Date, warningSeconds: Int, now: Date = .now) {
+        guard deadline > now else { return nil }
         self.deadline = deadline
         if warningSeconds > 0,
             deadline.timeIntervalSince(now) > Double(warningSeconds + 1)
@@ -66,6 +65,13 @@ public struct CookingReminderPlan: Equatable, Sendable {
         } else {
             earlyWarningAt = nil
         }
+    }
+
+    public init?(timer: CookingTimer, warningSeconds: Int, now: Date = .now) {
+        guard let deadline = timer.deadline, timer.remaining(at: now) > 0 else {
+            return nil
+        }
+        self.init(deadline: deadline, warningSeconds: warningSeconds, now: now)
     }
 }
 
