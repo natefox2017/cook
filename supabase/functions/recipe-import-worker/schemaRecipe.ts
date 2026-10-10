@@ -3,6 +3,7 @@
 
 import { load } from "cheerio";
 import { publicSocialMetadata } from "./publicSocialMetadata.ts";
+import { stableCandidateIDs } from "./candidateIdentity.ts";
 import type { PageTextEvidence } from "./pageContent.ts";
 
 interface EvidenceField {
@@ -170,36 +171,26 @@ function instructionValues(value: unknown): string[] {
 
 const MAX_RECIPE_CANDIDATES = 8;
 
-/** Stable source-derived ID; index disambiguates duplicate dishes in one page. */
-function candidateID(node: RecipeNode, index: number): string {
-  const basis = JSON.stringify([
-    textValue(node.name),
-    ingredientValues(node.recipeIngredient),
-    instructionValues(node.recipeInstructions),
-  ]);
-  // FNV-1a over JSON-LD source evidence. Not an authentication token.
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < basis.length; i++) {
-    hash ^= basis.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193) >>> 0;
-  }
-  return `candidate-${index + 1}-${hash.toString(16).padStart(8, "0")}`;
-}
-
+// Source-order indexes are not identities: adding a preceding dish must not
+// create a second private child recipe on the next import of the same source.
 function recipeCandidates(
-  nodes: RecipeNode[], timestamp: string
+  nodes: RecipeNode[], timestamp: string,
 ): { candidates: RecipeImportCandidate[]; evidence: Array<Record<string, unknown>> } {
   const evidence: Array<Record<string, unknown>> = [];
-  const candidates = nodes.slice(0, MAX_RECIPE_CANDIDATES).map((node, index) => {
-    const title = textValue(node.name);
-    const ingredients = ingredientValues(node.recipeIngredient).slice(0, 80);
-    const steps = instructionValues(node.recipeInstructions).slice(0, 80);
+  const selectedNodes = nodes.slice(0, MAX_RECIPE_CANDIDATES);
+  const extracted = selectedNodes.map((node) => ({
+    title: textValue(node.name),
+    ingredients: ingredientValues(node.recipeIngredient).slice(0, 80),
+    steps: instructionValues(node.recipeInstructions).slice(0, 80),
+  }));
+  const identities = stableCandidateIDs(extracted);
+  const candidates = extracted.map(({ title, ingredients, steps }, index) => {
     const evidenceID = crypto.randomUUID();
     evidence.push({
       id: evidenceID,
       source_type: "webpage_structured_data",
       origin: "extracted",
-      excerpt: JSON.stringify(node).slice(0, 9_700),
+      excerpt: JSON.stringify(selectedNodes[index]).slice(0, 9_700),
       confidence: 1,
       captured_at: timestamp,
     });
@@ -208,7 +199,7 @@ function recipeCandidates(
     if (ingredients.length === 0) review.push("ingredients");
     if (steps.length === 0) review.push("steps");
     return {
-      candidate_id: candidateID(node, index),
+      candidate_id: identities[index],
       title,
       ingredients,
       steps,
