@@ -121,3 +121,48 @@ Deno.test("keeps structured ingredients and steps separated by candidate", () =>
   assertEquals(result.candidate_recipes?.[0].steps, ["Boil pasta"]);
   assertEquals(result.candidate_recipes?.[1].steps, ["Simmer stock"]);
 });
+
+
+// The parent import may be re-run after a website rearranges its JSON-LD graph.
+// An unrelated first recipe must not change the IDs used by private child saves.
+Deno.test("multi-recipe IDs survive source reordering and unrelated insertion", () => {
+  const soup = {
+    "@type": "Recipe", name: "Soup",
+    recipeIngredient: ["200 ml stock"],
+    recipeInstructions: [{ "@type": "HowToStep", text: "Simmer stock." }],
+  };
+  const pasta = {
+    "@type": "Recipe", name: "Pasta",
+    recipeIngredient: ["100 g pasta"],
+    recipeInstructions: [{ "@type": "HowToStep", text: "Boil pasta." }],
+  };
+  const pie = {
+    "@type": "Recipe", name: "Pie",
+    recipeIngredient: ["1 apple"],
+    recipeInstructions: [{ "@type": "HowToStep", text: "Bake pie." }],
+  };
+  const resultFor = (recipes: object[]) =>
+    parseSchemaOrgRecipePage({
+      id: "123e4567-e89b-12d3-a456-426614174002",
+      html: '<html><script type="application/ld+json">' +
+        JSON.stringify({ "@context": "https://schema.org", "@graph": recipes }) +
+        '</script></html>',
+      source,
+    });
+  const initial = resultFor([soup, pasta]).candidate_recipes ?? [];
+  const reordered = resultFor([pasta, soup]).candidate_recipes ?? [];
+  const inserted = resultFor([pie, soup, pasta]).candidate_recipes ?? [];
+  assertEquals(initial.map((candidate) => candidate.candidate_id), [
+    reordered[1].candidate_id,
+    reordered[0].candidate_id,
+  ]);
+  assertEquals(initial.map((candidate) => candidate.candidate_id),
+    inserted.slice(1).map((candidate) => candidate.candidate_id));
+  assertEquals(initial.every((candidate) =>
+    /^candidate-v2-[a-f0-9]{32}$/.test(candidate.candidate_id)), true);
+  assertEquals(resultFor([soup, soup]).candidate_recipes?.map((candidate) =>
+    candidate.candidate_id).length, 2);
+  const duplicates = resultFor([soup, soup]).candidate_recipes ?? [];
+  assertEquals(duplicates[1].candidate_id, duplicates[0].candidate_id + "-2");
+  assertEquals(new Set(duplicates.map((candidate) => candidate.candidate_id)).size, 2);
+});
