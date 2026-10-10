@@ -75,7 +75,8 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US", { notation: value > 9999 ? "compact" : "standard" }).format(value);
 }
 
-function formatMoney(value: number) {
+function formatMoney(value: number | null) {
+  if (value == null || !Number.isFinite(value)) return "—";
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
 }
 
@@ -176,7 +177,7 @@ function Overview({ token, onAuthExpired }: { token: string; onAuthExpired: () =
         <MetricCard label="Total users" value={formatNumber(data.stats.totalUsers)} note={`+${formatNumber(data.stats.newUsersThisMonth)} this month`} icon={Users} />
         <MetricCard label="Registrations this month" value={formatNumber(data.stats.newUsersThisMonth)} note="New app users" icon={ArrowUpRight} tone="blue" />
         <MetricCard label="Active paid" value={formatNumber(data.stats.activePaidUsers)} note={`${formatNumber(data.stats.suspendedUsers)} suspended accounts`} icon={ArrowUpRight} tone="amber" />
-        <MetricCard label="Revenue tracked" value={formatMoney(data.stats.revenueTotal)} note={`${formatMoney(data.stats.revenueMrr)} estimated MRR`} icon={CircleDollarSign} tone="violet" />
+        <MetricCard label="Revenue tracked" value={formatMoney(data.stats.revenueTotal)} note={data.stats.revenueMrr == null ? "MRR requires verified subscription amounts" : `${formatMoney(data.stats.revenueMrr)} verified MRR`} icon={CircleDollarSign} tone="violet" />
       </section>
 
       <section className="overview-grid">
