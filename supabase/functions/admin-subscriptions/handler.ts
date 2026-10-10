@@ -6,7 +6,7 @@ import { requireAdminSession } from "../_shared/admin-session.ts";
 import { log } from "../_shared/logger.ts";
 import { authorizeSubscriptionRoute } from "./authorization.ts";
 import { utcMonthKey } from "../_shared/monthBuckets.ts";
-import { RecordedRevenueLedger } from "../_shared/recordedRevenue.ts";
+import { RecordedRevenueLedger, isRecordedPurchaseEvent } from "../_shared/recordedRevenue.ts";
 import { hasCompletePage } from "../_shared/reportPage.ts";
 
 type Platform = "app_store" | "play_store";
@@ -304,7 +304,7 @@ export async function handleRequest(
       if (userIds.length) {
         const { data: events, error: eventError } = await admin
           .from("purchase_events")
-          .select("user_id, product_id, store, raw_event, created_at")
+          .select("user_id, product_id, store, raw_event, created_at, event_type")
           .in("user_id", userIds)
           .order("created_at", { ascending: false })
           .limit(2000);
@@ -324,6 +324,7 @@ export async function handleRequest(
         }
         const latest = new Map<string, { amount: number; currency: string }>();
         for (const event of events ?? []) {
+          if (!isRecordedPurchaseEvent(event.event_type)) continue;
           const key = `${event.user_id}:${event.product_id ?? ""}`;
           if (latest.has(key)) continue;
           const raw = (event.raw_event ?? {}) as Record<string, unknown>;
@@ -365,15 +366,9 @@ export async function handleRequest(
         throw new AppError("internal_error", "Failed to load revenue", 500);
       }
 
-      const paidTypes = new Set([
-        "INITIAL_PURCHASE",
-        "RENEWAL",
-        "NON_RENEWING_PURCHASE",
-        "PRODUCT_CHANGE",
-      ]);
       const ledger = new RecordedRevenueLedger();
       for (const event of data ?? []) {
-        if (!paidTypes.has(String(event.event_type ?? "").toUpperCase())) continue;
+        if (!isRecordedPurchaseEvent(event.event_type)) continue;
         ledger.record(event.raw_event, event.store, utcMonthKey(String(event.created_at)));
       }
       // A capped result is not certified complete, even if one currency appears.
