@@ -7,10 +7,10 @@ function sourceURL(value) {
   if (typeof value !== "string" || value.length > 2048 || value.trim() !== value ||
       /[\u0000-\u001f\u007f-\u009f]/.test(value) || value.includes("#")) return null;
   const authority = /^https:\/\/([^/?#]+)/i.exec(value)?.[1];
-  if (!authority || /:\d+$/.test(authority)) return null;
+  if (!authority || authority.includes("@") || /:\d+$/.test(authority)) return null;
   try {
     const url = new URL(value);
-    const host = url.hostname.toLowerCase();
+    const host = url.hostname.toLowerCase().replace(/\.+$/, "");
     if (url.protocol !== "https:" || !host.includes(".") ||
         host.endsWith(".local") || host.includes(":") || !/[a-z]/i.test(host) ||
         url.username || url.password || url.port ||
