@@ -11,6 +11,12 @@
             "value": "Recipe Pals"
           }
         },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -78,6 +84,12 @@
       "extractionState": "extracted_with_value",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals"
+          }
+        },
+        "pt-BR": {
           "stringUnit": {
             "state": "translated",
             "value": "Recipe Pals"
@@ -161,6 +173,12 @@
             "value": "レシピを撮影して文字を読み取り、レシピライブラリに保存するためにカメラを使用します。"
           }
         },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografe uma receita para ler o texto e salvá-la na sua biblioteca de receitas."
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -233,6 +251,12 @@
             "value": "ハンズフリー操作をオンにした場合のみ、調理画面で音声コマンドを認識するためにマイクを使用します。音声は端末内で処理します。"
           }
         },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permita comandos de voz no Modo de Preparo após ativar o controle sem as mãos. O áudio é processado apenas neste dispositivo."
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -297,6 +321,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "調理モードを開いている間、任意で「次へ」「前へ」「繰り返し」などの音声操作を認識します。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconhecer comandos de voz opcionais como “Próximo”, “Anterior” e “Repetir” enquanto o Modo de Preparo estiver aberto."
           }
         },
         "zh-Hans": {
