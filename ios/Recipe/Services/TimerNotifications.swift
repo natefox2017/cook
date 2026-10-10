@@ -33,11 +33,10 @@ enum TimerNotifications {
             center.removeDeliveredNotifications(withIdentifiers: relatedIDs)
 
             // Use the absolute deadline, not the duration before awaiting authorization.
-            let now = Date.now
-            guard deadline > now else { return }
-            if warningSeconds > 0,
-                deadline.timeIntervalSince(now) > Double(warningSeconds + 1)
-            {
+            guard let reminder = CookingReminderPlan(
+                deadline: deadline, warningSeconds: warningSeconds, now: .now
+            ) else { return }
+            if let earlyWarningAt = reminder.earlyWarningAt {
                 let soon = UNMutableNotificationContent()
                 soon.title = String(
                     localized: LocalizedStringResource(
@@ -45,8 +44,7 @@ enum TimerNotifications {
                 soon.body = title
                 soon.sound = UNNotificationSound(
                     named: UNNotificationSoundName("timer-warning.wav"))
-                let delay = deadline.addingTimeInterval(-TimeInterval(warningSeconds))
-                    .timeIntervalSinceNow
+                let delay = earlyWarningAt.timeIntervalSinceNow
                 if delay > 0 {
                     try await center.add(
                         UNNotificationRequest(
@@ -69,7 +67,7 @@ enum TimerNotifications {
                     UNNotificationRequest(
                         identifier: id, content: done,
                         trigger: UNTimeIntervalNotificationTrigger(
-                            timeInterval: max(1, deadline.timeIntervalSinceNow),
+                            timeInterval: max(1, reminder.deadline.timeIntervalSinceNow),
                             repeats: false)
                     )
                 )
