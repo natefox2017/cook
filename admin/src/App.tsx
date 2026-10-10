@@ -174,7 +174,7 @@ function Overview({ token, onAuthExpired }: { token: string; onAuthExpired: () =
       {error && <div className="notice notice-warning">Some data could not be refreshed: {error}</div>}
       <section className="metric-grid">
         <MetricCard label="Total users" value={formatNumber(data.stats.totalUsers)} note={`+${formatNumber(data.stats.newUsersThisMonth)} this month`} icon={Users} />
-        <MetricCard label="Registrations this month" value={formatNumber(data.stats.newUsersThisMonth)} note="New admin accounts" icon={ArrowUpRight} tone="blue" />
+        <MetricCard label="Registrations this month" value={formatNumber(data.stats.newUsersThisMonth)} note="New app users" icon={ArrowUpRight} tone="blue" />
         <MetricCard label="Active paid" value={formatNumber(data.stats.activePaidUsers)} note={`${formatNumber(data.stats.suspendedUsers)} suspended accounts`} icon={ArrowUpRight} tone="amber" />
         <MetricCard label="Revenue tracked" value={formatMoney(data.stats.revenueTotal)} note={`${formatMoney(data.stats.revenueMrr)} estimated MRR`} icon={CircleDollarSign} tone="violet" />
       </section>
@@ -225,13 +225,7 @@ function AppShell({ session, onLogout, onAuthExpired }: { session: AdminSession;
     }
 
     window.addEventListener("popstate", restoreRoute);
-    const requested = pageFromPath(window.location.pathname);
-    const initial = requested && canOpenPage(session.admin.role, requested)
-      ? requested
-      : defaultPage(session.admin.role);
-    if (window.location.pathname !== routePaths[initial]) {
-      window.history.replaceState(null, "", routePaths[initial]);
-    }
+    restoreRoute();
     return () => window.removeEventListener("popstate", restoreRoute);
   }, [session.admin.role]);
 

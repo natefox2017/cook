@@ -239,9 +239,18 @@ export function AdminLogin({ onLogin, allowBootstrap }: AdminLoginProps) {
           </button>
         )}
 
-        {isConfigured && allowBootstrap && (
+        {factorChallenge ? (
+          <button className="button button-ghost admin-login-mode-toggle" type="button" disabled={loading} onClick={() => {
+            setFactorChallenge(null);
+            setFactorCode("");
+            setMode("login");
+            setError("");
+          }}>
+            Back to sign in
+          </button>
+        ) : isConfigured && allowBootstrap && (
           <button className="button button-ghost admin-login-mode-toggle" type="button" onClick={toggleMode}>
-            {factorChallenge ? "Back to sign in" : mode === "login" ? "First time here? Initialize admin" : "Back to sign in"}
+            {mode === "login" ? "First time here? Initialize admin" : "Back to sign in"}
           </button>
         )}
         <p className="admin-login-security"><ShieldCheck size={16} aria-hidden="true" /> Protected admin session</p>
