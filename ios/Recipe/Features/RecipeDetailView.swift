@@ -411,9 +411,7 @@ struct RecipeDetailView: View {
                                             RecipeTheme.text(
                                                 17, weight: .semibold, relativeTo: .headline))
                                 }
-                                Text(step.instruction)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .textSelection(.enabled)
+                                interactiveInstruction(step, recipe: recipe)
                             }
                         }
 
@@ -484,6 +482,68 @@ struct RecipeDetailView: View {
                 }
             }
         }
+    }
+
+    /// Keep the original instruction selectable while presenting safe, local links.
+    /// Typed references are resolved again on tap so stale links cannot select other data.
+    private func interactiveInstruction(_ step: RecipeStep, recipe: Recipe) -> some View {
+        let spans = RecipeInstructionParameterSpans.spans(
+            for: step, ingredients: recipe.ingredients
+        )
+        var text = AttributedString()
+        var targets: [Int: RecipeInstructionParameter] = [:]
+        for (index, span) in spans.enumerated() {
+            var fragment = AttributedString(span.text)
+            if let parameter = span.parameter,
+                let url = URL(string: "recipe-parameter://item/\(index)")
+            {
+                fragment.link = url
+                targets[index] = parameter
+            }
+            text.append(fragment)
+        }
+
+        return Text(text)
+            .tint(RecipeTheme.accentForeground)
+            .fixedSize(horizontal: false, vertical: true)
+            .textSelection(.enabled)
+            .accessibilityIdentifier("recipeStepInstruction.\(step.id.uuidString)")
+            .environment(\.openURL, OpenURLAction { url in
+                guard url.scheme == "recipe-parameter", url.host == "item",
+                    let index = Int(url.lastPathComponent),
+                    let parameter = targets[index]
+                else {
+                    return .systemAction
+                }
+
+                switch parameter {
+                case .ingredient(let ingredientID):
+                    guard step.linkedIngredientIDs.contains(ingredientID),
+                        let ingredient = recipe.ingredients.first(where: {
+                            $0.id == ingredientID
+                        })
+                    else {
+                        return .discarded
+                    }
+                    parameterInfo = .ingredient(
+                        ingredient, servings: servings,
+                        originalServings: recipe.servings
+                    )
+                case .temperature:
+                    guard let temperature = step.temperature else {
+                        return .discarded
+                    }
+                    parameterInfo = .temperature(temperature)
+                case .timer(let timerID):
+                    guard let timer = step.timers.first(where: {
+                        $0.id == timerID
+                    }) else {
+                        return .discarded
+                    }
+                    parameterInfo = .timer(timer)
+                }
+                return .handled
+            })
     }
 
     @ViewBuilder
