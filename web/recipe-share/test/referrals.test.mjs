@@ -36,3 +36,59 @@ test("cannot refer yourself or claim repeatedly",()=>{
   assert.throws(()=>proposeExplicitInvitationClaim({...payload,existingInvitationClaim:true}),/already_claimed/);
   assert.throws(()=>proposeExplicitInvitationClaim({...payload,authenticatedInviteeID:"not-a-uuid"}),/server_identity_required/);
 });
+test("invitation IDs reject malformed and nil UUIDs for either identity", () => {
+  const payload = {
+    authenticatedInviteeID: B,
+    lookedUpInviterID: A,
+    lookedUpInviteCode: code,
+    submittedCode: code,
+    confirmedByInvitee: true,
+    existingInvitationClaim: false
+  };
+  const invalidIDs = [
+    "------------------------------------",
+    "00000000-0000-0000-0000-000000000000",
+    "c7f04da2-8191-49b4-9a1a-e36d7c72d11-",
+    "c7f04da28191-49b4-9a1a-e36d7c72d111",
+    "c7f04da2-8191-49b4-9a1a-e36d7c72d11g",
+    "",
+    ` ${A}`,
+    null,
+    undefined,
+    123
+  ];
+  for (const invalidID of invalidIDs) {
+    for (const field of ["authenticatedInviteeID", "lookedUpInviterID"]) {
+      assert.throws(
+        () => proposeExplicitInvitationClaim({ ...payload, [field]: invalidID }),
+        /server_identity_required/,
+        `${field} accepted invalid ID: ${String(invalidID)}`
+      );
+    }
+  }
+});
+
+test("canonical uppercase UUIDs work and case variants cannot self-invite", () => {
+  const payload = {
+    authenticatedInviteeID: B,
+    lookedUpInviterID: A.toUpperCase(),
+    lookedUpInviteCode: code,
+    submittedCode: code,
+    confirmedByInvitee: true,
+    existingInvitationClaim: false
+  };
+  assert.deepEqual(proposeExplicitInvitationClaim(payload), {
+    inviteeID: B,
+    inviterID: A.toUpperCase(),
+    code,
+    status: "pending_review"
+  });
+  assert.throws(
+    () => proposeExplicitInvitationClaim({
+      ...payload,
+      authenticatedInviteeID: A,
+      lookedUpInviterID: A.toUpperCase()
+    }),
+    /self_invitation/
+  );
+});

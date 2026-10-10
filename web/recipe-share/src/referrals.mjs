@@ -2,10 +2,19 @@
 const SHARE_TOKEN = /^[A-Za-z0-9_-]{8,128}$/;
 const REFERRAL_CODE = /^[A-Za-z0-9_-]{16,64}$/;
 const EVENT_ID = /^[A-Za-z0-9_-]{16,64}$/;
+const ACCOUNT_UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 const KINDS = new Set(["share_page_view", "app_store_cta_click", "copy_link"]);
 
 export class ReferralValidationError extends Error {
   constructor(code) { super(code); this.code = code; }
+}
+
+function isValidAccountID(value) {
+  // Identity must be a canonical UUID; the nil UUID is never a real account.
+  return typeof value === "string" &&
+    ACCOUNT_UUID.test(value) &&
+    value.toLowerCase() !== NIL_UUID;
 }
 
 /**
@@ -52,9 +61,8 @@ export function proposeExplicitInvitationClaim({
   if (!confirmedByInvitee) {
     throw new ReferralValidationError("consent_required");
   }
-  const ids = [authenticatedInviteeID, lookedUpInviterID];
-  if (ids.some(id => typeof id !== "string" ||
-    !/^[a-f0-9-]{36}$/i.test(id))) {
+  if (!isValidAccountID(authenticatedInviteeID) ||
+    !isValidAccountID(lookedUpInviterID)) {
     throw new ReferralValidationError("server_identity_required");
   }
   if (!REFERRAL_CODE.test(submittedCode || "") ||
