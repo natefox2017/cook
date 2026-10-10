@@ -92,3 +92,37 @@ test("canonical uppercase UUIDs work and case variants cannot self-invite", () =
     /self_invitation/
   );
 });
+
+test("invitation consent requires literal Boolean true", () => {
+  const payload = {
+    authenticatedInviteeID: B,
+    lookedUpInviterID: A,
+    lookedUpInviteCode: code,
+    submittedCode: code,
+    confirmedByInvitee: true,
+    existingInvitationClaim: false
+  };
+  for (const invalidConsent of [false, null, undefined, 0, 1, "false", "true", "", [], {}]) {
+    assert.throws(
+      () => proposeExplicitInvitationClaim({ ...payload, confirmedByInvitee: invalidConsent }),
+      /consent_required/,
+      `Accepted non-affirmative consent: ${String(invalidConsent)}`
+    );
+  }
+  // Invalid consent must be checked before identity or code validation.
+  assert.throws(
+    () => proposeExplicitInvitationClaim({
+      ...payload,
+      confirmedByInvitee: "true",
+      authenticatedInviteeID: "invalid",
+      submittedCode: "invalid"
+    }),
+    /consent_required/
+  );
+  assert.deepEqual(proposeExplicitInvitationClaim(payload), {
+    inviteeID: B,
+    inviterID: A,
+    code,
+    status: "pending_review"
+  });
+});
