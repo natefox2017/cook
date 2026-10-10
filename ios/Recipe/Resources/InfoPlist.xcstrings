@@ -250,6 +250,12 @@
             "state": "translated",
             "value": "Das Mikrofon wird nur für Sprachbefehle im Kochmodus verwendet, wenn die Freisprechsteuerung aktiviert ist. Audio wird ausschließlich auf diesem Gerät verarbeitet."
           }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autoriser les commandes vocales en mode Cuisine après l’activation du contrôle mains libres. L’audio est traité uniquement sur cet appareil."
+          }
         }
       }
     },
@@ -285,6 +291,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Optionale Sprachbefehle wie „Weiter“, „Zurück“ und „Wiederholen“ erkennen, während der Kochmodus geöffnet ist."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconnaître les commandes vocales facultatives « Suivant », « Précédent » et « Répéter » lorsque le mode Cuisine est ouvert."
           }
         }
       }
