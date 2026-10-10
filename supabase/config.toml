@@ -49,3 +49,12 @@ verify_jwt = false
 [functions.purge-expired-recipe-import-artifacts]
 # Uses its own high-entropy bearer secret; never put it in the iOS app.
 verify_jwt = false
+
+# DEV-241: only a signed-in owner may manage an opt-in share.
+[functions.recipe-share-manage]
+verify_jwt = true
+
+# Anonymous visitors may read only the sanitised eight-field snapshot.
+# The handler validates the slug and enforces GET/HEAD only.
+[functions.recipe-share-public]
+verify_jwt = false
