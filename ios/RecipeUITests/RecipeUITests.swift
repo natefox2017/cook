@@ -695,7 +695,10 @@ final class RecipeUITests: XCTestCase {
 
         openSyntheticRecipeProposal(in: app)
         let original = app.staticTexts["reviewProposalBefore.0"].label
-        let suggested = app.staticTexts["reviewProposalAfter.0"].label
+        let suggestedInput = app.descendants(matching: .any)["reviewProposalAfter.0"]
+        XCTAssertTrue(suggestedInput.waitForExistence(timeout: 8))
+        XCTAssertTrue(suggestedInput.isEnabled, "The suggested value must be editable")
+        let suggested = (suggestedInput.value as? String) ?? suggestedInput.label
         XCTAssertTrue(suggested.hasPrefix("QA Changed "))
         XCTAssertNotEqual(original, suggested)
 
@@ -727,7 +730,10 @@ final class RecipeUITests: XCTestCase {
         openSamplePasta(in: app)
 
         openSyntheticRecipeProposal(in: app)
-        let suggested = app.staticTexts["reviewProposalAfter.0"].label
+        let suggestedInput = app.descendants(matching: .any)["reviewProposalAfter.0"]
+        XCTAssertTrue(suggestedInput.waitForExistence(timeout: 8))
+        XCTAssertTrue(suggestedInput.isEnabled, "The suggested value must be editable")
+        let suggested = (suggestedInput.value as? String) ?? suggestedInput.label
         app.buttons["applyRecipeProposal"].tap()
         waitUntilAbsent(app.navigationBars["Review changes"])
 
