@@ -1207,7 +1207,21 @@ struct RecipeInteractiveInstructionText: View {
     let recipe: Recipe
     let servings: Int?
     let accessibilityID: String
+    let lineSpacing: CGFloat
     @Binding var selection: RecipeParameterInfo?
+
+    init(
+        step: RecipeStep, recipe: Recipe, servings: Int?,
+        accessibilityID: String, lineSpacing: CGFloat = 0,
+        selection: Binding<RecipeParameterInfo?>
+    ) {
+        self.step = step
+        self.recipe = recipe
+        self.servings = servings
+        self.accessibilityID = accessibilityID
+        self.lineSpacing = lineSpacing
+        _selection = selection
+    }
 
     var body: some View {
         let spans = RecipeInstructionParameterSpans.spans(
@@ -1227,6 +1241,7 @@ struct RecipeInteractiveInstructionText: View {
         }
 
         return Text(text)
+            .lineSpacing(lineSpacing)
             .tint(RecipeTheme.accentForeground)
             .fixedSize(horizontal: false, vertical: true)
             .textSelection(.enabled)
