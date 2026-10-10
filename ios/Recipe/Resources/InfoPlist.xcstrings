@@ -268,6 +268,12 @@
             "state": "translated",
             "value": "Consenti i comandi vocali in modalità Cucina dopo aver attivato il controllo a mani libere. L’audio viene elaborato solo su questo dispositivo."
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "핸즈프리 제어를 켠 경우에만 요리 모드에서 음성 명령을 위해 마이크를 사용합니다. 오디오는 이 기기에서만 처리됩니다."
+          }
         }
       }
     },
@@ -321,6 +327,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Riconoscere i comandi vocali facoltativi «Avanti», «Indietro» e «Ripeti» mentre è aperta la modalità Cucina."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "요리 모드가 열려 있는 동안 선택적으로 ‘다음’, ‘이전’, ‘반복’ 음성 명령을 인식합니다."
           }
         }
       }
