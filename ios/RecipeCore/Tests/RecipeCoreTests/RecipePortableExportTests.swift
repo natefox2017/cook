@@ -141,8 +141,8 @@ func portableJSONOmitsImagesWithoutMutatingOriginalRecipe() throws {
         sourceText: "Original cooking notes.",
         coverData: imageBytes,
         coverAsset: "SamplePastaReference",
-        stepImages: [stepImage],
-        notes: "Keep the source wording."
+        notes: "Keep the source wording.",
+        stepImages: [stepImage]
     )
     let snapshot = RecipeLibrarySnapshot(recipes: [recipe])
 
