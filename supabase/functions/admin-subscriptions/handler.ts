@@ -6,6 +6,7 @@ import { requireAdminSession } from "../_shared/admin-session.ts";
 import { log } from "../_shared/logger.ts";
 import { authorizeSubscriptionRoute } from "./authorization.ts";
 import { utcMonthKey } from "../_shared/monthBuckets.ts";
+import { RecordedRevenueLedger } from "../_shared/recordedRevenue.ts";
 
 type Platform = "app_store" | "play_store";
 
@@ -350,45 +351,22 @@ export async function handleRequest(
         "NON_RENEWING_PURCHASE",
         "PRODUCT_CHANGE",
       ]);
-      const byMonth = new Map<
-        string,
-        { apple: number; android: number; order: number }
-      >();
-      let appleRevenue = 0;
-      let androidRevenue = 0;
-
+      const ledger = new RecordedRevenueLedger();
       for (const event of data ?? []) {
-        const type = String(event.event_type ?? "").toUpperCase();
-        if (!paidTypes.has(type)) continue;
-        const raw = (event.raw_event ?? {}) as Record<string, unknown>;
-        const amount = Number(
-          raw.price_in_purchased_currency ?? raw.price ?? 0,
-        );
-        if (!Number.isFinite(amount) || amount <= 0) continue;
-        const createdAt = String(event.created_at);
-        const key = utcMonthKey(createdAt);
-        const date = new Date(createdAt);
-        const order = date.getUTCFullYear() * 12 + date.getUTCMonth();
-        const bucket = byMonth.get(key) ?? { apple: 0, android: 0, order };
-        if (event.store === "app_store") {
-          bucket.apple += amount;
-          appleRevenue += amount;
-        } else if (event.store === "play_store") {
-          bucket.android += amount;
-          androidRevenue += amount;
-        }
-        byMonth.set(key, bucket);
+        if (!paidTypes.has(String(event.event_type ?? "").toUpperCase())) continue;
+        ledger.record(event.raw_event, event.store, utcMonthKey(String(event.created_at)));
       }
-
-      const series = [...byMonth.entries()]
-        .sort((first, second) => first[1].order - second[1].order)
-        .slice(-6)
-        .map(([month, values]) => ({
+      // A capped result is not certified complete, even if one currency appears.
+      const amountSummary = ledger.summary((data ?? []).length === 5000);
+      const series = ledger.monthKeys().sort().slice(-6).map((month) => {
+        const amounts = ledger.monthly(month, amountSummary.currency);
+        return {
           month,
-          apple: Math.round(values.apple * 100) / 100,
-          android: Math.round(values.android * 100) / 100,
-          total: Math.round((values.apple + values.android) * 100) / 100,
-        }));
+          apple: amounts?.apple ?? null,
+          android: amounts?.android ?? null,
+          total: amounts ? Math.round((amounts.apple + amounts.android) * 100) / 100 : null,
+        };
+      });
 
       const { count: activePaid, error: subscriptionError } = await admin
         .from("subscriptions")
@@ -411,8 +389,12 @@ export async function handleRequest(
         {
           stats: {
             mrr: verifiedMrr,
-            appleRevenue: Math.round(appleRevenue * 100) / 100,
-            androidRevenue: Math.round(androidRevenue * 100) / 100,
+            appleRevenue: amountSummary.appleRevenue,
+            androidRevenue: amountSummary.androidRevenue,
+            currency: amountSummary.currency,
+            byCurrency: amountSummary.byCurrency,
+            incompleteEvents: amountSummary.incompleteEvents,
+            sourceRowsTruncated: amountSummary.sourceRowsTruncated,
             activePaid: activePaid ?? 0,
           },
           series,
