@@ -47,10 +47,6 @@ struct DataPrivacySettingsView: View {
                     )
                 }
 
-                NavigationLink("What Recipe Pals Stores") {
-                    StoredDataView()
-                }
-
                 NavigationLink("Privacy Summary") {
                     PrivacySummaryView()
                 }
@@ -63,14 +59,14 @@ struct DataPrivacySettingsView: View {
 
                 if isSignedIn {
                     Button(
-                        "Delete Recipe Pals Account & Cloud Data",
+                        "Delete Account & Cloud Data",
                         role: .destructive
                     ) {
                         confirmsAccountDelete = true
                     }
                 } else {
                     HStack {
-                        Text("Delete Recipe Pals Account & Cloud Data")
+                        Text("Delete Account & Cloud Data")
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text("Sign in required")
@@ -188,27 +184,6 @@ struct DataPrivacySettingsView: View {
                 localized: LocalizedStringResource(
                     "Export failed: \(error.localizedDescription)", locale: RecipeLanguage.active))
         }
-    }
-}
-
-struct StoredDataView: View {
-    var body: some View {
-        List {
-            Label("Recipes, notes and original sources", systemImage: "book")
-            Label("Groceries and recipe references", systemImage: "basket")
-            Label("Meal plan", systemImage: "calendar")
-            Label(
-                "Local preferences and cooking sessions",
-                systemImage: "gearshape"
-            )
-        }
-        .listSectionSpacing(RecipeSpacing.medium)
-        .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
-        .scrollContentBackground(.hidden)
-        .background(RecipeTheme.canvas)
-        .navigationTitle("What Recipe Pals Stores")
-        .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
-        .toolbar(.hidden, for: .tabBar)
     }
 }
 

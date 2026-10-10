@@ -623,6 +623,31 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testDataPrivacyRowsUseConciseAccountDeletionLabel() {
+        let app = launchSeededApp()
+        defer {
+            app.terminate()
+        }
+
+        openDataAndPrivacy(in: app)
+
+        XCTAssertTrue(app.buttons["Export Data"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Privacy Summary"].exists)
+        XCTAssertFalse(app.buttons["What Recipe Pals Stores"].exists)
+
+        // Match either the signed-in button or the signed-out informational row.
+        let deleteAccount = app.descendants(matching: .any).matching(
+            NSPredicate(format: "label == %@", "Delete Account & Cloud Data")
+        ).firstMatch
+        XCTAssertTrue(deleteAccount.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertFalse(
+            app.descendants(matching: .any).matching(
+                NSPredicate(format: "label CONTAINS %@", "Delete Recipe Pals Account")
+            ).firstMatch.exists
+        )
+    }
+
+    @MainActor
     func testExportFormatsAreAvailableInBothEntryPoints() {
         let app = launchSeededApp()
         defer {
