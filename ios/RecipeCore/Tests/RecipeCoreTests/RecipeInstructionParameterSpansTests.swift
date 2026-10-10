@@ -155,3 +155,54 @@ func enormousOrEmptyInstructionsFallBackWithoutParserWork() {
         #expect(spans == [RecipeInstructionSpan(text: source)])
     }
 }
+
+@Test
+func boundedAndApproximateDurationTextCannotLinkAnExactTimer() {
+    let timer = RecipeStepTimer(label: "Bake", durationSeconds: 1_200)
+    for raw in [
+        "Bake for at least 20 min",
+        "Bake at most 20 min",
+        "Bake for less than 20 min",
+        "Bake for more than 20 min",
+        "Bake under 20 min",
+        "Bake over 20 min",
+        "Bake within 20 min",
+        "Bake below 20 min",
+        "Bake above 20 min",
+        "Bake ≥20 min",
+        "Bake ≤20 min",
+        "Bake < 20 min",
+        "Bake >20 min",
+        "Bake ≈20 min",
+        "Bake approx.: 20 min",
+        "Bake 20 min+",
+        "Bake 20 min or until golden",
+        "Bake 20 min, or longer",
+        "Bake 20 min or 30 min",
+        "Bake 20 min to 30 min",
+        "Bake 20 min–30 min",
+        "Bake ~20 min",
+    ] {
+        let step = RecipeStep(instruction: raw, timers: [timer])
+        let spans = RecipeInstructionParameterSpans.spans(for: step, ingredients: [])
+
+        #expect(spans.map(\.text).joined() == raw)
+        #expect(spans.allSatisfy { $0.parameter == nil }, "Unexpected timer link: \(raw)")
+    }
+}
+
+@Test
+func exactTimerLinksRemainAvailableWithPunctuationAndUnicode() {
+    let timer = RecipeStepTimer(label: "Bake", durationSeconds: 1_200)
+    for raw in [
+        "Bake for 20 min.",
+        "🥘 Bake for 20 min; 继续搅拌。",
+        "Bake for 20 min, then serve.",
+    ] {
+        let step = RecipeStep(instruction: raw, timers: [timer])
+        let spans = RecipeInstructionParameterSpans.spans(for: step, ingredients: [])
+
+        #expect(spans.map(\.text).joined() == raw)
+        #expect(spans.filter { $0.parameter == .timer(timer.id) }.map(\.text) == ["20 min"])
+    }
+}

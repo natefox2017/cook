@@ -82,6 +82,7 @@ public enum RecipeInstructionParameterSpans {
                     let countRange = Range(match.range(at: 1), in: source),
                     let unitRange = Range(match.range(at: 2), in: source),
                     !isApproximateOrRangePrefix(source[..<range.lowerBound]),
+                    !isApproximateOrRangeSuffix(source[range.upperBound...]),
                     let count = Int(source[countRange])
                 else { continue }
 
@@ -189,17 +190,38 @@ public enum RecipeInstructionParameterSpans {
         _ prefix: Substring
     ) -> Bool {
         let lower = String(prefix.suffix(48)).lowercased()
-        // Compare complete words: "for 20 min" is exact, unlike "10 to 20 min".
+        // Compare complete words so "for 20 min" remains exact.
         if let word = lower.split(whereSeparator: {
             $0.isWhitespace || $0 == ","
-        }).last,
-            ["about", "around", "roughly", "approx", "approx.",
-             "approximately", "circa", "to", "or"].contains(String(word)) {
-            return true
+        }).last {
+            let normalized = String(word).trimmingCharacters(in: .punctuationCharacters)
+            if [
+                "about", "around", "roughly", "approx", "approximately", "circa",
+                "to", "or", "least", "most", "than", "under", "over", "within",
+                "below", "above",
+            ].contains(normalized) {
+                return true
+            }
         }
         guard let last = prefix.last(where: { !$0.isWhitespace }) else {
             return false
         }
-        return last == "-" || last == "–" || last == "—" || last == "~"
+        return ["-", "–", "—", "~", "<", ">", "≤", "≥", "≈"].contains(last)
+    }
+
+    private static func isApproximateOrRangeSuffix(
+        _ suffix: Substring
+    ) -> Bool {
+        let remaining = suffix.drop(while: {
+            $0.isWhitespace || $0 == "," || $0 == "("
+        })
+        guard let first = remaining.first else {
+            return false
+        }
+        if ["+", "-", "–", "—", "~", "<", ">", "≤", "≥", "≈"].contains(first) {
+            return true
+        }
+        let nextWord = remaining.prefix(while: { $0.isLetter }).lowercased()
+        return nextWord == "or" || nextWord == "to"
     }
 }
