@@ -6,7 +6,7 @@ import { requireAdminSession } from "../_shared/admin-session.ts";
 import { log } from "../_shared/logger.ts";
 import { authorizeSubscriptionRoute } from "./authorization.ts";
 import { utcMonthKey } from "../_shared/monthBuckets.ts";
-import { RecordedRevenueLedger, isRecordedPurchaseEvent } from "../_shared/recordedRevenue.ts";
+import { RecordedRevenueLedger, isRecordedPurchaseEvent, recordedPurchaseAmount } from "../_shared/recordedRevenue.ts";
 import { hasCompletePage } from "../_shared/reportPage.ts";
 
 type Platform = "app_store" | "play_store";
@@ -327,16 +327,8 @@ export async function handleRequest(
           if (!isRecordedPurchaseEvent(event.event_type)) continue;
           const key = `${event.user_id}:${event.product_id ?? ""}`;
           if (latest.has(key)) continue;
-          const raw = (event.raw_event ?? {}) as Record<string, unknown>;
-          const amount = Number(
-            raw.price_in_purchased_currency ?? raw.price ?? NaN,
-          );
-          const currency = String(raw.currency ?? raw.currency_code ?? "").trim()
-            .toUpperCase();
-          if (Number.isFinite(amount) && amount >= 0 &&
-            /^[A-Z]{3}$/.test(currency)) {
-            latest.set(key, { amount, currency });
-          }
+          const purchase = recordedPurchaseAmount(event.raw_event);
+          if (purchase) latest.set(key, purchase);
         }
         for (const row of rows) {
           const purchase = latest.get(`${row.user.id}:${row.productId ?? ""}`);

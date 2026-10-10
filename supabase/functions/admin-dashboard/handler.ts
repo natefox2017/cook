@@ -9,7 +9,7 @@ import { createServiceClient } from "../_shared/auth.ts";
 import { requireAdminSession } from "../_shared/admin-session.ts";
 import { requireDashboardRole } from "./access.ts";
 import { utcMonthKey, displayUTCMonth } from "../_shared/monthBuckets.ts";
-import { RecordedRevenueLedger, isRecordedPurchaseEvent } from "../_shared/recordedRevenue.ts";
+import { RecordedRevenueLedger, isRecordedPurchaseEvent, recordedPurchaseAmount } from "../_shared/recordedRevenue.ts";
 import { hasCompletePage } from "../_shared/reportPage.ts";
 
 function monthOrder(iso: string): number {
@@ -33,12 +33,6 @@ function mapPlan(
     return "pro";
   }
   return "free";
-}
-
-function eventAmount(raw: Record<string, unknown> | null): number {
-  if (!raw) return 0;
-  const amount = Number(raw.price_in_purchased_currency ?? raw.price ?? 0);
-  return Number.isFinite(amount) ? amount : 0;
 }
 
 type AdminSession = Awaited<ReturnType<typeof requireAdminSession>>;
@@ -351,18 +345,15 @@ export async function handleRequest(
     }
 
     const recentPayments = recentPaid.map((event) => {
-      const raw = (event.raw_event ?? {}) as Record<string, unknown>;
-      const amount = eventAmount(raw);
+      const purchase = recordedPurchaseAmount(event.raw_event);
       return {
         id: event.id,
         userLabel: labelByUser.get(String(event.user_id)) ?? "Unknown user",
         eventType: String(event.event_type ?? ""),
         store: String(event.store ?? "unknown"),
-        // Do not invent USD when the original event omits its currency.
-        amount: amount > 0 && /^[A-Z]{3}$/.test(String(raw.currency ?? raw.currency_code ?? "").trim().toUpperCase())
-          ? round2(amount) : null,
-        currency: /^[A-Z]{3}$/.test(String(raw.currency ?? raw.currency_code ?? "").trim().toUpperCase())
-          ? String(raw.currency ?? raw.currency_code).trim().toUpperCase() : null,
+        // Never label a RevenueCat USD fallback as native JPY/EUR/etc.
+        amount: purchase && purchase.amount > 0 ? round2(purchase.amount) : null,
+        currency: purchase?.currency ?? null,
         createdAt: String(event.created_at),
       };
     });
