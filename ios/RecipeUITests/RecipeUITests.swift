@@ -1246,6 +1246,33 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testAboutSettingsUsesShortTitleAndCurrentAppDetails() {
+        let app = launchSeededApp()
+        defer {
+            app.terminate()
+        }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let settings = app.buttons["Settings"]
+        reveal(settings, in: app, maximumSwipes: 4)
+        settings.tap()
+
+        let about = app.buttons["About"]
+        reveal(about, in: app, maximumSwipes: 5)
+        about.tap()
+
+        XCTAssertTrue(app.navigationBars["About"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Recipe Pals"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Version"].exists)
+        XCTAssertTrue(app.buttons["Open Source Licenses"].exists)
+        XCTAssertTrue(app.buttons["Acknowledgements"].exists)
+        attachScreenshot("About title and app details", app: app)
+    }
+
+    @MainActor
     func testFourLocaleTabLabelsUseStringCatalog() {
         // Locale overrides stay scoped to the app and never change global AppleLanguages.
         let examples: [(String, String, String, String, String, String, String, String)] = [

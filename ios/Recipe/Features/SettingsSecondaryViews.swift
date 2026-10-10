@@ -342,7 +342,7 @@ struct AboutSettingsView: View {
         .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("About Recipe Pals")
+        .navigationTitle("About")
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
     }

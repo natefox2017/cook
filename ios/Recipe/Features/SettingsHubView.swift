@@ -81,7 +81,7 @@ struct SettingsHubView: View {
                 NavigationLink {
                     AboutSettingsView()
                 } label: {
-                    SettingsRow("About Recipe Pals", "info.circle")
+                    SettingsRow("About", "info.circle")
                 }
             }
         }
