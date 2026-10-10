@@ -342,6 +342,43 @@ public final class RecipeStore {
         return added
     }
 
+    /// Commit an explicitly approved proposal against the currently stored revision.
+    /// The MainActor boundary keeps revision validation and persistence together.
+    @discardableResult
+    public func applyApprovedRecipeEdit(
+        _ proposal: RecipeEditProposal,
+        asVariant: Bool = false,
+        at savedAt: Date = .now
+    ) throws -> Recipe {
+        guard let index = recipes.firstIndex(where: { $0.id == proposal.recipeID }) else {
+            throw RecipeStoreError.missingRecipe
+        }
+        let current = recipes[index]
+        var approved = try proposal.approvedRecipe(
+            from: current, at: savedAt, asVariant: asVariant
+        )
+
+        // Even after a clock rollback, an accepted edit must invalidate old proposals.
+        if approved.updatedAt <= current.updatedAt {
+            approved.updatedAt = Date(
+                timeIntervalSinceReferenceDate:
+                    current.updatedAt.timeIntervalSinceReferenceDate.nextUp
+            )
+        }
+
+        var next = snapshot
+        if asVariant {
+            approved.createdAt = approved.updatedAt
+            next.recipes.append(approved)
+        } else {
+            approved.createdAt = current.createdAt
+            next.recipes[index] = approved
+        }
+        next.deletedEntities?.remove(Self.deletionKey(.recipe, approved.id))
+        try commit(next)
+        return approved
+    }
+
     public func upsert(_ recipe: Recipe) throws {
         var next = snapshot
         next.deletedEntities?.remove(Self.deletionKey(.recipe, recipe.id))
