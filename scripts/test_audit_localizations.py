@@ -1,10 +1,15 @@
 # Developer: gengyun
 # Purpose: Exercise String Catalog audit coverage, plural completion and placeholder safety.
 
+import argparse
+import io
 import json
 import plistlib
+import subprocess
+import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -94,6 +99,125 @@ class LocalizationAuditTests(unittest.TestCase):
                 patch.object(audit, "CATALOGS", (("Recipe", catalog),)),
             ):
                 self.assertEqual(audit.run(strict=True), 0)
+
+
+    def test_optional_locale_reports_unshipped_extension_gap_without_changing_default(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            app = root / "app.plist"
+            extension = root / "extension.plist"
+            app.write_bytes(plistlib.dumps({"CFBundleLocalizations": ["en"]}))
+            extension.write_bytes(plistlib.dumps({"CFBundleDisplayName": "Recipe Pals"}))
+            app_catalog = root / "app.xcstrings"
+            share_catalog = root / "share.xcstrings"
+            app_catalog.write_text(json.dumps({
+                "sourceLanguage": "en",
+                "strings": {
+                    "Hello": {"localizations": {
+                        "de": {"stringUnit": {"state": "translated", "value": "Hallo"}}
+                    }}
+                }
+            }), encoding="utf-8")
+            share_catalog.write_text(json.dumps({
+                "sourceLanguage": "en",
+                "strings": {"Share": {"localizations": {}}},
+            }), encoding="utf-8")
+
+            with (
+                patch.object(audit, "PLISTS", (app, extension)),
+                patch.object(audit, "CATALOGS", (
+                    ("Recipe", app_catalog), ("Share Extension", share_catalog),
+                )),
+                redirect_stdout(io.StringIO()) as output,
+            ):
+                self.assertEqual(audit.run(strict=True), 0)
+                self.assertEqual(audit.run(strict=False, languages=("de",)), 0)
+                self.assertEqual(audit.run(strict=True, languages=("de",)), 1)
+                self.assertEqual(audit.run(strict=True, languages=("de", "de")), 1)
+            log = output.getvalue()
+            self.assertIn("de: 1/1 translated", log)
+            self.assertIn("de: 0/1 translated", log)
+            self.assertIn("INCOMPLETE: Share Extension: de: 1 missing", log)
+
+    def test_multiple_unshipped_languages_still_fail_bad_placeholder_types(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            plist = root / "app.plist"
+            plist.write_bytes(plistlib.dumps({"CFBundleLocalizations": ["en"]}))
+            catalog = root / "strings.xcstrings"
+            catalog.write_text(json.dumps({
+                "sourceLanguage": "en",
+                "strings": {"Hello %@": {"localizations": {
+                    "de": {"stringUnit": {"state": "translated", "value": "Hallo %@"}},
+                    "fr": {"stringUnit": {"state": "translated", "value": "Bonjour %lld"}},
+                }}},
+            }), encoding="utf-8")
+            with (
+                patch.object(audit, "PLISTS", (plist, plist)),
+                patch.object(audit, "CATALOGS", (("Recipe", catalog),)),
+                redirect_stdout(io.StringIO()) as output,
+            ):
+                self.assertEqual(audit.run(strict=True, languages=("de",)), 0)
+                self.assertEqual(audit.run(strict=False, languages=("de", "fr")), 1)
+                self.assertEqual(audit.run(strict=True, languages=("de", "de")), 0)
+            log = output.getvalue()
+            self.assertIn("placeholders differ for 'Hello %@'", log)
+
+    def test_explicit_brazilian_portuguese_never_borrows_generic_pt(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            plist = root / "app.plist"
+            plist.write_bytes(plistlib.dumps({"CFBundleLocalizations": ["en"]}))
+            catalog = root / "strings.xcstrings"
+            catalog.write_text(json.dumps({
+                "sourceLanguage": "en",
+                "strings": {"Cook": {"localizations": {
+                    "pt": {"stringUnit": {"state": "translated", "value": "Cozinhar"}}
+                }}},
+            }), encoding="utf-8")
+            with (
+                patch.object(audit, "PLISTS", (plist, plist)),
+                patch.object(audit, "CATALOGS", (("Recipe", catalog),)),
+                redirect_stdout(io.StringIO()) as output,
+            ):
+                self.assertEqual(audit.run(strict=True, languages=("pt-BR",)), 1)
+                self.assertEqual(audit.run(strict=True, languages=("pt",)), 0)
+            log = output.getvalue()
+            self.assertIn("pt-BR: 0/1 translated; 1 English fallbacks", log)
+
+    def test_help_output_supports_literal_percent_and_new_locale_argument(self):
+        result = subprocess.run(
+            [sys.executable, str(Path(audit.__file__)), "--help"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("100% coverage", result.stdout)
+        self.assertIn("--language CODE", result.stdout)
+
+    def test_cli_accepts_bcp47_language_tags_not_paths_or_injection(self):
+        for valid in ["en", "de", "pt-BR", "zh-Hans", "en-US"]:
+            self.assertEqual(audit.locale_code(valid), valid)
+        for invalid in ["", "en_US", "pt-", "../private", "https://example.com/de"]:
+            with self.assertRaises(argparse.ArgumentTypeError):
+                audit.locale_code(invalid)
+
+    def test_explicit_source_english_still_uses_normal_fallback(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            plist = root / "app.plist"
+            plist.write_bytes(plistlib.dumps({"CFBundleLocalizations": ["en"]}))
+            catalog = root / "strings.xcstrings"
+            catalog.write_text(json.dumps({
+                "sourceLanguage": "en",
+                "strings": {"Welcome": {"localizations": {}}},
+            }), encoding="utf-8")
+            with (
+                patch.object(audit, "PLISTS", (plist, plist)),
+                patch.object(audit, "CATALOGS", (("Recipe", catalog),)),
+                redirect_stdout(io.StringIO()) as output,
+            ):
+                self.assertEqual(audit.run(strict=True, languages=("en",)), 0)
+            self.assertIn("en: source language", output.getvalue())
 
 
 if __name__ == "__main__":
