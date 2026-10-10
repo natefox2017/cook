@@ -10,6 +10,131 @@ final class RecipeUITests: XCTestCase {
         continueAfterFailure = false
     }
 
+    // DEV-208: synthetic candidates are seeded only for this UI-test launch.
+    @MainActor
+    func testMultiRecipeCandidatesCanBeSelectedIndependentlyAndCanceled() {
+        let app = launchMultiCandidateQAApp()
+        defer { app.terminate() }
+
+        openMultiCandidateSource(in: app)
+        openMultiCandidatePicker(in: app)
+        let soup = app.buttons[Self.soupCandidateIdentifier]
+        let pasta = app.buttons[Self.pastaCandidateIdentifier]
+        let save = app.buttons["saveSelectedCandidateRecipes"]
+
+        XCTAssertTrue(soup.waitForExistence(timeout: 8))
+        XCTAssertTrue(pasta.waitForExistence(timeout: 8))
+        XCTAssertTrue(soup.label.contains("QA Tomato Soup"))
+        XCTAssertTrue(pasta.label.contains("QA Lemon Pasta"))
+        XCTAssertFalse(save.isEnabled, "An empty selection must never save recipes")
+
+        soup.tap()
+        XCTAssertTrue(save.isEnabled)
+        soup.tap()
+        XCTAssertFalse(save.isEnabled, "Tapping an option twice must clear its selection")
+
+        pasta.tap()
+        XCTAssertTrue(save.isEnabled)
+        app.navigationBars["Select recipes"].buttons["Cancel"].tap()
+        waitUntilAbsent(app.navigationBars["Select recipes"])
+        returnFromRecipeDetail(in: app)
+
+        XCTAssertFalse(app.buttons[Self.savedSoupIdentifier].exists)
+        XCTAssertFalse(app.buttons[Self.savedPastaIdentifier].exists)
+    }
+
+    @MainActor
+    func testMultiRecipeSaveIsIdempotentAndEachDishRemainsIndependent() {
+        let app = launchMultiCandidateQAApp()
+        defer { app.terminate() }
+        openMultiCandidateSource(in: app)
+
+        selectAndSaveCandidate(Self.soupCandidateIdentifier, in: app)
+        returnFromRecipeDetail(in: app)
+        let soup = app.buttons[Self.savedSoupIdentifier]
+        reveal(soup, in: app, maximumSwipes: 8)
+        XCTAssertTrue(soup.label.contains("QA Tomato Soup"))
+        XCTAssertFalse(app.buttons[Self.savedPastaIdentifier].exists)
+
+        openMultiCandidateSource(in: app)
+        selectAndSaveCandidate(Self.soupCandidateIdentifier, in: app)
+        selectAndSaveCandidate(Self.pastaCandidateIdentifier, in: app)
+        returnFromRecipeDetail(in: app)
+
+        let pasta = app.buttons[Self.savedPastaIdentifier]
+        reveal(pasta, in: app, maximumSwipes: 8)
+        XCTAssertTrue(pasta.label.contains("QA Lemon Pasta"))
+        reveal(soup, in: app, maximumSwipes: 8)
+        XCTAssertEqual(
+            app.buttons.matching(identifier: Self.savedSoupIdentifier).count, 1,
+            "Reselecting an imported candidate must not create a second private recipe"
+        )
+    }
+
+    @MainActor
+    func testMultiRecipeResaveDoesNotOverwriteEditedChild() {
+        let app = launchMultiCandidateQAApp()
+        defer { app.terminate() }
+        openMultiCandidateSource(in: app)
+        selectAndSaveCandidate(Self.soupCandidateIdentifier, in: app)
+        returnFromRecipeDetail(in: app)
+
+        let savedSoup = app.buttons[Self.savedSoupIdentifier]
+        reveal(savedSoup, in: app, maximumSwipes: 8)
+        savedSoup.tap()
+        app.buttons["Recipe Options"].tap()
+        app.buttons["Edit Recipe"].tap()
+
+        let title = app.textFields["recipeName"]
+        waitUntilReady(title)
+        title.tap()
+        let previous = title.value as? String ?? ""
+        title.typeText(
+            String(repeating: XCUIKeyboardKey.delete.rawValue, count: previous.count)
+                + "QA Soup - Edited"
+        )
+        app.buttons["saveRecipe"].tap()
+        XCTAssertTrue(app.staticTexts["QA Soup - Edited"].waitForExistence(timeout: 8))
+        returnFromRecipeDetail(in: app)
+
+        openMultiCandidateSource(in: app)
+        selectAndSaveCandidate(Self.soupCandidateIdentifier, in: app)
+        returnFromRecipeDetail(in: app)
+
+        reveal(savedSoup, in: app, maximumSwipes: 8)
+        XCTAssertTrue(savedSoup.label.contains("QA Soup - Edited"))
+        XCTAssertEqual(app.buttons.matching(identifier: Self.savedSoupIdentifier).count, 1)
+    }
+
+    @MainActor
+    func testMultiRecipePickerBoundsOverflowCandidatesAtEight() {
+        let app = launchMultiCandidateQAApp(includeOverflow: true)
+        defer { app.terminate() }
+        openMultiCandidateSource(in: app)
+        openMultiCandidatePicker(in: app)
+
+        let eighth = app.buttons[
+            "recipeCandidate.candidate-v2-00000000000000000000000000000008"
+        ]
+        reveal(eighth, in: app, maximumSwipes: 7)
+        XCTAssertTrue(eighth.exists)
+        XCTAssertFalse(
+            app.buttons[
+                "recipeCandidate.candidate-v2-00000000000000000000000000000009"
+            ].exists,
+            "The ninth source candidate must not become an implicit extra selection"
+        )
+        XCTAssertFalse(app.buttons["saveSelectedCandidateRecipes"].isEnabled)
+    }
+
+    @MainActor
+    func testSingleRecipeWithoutCandidateArrayDoesNotShowPicker() {
+        let app = launchSeededApp()
+        defer { app.terminate() }
+        openSamplePasta(in: app)
+        XCTAssertFalse(app.buttons["recipeMultiCandidateSelect"].exists)
+    }
+
     @MainActor
     func testFavoritesToggleInLibraryAndDetailWithoutChangingCookingActions() {
         let app = launchSeededApp()
@@ -1711,6 +1836,69 @@ final class RecipeUITests: XCTestCase {
         app.launchEnvironment["RECIPE_STOREKIT_TEST_PRODUCT_IDS"] = productIDs
         app.launch()
         return app
+    }
+
+    private static let candidateSourceIdentifier =
+        "recipe.E2080000-0000-4000-8000-000000000001"
+    private static let soupCandidateIdentifier =
+        "recipeCandidate.candidate-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    private static let pastaCandidateIdentifier =
+        "recipeCandidate.candidate-v2-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    // SHA-256(first 16 bytes) of "<source UUID>:<candidate ID>", fixed regression IDs.
+    private static let savedSoupIdentifier =
+        "recipe.08F96B91-4676-8D6F-EBF7-CA2BAC55CF7A"
+    private static let savedPastaIdentifier =
+        "recipe.65F61E13-92E1-E495-D73F-9911DE755C20"
+
+    @MainActor
+    private func launchMultiCandidateQAApp(includeOverflow: Bool = false) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--uitesting", "--uitesting-locale", "en", "--uitesting-multi-candidate",
+        ]
+        if includeOverflow {
+            app.launchArguments.append("--uitesting-multi-candidate-overflow")
+        }
+        app.launch()
+        waitUntilReady(app.buttons["addRecipeButton"])
+        reveal(app.buttons[Self.candidateSourceIdentifier], in: app, maximumSwipes: 8)
+        return app
+    }
+
+    @MainActor
+    private func openMultiCandidateSource(in app: XCUIApplication) {
+        let source = app.buttons[Self.candidateSourceIdentifier]
+        reveal(source, in: app, maximumSwipes: 8)
+        source.tap()
+        waitUntilReady(app.buttons["recipeMultiCandidateSelect"])
+    }
+
+    @MainActor
+    private func openMultiCandidatePicker(in app: XCUIApplication) {
+        let button = app.buttons["recipeMultiCandidateSelect"]
+        reveal(button, in: app, scrollView: app.scrollViews["recipeDetailScroll"], maximumSwipes: 6)
+        button.tap()
+        XCTAssertTrue(app.navigationBars["Select recipes"].waitForExistence(timeout: 8))
+    }
+
+    @MainActor
+    private func selectAndSaveCandidate(_ identifier: String, in app: XCUIApplication) {
+        openMultiCandidatePicker(in: app)
+        let row = app.buttons[identifier]
+        reveal(row, in: app, maximumSwipes: 7)
+        row.tap()
+        let save = app.buttons["saveSelectedCandidateRecipes"]
+        waitUntilReady(save)
+        save.tap()
+        waitUntilAbsent(app.navigationBars["Select recipes"])
+    }
+
+    @MainActor
+    private func returnFromRecipeDetail(in app: XCUIApplication) {
+        let back = app.navigationBars["Recipe"].buttons.firstMatch
+        waitUntilReady(back)
+        back.tap()
+        waitUntilReady(app.buttons["addRecipeButton"])
     }
 
     @MainActor
