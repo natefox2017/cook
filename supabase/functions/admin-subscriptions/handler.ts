@@ -5,6 +5,7 @@ import { createServiceClient } from "../_shared/auth.ts";
 import { requireAdminSession } from "../_shared/admin-session.ts";
 import { log } from "../_shared/logger.ts";
 import { authorizeSubscriptionRoute } from "./authorization.ts";
+import { utcMonthKey } from "../_shared/monthBuckets.ts";
 
 type Platform = "app_store" | "play_store";
 
@@ -109,13 +110,6 @@ function mapPlanLabel(plan: string | null, productId: string | null): string {
     return "pro";
   }
   return plan || "free";
-}
-
-function monthKey(isoDate: string): string {
-  return new Date(isoDate).toLocaleString("en-US", {
-    month: "short",
-    timeZone: "UTC",
-  });
 }
 
 type AdminSession = Awaited<ReturnType<typeof requireAdminSession>>;
@@ -372,7 +366,7 @@ export async function handleRequest(
         );
         if (!Number.isFinite(amount) || amount <= 0) continue;
         const createdAt = String(event.created_at);
-        const key = monthKey(createdAt);
+        const key = utcMonthKey(createdAt);
         const date = new Date(createdAt);
         const order = date.getUTCFullYear() * 12 + date.getUTCMonth();
         const bucket = byMonth.get(key) ?? { apple: 0, android: 0, order };
