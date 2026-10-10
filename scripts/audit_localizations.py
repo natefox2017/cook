@@ -25,7 +25,7 @@ PLISTS = (
 )
 # Literal placeholders must be preserved in localized text, including plural forms.
 PLACEHOLDER = re.compile(r"%(?:\d+\$)?(?:lld|llu|ld|lu|d|u|@|s|f|g)")
-POSITION = re.compile(r"^%\d+\$")
+POSITION = re.compile(r"^%([0-9]+)\$")
 LOCALE_CODE = re.compile(r"^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$")
 
 
@@ -41,6 +41,23 @@ def locale_code(value: str) -> str:
 def placeholders(text: str) -> list[str]:
     """Match format type and multiplicity; allow reordered positional arguments."""
     return sorted(POSITION.sub("%", token) for token in PLACEHOLDER.findall(text.replace("%%", "")))
+
+
+def placeholder_arguments(text: str) -> list[tuple[int, str]] | None:
+    """Compare printf argument index and type, not just the type multiset."""
+    tokens = PLACEHOLDER.findall(text.replace("%%", ""))
+    positions = [POSITION.match(token) for token in tokens]
+    # Mixing indexed and sequential arguments has undefined formatting semantics.
+    if any(positions) and not all(positions):
+        return None
+
+    arguments: list[tuple[int, str]] = []
+    for ordinal, (token, position) in enumerate(zip(tokens, positions), start=1):
+        index = int(position.group(1)) if position else ordinal
+        if index < 1:
+            return None
+        arguments.append((index, POSITION.sub("%", token)))
+    return sorted(arguments)
 
 
 def translated_units(localization: dict) -> list[str]:
@@ -99,9 +116,10 @@ def run(strict: bool, languages: tuple[str, ...] = ()) -> int:
                 if not units:
                     missing.append(key)
                     continue
-                expected = placeholders(key)
+                expected = placeholder_arguments(key)
                 for value in units:
-                    if placeholders(value) != expected:
+                    actual = placeholder_arguments(value)
+                    if expected is None or actual is None or actual != expected:
                         errors.append(
                             f"{path.name}: {language}: placeholders differ for {key!r}"
                         )
