@@ -84,6 +84,10 @@ Deno.test("local HTTP dashboard role matrix", async () => {
         role === "owner" ? 200 : 403,
         `${role} dashboard access`,
       );
+      if (role === "owner") {
+        const dashboard = await response.json();
+        assertEquals(dashboard.stats.revenueMrr, null);
+      }
       if (role !== "owner") {
         assertEquals(
           fixture.serviceClientCalls(),

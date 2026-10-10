@@ -150,7 +150,8 @@ function mergeRevenue(first: RevenueData, second: RevenueData): RevenueData {
   }
   return {
     stats: {
-      mrr: Math.max(first.stats.mrr, second.stats.mrr),
+      // Never combine unavailable recurring revenue estimates from catalog prices.
+      mrr: null,
       appleRevenue: first.stats.appleRevenue,
       androidRevenue: second.stats.androidRevenue,
       activePaid: Math.max(first.stats.activePaid, second.stats.activePaid),
@@ -360,7 +361,7 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
         {loading ? <LoadingState /> : !error && tab === "revenue" && revenue && (
           <>
             <div className="billing-stat-grid">
-              <StatCard label="Monthly recurring revenue" value={formatAmount(revenue.stats.mrr)} detail="Estimated from active monthly plans" icon={WalletCards} />
+              <StatCard label="Monthly recurring revenue" value={formatAmount(revenue.stats.mrr)} detail="Requires verified subscriber-level recurring amounts" icon={WalletCards} />
               <StatCard label="App Store revenue" value={formatAmount(revenue.stats.appleRevenue)} detail="Recorded purchase events" icon={Apple} />
               <StatCard label="Google Play revenue" value={formatAmount(revenue.stats.androidRevenue)} detail="Recorded purchase events" icon={Smartphone} />
               <StatCard label="Active paid subscribers" value={new Intl.NumberFormat().format(revenue.stats.activePaid)} detail="Active or trialing plans" icon={Users} />

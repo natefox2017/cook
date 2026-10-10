@@ -403,27 +403,14 @@ export async function handleRequest(
         );
       }
 
-      const { data: monthlyPlans, error: planError } = await admin
-        .from("subscription_plans")
-        .select("price, platform")
-        .eq("billing_period", "monthly")
-        .eq("active", true);
-      if (planError) {
-        throw new AppError(
-          "internal_error",
-          "Failed to calculate monthly revenue",
-          500,
-        );
-      }
-      const avgMonthly = (monthlyPlans ?? []).reduce(
-        (sum, plan) => sum + Number(plan.price),
-        0,
-      ) / Math.max((monthlyPlans ?? []).length, 1);
+      // Actual recurring value requires verified entitlement-level pricing and
+      // period normalization. Catalog averages do not constitute MRR.
+      const verifiedMrr: number | null = null;
 
       return json(
         {
           stats: {
-            mrr: Math.round(avgMonthly * (activePaid ?? 0) * 100) / 100,
+            mrr: verifiedMrr,
             appleRevenue: Math.round(appleRevenue * 100) / 100,
             androidRevenue: Math.round(androidRevenue * 100) / 100,
             activePaid: activePaid ?? 0,

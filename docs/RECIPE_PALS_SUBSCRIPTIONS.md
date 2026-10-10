@@ -167,3 +167,23 @@ Manual verification on 2026-10-09:
 #132 remains open until actual ASC Sandbox/TestFlight
 product loading, purchase/restore and entitlement lifecycle results are recorded
 with environment, product ID, transaction evidence and screenshots.
+
+## Admin finance integrity boundary (2026-10-10, partial #276)
+
+The Admin dashboard and Billing page **must not** derive monthly recurring revenue
+by multiplying an average active catalog price by the number of paid subscriptions.
+An active subscriber might be trialing, annual, lifetime, discounted, in a
+different currency, or already canceled but still entitled. Catalog pricing
+alone cannot establish verified recurring amounts.
+
+Until the backend can reconcile entitlement-level product/period/currency,
+refunds and active billing status to a chosen reporting currency, the JSON
+field `mrr` / `revenueMrr` is explicitly **null (not calculated)**.
+Admin UI renders a dash and states the methodology is unavailable. The
+`activePaid`/subscriber-count field remains a separate count, **not cash flow**.
+
+The other recorded-purchase revenue figures are **not yet certified**: before
+finance acceptance, #276 must enforce native currency grouping or documented FX,
+test/sandbox/refund exclusion, event deduplication, pagination/error handling
+and settlement-vs-gross definitions. No actual payout, tax or refund values
+are inferred from nullable MRR. This change is source-only and not a deployment.

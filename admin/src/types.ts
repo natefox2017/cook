@@ -42,7 +42,7 @@ export type DashboardData = {
     activePaidUsers: number;
     suspendedUsers: number;
     revenueTotal: number;
-    revenueMrr: number;
+    revenueMrr: number | null;
     revenueApple: number;
     revenueAndroid: number;
     paymentTransactions: number;
@@ -178,7 +178,7 @@ export type SubscriptionRecord = {
 
 export type RevenueData = {
   stats: {
-    mrr: number;
+    mrr: number | null;
     appleRevenue: number;
     androidRevenue: number;
     activePaid: number;
