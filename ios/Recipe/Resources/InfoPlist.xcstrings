@@ -244,6 +244,12 @@
             "state": "translated",
             "value": "僅在您開啟免手操作後，烹飪模式才使用麥克風辨識語音指令。音訊僅在裝置本機處理。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Mikrofon wird nur für Sprachbefehle im Kochmodus verwendet, wenn die Freisprechsteuerung aktiviert ist. Audio wird ausschließlich auf diesem Gerät verarbeitet."
+          }
         }
       }
     },
@@ -273,6 +279,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "在烹飪模式開啟期間，依您的選擇辨識「下一步」「上一步」「重複」等語音指令。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optionale Sprachbefehle wie „Weiter“, „Zurück“ und „Wiederholen“ erkennen, während der Kochmodus geöffnet ist."
           }
         }
       }
