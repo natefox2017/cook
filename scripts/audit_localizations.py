@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # Developer: gengyun
-# Purpose: Audit the completeness and interpolation safety of shipped Xcode String Catalogs.
+# Purpose: Audit String Catalog completeness for shipped and explicitly selected locales.
 
-"""Report untranslated catalog entries; --strict requires all advertised locales."""
+"""Report untranslated catalog entries; --strict checks advertised and requested locales."""
 
 from __future__ import annotations
 
@@ -26,6 +26,16 @@ PLISTS = (
 # Literal placeholders must be preserved in localized text, including plural forms.
 PLACEHOLDER = re.compile(r"%(?:\d+\$)?(?:lld|llu|ld|lu|d|u|@|s|f|g)")
 POSITION = re.compile(r"^%\d+\$")
+LOCALE_CODE = re.compile(r"^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$")
+
+
+def locale_code(value: str) -> str:
+    """Reject invalid locale identifiers before checking catalog contents."""
+    if not LOCALE_CODE.fullmatch(value):
+        raise argparse.ArgumentTypeError(
+            f"Invalid locale {value!r}; use BCP-47 language tags (e.g. de, pt-BR)"
+        )
+    return value
 
 
 def placeholders(text: str) -> list[str]:
@@ -53,7 +63,8 @@ def translated_units(localization: dict) -> list[str]:
             values.append(unit["value"])
     return values
 
-def run(strict: bool) -> int:
+def run(strict: bool, languages: tuple[str, ...] = ()) -> int:
+    """Audit shipped locales plus explicitly selected, potentially unshipped locales."""
     languages_by_target: list[set[str]] = []
     for plist in PLISTS:
         with plist.open("rb") as input_file:
@@ -75,7 +86,7 @@ def run(strict: bool) -> int:
             for key, value in catalog["strings"].items()
             if value.get("shouldTranslate") is not False
         }
-        locales = languages_by_target[0 if label.startswith("Recipe") else 1]
+        locales = languages_by_target[0 if label.startswith("Recipe") else 1] | set(languages)
         source = catalog["sourceLanguage"]
         print(f"\n{label}: {len(strings)} translatable entries")
         for language in sorted(locales):
@@ -114,5 +125,9 @@ def run(strict: bool) -> int:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--strict", action="store_true", help="Require 100% coverage")
+    parser.add_argument(
+        "--language", action="append", type=locale_code, default=[], metavar="CODE",
+        help="Also audit a not-yet-shipped language (repeatable, e.g. --language pt-BR)",
+    )
     args = parser.parse_args()
-    raise SystemExit(run(strict=args.strict))
+    raise SystemExit(run(strict=args.strict, languages=tuple(args.language)))
