@@ -760,6 +760,12 @@
             "state": "translated",
             "value": "Lo spazio di archiviazione condiviso di Recipe Pals non è disponibile. Controlla la configurazione della firma di App Group."
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals의 공유 저장소를 사용할 수 없습니다. App Group 서명 설정을 확인하세요."
+          }
         }
       }
     },
@@ -806,6 +812,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Condividi con Recipe Pals un link HTTPS pubblico, testo leggibile, un’immagine o un PDF."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공개 HTTPS 링크, 읽을 수 있는 텍스트, 이미지 또는 PDF를 Recipe Pals에 공유하세요."
           }
         }
       }
