@@ -52,7 +52,7 @@ final class RecipeUITests: XCTestCase {
         selectAndSaveCandidate(Self.soupCandidateIdentifier, in: app)
         returnFromRecipeDetail(in: app)
         let soup = app.buttons[Self.savedSoupIdentifier]
-        reveal(soup, in: app, maximumSwipes: 8)
+        revealLibraryRecipe(soup, in: app)
         XCTAssertTrue(soup.label.contains("QA Tomato Soup"))
         XCTAssertFalse(app.buttons[Self.savedPastaIdentifier].exists)
 
@@ -62,13 +62,36 @@ final class RecipeUITests: XCTestCase {
         returnFromRecipeDetail(in: app)
 
         let pasta = app.buttons[Self.savedPastaIdentifier]
-        reveal(pasta, in: app, maximumSwipes: 8)
+        revealLibraryRecipe(pasta, in: app)
         XCTAssertTrue(pasta.label.contains("QA Lemon Pasta"))
-        reveal(soup, in: app, maximumSwipes: 8)
+        revealLibraryRecipe(soup, in: app)
         XCTAssertEqual(
             app.buttons.matching(identifier: Self.savedSoupIdentifier).count, 1,
             "Reselecting an imported candidate must not create a second private recipe"
         )
+    }
+
+    @MainActor
+    func testMultiRecipeCanSaveBothSelectedDishesInOneTransaction() {
+        let app = launchMultiCandidateQAApp()
+        defer { app.terminate() }
+        openMultiCandidateSource(in: app)
+        openMultiCandidatePicker(in: app)
+
+        let soup = app.buttons[Self.soupCandidateIdentifier]
+        let pasta = app.buttons[Self.pastaCandidateIdentifier]
+        soup.tap()
+        pasta.tap()
+        let save = app.buttons["saveSelectedCandidateRecipes"]
+        waitUntilReady(save)
+        save.tap()
+        waitUntilAbsent(app.navigationBars["Select recipes"])
+        returnFromRecipeDetail(in: app)
+
+        revealLibraryRecipe(app.buttons[Self.savedSoupIdentifier], in: app)
+        revealLibraryRecipe(app.buttons[Self.savedPastaIdentifier], in: app)
+        XCTAssertEqual(app.buttons.matching(identifier: Self.savedSoupIdentifier).count, 1)
+        XCTAssertEqual(app.buttons.matching(identifier: Self.savedPastaIdentifier).count, 1)
     }
 
     @MainActor
@@ -80,7 +103,7 @@ final class RecipeUITests: XCTestCase {
         returnFromRecipeDetail(in: app)
 
         let savedSoup = app.buttons[Self.savedSoupIdentifier]
-        reveal(savedSoup, in: app, maximumSwipes: 8)
+        revealLibraryRecipe(savedSoup, in: app)
         savedSoup.tap()
         app.buttons["Recipe Options"].tap()
         app.buttons["Edit Recipe"].tap()
@@ -101,7 +124,7 @@ final class RecipeUITests: XCTestCase {
         selectAndSaveCandidate(Self.soupCandidateIdentifier, in: app)
         returnFromRecipeDetail(in: app)
 
-        reveal(savedSoup, in: app, maximumSwipes: 8)
+        revealLibraryRecipe(savedSoup, in: app)
         XCTAssertTrue(savedSoup.label.contains("QA Soup - Edited"))
         XCTAssertEqual(app.buttons.matching(identifier: Self.savedSoupIdentifier).count, 1)
     }
@@ -1861,14 +1884,25 @@ final class RecipeUITests: XCTestCase {
         }
         app.launch()
         waitUntilReady(app.buttons["addRecipeButton"])
-        reveal(app.buttons[Self.candidateSourceIdentifier], in: app, maximumSwipes: 8)
+        revealLibraryRecipe(app.buttons[Self.candidateSourceIdentifier], in: app)
         return app
+    }
+
+    @MainActor
+    private func revealLibraryRecipe(_ recipe: XCUIElement, in app: XCUIApplication) {
+        let library = app.scrollViews["recipeLibraryScroll"]
+        if library.exists {
+            // Always restart from the top: earlier checks may have scrolled past the source.
+            for _ in 0..<6 { library.swipeDown() }
+        }
+        reveal(
+            recipe, in: app, scrollView: library.exists ? library : nil, maximumSwipes: 12)
     }
 
     @MainActor
     private func openMultiCandidateSource(in app: XCUIApplication) {
         let source = app.buttons[Self.candidateSourceIdentifier]
-        reveal(source, in: app, maximumSwipes: 8)
+        revealLibraryRecipe(source, in: app)
         source.tap()
         waitUntilReady(app.buttons["recipeMultiCandidateSelect"])
     }
