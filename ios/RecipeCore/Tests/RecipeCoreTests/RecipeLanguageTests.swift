@@ -112,7 +112,7 @@ func shareExtensionReadsHostLanguageFromAppGroupRatherThanItsOwnDefaults() throw
         arguments: [], supportedIdentifiers: RecipeLanguage.currentlyTranslatedLanguages,
         selectedIdentifier: RecipeLanguage.selectedIdentifier(
             processDefaults: shareExtension, groupDefaults: group, isExtension: true)
-    ).identifier == "zh-Hans", "Without a mirror, the extension preserves its old local fallback")
+    ).identifier == "en", "Clearing the shared choice must not resurrect stale extension defaults")
 }
 
 @Test
