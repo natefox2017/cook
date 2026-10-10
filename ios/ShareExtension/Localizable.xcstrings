@@ -4,6 +4,12 @@
     "Saving source…": {
       "comment": "Share Extension user-facing status or error.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvando a fonte…"
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -69,6 +75,12 @@
     "Saved on this iPhone": {
       "comment": "Share Extension user-facing status or error.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvo neste iPhone"
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -134,6 +146,12 @@
     "Import pending.": {
       "comment": "Share Extension user-facing status or error.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importação pendente."
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -199,6 +217,12 @@
     "Couldn’t save your source": {
       "comment": "Share Extension user-facing status or error.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível salvar a fonte"
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -264,6 +288,12 @@
     "Cancel": {
       "comment": "Share Extension user-facing status or error.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelar"
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -329,6 +359,12 @@
     "Try Again": {
       "comment": "Share Extension user-facing status or error.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tentar novamente"
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -394,6 +430,12 @@
     "The source app did not provide a readable link or text.": {
       "comment": "Share Extension user-facing status or error.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O aplicativo de origem não forneceu um link ou texto legível."
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -459,6 +501,12 @@
     "Share a public recipe link, readable text, image, or PDF.": {
       "comment": "Share Extension user-facing status or error.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartilhe um link público de receita, texto legível, uma imagem ou um PDF."
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -524,6 +572,12 @@
     "This attachment type is not supported.": {
       "comment": "Share Extension user-facing status or error.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este tipo de anexo não é compatível."
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -589,6 +643,12 @@
     "The shared item could not be read. Try copying the link or text.": {
       "comment": "Share Extension user-facing status or error.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível ler o item compartilhado. Tente copiar o link ou o texto."
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -654,6 +714,12 @@
     "Share cancelled.": {
       "comment": "Share Extension user-facing status or error.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartilhamento cancelado."
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -719,6 +785,12 @@
     "Recipe Pals’ shared storage is not available. Check App Group signing.": {
       "comment": "Shared storage errors resolved from RecipeCore.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O armazenamento compartilhado do Recipe Pals não está disponível. Verifique a configuração de assinatura do App Group."
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -778,6 +850,12 @@
     "Share a public HTTPS link, readable text, image, or PDF to Recipe Pals.": {
       "comment": "Shared storage errors resolved from RecipeCore.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartilhe com o Recipe Pals um link HTTPS público, texto legível, uma imagem ou um PDF."
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -837,6 +915,12 @@
     "The original shared source is missing. Share it again.": {
       "comment": "Shared storage errors resolved from RecipeCore.",
       "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O conteúdo compartilhado originalmente não está disponível. Compartilhe-o novamente."
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
