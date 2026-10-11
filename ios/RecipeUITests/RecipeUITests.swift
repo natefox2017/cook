@@ -1903,6 +1903,7 @@ final class RecipeUITests: XCTestCase {
             ("zh-Hans", "食谱", "份食谱", "我的", "设置", "账号", "会员", "我的厨房"),
             ("zh-Hant", "食譜", "份食譜", "個人", "設定", "帳號", "會員", "我的廚房"),
             ("ja", "レシピ", "件のレシピ", "マイページ", "設定", "アカウント", "プレミアム", "マイキッチン"),
+            ("es", "Recetas", "recetas", "Perfil", "Ajustes", "Cuenta", "Premium", "Tu cocina"),
         ]
 
         for (
