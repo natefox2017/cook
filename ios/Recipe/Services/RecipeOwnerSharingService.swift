@@ -51,10 +51,12 @@ final class RecipeOwnerSharingService {
 
     func publishingClient() throws -> RecipeSharePublishingService? {
         guard let endpoint else { return nil }
+        let sessionGeneration = auth.sharingSessionGeneration
         return try RecipeSharePublishingService(
             managementEndpoint: endpoint,
             session: {
-                guard let ownerID = self.currentOwnerID,
+                guard self.auth.sharingSessionGeneration == sessionGeneration,
+                    let ownerID = self.currentOwnerID,
                     let session = self.client.auth.currentSession
                 else {
                     return nil

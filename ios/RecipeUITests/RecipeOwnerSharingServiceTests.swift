@@ -137,6 +137,22 @@ final class RecipeOwnerSharingServiceTests: XCTestCase {
         XCTAssertTrue(SharingFixtureHTTP.shareRequests.isEmpty)
     }
 
+    func testOldClientCannotReuseReloggedSessionToken() async throws {
+        let fixture = try await SharingFixture.make()
+        defer { fixture.cleanUp() }
+        let ownerID = try XCTUnwrap(fixture.service.currentOwnerID)
+        let client = try XCTUnwrap(fixture.service.publishingClient())
+        try await fixture.auth.signOut()
+        try await fixture.auth.signIn(email: "synthetic@example.test", password: "synthetic-only")
+        do {
+            _ = try await client.list(recipeID: fixture.recipe.id, ownerID: ownerID)
+            XCTFail("An old client must not obtain a later login token")
+        } catch {
+            XCTAssertEqual(error as? RecipeSharePublishingError, .notSignedIn)
+        }
+        XCTAssertTrue(SharingFixtureHTTP.shareRequests.isEmpty)
+    }
+
     func testFullPageRefusesDeletion() async throws {
         let fixture = try await SharingFixture.make()
         defer { fixture.cleanUp() }
