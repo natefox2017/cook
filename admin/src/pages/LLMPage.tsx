@@ -360,7 +360,7 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
             model: editor.model,
           });
       if (!result.ok) {
-        setFormError("The provider could not verify the connection.");
+        setFormError(result.message || "The provider could not verify the connection.");
       } else {
         setConnectionResult("Connection successful.");
       }

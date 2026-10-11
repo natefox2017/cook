@@ -3,7 +3,56 @@
 
 import { assertEquals } from "jsr:@std/assert@1.0.14";
 import { AppError } from "../_shared/errors.ts";
-import { handleRequest } from "./handler.ts";
+import {
+  handleRequest,
+  ProviderProbeError,
+  providerStatusError,
+} from "./handler.ts";
+
+Deno.test("provider failures expose only fixed diagnostics, never raw exceptions", async () => {
+  for (
+    const cause of [
+      providerStatusError(401),
+      providerStatusError(403),
+      providerStatusError(429),
+      providerStatusError(502),
+      new ProviderProbeError(
+        "Provider DNS lookup failed on the server. Check the hostname and server DNS support.",
+      ),
+      new Error("secret-key-and-private-upstream-body"),
+    ]
+  ) {
+    const fixture = dependencies();
+    fixture.testProvider = async () => {
+      throw cause;
+    };
+    const response = await handleRequest(
+      new Request("https://example.test/admin-ai/providers/test", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer admin",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "Fixture",
+          baseUrl: "https://example.com/v1",
+          model: "fixture",
+          apiKey: "secret-key",
+        }),
+      }),
+      fixture,
+    );
+    const body = await response.json();
+    assertEquals(body.ok, false);
+    assertEquals(
+      body.message,
+      cause instanceof ProviderProbeError
+        ? cause.message
+        : "Provider check failed",
+    );
+    assertEquals(JSON.stringify(body).includes("secret-key"), false);
+  }
+});
 
 const roles = ["owner", "admin", "operator", "readonly"] as const;
 

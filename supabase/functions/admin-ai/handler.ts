@@ -256,7 +256,10 @@ async function testProviderRequest(
     return json(
       ok ? { ok: true } : { ok: false, message: "Provider check failed" },
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof ProviderProbeError) {
+      return json({ ok: false, message: error.message });
+    }
     return json({ ok: false, message: "Provider check failed" });
   }
 }
@@ -373,9 +376,28 @@ function parseProviderURL(raw: string, requireHTTPS: boolean): URL {
   return url;
 }
 
+export class ProviderProbeError extends Error {}
+
+export function providerStatusError(status: number): ProviderProbeError {
+  if (status === 401 || status === 403) {
+    return new ProviderProbeError(
+      `Provider rejected authentication (HTTP ${status}). Check the API key and account permissions.`,
+    );
+  }
+  if (status === 429) {
+    return new ProviderProbeError(
+      "Provider rate limit reached (HTTP 429). Retry later.",
+    );
+  }
+  return new ProviderProbeError(
+    `Provider models endpoint returned HTTP ${status}. Check the API base URL and provider availability.`,
+  );
+}
+
 async function probeProvider(url: URL, apiKey: string): Promise<boolean> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8_000);
+  let phase = "dns";
   try {
     const addresses = await Deno.resolveDns(url.hostname, "A", {
       signal: controller.signal,
@@ -383,7 +405,12 @@ async function probeProvider(url: URL, apiKey: string): Promise<boolean> {
     if (
       !addresses.length ||
       addresses.some((address) => !isPublicAddress(address))
-    ) return false;
+    ) {
+      throw new ProviderProbeError(
+        "Provider DNS did not resolve exclusively to public addresses. Connection blocked.",
+      );
+    }
+    phase = "https";
     const lookup: LookupFunction = (_hostname, options, callback) => {
       const resolved = [...new Set(addresses)].map((address) => ({
         address,
@@ -392,7 +419,7 @@ async function probeProvider(url: URL, apiKey: string): Promise<boolean> {
       if (options?.all) callback(null, resolved);
       else callback(null, resolved[0].address, resolved[0].family);
     };
-    return await new Promise<boolean>((resolve) => {
+    return await new Promise<boolean>((resolve, reject) => {
       const request = httpsRequest({
         hostname: url.hostname,
         servername: url.hostname,
@@ -410,16 +437,29 @@ async function probeProvider(url: URL, apiKey: string): Promise<boolean> {
         maxHeaderSize: 16_384,
       }, (response) => {
         response.destroy();
-        resolve(
-          (response.statusCode ?? 500) >= 200 &&
-            (response.statusCode ?? 500) < 300,
-        );
+        const status = response.statusCode ?? 500;
+        if (status >= 200 && status < 300) resolve(true);
+        else reject(providerStatusError(status));
       });
-      request.on("error", () => resolve(false));
+      request.on("error", () =>
+        reject(
+          new ProviderProbeError(
+            controller.signal.aborted
+              ? "Provider connection timed out after 8 seconds. Retry later."
+              : "Provider HTTPS connection failed. Check provider availability and server network access.",
+          ),
+        ));
       request.end();
     });
-  } catch {
-    return false;
+  } catch (error) {
+    if (error instanceof ProviderProbeError) throw error;
+    throw new ProviderProbeError(
+      controller.signal.aborted
+        ? "Provider connection timed out after 8 seconds. Retry later."
+        : phase === "dns"
+        ? "Provider DNS lookup failed on the server. Check the hostname and server DNS support."
+        : "Provider HTTPS connection failed. Check provider availability and server network access.",
+    );
   } finally {
     clearTimeout(timer);
   }
