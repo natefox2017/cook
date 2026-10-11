@@ -50,6 +50,12 @@
             "state": "translated",
             "value": "Gruppi di ingredienti"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grupos de ingredientes"
+          }
         }
       }
     },
@@ -101,6 +107,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nome del gruppo"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nome do grupo"
           }
         }
       }
@@ -154,6 +166,12 @@
             "state": "translated",
             "value": "Sposta gruppo su"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mover grupo para cima"
+          }
         }
       }
     },
@@ -205,6 +223,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sposta gruppo giù"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mover grupo para baixo"
           }
         }
       }
@@ -258,6 +282,12 @@
             "state": "translated",
             "value": "Rimuovi gruppo di ingredienti"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remover grupo de ingredientes"
+          }
         }
       }
     },
@@ -309,6 +339,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ingredienti in questo gruppo"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingredientes neste grupo"
           }
         }
       }
@@ -362,6 +398,12 @@
             "state": "translated",
             "value": "Aggiungi gruppo di ingredienti"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adicionar grupo de ingredientes"
+          }
         }
       }
     },
@@ -413,6 +455,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dai un nome a ogni gruppo di ingredienti."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dê um nome a cada grupo de ingredientes."
           }
         }
       }
@@ -466,6 +514,12 @@
             "state": "translated",
             "value": "Scegli almeno un ingrediente per ogni gruppo."
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escolha pelo menos um ingrediente para cada grupo."
+          }
         }
       }
     },
@@ -517,6 +571,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aggiungi foto del passaggio"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adicionar foto da etapa"
           }
         }
       }
@@ -570,6 +630,12 @@
             "state": "translated",
             "value": "Rimuovi foto del passaggio"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remover foto da etapa"
+          }
         }
       }
     },
@@ -621,6 +687,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Usa foto tue o che hai il permesso di usare."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use fotos que sejam suas ou que você tenha permissão para usar."
           }
         }
       }
@@ -674,6 +746,12 @@
             "state": "translated",
             "value": "Foto del passaggio"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Foto da etapa"
+          }
         }
       }
     },
@@ -725,6 +803,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Foto del passaggio non disponibile su questo dispositivo"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A foto da etapa está indisponível neste dispositivo"
           }
         }
       }
@@ -778,6 +862,12 @@
             "state": "translated",
             "value": "Inizia a cucinare da questo passaggio"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Começar a cozinhar a partir desta etapa"
+          }
         }
       }
     },
@@ -829,6 +919,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anteprima del poster"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prévia do pôster"
           }
         }
       }
@@ -882,6 +978,12 @@
             "state": "translated",
             "value": "Storia"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Story"
+          }
         }
       }
     },
@@ -933,6 +1035,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Immagine lunga"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imagem longa"
           }
         }
       }
@@ -986,6 +1094,12 @@
             "state": "translated",
             "value": "Condividi immagine"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartilhar imagem"
+          }
         }
       }
     },
@@ -1037,6 +1151,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Copia link"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiar link"
           }
         }
       }
@@ -1294,9 +1414,21 @@
           }
         },
         "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld comprados"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld comprado"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld comprados"
+                }
+              }
+            }
           }
         }
       }
@@ -36855,7 +36987,7 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld de %lld etapa concluída"
+            "value": "Etapas concluídas: %lld de %lld"
           }
         },
         "nl": {
@@ -36920,7 +37052,7 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld de %lld etapas concluídas"
+            "value": "Etapas concluídas: %lld de %lld"
           }
         },
         "nl": {
@@ -42668,9 +42800,21 @@
           }
         },
         "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld concluídos"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld concluído"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld concluídos"
+                }
+              }
+            }
           }
         },
         "nl": {
@@ -42735,7 +42879,7 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld de %lld etapas concluídas."
+            "value": "Etapas concluídas: %lld de %lld."
           }
         },
         "nl": {
@@ -56688,9 +56832,21 @@
           }
         },
         "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld segundos"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld segundo"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld segundos"
+                }
+              }
+            }
           }
         },
         "nl": {
@@ -56889,9 +57045,21 @@
           }
         },
         "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Preparação: %lld minutos"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Preparação: %lld minuto"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Preparação: %lld minutos"
+                }
+              }
+            }
           }
         },
         "nl": {
@@ -56954,9 +57122,21 @@
           }
         },
         "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cozimento: %lld minutos"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Cozimento: %lld minuto"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Cozimento: %lld minutos"
+                }
+              }
+            }
           }
         },
         "nl": {
@@ -59757,7 +59937,7 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "País é uma preferência para futuros conteúdos regionais. Não altera o país da sua conta nem as assinaturas da App Store."
+            "value": "A escolha do país serve como preferência para conteúdos regionais futuros. Ela não altera o país da sua conta nem as assinaturas da App Store."
           }
         },
         "nl": {
@@ -60895,6 +61075,12 @@
             "state": "translated",
             "value": "Condividi"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartilhar"
+          }
         }
       }
     },
@@ -60946,6 +61132,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Riprova"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tentar novamente"
           }
         }
       }
@@ -60999,6 +61191,12 @@
             "state": "translated",
             "value": "Riepilogo e fonte"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resumo e fonte"
+          }
         }
       }
     },
@@ -61050,6 +61248,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Istruzioni complete"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modo de preparo completo"
           }
         }
       }
@@ -61103,6 +61307,12 @@
             "state": "translated",
             "value": "Ho il permesso di condividere queste istruzioni."
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tenho permissão para compartilhar este modo de preparo."
+          }
         }
       }
     },
@@ -61154,6 +61364,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pubblica link"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Publicar link"
           }
         }
       }
@@ -61207,6 +61423,12 @@
             "state": "translated",
             "value": "Aggiorna copia pubblica"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atualizar cópia pública"
+          }
         }
       }
     },
@@ -61258,6 +61480,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Revoca link"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revogar link"
           }
         }
       }
@@ -61311,6 +61539,12 @@
             "state": "translated",
             "value": "Revocare questo link pubblico?"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revogar este link público?"
+          }
         }
       }
     },
@@ -61362,6 +61596,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Questo link smetterà di funzionare."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este link deixará de funcionar."
           }
         }
       }
@@ -61415,6 +61655,12 @@
             "state": "translated",
             "value": "Per condividere devi accedere."
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entre na conta para compartilhar."
+          }
         }
       }
     },
@@ -61466,6 +61712,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Questa ricetta è cambiata. Controllala prima di condividerla."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta receita mudou. Revise-a antes de compartilhar."
           }
         }
       }
@@ -61519,6 +61771,12 @@
             "state": "translated",
             "value": "Il tuo account è cambiato. Accedi di nuovo."
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sua conta mudou. Entre novamente."
+          }
         }
       }
     },
@@ -61570,6 +61828,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "La copia pubblica è cambiata. Ricaricala prima di aggiornarla."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A cópia pública mudou. Recarregue-a antes de atualizar."
           }
         }
       }
@@ -61623,6 +61887,12 @@
             "state": "translated",
             "value": "Ricarica copia pubblica"
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recarregar cópia pública"
+          }
         }
       }
     },
@@ -61674,6 +61944,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "La condivisione non è disponibile. Riprova più tardi."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O compartilhamento está indisponível. Tente novamente mais tarde."
           }
         }
       }
@@ -61727,6 +62003,12 @@
             "state": "translated",
             "value": "Troppe richieste. Riprova più tardi."
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muitas solicitações. Tente novamente mais tarde."
+          }
         }
       }
     },
@@ -61778,6 +62060,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Il link pubblico non è disponibile."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O link público está indisponível."
           }
         }
       }
@@ -61831,6 +62119,12 @@
             "state": "translated",
             "value": "Condivisione non riuscita. Riprova."
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível compartilhar. Tente novamente."
+          }
         }
       }
     },
@@ -61882,6 +62176,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Non è stato possibile interrompere la condivisione. La tua ricetta è ancora salvata. Controlla la connessione e riprova."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível interromper o compartilhamento. Sua receita continua salva. Verifique sua conexão e tente novamente."
           }
         }
       }
