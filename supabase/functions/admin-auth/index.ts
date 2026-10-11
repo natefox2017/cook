@@ -774,20 +774,25 @@ Deno.serve(async (req) => {
       if (consumed.login_challenge_id) {
         await consumeLoginChallenge(consumed.login_challenge_id);
       }
-      const { error: updateError } = await admin.from("admin_passkeys")
+      const { data: updatedCredential, error: updateError } = await admin.from("admin_passkeys")
         .update({
           sign_count: verification.authenticationInfo.newCounter,
           last_used_at: new Date().toISOString(),
         })
         .eq("credential_id", credential.credential_id)
         .eq("admin_id", challenge.admin_id)
-        .eq("sign_count", credential.sign_count);
+        .eq("sign_count", credential.sign_count)
+        .select("credential_id")
+        .maybeSingle();
       if (updateError) {
         throw new AppError(
           "internal_error",
           "Unable to update passkey state",
           500,
         );
+      }
+      if (updatedCredential?.credential_id !== credential.credential_id) {
+        throw new AppError("unauthorized", "Passkey sign-in failed", 401);
       }
       if (
         !await recordLoginEvent(req, {
