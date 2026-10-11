@@ -1088,7 +1088,7 @@ final class RecipeUITests: XCTestCase {
         reveal(countryOption, in: app, maximumSwipes: 12)
         countryOption.tap()
         XCTAssertTrue(app.navigationBars["言語と国・地域"].exists)
-        XCTAssertTrue(picker.label.contains("日本語"), app.debugDescription)
+        XCTAssertEqual(picker.value as? String, "日本語", app.debugDescription)
         XCTAssertTrue(country.label.contains(selectedCountry), app.debugDescription)
         attachScreenshot("Manual Japanese language with independent country", app: app)
 
@@ -1106,7 +1106,7 @@ final class RecipeUITests: XCTestCase {
         reveal(restartedLocale, in: app, maximumSwipes: 6)
         restartedLocale.tap()
         XCTAssertTrue(app.navigationBars["言語と国・地域"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["settings.languagePicker"].label.contains("日本語"))
+        XCTAssertEqual(app.buttons["settings.languagePicker"].value as? String, "日本語")
         let restartedCountry = app.buttons.matching(
             NSPredicate(format: "label BEGINSWITH %@", countryTitle)
         ).firstMatch
