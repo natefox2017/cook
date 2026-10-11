@@ -266,9 +266,12 @@ final class RecipeAuthService {
                     || (defaults.bool(forKey: Self.pendingPasswordRecoveryKey)
                         && callbackEmailMatchesPendingReset)
 
-                // Consume the marker only after the PKCE code has been exchanged successfully.
-                defaults.removeObject(forKey: Self.pendingPasswordRecoveryKey)
-                defaults.removeObject(forKey: Self.pendingPasswordRecoveryEmailKey)
+                // A callback for another account must not consume this account's
+                // pending reset intent. Failed exchanges also retain the marker.
+                if callbackEmailMatchesPendingReset {
+                    defaults.removeObject(forKey: Self.pendingPasswordRecoveryKey)
+                    defaults.removeObject(forKey: Self.pendingPasswordRecoveryEmailKey)
+                }
                 authCallbackGeneration += 1
                 if isPasswordRecovery {
                     state = .passwordRecovery(userID: session.user.id)
