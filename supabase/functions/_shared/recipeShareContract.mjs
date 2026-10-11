@@ -153,7 +153,8 @@ export async function boundedJSON(req, maxBytes = 2 * 1024 * 1024) {
   } catch {
     return {error: 400};
   } finally {
-    try {await reader.cancel();} catch {}
+    // Cleanup must not delay a completed parse or size/error decision.
+    try {void reader.cancel().catch(() => {});} catch {}
     reader.releaseLock();
   }
 }

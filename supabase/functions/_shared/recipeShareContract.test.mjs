@@ -119,6 +119,38 @@ test("bounded request parses valid JSON, rejects oversized, malformed and invali
   assert.equal((await boundedJSON(make(new Uint8Array([0xff, 0xfe])))).error, 400);
 });
 
+test("oversized request returns 413 even when stream cancellation hangs or rejects", async () => {
+  for (const cancellation of ["never", "reject"]) {
+    let calls = 0;
+    const body = new ReadableStream({
+      start(controller) {controller.enqueue(new Uint8Array(3));},
+      cancel() {
+        calls++;
+        return cancellation === "never"
+          ? new Promise(() => {})
+          : Promise.reject(new Error("synthetic cancellation failure"));
+      },
+    });
+    const request = new Request("https://synthetic.invalid", {
+      method: "POST", headers: {"content-type": "application/json"},
+      body, duplex: "half",
+    });
+    let timer;
+    try {
+      const result = await Promise.race([
+        boundedJSON(request, 2),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error("413 was blocked by cleanup")), 1000);
+        }),
+      ]);
+      assert.deepEqual(result, {error: 413});
+      assert.equal(calls, 1);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+});
+
 
  test("rejects private home.arpa citations and reserved Web origin subdomains", () => {
    for (const url of ["https://home.arpa", "https://recipes.home.arpa"]) {
