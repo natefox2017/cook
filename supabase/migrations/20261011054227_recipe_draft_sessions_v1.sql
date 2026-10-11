@@ -351,6 +351,7 @@ begin
         if p_action='accept' and flag in ('ingredients','steps')
             and exists(select 1 from jsonb_each(next_fields) f where f.key like flag||'[%')
             and not exists(select 1 from jsonb_each(next_fields) f where f.key like flag||'[%' and f.value->>'user_confirmed' is distinct from 'true')
+            and not exists(select 1 from jsonb_array_elements_text(s.effective_context->'review_fields') f where f like flag||'[%' and next_fields->f->>'user_confirmed' is distinct from 'true')
             and exists(select 1 from unnest(p_selected_paths) x where x like flag||'[%') then continue; end if;
         expected_flags:=expected_flags || to_jsonb(flag);
     end loop;

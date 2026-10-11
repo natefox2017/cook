@@ -161,6 +161,17 @@ test('DEV-293 fresh/reapply/rollback, real ACL and transaction contract', async 
     const badGroup=structuredClone(gn);badGroup.review_fields=[];badGroup.status='ready';
     eq((await rpc('approve_recipe_draft_turn',[A,gs,gt.request_id,randomUUID(),1,'accept',['ingredients[0].name'],H2,badGroup,H2,true])).code,'INVALID_INPUT');
     eq((await rpc('approve_recipe_draft_turn',[A,gs,gt.request_id,randomUUID(),1,'accept',['ingredients[0].name'],H2,gn,H2,true])).receipt.applied_revision,'2');
+    const siblingContext=structuredClone(groupContext);delete siblingContext.fields['ingredients[1].name'];
+    siblingContext.review_fields=['ingredients','ingredients[1].name'];
+    const ss=(await create(job,siblingContext)).session.id;const st=(await claim(ss)).turn;await mark(st);await finish(st,gp,0);
+    const sn=structuredClone(siblingContext);sn.fields['ingredients[0].name']=next.fields.title;
+    const erasedGroup=structuredClone(sn);erasedGroup.review_fields=['ingredients[1].name'];
+    eq((await rpc('approve_recipe_draft_turn',[A,ss,st.request_id,randomUUID(),1,'accept',['ingredients[0].name'],H2,erasedGroup,H2,true])).code,'INVALID_INPUT');
+    eq((await rpc('approve_recipe_draft_turn',[A,ss,st.request_id,randomUUID(),1,'accept',['ingredients[0].name'],H2,sn,H2,true])).receipt.applied_revision,'2');
+    const resolvedContext=structuredClone(siblingContext);resolvedContext.review_fields=['ingredients','ingredients[0].name'];
+    const rs=(await create(job,resolvedContext)).session.id;const rst=(await claim(rs)).turn;await mark(rst);await finish(rst,gp,0);
+    const rn=structuredClone(resolvedContext);rn.fields['ingredients[0].name']=next.fields.title;rn.review_fields=[];rn.status='ready';
+    eq((await rpc('approve_recipe_draft_turn',[A,rs,rst.request_id,randomUUID(),1,'accept',['ingredients[0].name'],H2,rn,H2,true])).receipt.applied_revision,'2');
     // Invalid persisted outcome inputs do not partially settle a reservation.
     const badResultSid=(await create(job)).session.id;const bt=(await claim(badResultSid)).turn;await mark(bt);
     for(const malformed of [{status:'unavailable'},{status:'unavailable',code:'SECRET'}, {...proposal,requiresApproval:true}, {...proposal,requires_approval:false}, {...proposal,suggestions:[{...proposal.suggestions[0],raw_value:'x'.repeat(1501)}]}, {...proposal,questions:Array(4).fill({path:'title',question:'?',evidence_ids:[E]})}, {...proposal,private_notes:'secret'}]) eq((await finish(bt,malformed,0)).code,'INVALID_INPUT');
