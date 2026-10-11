@@ -188,7 +188,7 @@ export const adminApi = {
     return request<{ data: LLMProvider[] }>("admin-ai", "/providers", token);
   },
   saveLlmProvider(token: string, input: LLMProviderInput, id?: string) {
-    if (input.apiKey && (!functionsBase || new URL(functionsBase).protocol !== "https:")) {
+    if (input.apiKey && !isSecureApiEndpoint(functionsBase, window.location.origin)) {
       throw new AdminApiError("Saving an API key requires the configured HTTPS Supabase function endpoint. The key was not sent.", 0);
     }
     return request<LLMProvider>("admin-ai", id ? `/providers/${encodeURIComponent(id)}` : "/providers", token, {
