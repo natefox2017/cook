@@ -1046,7 +1046,7 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
-    func testManualLanguageSelectionOverridesEnglishTestDefault() {
+    func testManualLanguageSelectionOverridesEnglishTestDefault() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--uitesting-reset-language"]
         app.launch()
@@ -1074,6 +1074,50 @@ final class RecipeUITests: XCTestCase {
             app.debugDescription
         )
         XCTAssertTrue(app.staticTexts["アプリの言語"].exists)
+
+        let countryTitle = "国または地域"
+        let country = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", countryTitle)
+        ).firstMatch
+        let selectedCountry = try XCTUnwrap(
+            Locale(identifier: "ja").localizedString(forRegionCode: "AD")
+        )
+        XCTAssertTrue(country.waitForExistence(timeout: 5), app.debugDescription)
+        country.tap()
+        let countryOption = app.buttons[selectedCountry].firstMatch
+        reveal(countryOption, in: app, maximumSwipes: 12)
+        countryOption.tap()
+        XCTAssertTrue(app.navigationBars["言語と国・地域"].exists)
+        XCTAssertTrue(picker.label.contains("日本語"), app.debugDescription)
+        XCTAssertTrue(country.label.contains(selectedCountry), app.debugDescription)
+        attachScreenshot("Manual Japanese language with independent country", app: app)
+
+        // A normal UI-test restart must honor the saved choices without reset or forced locale flags.
+        app.terminate()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        let restartedProfile = app.tabBars.buttons["tab.profile"]
+        waitUntilReady(restartedProfile)
+        restartedProfile.tap()
+        let restartedSettings = app.buttons["設定"]
+        reveal(restartedSettings, in: app, maximumSwipes: 5)
+        restartedSettings.tap()
+        let restartedLocale = app.buttons["言語と国・地域"]
+        reveal(restartedLocale, in: app, maximumSwipes: 6)
+        restartedLocale.tap()
+        XCTAssertTrue(app.navigationBars["言語と国・地域"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["settings.languagePicker"].label.contains("日本語"))
+        let restartedCountry = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", countryTitle)
+        ).firstMatch
+        XCTAssertTrue(restartedCountry.label.contains(selectedCountry), app.debugDescription)
+        attachScreenshot("Language and country retained after restart", app: app)
+
+        restartedCountry.tap()
+        let deviceRegion = app.buttons["端末の地域を使用"].firstMatch
+        reveal(deviceRegion, in: app, maximumSwipes: 12)
+        deviceRegion.tap()
+        XCTAssertTrue(restartedCountry.label.contains("端末の地域を使用"))
     }
 
     @MainActor
