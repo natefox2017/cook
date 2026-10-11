@@ -2,8 +2,8 @@
 // Purpose: Reject blank public ingredients and instructions at the actual guest request handler without sockets.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validatePublicRecipe, renderRecipePage} from '../src/page.mjs';
-import {createRecipeServer} from '../src/server.mjs';
+import {validatePublicRecipe, renderRecipePage} from '../lib/public-recipe.mjs';
+import {createRecipeServer} from '../lib/recipe-server.mjs';
 
 const sample = {
   title: 'Soup', summary: 'A simple meal', sourceURL: null,

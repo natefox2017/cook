@@ -3,7 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readPublicRecipeJSON } from '../src/public-api.mjs';
+import { readPublicRecipeJSON } from '../lib/public-api.mjs';
 
 const response = (value, headers = {}) => new Response(value, {
   headers: { 'content-type': 'application/json; charset=utf-8', ...headers },
