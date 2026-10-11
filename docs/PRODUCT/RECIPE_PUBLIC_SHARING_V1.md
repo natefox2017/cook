@@ -61,6 +61,8 @@ The **public** function has `verify_jwt=false` only because its handler explicit
 
 ### Management JSON and concurrency
 
+Owner list accepts optional `?sourceRecipeID=<UUID>` to find shares for the current private recipe before revoking its public copies ([DEV-241](https://linear.app/gengyun/issue/DEV-241), [DEV-242](https://linear.app/gengyun/issue/DEV-242)). An invalid UUID returns `400 invalid_input`; a valid UUID adds a `source_recipe_id` predicate to the authenticated `owner_id` predicate and grants no access to another owner. Without the query, existing list behavior is unchanged. Filtered results retain the same eight management metadata fields; no snapshot or stored private lineage fields are added to responses. The guest eight-field snapshot contract is unchanged.
+
 Create request (owner ID intentionally absent):
 
 ```json
