@@ -5,6 +5,7 @@ import { handleRequest } from "./handler.ts";
 const roles = ["owner", "admin", "operator", "readonly"] as const;
 
 function mockClient() {
+  let deleting = false;
   const query = {
     select: () => query,
     order: () => query,
@@ -14,7 +15,10 @@ function mockClient() {
     limit: () => query,
     insert: () => query,
     update: () => query,
-    delete: () => query,
+    delete: () => {
+      deleting = true;
+      return query;
+    },
     single: async () => ({ data: { id: "plan-1" }, error: null }),
     maybeSingle: async () => ({ data: { id: "plan-1" }, error: null }),
     then: (
@@ -23,7 +27,7 @@ function mockClient() {
       ) => unknown,
       reject?: (reason: unknown) => unknown,
     ) =>
-      Promise.resolve({ data: [], count: 1, error: null }).then(
+      Promise.resolve({ data: [], count: deleting ? 1 : 0, error: null }).then(
         resolve,
         reject,
       ),
@@ -160,4 +164,196 @@ Deno.test("local HTTP subscription role matrix", async () => {
   } finally {
     await server.shutdown();
   }
+});
+
+// Exercise the real report handler with synthetic PostgREST row/count responses.
+function reportFixture(
+  table: string,
+  result: Record<string, unknown>,
+  subscriptionRows?: Record<string, unknown>[],
+) {
+  const selections: { table: string; options?: { count?: string } }[] = [];
+  const client = {
+    from(name: string) {
+      const query = {
+        select: (_columns: string, options?: { count?: string }) => {
+          selections.push({ table: name, options });
+          return query;
+        },
+        order: () => query,
+        eq: () => query,
+        in: () => query,
+        neq: () => query,
+        gte: () => query,
+        limit: () => query,
+        then: (
+          resolve: (value: unknown) => unknown,
+          reject?: (reason: unknown) => unknown,
+        ) =>
+          Promise.resolve(
+            name === table
+              ? result
+              : name === "subscriptions" && subscriptionRows
+              ? {
+                data: subscriptionRows,
+                count: subscriptionRows.length,
+                error: null,
+              }
+              : { data: [], count: 0, error: null },
+          )
+            .then(resolve, reject),
+      };
+      return query;
+    },
+  };
+  return {
+    selections,
+    dependencies: {
+      ...dependencies(),
+      createServiceClient: () => client as never,
+    },
+  };
+}
+
+const purchaseRows = Array.from({ length: 1000 }, () => ({
+  user_id: "fixture-user",
+  product_id: "monthly",
+  store: "app_store",
+  event_type: "INITIAL_PURCHASE",
+  created_at: "2026-01-01T00:00:00Z",
+  raw_event: { price: 1, currency: "USD" },
+}));
+
+Deno.test("admin-subscriptions refuses unverified purchase report completeness", async () => {
+  for (
+    const result of [
+      { data: purchaseRows, count: 6000, error: null },
+      { data: [], count: null, error: null },
+      { data: [], error: null },
+      { data: {}, count: 0, error: null },
+      { data: [], count: -1, error: null },
+      { data: [], count: 0.5, error: null },
+      { data: [], count: Number.MAX_SAFE_INTEGER + 1, error: null },
+      { data: purchaseRows, count: 0, error: null },
+      { data: null, count: 0, error: null },
+    ]
+  ) {
+    const fixture = reportFixture("purchase_events", result);
+    const response = await handleRequest(
+      new Request(
+        "https://example.test/functions/v1/admin-subscriptions/revenue",
+        { headers: { Authorization: "Bearer owner" } },
+      ),
+      fixture.dependencies,
+    );
+    assertEquals(response.status, 503, JSON.stringify(result.count));
+    assertEquals(
+      fixture.selections.find((item) => item.table === "purchase_events")
+        ?.options?.count,
+      "exact",
+    );
+  }
+});
+
+Deno.test("admin-subscriptions preserves complete purchase reports and query failures", async () => {
+  for (
+    const [result, status] of [
+      [{ data: [], count: 0, error: null }, 200],
+      [{ data: purchaseRows, count: 1000, error: null }, 200],
+      [
+        { data: null, count: null, error: { message: "synthetic failure" } },
+        500,
+      ],
+    ] as const
+  ) {
+    const fixture = reportFixture("purchase_events", result);
+    const response = await handleRequest(
+      new Request(
+        "https://example.test/functions/v1/admin-subscriptions/revenue",
+        { headers: { Authorization: "Bearer owner" } },
+      ),
+      fixture.dependencies,
+    );
+    assertEquals(response.status, status);
+    if (status === 200) {
+      const body = await response.json();
+      assertEquals(body.stats.mrr, null);
+    }
+  }
+});
+
+Deno.test("subscription records detect a lower server row limit", async () => {
+  const fixture = reportFixture("subscriptions", {
+    data: Array.from({ length: 100 }, () => ({ user_id: "fixture-user" })),
+    count: 600,
+    error: null,
+  });
+  const response = await handleRequest(
+    new Request(
+      "https://example.test/functions/v1/admin-subscriptions/records",
+      { headers: { Authorization: "Bearer owner" } },
+    ),
+    fixture.dependencies,
+  );
+  assertEquals(response.status, 503);
+  assertEquals(
+    fixture.selections.find((item) => item.table === "subscriptions")?.options
+      ?.count,
+    "exact",
+  );
+});
+
+Deno.test("subscription purchase enrichment detects a lower server row limit", async () => {
+  const fixture = reportFixture("purchase_events", {
+    data: purchaseRows.slice(0, 100),
+    count: 2100,
+    error: null,
+  }, [{ user_id: "fixture-user", product_id: "monthly" }]);
+  const response = await handleRequest(
+    new Request(
+      "https://example.test/functions/v1/admin-subscriptions/records",
+      { headers: { Authorization: "Bearer owner" } },
+    ),
+    fixture.dependencies,
+  );
+  assertEquals(response.status, 503);
+  assertEquals(
+    fixture.selections.find((item) => item.table === "purchase_events")?.options
+      ?.count,
+    "exact",
+  );
+});
+
+Deno.test("admin-subscriptions complete mixed-currency history retains year buckets", async () => {
+  const data = [
+    { ...purchaseRows[0], created_at: "2025-01-01T00:00:00Z" },
+    {
+      ...purchaseRows[0],
+      created_at: "2026-01-01T00:00:00Z",
+      raw_event: {
+        price: 8,
+        price_in_purchased_currency: 1200,
+        currency: "JPY",
+      },
+    },
+  ];
+  const fixture = reportFixture("purchase_events", {
+    data,
+    count: 2,
+    error: null,
+  });
+  const response = await handleRequest(
+    new Request(
+      "https://example.test/functions/v1/admin-subscriptions/revenue",
+      { headers: { Authorization: "Bearer owner" } },
+    ),
+    fixture.dependencies,
+  );
+  assertEquals(response.status, 200);
+  const body = await response.json();
+  assertEquals(body.stats.currency, null);
+  assertEquals(body.series.map((row: { month: string }) => row.month), [
+    "2025-01",
+    "2026-01",
+  ]);
 });
