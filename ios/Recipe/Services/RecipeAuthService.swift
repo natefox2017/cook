@@ -27,7 +27,22 @@ final class RecipeAuthService {
     private static let pendingPasswordRecoveryEmailKey =
         "recipe.auth.pending_password_recovery_email_hash"
 
-    private(set) var state: RecipeAuthState = .loading
+    /// A sharing approval belongs to one uninterrupted authenticated account session.
+    private(set) var sharingSessionGeneration = 0
+    private(set) var state: RecipeAuthState = .loading {
+        didSet {
+            if Self.sharingOwner(in: state) != Self.sharingOwner(in: oldValue) {
+                sharingSessionGeneration += 1
+            }
+        }
+    }
+
+    private static func sharingOwner(in state: RecipeAuthState) -> UUID? {
+        if case .signedIn(let userID, _) = state {
+            return userID
+        }
+        return nil
+    }
     private(set) var nonblockingNotice: String?
     /// Advances after each accepted callback so the root view can present Account.
     private(set) var authCallbackGeneration = 0

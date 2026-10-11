@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Presents explicit public-sharing consent without connecting an App entry point.
+// Purpose: Presents explicit public-sharing consent for the current App owner and an approved sharing endpoint.
 
 import RecipeCore
 import SwiftUI
@@ -69,12 +69,22 @@ struct RecipeShareConsentSheet: View {
                 }
 
                 Section {
+                    if !state.isAvailable {
+                        Text(text("Sharing is unavailable. Try again later."))
+                            .foregroundStyle(.secondary)
+                    }
                     if let errorKey = state.errorKey {
                         Text(text(errorKey)).foregroundStyle(.secondary)
                             .accessibilityAddTraits(.updatesFrequently)
                     }
                     if state.isBusy {
                         ProgressView()
+                    } else if !state.hasLoadedOwnerRecords && state.isAvailable {
+                        Button(text("Reload public copy")) {
+                            Task {
+                                await state.loadOwnerRecords()
+                            }
+                        }
                     } else if state.needsReload {
                         Button(text("Reload public copy")) {
                             Task {
@@ -93,7 +103,9 @@ struct RecipeShareConsentSheet: View {
                                 await state.confirm()
                             }
                         }
-                        .disabled(state.preview == nil)
+                        .disabled(
+                            state.preview == nil || !state.isAvailable
+                                || !state.hasLoadedOwnerRecords)
                     }
                     if state.publicURL != nil {
                         Button(text("Copy Link")) {
@@ -147,8 +159,18 @@ struct RecipeShareConsentSheet: View {
             ConsentURLActivity(state: state)
         }
         .environment(\.locale, RecipeLanguage.active)
+        .task {
+            await state.loadOwnerRecords()
+        }
         .onDisappear {
             state.cancel()
+        }
+        .onChange(of: state.accountChanged) { _, changed in
+            if changed {
+                state.cancel()
+                presentsShare = false
+                dismiss()
+            }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
