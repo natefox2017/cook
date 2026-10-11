@@ -231,3 +231,21 @@ func recipeLanguageSupportsFrenchManualAndTestSelections() throws {
     RecipeLanguage.mirrorManualSelection("fr", groupDefaults: group)
     #expect(group.string(forKey: RecipeLanguage.preferenceKey) == "fr")
 }
+
+@Test
+func manuallySelectedItalianOverridesEnglishTestDefault() {
+    let supported = RecipeLanguage.currentlyTranslatedLanguages
+    let selected = RecipeLanguage.resolve(
+        arguments: ["--uitesting"],
+        supportedIdentifiers: supported,
+        selectedIdentifier: "it"
+    )
+    let unsupported = RecipeLanguage.resolve(
+        arguments: [],
+        supportedIdentifiers: supported,
+        selectedIdentifier: "it-CH"
+    )
+
+    #expect(selected.identifier == "it")
+    #expect(unsupported.identifier == "en")
+}
