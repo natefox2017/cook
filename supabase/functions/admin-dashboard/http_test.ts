@@ -73,6 +73,7 @@ Deno.test("local HTTP dashboard role matrix", async () => {
   try {
     const unauthenticated = await fetch(url);
     assertEquals(unauthenticated.status, 401);
+    await unauthenticated.body?.cancel();
 
     for (const role of roles) {
       const previousServiceClientCalls = fixture.serviceClientCalls();
@@ -87,6 +88,8 @@ Deno.test("local HTTP dashboard role matrix", async () => {
       if (role === "owner") {
         const dashboard = await response.json();
         assertEquals(dashboard.stats.revenueMrr, null);
+      } else {
+        await response.body?.cancel();
       }
       if (role !== "owner") {
         assertEquals(
@@ -237,4 +240,37 @@ Deno.test("admin-dashboard complete mixed-currency history retains year buckets"
     "2025-01",
     "2026-01",
   ]);
+});
+
+Deno.test("dashboard uses deployed profile columns and retains actual payment currency", async () => {
+  const client = {from(table: string) {
+    let columns = "";
+    let head = false;
+    let limit = 0;
+    const query = {
+      select(value: string, options?: {head?:boolean}) {
+        if (table === "profiles" && value.includes("registration_type")) throw new Error("nonexistent column");
+        columns = value; head = options?.head === true; return query;
+      },
+      order: () => query, eq: () => query, in: () => query, neq: () => query, gte: () => query,
+      limit: (value:number) => {limit=value;return query;},
+      then(resolve:(v:unknown)=>unknown, reject?:(reason:unknown)=>unknown) {
+        let data:unknown[] = [];
+        if(table === "profiles" && columns === "registration_provider, device_type") data = [{registration_provider:"apple",device_type:"ios"}];
+        if(table === "profiles" && columns === "created_at") data=[{created_at:"2026-01-01T00:00:00Z"}];
+        if(table === "purchase_events") data=[{id:"purchase",user_id:"fixture-user",event_type:"INITIAL_PURCHASE",store:"app_store",created_at:"2026-01-01T00:00:00Z",raw_event:{price_in_purchased_currency:1200,currency:"JPY"}}];
+        const count = head ? (table === "profiles" ? 1 : 0) : data.length;
+        return Promise.resolve({data, count, error:null}).then(resolve,reject);
+      },
+    };
+    void head; void limit;
+    return query;
+  }};
+  const fixture=dependencies();
+  const response=await handleRequest(new Request("https://example.test/functions/v1/admin-dashboard",{headers:{Authorization:"Bearer owner"}}),{...fixture,createServiceClient:()=>client as never});
+  assertEquals(response.status,200);
+  const dashboard=await response.json();
+  assertEquals(dashboard.userBreakdown.byRegistrationType.find((x:{key:string})=>x.key === "apple").value,1);
+  assertEquals(dashboard.userBreakdown.byDeviceType.find((x:{key:string})=>x.key === "ios").value,1);
+  assertEquals(dashboard.recent.find((x:{type:string})=>x.type === "payment").subtitle.includes("1200 JPY"),true);
 });

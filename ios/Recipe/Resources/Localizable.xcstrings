@@ -1,6 +1,146 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Poster Preview": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poster Preview"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ポスタープレビュー"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "海报预览"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "海報預覽"
+          }
+        }
+      }
+    },
+    "Story": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Story"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ストーリーズ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "限时动态"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "限時動態"
+          }
+        }
+      }
+    },
+    "Long Image": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Long Image"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "縦長画像"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "长图"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "長圖"
+          }
+        }
+      }
+    },
+    "Share Image": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share Image"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画像を共有"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享图片"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享圖片"
+          }
+        }
+      }
+    },
+    "Copy Link": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy Link"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リンクをコピー"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制链接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "複製連結"
+          }
+        }
+      }
+    },
     "Links & social": {
       "localizations": {
         "ja": {
@@ -59174,6 +59314,708 @@
           "stringUnit": {
             "state": "translated",
             "value": "Marque os itens à medida que os pega."
+          }
+        }
+      }
+    },
+    "Your Recipe Pals account and cloud data were deleted. Sign out to clear the saved session on this iPhone. Local recipes were kept.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Recipe Pals account and cloud data were deleted. Sign out to clear the saved session on this iPhone. Local recipes were kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的 Recipe Pals 账户和云端数据已删除。请退出登录，以清除此 iPhone 上保存的登录会话。本地食谱已保留。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的 Recipe Pals 帳號和雲端資料已刪除。請登出，以清除此 iPhone 上儲存的登入工作階段。本機食譜已保留。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals のアカウントとクラウドデータを削除しました。この iPhone に保存されたログイン情報を消去するには、サインアウトしてください。端末内のレシピは保持されています。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Recipe Pals Konto und deine Cloud-Daten wurden gelöscht. Melde dich ab, um die gespeicherte Sitzung auf diesem iPhone zu entfernen. Lokale Rezepte wurden beibehalten."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre compte Recipe Pals et vos données dans le cloud ont été supprimés. Déconnectez-vous pour effacer la session enregistrée sur cet iPhone. Les recettes locales ont été conservées."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu cuenta de Recipe Pals y los datos en la nube se han eliminado. Cierra sesión para borrar la sesión guardada en este iPhone. Las recetas locales se han conservado."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo account Recipe Pals e i dati nel cloud sono stati eliminati. Esci dall’account per cancellare la sessione salvata su questo iPhone. Le ricette locali sono state conservate."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sua conta do Recipe Pals e os dados na nuvem foram excluídos. Saia da conta para apagar a sessão salva neste iPhone. As receitas locais foram mantidas."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je Recipe Pals-account en cloudgegevens zijn verwijderd. Log uit om de opgeslagen sessie op deze iPhone te wissen. Lokale recepten zijn behouden."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals 계정과 클라우드 데이터가 삭제되었습니다. 이 iPhone에 저장된 로그인 세션을 지우려면 로그아웃하세요. 기기에 저장된 레시피는 유지되었습니다."
+          }
+        }
+      }
+    },
+    "Your Recipe Pals account and cloud data were deleted. Sign out to clear the saved session on this iPhone. Local recipes were kept. Some local sync files still need cleanup.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Recipe Pals account and cloud data were deleted. Sign out to clear the saved session on this iPhone. Local recipes were kept. Some local sync files still need cleanup."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的 Recipe Pals 账户和云端数据已删除。请退出登录，以清除此 iPhone 上保存的登录会话。本地食谱已保留。 部分本地同步文件仍需清理。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的 Recipe Pals 帳號和雲端資料已刪除。請登出，以清除此 iPhone 上儲存的登入工作階段。本機食譜已保留。 部分本機同步檔案仍需清理。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals のアカウントとクラウドデータを削除しました。この iPhone に保存されたログイン情報を消去するには、サインアウトしてください。端末内のレシピは保持されています。 一部の端末内の同期ファイルは、まだ削除する必要があります。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Recipe Pals Konto und deine Cloud-Daten wurden gelöscht. Melde dich ab, um die gespeicherte Sitzung auf diesem iPhone zu entfernen. Lokale Rezepte wurden beibehalten. Einige lokale Synchronisierungsdateien müssen noch bereinigt werden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre compte Recipe Pals et vos données dans le cloud ont été supprimés. Déconnectez-vous pour effacer la session enregistrée sur cet iPhone. Les recettes locales ont été conservées. Certains fichiers de synchronisation locaux doivent encore être nettoyés."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu cuenta de Recipe Pals y los datos en la nube se han eliminado. Cierra sesión para borrar la sesión guardada en este iPhone. Las recetas locales se han conservado. Aún es necesario limpiar algunos archivos locales de sincronización."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo account Recipe Pals e i dati nel cloud sono stati eliminati. Esci dall’account per cancellare la sessione salvata su questo iPhone. Le ricette locali sono state conservate. Alcuni file di sincronizzazione locali devono ancora essere rimossi."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sua conta do Recipe Pals e os dados na nuvem foram excluídos. Saia da conta para apagar a sessão salva neste iPhone. As receitas locais foram mantidas. Alguns arquivos locais de sincronização ainda precisam ser removidos."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je Recipe Pals-account en cloudgegevens zijn verwijderd. Log uit om de opgeslagen sessie op deze iPhone te wissen. Lokale recepten zijn behouden. Sommige lokale synchronisatiebestanden moeten nog worden opgeschoond."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals 계정과 클라우드 데이터가 삭제되었습니다. 이 iPhone에 저장된 로그인 세션을 지우려면 로그아웃하세요. 기기에 저장된 레시피는 유지되었습니다. 일부 로컬 동기화 파일은 아직 정리가 필요합니다."
+          }
+        }
+      }
+    },
+    "Share": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有"
+          }
+        }
+      }
+    },
+    "Retry": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重試"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再試行"
+          }
+        }
+      }
+    },
+    "Summary and source": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Summary and source"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "摘要与来源"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "摘要與來源"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "概要と出典"
+          }
+        }
+      }
+    },
+    "Full instructions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full instructions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完整步骤"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完整步驟"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべての手順"
+          }
+        }
+      }
+    },
+    "I have permission to share these instructions.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I have permission to share these instructions."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我有权分享这些步骤。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我有權分享這些步驟。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "これらの手順を共有する権利があります。"
+          }
+        }
+      }
+    },
+    "Publish link": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Publish link"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发布链接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "發佈連結"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リンクを公開"
+          }
+        }
+      }
+    },
+    "Update public copy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update public copy"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新公开副本"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新公開副本"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公開版を更新"
+          }
+        }
+      }
+    },
+    "Revoke link": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revoke link"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撤回链接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撤回連結"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リンクを取り消す"
+          }
+        }
+      }
+    },
+    "Revoke this public link?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revoke this public link?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撤回此公开链接？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撤回此公開連結？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この公開リンクを取り消しますか？"
+          }
+        }
+      }
+    },
+    "This link will stop working.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This link will stop working."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此链接将失效。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此連結將失效。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このリンクは使えなくなります。"
+          }
+        }
+      }
+    },
+    "Sharing requires sign-in.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sharing requires sign-in."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请登录后分享。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請登入後分享。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有するにはサインインしてください。"
+          }
+        }
+      }
+    },
+    "This recipe changed. Review it before sharing.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This recipe changed. Review it before sharing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食谱已更改，请检查后再分享。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食譜已更改，請檢查後再分享。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レシピが変更されました。確認してから共有してください。"
+          }
+        }
+      }
+    },
+    "Your account changed. Sign in again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account changed. Sign in again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "账号已更改，请重新登录。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "帳號已更改，請重新登入。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アカウントが変更されました。再度サインインしてください。"
+          }
+        }
+      }
+    },
+    "The public copy changed. Reload before updating.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The public copy changed. Reload before updating."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公开副本已更改，请重新加载后更新。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公開副本已更改，請重新載入後更新。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公開版が変更されました。再読み込みしてから更新してください。"
+          }
+        }
+      }
+    },
+    "Reload public copy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reload public copy"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新加载公开副本"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新載入公開副本"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公開版を再読み込み"
+          }
+        }
+      }
+    },
+    "Sharing is unavailable. Try again later.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sharing is unavailable. Try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂时无法分享，请稍后重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暫時無法分享，請稍後重試。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有を利用できません。しばらくしてから再試行してください。"
+          }
+        }
+      }
+    },
+    "Too many requests. Try again later.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many requests. Try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请求过多，请稍后重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請求過多，請稍後重試。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リクエストが多すぎます。しばらくしてから再試行してください。"
+          }
+        }
+      }
+    },
+    "The public link is unavailable.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The public link is unavailable."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公开链接不可用。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公開連結無法使用。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公開リンクを利用できません。"
+          }
+        }
+      }
+    },
+    "Could not share. Try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not share. Try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法分享，请重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法分享，請重試。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有できませんでした。再試行してください。"
+          }
+        }
+      }
+    },
+    "Copy Link": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy Link"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リンクをコピー"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制链接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "複製連結"
           }
         }
       }

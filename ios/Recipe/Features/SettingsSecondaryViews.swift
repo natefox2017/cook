@@ -106,13 +106,24 @@ struct DataPrivacySettingsView: View {
                         Button("Delete Account & Cloud Data", role: .destructive) {
                             Task {
                                 do {
-                                    try await cloudSync.deleteAccountAndCloudData()
-                                    message = String(
-                                        localized: LocalizedStringResource(
-                                            "Recipe Pals account and cloud data deleted. Local data on this iPhone was kept.",
-                                            locale: RecipeLanguage.active
+                                    let result = try await cloudSync.deleteAccountAndCloudData()
+                                    if result.needsLocalSyncCleanup {
+                                        message = String(
+                                            localized: LocalizedStringResource(
+                                                "Your Recipe Pals account and cloud data were deleted. Sign out to clear the saved session on this iPhone. Local recipes were kept. Some local sync files still need cleanup.",
+                                                locale: RecipeLanguage.active
+                                            )
                                         )
-                                    )
+                                    } else {
+                                        message = String(
+                                            localized: LocalizedStringResource(
+                                                "Your Recipe Pals account and cloud data were deleted. Sign out to clear the saved session on this iPhone. Local recipes were kept.",
+                                                locale: RecipeLanguage.active
+                                            )
+                                        )
+                                    }
+                                } catch is CancellationError {
+                                    return
                                 } catch {
                                     message = error.localizedDescription
                                 }
