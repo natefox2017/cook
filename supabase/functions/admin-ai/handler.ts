@@ -1,8 +1,6 @@
 // Developer: gengyun
 // Purpose: Serve the current admin AI provider and usage API contract safely.
 
-import { request as httpsRequest } from "node:https";
-import type { LookupFunction } from "node:net";
 import ipaddr from "ipaddr.js";
 import {
   type AISecret,
@@ -411,46 +409,59 @@ async function probeProvider(url: URL, apiKey: string): Promise<boolean> {
       );
     }
     phase = "https";
-    const lookup: LookupFunction = (_hostname, options, callback) => {
-      const resolved = [...new Set(addresses)].map((address) => ({
-        address,
-        family: 4,
-      }));
-      if (options?.all) callback(null, resolved);
-      else callback(null, resolved[0].address, resolved[0].family);
+    if (/[\r\n]/.test(apiKey)) {
+      throw new ProviderProbeError("API key contains invalid characters.");
+    }
+    const operation = async () => {
+      let connection: Deno.Conn | undefined;
+      const close = () => {
+        try {
+          connection?.close();
+        } catch { /* Already closed. */ }
+      };
+      controller.signal.addEventListener("abort", close, { once: true });
+      try {
+        connection = await Deno.connect({ hostname: addresses[0], port: 443 });
+        controller.signal.throwIfAborted();
+        // startTls verifies the original hostname while TCP remains pinned to the vetted IP.
+        connection = await Deno.startTls(connection as Deno.TcpConn, {
+          hostname: url.hostname,
+          alpnProtocols: ["http/1.1"],
+        });
+        controller.signal.throwIfAborted();
+        const bytes = new TextEncoder().encode(
+          `GET ${
+            url.pathname.replace(/\/$/, "")
+          }/models HTTP/1.1\r\nHost: ${url.hostname}\r\nAuthorization: Bearer ${apiKey}\r\nAccept: application/json\r\nConnection: close\r\n\r\n`,
+        );
+        for (let offset = 0; offset < bytes.length;) {
+          const written = await connection.write(bytes.subarray(offset));
+          if (!written) throw new Error("Connection closed");
+          offset += written;
+        }
+        const status = await readProviderStatus(connection);
+        if (status >= 200 && status < 300) return true;
+        throw providerStatusError(status);
+      } finally {
+        close();
+        controller.signal.removeEventListener("abort", close);
+      }
     };
-    return await new Promise<boolean>((resolve, reject) => {
-      const request = httpsRequest({
-        hostname: url.hostname,
-        servername: url.hostname,
-        port: 443,
-        path: `${url.pathname.replace(/\/$/, "")}/models`,
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          Accept: "application/json",
-          Connection: "close",
-        },
-        lookup,
-        agent: false,
-        signal: controller.signal,
-        maxHeaderSize: 16_384,
-      }, (response) => {
-        response.destroy();
-        const status = response.statusCode ?? 500;
-        if (status >= 200 && status < 300) resolve(true);
-        else reject(providerStatusError(status));
-      });
-      request.on("error", () =>
-        reject(
-          new ProviderProbeError(
-            controller.signal.aborted
-              ? "Provider connection timed out after 8 seconds. Retry later."
-              : "Provider HTTPS connection failed. Check provider availability and server network access.",
-          ),
-        ));
-      request.end();
-    });
+    return await Promise.race([
+      operation(),
+      new Promise<never>((_resolve, reject) =>
+        controller.signal.addEventListener(
+          "abort",
+          () =>
+            reject(
+              new ProviderProbeError(
+                "Provider connection timed out after 8 seconds. Retry later.",
+              ),
+            ),
+          { once: true },
+        )
+      ),
+    ]);
   } catch (error) {
     if (error instanceof ProviderProbeError) throw error;
     throw new ProviderProbeError(
@@ -463,6 +474,30 @@ async function probeProvider(url: URL, apiKey: string): Promise<boolean> {
   } finally {
     clearTimeout(timer);
   }
+}
+
+export async function readProviderStatus(
+  reader: { read(buffer: Uint8Array): Promise<number | null> },
+): Promise<number> {
+  const buffer = new Uint8Array(8192);
+  let length = 0;
+  while (length < buffer.length) {
+    const count = await reader.read(buffer.subarray(length));
+    if (!count) break;
+    length += count;
+    const text = new TextDecoder().decode(buffer.subarray(0, length));
+    const end = text.indexOf("\r\n");
+    if (end >= 0) {
+      const match = /^HTTP\/1\.[01] ([1-5][0-9]{2})(?: |$)/.exec(
+        text.slice(0, end),
+      );
+      if (!match) break;
+      return Number(match[1]);
+    }
+  }
+  throw new ProviderProbeError(
+    "Provider returned an invalid or oversized HTTP status line.",
+  );
 }
 
 function isPublicAddress(address: string): boolean {
