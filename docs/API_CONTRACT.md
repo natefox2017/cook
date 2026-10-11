@@ -106,3 +106,8 @@ Response：
 - INTERNAL_ERROR
 
 客户端不能只按 HTTP 状态码决定 UI。
+
+
+## Extractive owner draft contract (specification only)
+
+[DEV-291](https://linear.app/gengyun/issue/DEV-291) freezes the additive [owner draft/session/turn specification](AI/RECIPE_DRAFT_API_V1.md), [OpenAPI](schemas/recipe-draft-v1.openapi.json) and [JSON Schema](schemas/recipe-draft-v1.schema.json). It reuses DEV-283/285 and an owned completed import job. The API is default-disabled and not implemented or deployed; persistent revision/replay, confirmed overlay, approval CAS and token reservations are future implementation requirements. It does not change the frozen import API or implicitly save a private Recipe, and excludes inspiration or new source inference.
