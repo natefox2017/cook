@@ -1090,6 +1090,12 @@ final class RecipeUITests: XCTestCase {
         )
         country.tap()
         let countryOption = app.buttons[selectedCountry].firstMatch
+        for _ in 0..<12 {
+            if countryOption.exists && countryOption.isHittable {
+                break
+            }
+            app.collectionViews.firstMatch.swipeDown()
+        }
         reveal(countryOption, in: app, maximumSwipes: 12)
         countryOption.tap()
         XCTAssertTrue(app.navigationBars["言語と国・地域"].exists)
