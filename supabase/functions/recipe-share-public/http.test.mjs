@@ -126,3 +126,22 @@ test('successful HEAD retains JSON/privacy headers and has no body', async () =>
   assert.match(response.headers.get('content-type'), /application\/json/);
   assert.equal(await response.text(), ''); assert.equal(calls, 1);
 });
+
+
+test('HEAD errors retain GET status/privacy headers but never return a body', async () => {
+  for (const state of ['unknown', 'revoked', 'database_error', 'invalid_slug', 'invalid_snapshot']) {
+    reset();
+    if (state === 'unknown') row = null;
+    if (state === 'revoked') row.revoked_at = '2026-10-11T00:00:00Z';
+    if (state === 'database_error') databaseError = true;
+    if (state === 'invalid_snapshot') row.sanitized_snapshot.owner_id = 'PRIVATE_MARKER';
+    const tail = state === 'invalid_slug' ? 'short' : slug;
+    const get = await handlePublicShare(request('GET', tail));
+    const head = await handlePublicShare(request('HEAD', tail));
+    assert.equal(head.status, get.status);
+    privacy(head);
+    assert.deepEqual([...head.headers], [...get.headers]);
+    assert.equal(await head.text(), '');
+    assert.match(await get.text(), /"code"/);
+  }
+});

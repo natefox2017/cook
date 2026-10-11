@@ -8,7 +8,15 @@ import {
 
 const SLUG = /^[A-Za-z0-9_-]{8,128}$/;
 
+// HEAD must retain each GET decision/header without returning its error body.
 export async function handlePublicShare(request: Request): Promise<Response> {
+  const response = await publicShareResponse(request);
+  return request.method === "HEAD"
+    ? new Response(null, {status: response.status, headers: response.headers})
+    : response;
+}
+
+async function publicShareResponse(request: Request): Promise<Response> {
   const headers = privacyHeaders();
   if (request.method !== "GET" && request.method !== "HEAD") {
     return httpError("method_not_allowed", 405);
@@ -61,3 +69,4 @@ export async function handlePublicShare(request: Request): Promise<Response> {
 }
 
 Deno.serve(handlePublicShare);
+
