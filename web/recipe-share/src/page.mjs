@@ -31,8 +31,8 @@ export function validatePublicRecipe(raw) {
   if ([raw.servings,raw.prepMinutes,raw.cookMinutes].some(v=>v!=null&&!Number.isInteger(v))) return null;
   if ([raw.prepMinutes,raw.cookMinutes].some(v=>v!=null&&(v<0||v>10080))) return null;
   if (raw.servings!=null && (raw.servings<1||raw.servings>100)) return null;
-  const ingredients=raw.ingredients.map(x=>x&&typeof x==="object"&&!Array.isArray(x)&&Object.keys(x).every(k=>["name","amountText"].includes(k))&&str(x.name,180)&&str(x.amountText,120)!==null?{name:x.name,amountText:x.amountText}:null);
-  const steps=raw.steps.map(x=>x&&typeof x==="object"&&!Array.isArray(x)&&Object.keys(x).every(k=>["title","instruction"].includes(k))&&str(x.title,220)!==null&&str(x.instruction,6000)?{title:x.title,instruction:x.instruction}:null);
+  const ingredients=raw.ingredients.map(x=>x&&typeof x==="object"&&!Array.isArray(x)&&Object.keys(x).every(k=>["name","amountText"].includes(k))&&str(x.name,180)?.trim()&&str(x.amountText,120)!==null?{name:x.name,amountText:x.amountText}:null);
+  const steps=raw.steps.map(x=>x&&typeof x==="object"&&!Array.isArray(x)&&Object.keys(x).every(k=>["title","instruction"].includes(k))&&str(x.title,220)!==null&&str(x.instruction,6000)?.trim()?{title:x.title,instruction:x.instruction}:null);
   if(ingredients.some(x=>!x)||steps.some(x=>!x)) return null;
   const citation = raw.sourceURL == null ? null : sourceURL(raw.sourceURL);
   if (raw.sourceURL != null && citation === null) return null;
