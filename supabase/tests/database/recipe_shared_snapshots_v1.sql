@@ -4,7 +4,7 @@
 
 create extension if not exists pgtap;
 begin;
-select plan(12);
+select plan(24);
 
 select ok(
   (select relrowsecurity from pg_class where oid = 'public.recipe_shared_snapshots'::regclass),
@@ -69,5 +69,78 @@ delete from auth.users where id='11111111-1111-4111-8111-111111111111';
 select is((select count(*) from public.recipe_shared_snapshots),0::bigint,
   'account deletion cascades old public share records');
 
+
+-- Additional constraint and sequential CAS negatives, not multi-session race evidence.
+insert into auth.users(id) values ('11111111-1111-4111-8111-111111111111');
+set local role service_role;
+insert into public.recipe_shared_snapshots (
+ owner_id, source_recipe_id, source_client_updated_at, opaque_slug, scope,
+ has_distribution_rights, sanitized_snapshot, idempotency_key, request_hash
+) values (
+ '11111111-1111-4111-8111-111111111111',
+ '33333333-3333-4333-8333-333333333333', '2026-10-10T11:00:00Z',
+ repeat('a',43), 'summaryAndSource', false,
+ '{"title":"Soup","summary":"Safe","sourceURL":null,"servings":2,"prepMinutes":10,"cookMinutes":5,"ingredients":[],"steps":[]}',
+ '44444444-4444-4444-8444-444444444444', repeat('a',64)
+);
+select throws_ok($$update public.recipe_shared_snapshots set scope='fullInstructions'
+ where owner_id='11111111-1111-4111-8111-111111111111'$$,
+ '23514',null,'full instructions require distribution rights at DB boundary');
+select throws_ok($$update public.recipe_shared_snapshots
+ set sanitized_snapshot=jsonb_set(sanitized_snapshot,'{ingredients}','[{"name":"Salt","amountText":"to taste"}]')
+ where owner_id='11111111-1111-4111-8111-111111111111'$$,
+ '23514',null,'summary rejects nonempty ingredients');
+select throws_ok($$update public.recipe_shared_snapshots
+ set sanitized_snapshot=jsonb_set(sanitized_snapshot,'{steps}','[{"title":"Mix","instruction":"Mix."}]')
+ where owner_id='11111111-1111-4111-8111-111111111111'$$,
+ '23514',null,'summary rejects nonempty steps');
+select throws_ok($$insert into public.recipe_shared_snapshots
+ (owner_id,source_recipe_id,source_client_updated_at,opaque_slug,scope,
+ has_distribution_rights,sanitized_snapshot,idempotency_key,request_hash)
+ select owner_id,source_recipe_id,source_client_updated_at,repeat('b',43),scope,
+ has_distribution_rights,sanitized_snapshot,idempotency_key,request_hash
+ from public.recipe_shared_snapshots$$,
+ '23505',null,'same owner cannot create a second share with the same retry key');
+select lives_ok($$insert into public.recipe_shared_snapshots
+ (owner_id,source_recipe_id,source_client_updated_at,opaque_slug,scope,
+ has_distribution_rights,sanitized_snapshot,idempotency_key,request_hash)
+ select '22222222-2222-4222-8222-222222222222'::uuid,source_recipe_id,
+ source_client_updated_at,repeat('b',43),scope,has_distribution_rights,
+ sanitized_snapshot,idempotency_key,request_hash from public.recipe_shared_snapshots$$,
+ 'different owner may use the same retry key independently');
+select is((select count(*) from public.recipe_shared_snapshots),2::bigint,
+ 'retry-key conflict does not lose or duplicate either owner record');
+with changed as (
+ update public.recipe_shared_snapshots set share_version=2
+ where owner_id='11111111-1111-4111-8111-111111111111'
+ and share_version=1 and revoked_at is null returning share_id
+) select is((select count(*) from changed),1::bigint,'current CAS updates exactly one owner row');
+with changed as (
+ update public.recipe_shared_snapshots set share_version=2,
+ sanitized_snapshot=jsonb_set(sanitized_snapshot,'{title}','"Stale overwrite"')
+ where owner_id='11111111-1111-4111-8111-111111111111'
+ and share_version=1 and revoked_at is null returning share_id
+) select is((select count(*) from changed),0::bigint,'stale CAS updates zero rows');
+select is((select sanitized_snapshot->>'title' from public.recipe_shared_snapshots
+ where owner_id='11111111-1111-4111-8111-111111111111'),
+ 'Soup','stale CAS preserves approved public content');
+update public.recipe_shared_snapshots set revoked_at=now(),sanitized_snapshot=null
+ where owner_id='11111111-1111-4111-8111-111111111111';
+with changed as (
+ update public.recipe_shared_snapshots set share_version=3,
+ revoked_at=null,sanitized_snapshot='{"ingredients":[],"steps":[]}'
+ where owner_id='11111111-1111-4111-8111-111111111111'
+ and share_version=2 and revoked_at is null returning share_id
+) select is((select count(*) from changed),0::bigint,'active-state CAS cannot resurrect revoked row');
+reset role;
+delete from auth.users where id='11111111-1111-4111-8111-111111111111';
+select is((select count(*) from public.recipe_shared_snapshots
+ where owner_id='11111111-1111-4111-8111-111111111111'),0::bigint,
+ 'account deletion removes only deleted owner shares');
+select is((select sanitized_snapshot->>'title' from public.recipe_shared_snapshots
+ where owner_id='22222222-2222-4222-8222-222222222222'),
+ 'Soup','deleting A preserves B approved share content');
+
 select * from finish();
 rollback;
+
