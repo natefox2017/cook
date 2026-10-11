@@ -5,6 +5,8 @@ import RecipeCore
 import SwiftUI
 
 struct SettingsHubView: View {
+    @Environment(\.locale) private var locale
+
     var body: some View {
         List {
             Section("Account") {
@@ -89,7 +91,7 @@ struct SettingsHubView: View {
         .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("Settings")
+        .navigationTitle(String(localized: LocalizedStringResource("Settings", locale: locale)))
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
         .toolbar(.hidden, for: .tabBar)
     }

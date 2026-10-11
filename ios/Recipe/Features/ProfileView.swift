@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 struct ProfileView: View {
     let onOpenAccount: () -> Void
 
+    @Environment(\.locale) private var locale
     @Environment(RecipeStore.self) private var store
     @Environment(CloudSyncCoordinator.self) private var cloudSync
     @State private var editsProfile = false
@@ -279,7 +280,7 @@ struct ProfileView: View {
         .listSectionSpacing(RecipeSpacing.medium)
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("Profile")
+        .navigationTitle(String(localized: LocalizedStringResource("Profile", locale: locale)))
         .navigationBarTitleDisplayMode(RecipeNavigation.rootTitleMode)
         .tint(RecipeTheme.accent)
         .sheet(isPresented: $editsProfile) {
