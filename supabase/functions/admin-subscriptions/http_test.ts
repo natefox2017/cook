@@ -89,6 +89,7 @@ Deno.test("local HTTP subscription role matrix", async () => {
   try {
     const unauthenticated = await fetch(`${baseURL}/plans`);
     assertEquals(unauthenticated.status, 401);
+    await unauthenticated.body?.cancel();
 
     for (const role of roles) {
       const response = await fetch(`${baseURL}/plans`, {
@@ -99,6 +100,7 @@ Deno.test("local HTTP subscription role matrix", async () => {
         200,
         `${role} should read the plan catalog`,
       );
+      await response.body?.cancel();
     }
 
     for (const role of roles) {
@@ -118,6 +120,8 @@ Deno.test("local HTTP subscription role matrix", async () => {
             productId: "recipe.pro.monthly",
             billingPeriod: "monthly",
             price: 4.99,
+            currency: "USD",
+            active: true,
           }),
         });
         assertEquals(
@@ -127,6 +131,7 @@ Deno.test("local HTTP subscription role matrix", async () => {
             : 403,
           `${role} ${method} plan authorization`,
         );
+        await response.body?.cancel();
         if (role === "operator" || role === "readonly") {
           assertEquals(
             fixture.serviceClientCalls(),
@@ -151,6 +156,8 @@ Deno.test("local HTTP subscription role matrix", async () => {
         if (resource === "revenue" && response.status === 200) {
           const report = await response.json();
           assertEquals(report.stats.mrr, null);
+        } else {
+          await response.body?.cancel();
         }
         if (role === "operator" || role === "readonly") {
           assertEquals(
@@ -412,5 +419,18 @@ Deno.test("subscription records and enrichment validate counts and query errors"
         assertEquals(records[0].user.id, "fixture-user");
       }
     }
+  }
+});
+
+Deno.test("invalid and oversized plan bodies never reach a database mutation", async () => {
+  for (const [body, expected] of [["[]", 400], ["{}", 400], ["x".repeat(16 * 1024 + 1), 413]] as const) {
+    let writes = 0;
+    const fixture = dependencies();
+    const response = await handleRequest(new Request("https://example.test/functions/v1/admin-subscriptions/plans", {
+      method:"POST", headers:{Authorization:"Bearer owner"}, body,
+    }), {...fixture, createServiceClient: () => ({from(){writes++;throw new Error("unexpected write");}}) as never});
+    assertEquals(response.status, expected);
+    assertEquals(writes, 0);
+    await response.body?.cancel();
   }
 });

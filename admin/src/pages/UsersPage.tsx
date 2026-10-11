@@ -91,6 +91,8 @@ export default function UsersPage({ token, onAuthExpired }: UsersPageProps) {
   const requestId = useRef(0);
   const detailRequestId = useRef(0);
 
+  useEffect(() => () => { detailRequestId.current += 1; }, [token]);
+
   useEffect(() => {
     const timer = window.setTimeout(() => setQuery(search.trim()), 250);
     return () => window.clearTimeout(timer);

@@ -4,6 +4,7 @@ import { publicCorsHeaders } from "./cors.ts";
 
 export type ErrorCode =
   | "unauthorized"
+  | "session_expired"
   | "forbidden"
   | "not_found"
   | "validation_error"
@@ -57,8 +58,8 @@ export function errorResponse(
       cors,
     );
   }
-  const message = err instanceof Error ? err.message : "unknown_error";
-  console.error("unhandled_error", message);
+  // Unexpected exceptions can contain keys or request data; log only the event.
+  console.error("unhandled_error");
   return json(
     {
       error: {
