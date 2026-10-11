@@ -357,3 +357,60 @@ Deno.test("admin-subscriptions complete mixed-currency history retains year buck
     "2026-01",
   ]);
 });
+
+Deno.test("subscription records and enrichment validate counts and query errors", async () => {
+  const rows = [purchaseRows[0]];
+  const results = [
+    { result: { data: rows, count: 1, error: null }, status: 200 },
+    { result: { data: rows, error: null }, status: 503 },
+    { result: { data: rows, count: null, error: null }, status: 503 },
+    { result: { data: rows, count: -1, error: null }, status: 503 },
+    { result: { data: rows, count: "1", error: null }, status: 503 },
+    { result: { data: rows, count: 0.5, error: null }, status: 503 },
+    {
+      result: { data: rows, count: Number.MAX_SAFE_INTEGER + 1, error: null },
+      status: 503,
+    },
+    { result: { data: rows, count: 0, error: null }, status: 503 },
+    { result: { data: null, count: 0, error: null }, status: 503 },
+    { result: { data: {}, count: 0, error: null }, status: 503 },
+    {
+      result: {
+        data: null,
+        count: null,
+        error: { message: "synthetic failure" },
+      },
+      status: 500,
+    },
+  ];
+  for (const table of ["subscriptions", "purchase_events"]) {
+    for (const { result, status } of results) {
+      const fixture = reportFixture(
+        table,
+        result,
+        table === "purchase_events" ? rows : undefined,
+      );
+      const response = await handleRequest(
+        new Request(
+          "https://example.test/functions/v1/admin-subscriptions/records",
+          { headers: { Authorization: "Bearer owner" } },
+        ),
+        fixture.dependencies,
+      );
+      assertEquals(
+        response.status,
+        status,
+        `${table} ${JSON.stringify(result.count)}`,
+      );
+      assertEquals(
+        fixture.selections.find((item) => item.table === table)?.options?.count,
+        "exact",
+      );
+      if (status === 200) {
+        const records = await response.json();
+        assertEquals(records.length, 1);
+        assertEquals(records[0].user.id, "fixture-user");
+      }
+    }
+  }
+});
