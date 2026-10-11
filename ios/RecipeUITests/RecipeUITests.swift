@@ -910,7 +910,7 @@ final class RecipeUITests: XCTestCase {
         assertCookingStep("Step 4 of 8", in: app)
 
         let temperature = app.buttons["cookingStepTemperatureInfo"]
-        reveal(temperature, in: app, scrollView: app.scrollViews["cookingScroll"])
+        reveal(temperature, in: app, scrollView: app.scrollViews["cookingScroll"], maximumSwipes: 3)
         waitUntilReady(temperature)
         temperature.tap()
         XCTAssertTrue(app.navigationBars["Temperature"].waitForExistence(timeout: 8))
@@ -926,9 +926,10 @@ final class RecipeUITests: XCTestCase {
         reveal(ingredientInfo, in: app, scrollView: app.scrollViews["cookingScroll"])
         waitUntilReady(ingredientInfo)
         ingredientInfo.tap()
-        XCTAssertTrue(app.staticTexts.matching(
-            NSPredicate(format: "label CONTAINS %@", "Current amount")
-        ).firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            app.staticTexts.matching(
+                NSPredicate(format: "label CONTAINS %@", "Current amount")
+            ).firstMatch.waitForExistence(timeout: 8))
         app.navigationBars.buttons["Done"].tap()
         assertCookingStep("Step 4 of 8", in: app)
     }
