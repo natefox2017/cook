@@ -268,7 +268,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Geben Sie jeder Zutatengruppe einen Namen."
+            "value": "Gib jeder Zutatengruppe einen Namen."
           }
         }
       }
@@ -302,7 +302,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wählen Sie mindestens eine Zutat für jede Gruppe aus."
+            "value": "Wähle mindestens eine Zutat für jede Gruppe aus."
           }
         }
       }
@@ -404,7 +404,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verwenden Sie Fotos, die Ihnen gehören oder für deren Verwendung Sie eine Erlaubnis haben."
+            "value": "Verwende Fotos, die dir gehören oder für deren Verwendung du eine Erlaubnis hast."
           }
         }
       }
