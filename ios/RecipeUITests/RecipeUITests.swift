@@ -2511,6 +2511,43 @@ final class RecipeUITests: XCTestCase {
         attachment.lifetime = .keepAlways
         add(attachment)
     }
+
+    @MainActor
+    func testManualBrazilianPortugueseLanguageSelectionAppliesImmediately() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--uitesting-reset-language"]
+        app.launch()
+        defer {
+            app.terminate()
+        }
+
+        let profileTab = app.tabBars.buttons["Profile"]
+        waitUntilReady(profileTab)
+        profileTab.tap()
+
+        let settings = app.buttons["Settings"]
+        reveal(settings, in: app, maximumSwipes: 5)
+        settings.tap()
+
+        let languageAndCountry = app.buttons["Language & Country"]
+        reveal(languageAndCountry, in: app, maximumSwipes: 6)
+        languageAndCountry.tap()
+
+        let picker = app.buttons["settings.languagePicker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5), app.debugDescription)
+        picker.tap()
+        let portuguese = app.buttons["Português (Brasil)"].firstMatch
+        XCTAssertTrue(portuguese.waitForExistence(timeout: 5), app.debugDescription)
+        portuguese.tap()
+
+        XCTAssertTrue(
+            app.navigationBars["Idioma e país"].waitForExistence(timeout: 8),
+            app.debugDescription
+        )
+        XCTAssertTrue(app.staticTexts["Idioma do app"].exists)
+        XCTAssertEqual(picker.value as? String, "Português (Brasil)", app.debugDescription)
+        attachScreenshot("Brazilian Portuguese language selection", app: app)
+    }
 }
 
 extension RecipeUITests {

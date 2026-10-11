@@ -570,6 +570,7 @@ struct LocalePreferencesView: View {
         ("fr", "Français"),
         ("es", "Español"),
         ("it", "Italiano"),
+        ("pt-BR", "Português (Brasil)"),
     ]
 
     private var countryCodes: [String] {

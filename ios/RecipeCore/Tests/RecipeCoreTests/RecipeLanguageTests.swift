@@ -80,6 +80,24 @@ func manuallySelectedSpanishIsSupportedInTheAppAndShareExtension() {
 }
 
 @Test
+func manuallySelectedBrazilianPortugueseIsSupportedByTheApp() {
+    let supported = RecipeLanguage.currentlyTranslatedLanguages
+    let manualSelection = RecipeLanguage.resolve(
+        arguments: ["--uitesting"],
+        supportedIdentifiers: supported,
+        selectedIdentifier: "pt-BR"
+    )
+    let forcedUITestLocale = RecipeLanguage.resolve(
+        arguments: ["--uitesting", "--uitesting-locale", "pt-BR"],
+        supportedIdentifiers: supported
+    )
+
+    #expect(supported.contains("pt-BR"))
+    #expect(manualSelection.identifier == "pt-BR")
+    #expect(forcedUITestLocale.identifier == "pt-BR")
+}
+
+@Test
 func shareExtensionReadsHostLanguageFromAppGroupRatherThanItsOwnDefaults() throws {
     let suitePrefix = "recipe.language.tests.\(UUID().uuidString)"
     let hostSuite = suitePrefix + ".host"

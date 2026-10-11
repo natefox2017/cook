@@ -326,7 +326,7 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reconhecer comandos de voz opcionais como “Próximo”, “Anterior” e “Repetir” enquanto o Modo de Preparo estiver aberto."
+            "value": "Reconhecer comandos de voz opcionais como “Next”, “Previous” e “Repeat” enquanto o Modo de Preparo estiver aberto."
           }
         },
         "zh-Hans": {
