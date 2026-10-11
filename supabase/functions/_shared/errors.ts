@@ -58,8 +58,8 @@ export function errorResponse(
       cors,
     );
   }
-  const message = err instanceof Error ? err.message : "unknown_error";
-  console.error("unhandled_error", message);
+  // Unexpected exceptions can contain keys or request data; log only the event.
+  console.error("unhandled_error");
   return json(
     {
       error: {

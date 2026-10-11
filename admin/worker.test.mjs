@@ -64,3 +64,17 @@ test('misconfigured upstream never receives admin credentials', async () => {
     }
   } finally {globalThis.fetch=previousFetch;console.error=previousError;}
 });
+
+test('transport exception logs never include submitted secrets', async () => {
+  const previousFetch=globalThis.fetch;
+  const previousError=console.error;
+  const logs=[];
+  globalThis.fetch=async()=>{throw new Error('fixture-secret in unexpected transport failure');};
+  console.error=(...args)=>logs.push(args);
+  try {
+    const response=await worker.fetch(new Request('https://admin.example.org/api/admin-auth/login'),{ADMIN_FUNCTIONS_URL:'https://example.org/functions/v1'});
+    assert.equal(response.status,502);
+    assert.doesNotMatch(JSON.stringify([logs,await response.json()]), /fixture-secret/);
+    assert.equal(logs[0][0],'Admin upstream fetch failed');
+  } finally {globalThis.fetch=previousFetch;console.error=previousError;}
+});

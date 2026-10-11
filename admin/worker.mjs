@@ -40,9 +40,9 @@ export default {
           'X-Robots-Tag': 'noindex, nofollow, noarchive',
         },
       });
-    } catch (error) {
+    } catch {
       // Log transport failures only, never submitted bodies or authorization headers.
-      console.error('Admin upstream fetch failed:', error instanceof Error ? error.message : 'Unknown transport error');
+      console.error('Admin upstream fetch failed');
       return Response.json({ error: { message: 'Admin service temporarily unavailable' } }, {
         status: 502,
         headers: { 'Cache-Control': 'private, no-store' },
