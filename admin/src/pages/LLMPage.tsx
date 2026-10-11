@@ -258,7 +258,7 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
       }
     } catch (cause) {
       handleExpiredSession(cause, onAuthExpired);
-      setFormError("Connection test failed. Check the provider settings and try again.");
+      setFormError(cause instanceof Error ? cause.message : "Connection test failed. Try again.");
     } finally {
       setTestingConnection(false);
     }

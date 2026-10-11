@@ -16,7 +16,11 @@ export default {
       if (value) headers.set(name, value);
     }
     try {
-      const upstream = await fetch(`${env.ADMIN_FUNCTIONS_URL}/${path}${url.search}`, {
+      const base = new URL(env.ADMIN_FUNCTIONS_URL);
+      if (base.protocol !== 'https:' || base.username || base.password || base.search || base.hash) {
+        throw new Error('Invalid admin upstream configuration');
+      }
+      const upstream = await fetch(`${base.href.replace(/\/$/, '')}/${path}${url.search}`, {
         method: request.method,
         headers,
         body: ['GET', 'HEAD'].includes(request.method) ? undefined : request.body,

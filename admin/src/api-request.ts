@@ -53,3 +53,11 @@ export async function sendAdminRequest(
       : "Unable to reach the admin service securely. Check the connection and try again.", 0);
   }
 }
+
+export function handleExpiredSession(error: unknown, onAuthExpired: () => void) {
+  if (!(error instanceof AdminApiError) || error.status !== 401) return;
+  // Legacy deployments used unauthorized for both expired sessions and bad factor codes.
+  if (error.code === "session_expired" || /^(Invalid or expired admin session|Invalid admin session|Invalid administrator role|Missing or invalid Authorization header|Missing bearer token)$/.test(error.message)) {
+    onAuthExpired();
+  }
+}

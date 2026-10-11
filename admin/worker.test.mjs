@@ -50,3 +50,17 @@ test('redirects fail closed without exposing an upstream location', async () => 
     console.error = originalError;
   }
 });
+
+test('misconfigured upstream never receives admin credentials', async () => {
+  const previousFetch=globalThis.fetch;
+  const previousError=console.error;
+  let fetched=false;
+  globalThis.fetch=async()=>{fetched=true;throw new Error('must not fetch');};
+  console.error=()=>{};
+  try {
+    for(const base of ['http://example.org/functions/v1','https://user:pass@example.org/functions/v1','https://example.org/functions/v1?key=x','invalid']) {
+      const response=await worker.fetch(new Request('https://admin.example.org/api/admin-auth/login',{method:'POST',body:'fixture',headers:{authorization:'Bearer fixture'}}),{ADMIN_FUNCTIONS_URL:base});
+      assert.equal(response.status,502);assert.equal(fetched,false);
+    }
+  } finally {globalThis.fetch=previousFetch;console.error=previousError;}
+});

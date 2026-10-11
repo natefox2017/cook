@@ -4,6 +4,7 @@ import { publicCorsHeaders } from "./cors.ts";
 
 export type ErrorCode =
   | "unauthorized"
+  | "session_expired"
   | "forbidden"
   | "not_found"
   | "validation_error"
