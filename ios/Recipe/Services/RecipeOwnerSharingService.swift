@@ -50,7 +50,9 @@ final class RecipeOwnerSharingService {
     }
 
     func publishingClient() throws -> RecipeSharePublishingService? {
-        guard let endpoint else { return nil }
+        guard let endpoint else {
+            return nil
+        }
         let sessionGeneration = auth.sharingSessionGeneration
         return try RecipeSharePublishingService(
             managementEndpoint: endpoint,
@@ -83,7 +85,9 @@ final class RecipeOwnerSharingService {
                 return self.currentOwnerID
             },
             readRecipe: { id in
-                store.recipes.first { $0.id == id }
+                store.recipes.first {
+                    $0.id == id
+                }
             },
             loadsOwnerRecords: true
         )
@@ -111,7 +115,10 @@ final class RecipeOwnerSharingService {
         guard generation == auth.sharingSessionGeneration, currentOwnerID == ownerID else {
             throw RecipeSharePublishingError.accountChanged
         }
-        guard store.recipes.first(where: { $0.id == recipeID })?.updatedAt == recipe.updatedAt
+        guard
+            store.recipes.first(where: {
+                $0.id == recipeID
+            })?.updatedAt == recipe.updatedAt
         else {
             throw RecipeShareValidationError.staleRecipe
         }

@@ -28,7 +28,10 @@ final class RecipeShareConsentState {
     private(set) var hasLoadedOwnerRecords: Bool
     private var previewSourceDate: Date?
     private var isActive = true
-    private var acceptedSourceDate: Date?
+    // Local disclosure freshness only; GET metadata never confirms published content.
+    private var sourceDateAtLinkRead: Date?
+    private var publishedSnapshot: PublicRecipeSnapshot?
+    private var publishedVersion: Int?
     private var acceptedOwnerID: UUID?
     private var intent: Intent?
     private var generation = 0
@@ -87,8 +90,8 @@ final class RecipeShareConsentState {
         guard isActive, !isBusy, !needsReload, let share, share.revokedAt == nil,
             acceptedOwnerID == currentOwnerID(),
             acceptedOwnerID == share.authenticatedOwnerID,
-            acceptedSourceDate == readRecipe(recipeID)?.updatedAt,
-            acceptedSourceDate != nil,
+            sourceDateAtLinkRead == readRecipe(recipeID)?.updatedAt,
+            sourceDateAtLinkRead != nil,
             RecipePublicShareURL.isValid(share.publicURL)
         else {
             return nil
@@ -96,15 +99,26 @@ final class RecipeShareConsentState {
         return share.publicURL
     }
 
+    /// Only a successful explicit POST/PUT confirms this exact immutable snapshot and version.
+    /// A metadata reload cannot produce poster input from a potentially edited local recipe.
+    var confirmedSnapshot: PublicRecipeSnapshot? {
+        guard publicURL != nil, publishedVersion == share?.shareVersion else {
+            return nil
+        }
+        return publishedSnapshot
+    }
+
     var canRetry: Bool {
         intent != nil && errorKey != nil && !needsReload && !isBusy
     }
 
     func select(scope: RecipeShareScope, rightsConfirmed: Bool) {
-        guard !isBusy else { return }
+        guard !isBusy else {
+            return
+        }
         self.scope = scope
         self.rightsConfirmed = rightsConfirmed
-        acceptedSourceDate = nil
+        sourceDateAtLinkRead = nil
         intent = nil
         errorKey = nil
         refreshPreview()
@@ -114,7 +128,7 @@ final class RecipeShareConsentState {
         guard let recipe = readRecipe(recipeID) else {
             preview = nil
             previewSourceDate = nil
-            acceptedSourceDate = nil
+            sourceDateAtLinkRead = nil
             errorKey = "This recipe changed. Review it before sharing."
             return
         }
@@ -129,12 +143,16 @@ final class RecipeShareConsentState {
     }
 
     func confirm() async {
-        guard isActive, !isBusy, !needsReload else { return }
+        guard isActive, !isBusy, !needsReload else {
+            return
+        }
         guard isAvailable else {
             errorKey = "Sharing is unavailable. Try again later."
             return
         }
-        guard hasLoadedOwnerRecords else { return }
+        guard hasLoadedOwnerRecords else {
+            return
+        }
         intent = nil
         do {
             let owner = try owner()
@@ -159,12 +177,16 @@ final class RecipeShareConsentState {
     }
 
     func retry() async {
-        guard isActive, canRetry else { return }
+        guard isActive, canRetry else {
+            return
+        }
         await submit()
     }
 
     private func submit() async {
-        guard !isBusy, let intent, let service else { return }
+        guard !isBusy, let intent, let service else {
+            return
+        }
         await perform {
             try self.validate(intent)
             let result: RecipePublishedShare
@@ -182,17 +204,25 @@ final class RecipeShareConsentState {
             return result
         } completion: { result in
             self.share = result
-            self.ownedShares.removeAll { $0.shareID == result.shareID }
+            self.ownedShares.removeAll {
+                $0.shareID == result.shareID
+            }
             self.ownedShares.insert(result, at: 0)
             self.acceptedOwnerID = intent.ownerID
-            self.acceptedSourceDate = intent.recipe.updatedAt
+            self.sourceDateAtLinkRead = intent.recipe.updatedAt
+            self.publishedSnapshot = intent.snapshot
+            self.publishedVersion = result.shareVersion
             self.preview = intent.snapshot
             self.intent = nil
         }
     }
 
     func loadOwnerRecords() async {
-        guard loadsOwnerRecords, isActive, !isBusy, let service else { return }
+        guard loadsOwnerRecords, isActive, !isBusy, let service else {
+            return
+        }
+        publishedSnapshot = nil
+        publishedVersion = nil
         let ownerID = currentOwnerID()
         let date = readRecipe(recipeID)?.updatedAt
         await perform {
@@ -207,7 +237,9 @@ final class RecipeShareConsentState {
             guard try self.source().updatedAt == date else {
                 throw RecipeShareValidationError.staleRecipe
             }
-            return results.filter { $0.revokedAt == nil }
+            return results.filter {
+                $0.revokedAt == nil
+            }
         } completion: { results in
             self.intent = nil
             self.ownedShares = results
@@ -215,7 +247,7 @@ final class RecipeShareConsentState {
             self.hasLoadedOwnerRecords = true
             self.needsReload = false
             self.acceptedOwnerID = results.first?.authenticatedOwnerID
-            self.acceptedSourceDate = results.isEmpty ? nil : date
+            self.sourceDateAtLinkRead = results.isEmpty ? nil : date
         }
     }
 
@@ -224,7 +256,11 @@ final class RecipeShareConsentState {
             await loadOwnerRecords()
             return
         }
-        guard isActive, !isBusy, let share, let service else { return }
+        guard isActive, !isBusy, let share, let service else {
+            return
+        }
+        publishedSnapshot = nil
+        publishedVersion = nil
         let date = readRecipe(recipeID)?.updatedAt
         await perform {
             guard try self.owner() == share.authenticatedOwnerID else {
@@ -246,14 +282,16 @@ final class RecipeShareConsentState {
             self.needsReload = false
             self.intent = nil
             // Fresh owner metadata authorizes the URL, never a newly generated poster snapshot.
-            self.acceptedSourceDate = result.revokedAt == nil ? date : nil
+            self.sourceDateAtLinkRead = result.revokedAt == nil ? date : nil
             self.acceptedOwnerID = result.revokedAt == nil ? result.authenticatedOwnerID : nil
         }
     }
 
     func revoke() async {
-        guard isActive, !isBusy, let share, let service else { return }
-        acceptedSourceDate = nil
+        guard isActive, !isBusy, let share, let service else {
+            return
+        }
+        sourceDateAtLinkRead = nil
         let date = readRecipe(recipeID)?.updatedAt
         await perform {
             guard try self.owner() == share.authenticatedOwnerID else {
@@ -282,7 +320,7 @@ final class RecipeShareConsentState {
             self.share = nil
             self.ownedShares = []
             self.acceptedOwnerID = nil
-            self.acceptedSourceDate = nil
+            self.sourceDateAtLinkRead = nil
             self.intent = nil
             self.needsReload = false
         }
@@ -346,10 +384,14 @@ final class RecipeShareConsentState {
             do {
                 let result = try await operation()
                 try Task.checkCancellation()
-                guard self.generation == operationGeneration else { return }
+                guard self.generation == operationGeneration else {
+                    return
+                }
                 completion(result)
             } catch {
-                guard self.generation == operationGeneration else { return }
+                guard self.generation == operationGeneration else {
+                    return
+                }
                 if !(error is CancellationError) {
                     self.record(error)
                 }
@@ -375,7 +417,7 @@ final class RecipeShareConsentState {
             intent = nil
         case RecipeShareValidationError.staleRecipe, RecipeShareValidationError.wrongRecipe:
             errorKey = "This recipe changed. Review it before sharing."
-            acceptedSourceDate = nil
+            sourceDateAtLinkRead = nil
             intent = nil
         case RecipeSharePublishingError.httpStatus(409):
             errorKey = "The public copy changed. Reload before updating."
@@ -385,7 +427,7 @@ final class RecipeShareConsentState {
             acceptedOwnerID = nil
         case RecipeSharePublishingError.httpStatus(404):
             errorKey = "The public link is unavailable."
-            acceptedSourceDate = nil
+            sourceDateAtLinkRead = nil
         case RecipeSharePublishingError.httpStatus(429):
             errorKey = "Too many requests. Try again later."
         case RecipeSharePublishingError.httpStatus(503):

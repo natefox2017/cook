@@ -60759,6 +60759,46 @@
           }
         }
       }
+    },
+    "Could not stop sharing. Your recipe is still saved. Check your connection and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not stop sharing. Your recipe is still saved. Check your connection and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法停止分享。食谱仍已保存，请检查网络连接后重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法停止分享。食譜仍已儲存，請檢查網絡連線後重試。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有を停止できませんでした。レシピは保存されています。接続を確認して、もう一度お試しください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Freigabe konnte nicht beendet werden. Dein Rezept ist weiterhin gespeichert. Prüfe deine Verbindung und versuche es erneut."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible d’arrêter le partage. Votre recette est toujours enregistrée. Vérifiez votre connexion et réessayez."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

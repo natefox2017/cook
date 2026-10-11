@@ -12,7 +12,9 @@ import XCTest
 final class RecipeOwnerSharingServiceTests: XCTestCase {
     func testUnavailableDoesNotSendOrDelete() async throws {
         let fixture = try await SharingFixture.make()
-        defer { fixture.cleanUp() }
+        defer {
+            fixture.cleanUp()
+        }
         let service = RecipeOwnerSharingService(auth: fixture.auth, client: fixture.client)
         let state = service.consentState(recipeID: fixture.recipe.id, store: fixture.store)
         XCTAssertFalse(service.isConfiguredForOwnerSharing)
@@ -27,13 +29,17 @@ final class RecipeOwnerSharingServiceTests: XCTestCase {
         }
         XCTAssertEqual(fixture.store.recipes.count, 1)
         XCTAssertTrue(
-            SharingFixtureHTTP.requests.filter { $0.url?.path.contains("functions") == true }
-                .isEmpty)
+            SharingFixtureHTTP.requests.filter {
+                $0.url?.path.contains("functions") == true
+            }
+            .isEmpty)
     }
 
     func testCurrentSessionLoadsServerCopyBeforeConfirmation() async throws {
         let fixture = try await SharingFixture.make()
-        defer { fixture.cleanUp() }
+        defer {
+            fixture.cleanUp()
+        }
         let state = fixture.service.consentState(recipeID: fixture.recipe.id, store: fixture.store)
         XCTAssertTrue(fixture.service.isConfiguredForOwnerSharing)
         await state.confirm()
@@ -54,7 +60,9 @@ final class RecipeOwnerSharingServiceTests: XCTestCase {
 
     func testRevokeEveryCopyBeforeLocalDeletion() async throws {
         let fixture = try await SharingFixture.make()
-        defer { fixture.cleanUp() }
+        defer {
+            fixture.cleanUp()
+        }
         try await fixture.service.deleteRecipe(recipeID: fixture.recipe.id, store: fixture.store)
         XCTAssertTrue(fixture.store.recipes.isEmpty)
         XCTAssertEqual(
@@ -63,7 +71,9 @@ final class RecipeOwnerSharingServiceTests: XCTestCase {
 
     func testFailedRevocationKeepsRecipe() async throws {
         let fixture = try await SharingFixture.make()
-        defer { fixture.cleanUp() }
+        defer {
+            fixture.cleanUp()
+        }
         SharingFixtureHTTP.deleteStatus = 503
         do {
             try await fixture.service.deleteRecipe(
@@ -77,7 +87,9 @@ final class RecipeOwnerSharingServiceTests: XCTestCase {
 
     func testReloginSameAccountInvalidatesOldConsent() async throws {
         let fixture = try await SharingFixture.make()
-        defer { fixture.cleanUp() }
+        defer {
+            fixture.cleanUp()
+        }
         let state = fixture.service.consentState(recipeID: fixture.recipe.id, store: fixture.store)
         await state.loadOwnerRecords()
         XCTAssertNotNil(state.publicURL)
@@ -92,7 +104,9 @@ final class RecipeOwnerSharingServiceTests: XCTestCase {
 
     func testAccountSwitchDuringLookupRejectsResponseAndKeepsRecipe() async throws {
         let fixture = try await SharingFixture.make()
-        defer { fixture.cleanUp() }
+        defer {
+            fixture.cleanUp()
+        }
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [SharingFixtureHTTP.self]
         let service = RecipeOwnerSharingService(
@@ -121,7 +135,9 @@ final class RecipeOwnerSharingServiceTests: XCTestCase {
 
     func testCanceledDeletionDoesNotSendOrDelete() async throws {
         let fixture = try await SharingFixture.make()
-        defer { fixture.cleanUp() }
+        defer {
+            fixture.cleanUp()
+        }
         let task = Task { @MainActor in
             try await fixture.service.deleteRecipe(
                 recipeID: fixture.recipe.id, store: fixture.store)
@@ -139,7 +155,9 @@ final class RecipeOwnerSharingServiceTests: XCTestCase {
 
     func testOldClientCannotReuseReloggedSessionToken() async throws {
         let fixture = try await SharingFixture.make()
-        defer { fixture.cleanUp() }
+        defer {
+            fixture.cleanUp()
+        }
         let ownerID = try XCTUnwrap(fixture.service.currentOwnerID)
         let client = try XCTUnwrap(fixture.service.publishingClient())
         try await fixture.auth.signOut()
@@ -153,9 +171,62 @@ final class RecipeOwnerSharingServiceTests: XCTestCase {
         XCTAssertTrue(SharingFixtureHTTP.shareRequests.isEmpty)
     }
 
+    func testMetadataDoesNotConfirmEditedPreviewForPoster() async throws {
+        let fixture = try await SharingFixture.make()
+        defer {
+            fixture.cleanUp()
+        }
+        let state = fixture.service.consentState(recipeID: fixture.recipe.id, store: fixture.store)
+        await state.loadOwnerRecords()
+        XCTAssertNotNil(state.publicURL)
+        XCTAssertNil(state.confirmedSnapshot)
+        var edited = fixture.recipe
+        edited.title = "Explicitly updated soup"
+        edited.updatedAt.addTimeInterval(1)
+        try fixture.store.upsert(edited)
+        state.refreshPreview()
+        XCTAssertNil(state.confirmedSnapshot)
+        await state.confirm()
+        XCTAssertEqual(state.confirmedSnapshot?.title, edited.title)
+        XCTAssertEqual(state.share?.shareVersion, 2)
+        await state.reload()
+        XCTAssertNotNil(state.publicURL)
+        XCTAssertNil(state.confirmedSnapshot)
+    }
+
+    func testConfirmedSnapshotIsHiddenAfterLogout() async throws {
+        let fixture = try await SharingFixture.make()
+        defer {
+            fixture.cleanUp()
+        }
+        let state = fixture.service.consentState(recipeID: fixture.recipe.id, store: fixture.store)
+        await state.loadOwnerRecords()
+        await state.confirm()
+        XCTAssertNotNil(state.confirmedSnapshot)
+        try await fixture.auth.signOut()
+        XCTAssertNil(state.confirmedSnapshot)
+    }
+
+    func testConfirmedSnapshotIsHiddenAfterRevocation() async throws {
+        let fixture = try await SharingFixture.make()
+        defer {
+            fixture.cleanUp()
+        }
+        let state = fixture.service.consentState(recipeID: fixture.recipe.id, store: fixture.store)
+        await state.loadOwnerRecords()
+        await state.confirm()
+        XCTAssertNotNil(state.confirmedSnapshot)
+        await state.revoke()
+        XCTAssertNil(state.share)
+        XCTAssertNil(state.confirmedSnapshot)
+        XCTAssertEqual(fixture.store.recipes.count, 1)
+    }
+
     func testFullPageRefusesDeletion() async throws {
         let fixture = try await SharingFixture.make()
-        defer { fixture.cleanUp() }
+        defer {
+            fixture.cleanUp()
+        }
         SharingFixtureHTTP.listCount = 200
         do {
             try await fixture.service.deleteRecipe(
@@ -205,7 +276,9 @@ private struct SharingFixture {
         let suite = "recipe.sharing-tests.\(UUID())"
         let auth = RecipeAuthService(client: client, defaults: UserDefaults(suiteName: suite)!)
         for _ in 0..<100 {
-            if auth.state == .signedOut { break }
+            if auth.state == .signedOut {
+                break
+            }
             try await Task.sleep(for: .milliseconds(10))
         }
         try await auth.signIn(email: "synthetic@example.test", password: "synthetic-only")
@@ -226,15 +299,21 @@ private final class SharingMemoryStorage: AuthLocalStorage, @unchecked Sendable 
     private var values: [String: Data] = [:]
 
     func store(key: String, value: Data) throws {
-        lock.withLock { values[key] = value }
+        lock.withLock {
+            values[key] = value
+        }
     }
 
     func retrieve(key: String) throws -> Data? {
-        lock.withLock { values[key] }
+        lock.withLock {
+            values[key]
+        }
     }
 
     func remove(key: String) throws {
-        _ = lock.withLock { values.removeValue(forKey: key) }
+        _ = lock.withLock {
+            values.removeValue(forKey: key)
+        }
     }
 }
 
@@ -245,10 +324,13 @@ private final class SharingFixtureHTTP: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) private static var storedRequests: [URLRequest] = []
     nonisolated(unsafe) private static var storedDeleteStatus = 204
     nonisolated(unsafe) private static var storedListCount = 2
+    nonisolated(unsafe) private static var storedVersion = 1
 
     static var requests: [URLRequest] { lock.withLock { storedRequests } }
     static var shareRequests: [URLRequest] {
-        requests.filter { $0.url?.path.contains("functions") == true }
+        requests.filter {
+            $0.url?.path.contains("functions") == true
+        }
     }
     static var deleteStatus: Int {
         get { lock.withLock { storedDeleteStatus } }
@@ -260,7 +342,9 @@ private final class SharingFixtureHTTP: URLProtocol, @unchecked Sendable {
     }
 
     static func switchOwner() {
-        lock.withLock { ownerID = UUID() }
+        lock.withLock {
+            ownerID = UUID()
+        }
     }
 
     static func reset() {
@@ -268,14 +352,21 @@ private final class SharingFixtureHTTP: URLProtocol, @unchecked Sendable {
             storedRequests = []
             storedDeleteStatus = 204
             storedListCount = 2
+            storedVersion = 1
         }
     }
 
-    override class func canInit(with request: URLRequest) -> Bool { true }
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override class func canInit(with request: URLRequest) -> Bool {
+        true
+    }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
 
     override func startLoading() {
-        Self.lock.withLock { Self.storedRequests.append(request) }
+        Self.lock.withLock {
+            Self.storedRequests.append(request)
+        }
         let path = request.url!.path
         var status = 200
         var body: [String: Any] = [:]
@@ -286,7 +377,9 @@ private final class SharingFixtureHTTP: URLProtocol, @unchecked Sendable {
                 "expires_at": Date().addingTimeInterval(3600).timeIntervalSince1970,
                 "refresh_token": "synthetic-refresh-token",
                 "user": [
-                    "id": Self.lock.withLock { Self.ownerID.uuidString }, "aud": "authenticated",
+                    "id": Self.lock.withLock {
+                        Self.ownerID.uuidString
+                    }, "aud": "authenticated",
                     "role": "authenticated",
                     "email": "synthetic@example.test", "app_metadata": [:], "user_metadata": [:],
                     "created_at": "2026-10-10T00:00:00Z", "updated_at": "2026-10-10T00:00:00Z",
@@ -294,19 +387,17 @@ private final class SharingFixtureHTTP: URLProtocol, @unchecked Sendable {
             ]
         } else if path == "/auth/v1/logout" {
             status = 204
+        } else if request.httpMethod == "PUT" {
+            Self.lock.withLock {
+                Self.storedVersion += 1
+            }
+            body = Self.metadata(index: 0)
         } else if request.httpMethod == "DELETE" {
             status = Self.deleteStatus
         } else if path == "/functions/v1/recipe-share-manage" && request.httpMethod == "GET" {
             body = [
-                "shares": (0..<Self.listCount).map { index in
-                    [
-                        "shareID": Self.shareIDs[index % 2].uuidString,
-                        "slug": "synthetic_slug_\(index)",
-                        "shareVersion": 1, "scope": "summaryAndSource",
-                        "createdAt": "2026-10-10T00:00:00Z", "updatedAt": "2026-10-10T00:00:00Z",
-                        "revokedAt": NSNull(),
-                        "publicURL": "https://sharing.test.invalid/r/synthetic_slug_\(index)",
-                    ] as [String: Any]
+                "shares": (0..<Self.listCount).map {
+                    Self.metadata(index: $0)
                 }
             ]
         } else {
@@ -320,6 +411,18 @@ private final class SharingFixtureHTTP: URLProtocol, @unchecked Sendable {
             self,
             didLoad: status == 204 ? Data() : try! JSONSerialization.data(withJSONObject: body))
         client?.urlProtocolDidFinishLoading(self)
+    }
+
+    private static func metadata(index: Int) -> [String: Any] {
+        [
+            "shareID": shareIDs[index % 2].uuidString, "slug": "synthetic_slug_\(index)",
+            "shareVersion": lock.withLock {
+                storedVersion
+            }, "scope": "summaryAndSource",
+            "createdAt": "2026-10-10T00:00:00Z", "updatedAt": "2026-10-10T00:00:00Z",
+            "revokedAt": NSNull(),
+            "publicURL": "https://sharing.test.invalid/r/synthetic_slug_\(index)",
+        ]
     }
 
     override func stopLoading() {}

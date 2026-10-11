@@ -101,7 +101,9 @@ public struct RecipeSharePublishingService {
         guard metadata.count < 200 else {
             throw RecipeSharePublishingError.invalidResponse
         }
-        let results = try metadata.map { try validated($0, ownerID: ownerID) }
+        let results = try metadata.map {
+            try validated($0, ownerID: ownerID)
+        }
         guard Set(results.map(\.shareID)).count == results.count else {
             throw RecipeSharePublishingError.invalidResponse
         }
@@ -216,7 +218,9 @@ public struct RecipeSharePublishingService {
         let credentials = try await currentSession(ownerID: ownerID)
         try Task.checkCancellation()
         var url =
-            shareID.map { endpoint.appendingPathComponent($0.uuidString.lowercased()) }
+            shareID.map {
+                endpoint.appendingPathComponent($0.uuidString.lowercased())
+            }
             ?? endpoint
         if let recipeID {
             var components = URLComponents(url: url, resolvingAgainstBaseURL: false)!

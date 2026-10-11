@@ -5,6 +5,8 @@
 	};
 	objectVersion = 56;
 	objects = {
+        C24200000000000000000006 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RecipeUITests/RecipeOwnerSharingUITests.swift"; sourceTree = "<group>"; };
+        C24200000000000000000016 = { isa = PBXBuildFile; fileRef = "C24200000000000000000006"; };
         C24200000000000000000004 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Recipe/Services/RecipeOwnerSharingService.swift"; sourceTree = "<group>"; };
         C24200000000000000000014 = { isa = PBXBuildFile; fileRef = "C24200000000000000000004"; };
         C24200000000000000000005 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RecipeUITests/RecipeOwnerSharingServiceTests.swift"; sourceTree = "<group>"; };
@@ -363,7 +365,7 @@
         E6070659E02EF150F006F92C = {
             isa = "PBXSourcesBuildPhase";
             buildActionMask = 2147483647;
-            files = ("D05100000000000000000002", "80F7A89205DA9433FDFE452E", "D05200000000000000000002",);
+            files = ("C24200000000000000000016", "D05100000000000000000002", "80F7A89205DA9433FDFE452E", "D05200000000000000000002",);
             runOnlyForDeploymentPostprocessing = 0;
         };
         A12900000000000000000020 = {
@@ -486,7 +488,7 @@
 		};
 		29493F7A0A1DC0A29D62667D = {
 			isa = "PBXGroup";
-			children = ("C24200000000000000000004", "C24200000000000000000005", "C24200000000000000000003", "C24200000000000000000002", "C24200000000000000000001", "33EB7E4766593ED0F8C0DADC", "36E3FB1B84BF6F1C18ECDF2B", "B30000000000000000000005", "A12900000000000000000010",);
+			children = ("C24200000000000000000006", "C24200000000000000000004", "C24200000000000000000005", "C24200000000000000000003", "C24200000000000000000002", "C24200000000000000000001", "33EB7E4766593ED0F8C0DADC", "36E3FB1B84BF6F1C18ECDF2B", "B30000000000000000000005", "A12900000000000000000010",);
 			name = "Products";
 			sourceTree = "<group>";
 		};
