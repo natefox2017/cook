@@ -15,7 +15,7 @@ const executable = stripTypeScriptTypes(source).replace(
   "",
 );
 
-function fixture({ totp = true, locked = false, verified = true } = {}) {
+function fixture({ totp = true, locked = false, verified = true, counter = 7, counterCAS = "matched" } = {}) {
   let handler;
   let sessionCount = 0;
   let loginConsumed = false;
@@ -32,7 +32,7 @@ function fixture({ totp = true, locked = false, verified = true } = {}) {
     login_challenge_id: null, expires_at: login.expires_at, consumed_at: null,
   };
   const credential = {
-    credential_id: "credential", public_key: "AA==", sign_count: 7, transports: ["internal"],
+    credential_id: "credential", public_key: "AA==", sign_count: counter, transports: ["internal"],
   };
 
   class AppError extends Error {
@@ -46,9 +46,10 @@ function fixture({ totp = true, locked = false, verified = true } = {}) {
   function query(table) {
     let operation = "select";
     let payload;
+    let selection;
     const filters = [];
     const chain = {
-      select() { return chain; },
+      select(value) { selection = value; return chain; },
       eq(key, value) { filters.push([key, value]); return chain; },
       is() { return chain; },
       gt() { return chain; },
@@ -68,9 +69,17 @@ function fixture({ totp = true, locked = false, verified = true } = {}) {
       }
       if (table === "admin_passkeys") {
         if (operation === "update") {
-          assert.equal(payload.sign_count, 8);
-          assert.ok(filters.some(([key, value]) => key === "sign_count" && value === 7));
-          return { data: null, error: null };
+          assert.equal(passkeyConsumed, true);
+          assert.equal(selection, "credential_id");
+          assert.equal(payload.sign_count, counter === 0 ? 0 : counter + 1);
+          assert.ok(filters.some(([key, value]) => key === "sign_count" && value === counter));
+          assert.ok(filters.some(([key, value]) => key === "credential_id" && value === credential.credential_id));
+          assert.ok(filters.some(([key, value]) => key === "admin_id" && value === account.id));
+          return counterCAS === "error"
+            ? { data: null, error: { message: "synthetic update failure" } }
+            : { data: counterCAS === "matched" ? { credential_id: credential.credential_id }
+              : counterCAS === "wrong" ? { credential_id: "another" }
+              : counterCAS === "malformed" ? {} : null, error: null };
         }
         return { data: single ? credential : [credential], error: null };
       }
@@ -133,11 +142,13 @@ function fixture({ totp = true, locked = false, verified = true } = {}) {
       assert.equal(options.expectedRPID, "admin.example.test");
       assert.equal(options.expectedChallenge, "expected");
       assert.equal(options.requireUserVerification, true);
-      assert.equal(options.credential.counter, 7);
-      return { verified, authenticationInfo: { newCounter: 8 } };
+      assert.equal(options.credential.counter, counter);
+      return { verified, authenticationInfo: { newCounter: counter === 0 ? 0 : counter + 1 } };
     },
     createAdminSession: async (id) => {
       assert.equal(id, account.id);
+      assert.equal(passkeyConsumed, true);
+      assert.equal(counterCAS, "matched");
       sessionCount++;
       return { token: "session", expiresAt: login.expires_at };
     },
@@ -182,6 +193,27 @@ for (const totp of [false, true]) {
     });
   }
 }
+
+for (const [counterCAS, status] of [["missing", 401], ["wrong", 401], ["malformed", 401], ["error", 500]]) {
+  test(`credential counter CAS ${counterCAS} never issues a session`, async () => {
+    const app = fixture({ counterCAS });
+    const result = await app.call("login-passkey-verify", {
+      challengeId: app.webauthn.id, response: { id: "credential" },
+    });
+    assert.equal(result.status, status);
+    assert.equal(app.sessionCount, 0);
+    assert.equal(app.events.some((event) => event.p_success === true), false);
+  });
+}
+
+test("a matched zero-to-zero counter update permits a counterless passkey", async () => {
+  const app = fixture({ counter: 0 });
+  const result = await app.call("login-passkey-verify", {
+    challengeId: app.webauthn.id, response: { id: "credential" },
+  });
+  assert.equal(result.status, 200);
+  assert.equal(app.sessionCount, 1);
+});
 
 test("password with TOTP enabled still returns only a TOTP challenge and retains failure count", async () => {
   const app = fixture();
