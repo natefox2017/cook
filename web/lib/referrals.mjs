@@ -18,11 +18,13 @@ export function isValidAccountID(value) {
 }
 
 export function isValidShareToken(value) {
-  return typeof value === "string" && value.length >= 8 && value.length <= 128 && SHARE_TOKEN.test(value);
+  return typeof value === "string" && value.trim() === value &&
+    value.length >= 8 && value.length <= 128 && SHARE_TOKEN.test(value);
 }
 
 export function isValidReferralCode(value) {
-  return typeof value === "string" && value.length >= 16 && value.length <= 64 && REFERRAL_CODE.test(value);
+  return typeof value === "string" && value.trim() === value &&
+    value.length >= 16 && value.length <= 64 && REFERRAL_CODE.test(value);
 }
 
 /**
@@ -41,7 +43,7 @@ export function validateAggregateShareEvent(payload) {
     throw new ReferralValidationError("unexpected_field");
   }
   if (!KINDS.has(payload.kind) || !isValidShareToken(payload.shareToken) || typeof payload.eventID !== "string" ||
-    !EVENT_ID.test(payload.eventID)) {
+    payload.eventID.trim() !== payload.eventID || !EVENT_ID.test(payload.eventID)) {
     throw new ReferralValidationError("bad_event");
   }
   // Safe aggregation input: no IP/UA/referrer/user-id fields or cookies.

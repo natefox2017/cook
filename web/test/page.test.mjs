@@ -1,7 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {validatePublicRecipe,renderRecipePage,renderUnavailable} from "../src/page.mjs";
-import {createRecipeServer} from "../src/server.mjs";
+import {validatePublicRecipe,renderRecipePage,renderUnavailable} from "../lib/public-recipe.mjs";
+import {createRecipeServer} from "../lib/recipe-server.mjs";
 const sample={title:"Soup",summary:"Simple meal",servings:2,prepMinutes:10,cookMinutes:15,sourceURL:"https://example.org/soup",ingredients:[{name:"Carrot",amountText:"2"}],steps:[{title:"Boil",instruction:"Simmer gently."}]};
 
 test("reject owner-private fields",()=>{for(const key of ["notes","coverData","owner_id","importRecord"]){assert.equal(validatePublicRecipe({...sample,[key]:"secret"}),null);}});

@@ -88,6 +88,7 @@ Recipe is the native iOS codebase for Recipe Pals, a private recipe collection a
 ## Change Workflow
 
 - Keep `main` PR-only. Use a focused branch for implementation.
+- User delivery preference: after authorized code development and required checks are complete, push the branch to GitHub, create the PR, and complete its merge. Do not leave completed work only in the session workspace or an unmerged branch. Verify the merged PR and final `main` contents before reporting delivery; merging code does not imply production deployment or completion of separate release acceptance.
 - **Before a PR, rebase/merge the current `origin/main`** and compare against the latest accepted onboarding, branding, navigation and purchase contracts. Do not restore older screen implementations from an old branch merely to resolve conflicts.
 - **Create a regular (non-Draft) PR only for a claimed Cook `Todo → In Progress` Linear Issue** after implementation Todos are complete. Include its `DEV-<number>` identifier, issue URL, completed Todos and test results. Same-repo auto-merge may run; it is not end-to-end acceptance or permission to change Linear to Done.
 - Draft PRs are only for genuine work in progress. If a completed PR was already opened as Draft, append the exact completion marker `<!-- auto-ready: complete -->` to its PR body, or apply the `auto-ready` label; the workflow promotes it and merges it without a manual UI click. Do not set either marker before work is complete.

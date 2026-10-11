@@ -5,11 +5,10 @@ import { createServer } from 'node:http';
 import { isIP } from 'node:net';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { renderRecipePage, renderUnavailable } from './page.mjs';
+import { renderRecipePage, renderUnavailable } from './public-recipe.mjs';
 import { readPublicRecipeJSON } from './public-api.mjs';
 
-function configuredAPI() {
-  const raw = process.env.RECIPE_PALS_PUBLIC_RECIPE_API;
+export function configuredAPI(raw = process.env.RECIPE_PALS_PUBLIC_RECIPE_API) {
   if (!raw || raw.length > 2_048 || raw.trim() !== raw ||
       /[\u0000-\u001f\u007f-\u009f\\?#]/.test(raw)) {
     return null;
@@ -29,7 +28,7 @@ function configuredAPI() {
       labels.every(label => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label)) &&
       /[a-z]/.test(labels.at(-1)) &&
       isIP(host) === 0 &&
-      !['.local', '.localhost', '.internal'].some(suffix => host.endsWith(suffix));
+      !['.local', '.localhost', '.localdomain', '.internal'].some(suffix => host.endsWith(suffix));
 
     if (url.protocol !== 'https:' || !isPublicHostShape || url.username ||
         url.password || url.port || url.search || url.hash ||
@@ -59,7 +58,7 @@ export function createRecipeServer({
       return;
     }
     if (req.url === '/styles.css') {
-      const css = await readFile(new URL('./styles.css', import.meta.url), 'utf8');
+      const css = await readFile(new URL('../public/share.css', import.meta.url), 'utf8');
       res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' })
         .end(req.method === 'HEAD' ? '' : css);
       return;

@@ -2,7 +2,7 @@
 // Purpose: Exercises referral orchestration with synthetic atomic adapter behavior.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createReferralService } from '../src/referral-service.mjs';
+import { createReferralService } from '../lib/referral-service.mjs';
 const A = 'c7f04da2-8191-49b4-9a1a-e36d7c72d111';
 const B = '8a0c335d-60de-4383-ac43-ebfbcbb5ab01';
 const C = 'f20b335d-60de-4383-ac43-ebfbcbb5ab02';

@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createConnection } from 'node:net';
-import { createRecipeServer } from '../src/server.mjs';
+import { createRecipeServer } from '../lib/recipe-server.mjs';
 
 const sample = {
   title: 'Soup', summary: 'A simple meal', sourceURL: null,

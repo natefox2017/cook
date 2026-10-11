@@ -3,7 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createRecipeServer } from '../src/server.mjs';
+import { createRecipeServer } from '../lib/recipe-server.mjs';
 
 const nativeFetch = globalThis.fetch;
 const sample = {

@@ -10,9 +10,11 @@ function sourceURL(value) {
   if (!authority || authority.includes("@") || /:\d+$/.test(authority)) return null;
   try {
     const url = new URL(value);
-    const host = url.hostname.toLowerCase().replace(/\.+$/, "");
+    const host = url.hostname.toLowerCase();
     if (url.protocol !== "https:" || !host.includes(".") ||
-        host.endsWith(".local") || host.includes(":") || !/[a-z]/i.test(host) ||
+        host.endsWith(".") ||
+        [".local", ".localhost", ".localdomain", ".internal"].some(suffix => host.endsWith(suffix)) ||
+        host.includes(":") || !/[a-z]/i.test(host) ||
         url.username || url.password || url.port ||
         [...url.searchParams.keys()].some(key => !publicSourceKeys.has(key.toLowerCase()))) {
       return null;
@@ -22,7 +24,26 @@ function sourceURL(value) {
     return null;
   }
 }
-const safeStoreURL = v => { try{const u=new URL(v);return u.protocol==="https:"&&u.hostname==="apps.apple.com"&&/\/id\d+(?:$|\/)/.test(u.pathname)?u.href:null;}catch{return null;} };
+export function safeStoreURL(value) {
+  if (typeof value !== "string" || value.length > 2048 || value.trim() !== value ||
+      /[\u0000-\u001f\u007f-\u009f\\]/.test(value)) {
+    return null;
+  }
+  const authority = /^https:\/\/([^/?#]+)/i.exec(value)?.[1];
+  if (authority?.toLowerCase() !== "apps.apple.com") {
+    return null;
+  }
+  try {
+    const url = new URL(value);
+    if (url.username || url.password || url.port || url.search || url.hash ||
+        !/\/id\d+(?:$|\/)/.test(url.pathname)) {
+      return null;
+    }
+    return url.href;
+  } catch {
+    return null;
+  }
+}
 
 export function validatePublicRecipe(raw) {
   if (!raw || typeof raw!=="object" || Array.isArray(raw) || Object.keys(raw).some(k=>!ALLOWED.has(k))) return null;
