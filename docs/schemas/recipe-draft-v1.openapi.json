@@ -1,0 +1,544 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Recipe Pals Extractive Owner Draft Contract",
+    "version": "1.0.0",
+    "description": "DEV-291 specification only. Default-disabled; no endpoint or database implementation/deployment is implied."
+  },
+  "x-budget-policy": {
+    "enabled_by_default": false,
+    "tokens_per_dispatch": 4096,
+    "session_dispatch_limit": 8,
+    "session_token_limit": 32768,
+    "owner_utc_day_token_limit": 65536,
+    "lease_seconds": 30,
+    "outer_deadline_ms": 10000
+  },
+  "paths": {
+    "/recipe-draft-sessions": {
+      "post": {
+        "operationId": "createDraftSession",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Durable Session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/Session"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Durable Session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/Session"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "AUTH_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "INPUT_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input/evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "BUDGET_EXHAUSTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Disabled/provider unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./recipe-draft-v1.schema.json#/$defs/CreateSessionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipe-draft-sessions/{session_id}": {
+      "get": {
+        "operationId": "getDraftSession",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Durable Session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/Session"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "AUTH_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./recipe-draft-v1.schema.json#/$defs/UUID"
+            }
+          }
+        ]
+      }
+    },
+    "/recipe-draft-sessions/{session_id}/turns": {
+      "post": {
+        "operationId": "createDraftTurn",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Durable Turn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/PendingTurn"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Durable Turn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/TerminalTurn"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "AUTH_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "INPUT_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input/evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "BUDGET_EXHAUSTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Disabled/provider unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./recipe-draft-v1.schema.json#/$defs/UUID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./recipe-draft-v1.schema.json#/$defs/TurnRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipe-draft-sessions/{session_id}/turns/{request_id}": {
+      "get": {
+        "operationId": "getDraftTurn",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Durable Turn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/Turn"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "AUTH_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./recipe-draft-v1.schema.json#/$defs/UUID"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./recipe-draft-v1.schema.json#/$defs/UUID"
+            }
+          }
+        ]
+      }
+    },
+    "/recipe-draft-sessions/{session_id}/turns/{request_id}/approval": {
+      "post": {
+        "operationId": "approveDraftTurn",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Durable ApprovalReceipt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/ApprovalReceipt"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "AUTH_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "INPUT_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input/evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "BUDGET_EXHAUSTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Disabled/provider unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./recipe-draft-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./recipe-draft-v1.schema.json#/$defs/UUID"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./recipe-draft-v1.schema.json#/$defs/UUID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./recipe-draft-v1.schema.json#/$defs/ApprovalRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Verified non-anonymous Supabase JWT"
+      }
+    }
+  }
+}
