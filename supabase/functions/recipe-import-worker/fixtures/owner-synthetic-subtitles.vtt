@@ -1,0 +1,22 @@
+WEBVTT
+
+NOTE Original synthetic cooking captions authored for DEV-78 by the development agent.
+No third-party video, transcript, recording or platform material is used.
+
+STYLE
+::cue { color: white; }
+
+REGION
+id:kitchen
+
+intro
+00:00.000 --> 00:04.250 align:start
+<v Cook>Ingredients</v>
+salt to taste &amp; a little butter
+
+00:04.250 --> 00:09.000
+Steps
+Stir gently.
+
+00:09.000 --> 00:12.000
+Do not infer a cooking time or an exact amount.

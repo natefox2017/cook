@@ -2,6 +2,7 @@
 // Purpose: Extracts public article and caption text as source-linked evidence.
 
 import { load } from "cheerio";
+import { webVTTText } from "./subtitleEvidence.ts";
 import { fetchPublicVTT } from "./safeURLFetch.ts";
 import { publicSocialMetadata } from "./publicSocialMetadata.ts";
 
@@ -64,7 +65,7 @@ export async function extractPublicPageText(
       ? explicitText
       : inlineText;
     const text = isVTT
-      ? vttText(inlineText)
+      ? webVTTText(inlineText)
       : normalizedText(candidateText);
     if (!text) return;
     inlineCount++;
@@ -103,7 +104,7 @@ export async function extractPublicPageText(
     if (remainingMS <= 0) break;
     try {
       const track = await fetchPublicVTT(trackURL, remainingMS);
-      const text = vttText(track.text);
+      const text = webVTTText(track.text);
       if (!text) continue;
       appendEvidence(
         evidence,
@@ -170,60 +171,6 @@ function normalizedText(value: string): string {
 
 function isWebURL(value: string): boolean {
   return /^(?:https?:)?\/\//i.test(value.trim());
-}
-
-function vttText(value: string): string {
-  const lines = value.replace(/^\uFEFF/, "").split(/\r?\n/);
-  const transcript: string[] = [];
-  let skippingBlock = false;
-
-  for (let index = 0; index < lines.length; index++) {
-    const line = lines[index].trim();
-    if (!line) {
-      skippingBlock = false;
-      continue;
-    }
-    if (/^WEBVTT(?:[ \t].*)?$/i.test(line)) {
-      skippingBlock = false;
-      continue;
-    }
-    if (/^(?:NOTE(?:[ \t].*)?|STYLE|REGION)$/i.test(line)) {
-      skippingBlock = true;
-      continue;
-    }
-    if (skippingBlock || /\d{2}:\d{2}(?::\d{2})?\.\d{3}\s+-->/.test(line)) {
-      continue;
-    }
-    if (
-      !line.includes("-->") &&
-      /\d{2}:\d{2}(?::\d{2})?\.\d{3}\s+-->/.test(lines[index + 1] ?? "")
-    ) {
-      continue;
-    }
-
-    const cue = decodeEntities(line.replace(/<[^>]*>/g, "")).trim();
-    if (cue && transcript.at(-1) !== cue) transcript.push(cue);
-  }
-
-  return normalizedText(transcript.join("\n")).slice(0, MAX_EVIDENCE_CHARS);
-}
-
-function decodeEntities(value: string): string {
-  return value.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (entity, name: string) => {
-    const lower = name.toLowerCase();
-    if (lower === "amp") return "&";
-    if (lower === "lt") return "<";
-    if (lower === "gt") return ">";
-    if (lower === "quot") return '"';
-    if (lower === "apos") return "'";
-    if (lower === "nbsp") return " ";
-    const codePoint = lower.startsWith("#x")
-      ? Number.parseInt(lower.slice(2), 16)
-      : Number.parseInt(lower.slice(1), 10);
-    return Number.isFinite(codePoint) && codePoint <= 0x10ffff
-      ? String.fromCodePoint(codePoint)
-      : entity;
-  });
 }
 
 function appendEvidence(
