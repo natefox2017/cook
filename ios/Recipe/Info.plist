@@ -10,6 +10,7 @@
         <string>zh-Hans</string>
         <string>zh-Hant</string>
         <string>ja</string>
+        <string>de</string>
     </array>
     <key>CFBundleDisplayName</key>
     <string>Recipe Pals</string>

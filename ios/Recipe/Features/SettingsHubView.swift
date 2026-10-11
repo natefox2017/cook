@@ -560,8 +560,11 @@ struct LocalePreferencesView: View {
     @AppStorage(RecipeLanguage.preferenceKey) private var languageOverride = ""
     @AppStorage("recipe.countryOverride") private var countryOverride = ""
     private let languages: [(id: String, label: String)] = [
-        ("en", "English"), ("zh-Hans", "简体中文"),
-        ("zh-Hant", "繁體中文"), ("ja", "日本語"),
+        ("en", "English"),
+        ("zh-Hans", "简体中文"),
+        ("zh-Hant", "繁體中文"),
+        ("ja", "日本語"),
+        ("de", "Deutsch"),
     ]
 
     private var countryCodes: [String] {

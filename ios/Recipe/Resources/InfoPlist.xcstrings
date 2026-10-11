@@ -344,7 +344,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Optionale Sprachbefehle wie „Weiter“, „Zurück“ und „Wiederholen“ erkennen, während der Kochmodus geöffnet ist."
+            "value": "Optionale Sprachbefehle wie „Next“, „Previous“ und „Repeat“ erkennen, während der Kochmodus geöffnet ist."
           }
         },
         "fr": {
