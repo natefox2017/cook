@@ -10,7 +10,7 @@ const api = 'https://api.example.org/public';
 test('valid public snapshots stay escaped, unlisted and uncached', async () => {
   const response = await shareResponse('abcdefgh', { api, fetcher: async (url, options) => {
     assert.equal(url, `${api}/abcdefgh`);
-    assert.equal(options.redirect, 'error');
+    assert.equal(options.redirect, 'manual');
     assert.equal(options.cache, 'no-store');
     assert.ok(options.signal instanceof AbortSignal);
     return Response.json(recipe);

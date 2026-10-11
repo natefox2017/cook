@@ -20,9 +20,13 @@ export default {
         method: request.method,
         headers,
         body: ['GET', 'HEAD'].includes(request.method) ? undefined : request.body,
-        redirect: 'error',
+        redirect: 'manual',
         signal: AbortSignal.timeout(30_000),
       });
+      if (upstream.status >= 300 && upstream.status < 400) {
+        await upstream.body?.cancel();
+        throw new Error('Admin API unexpectedly redirected');
+      }
       return new Response(upstream.body, {
         status: upstream.status,
         headers: {
@@ -32,8 +36,13 @@ export default {
           'X-Robots-Tag': 'noindex, nofollow, noarchive',
         },
       });
-    } catch {
-      return Response.json({ error: { message: 'Admin service temporarily unavailable' } }, { status: 502 });
+    } catch (error) {
+      // Log transport failures only, never submitted bodies or authorization headers.
+      console.error('Admin upstream fetch failed:', error instanceof Error ? error.message : 'Unknown transport error');
+      return Response.json({ error: { message: 'Admin service temporarily unavailable' } }, {
+        status: 502,
+        headers: { 'Cache-Control': 'private, no-store' },
+      });
     }
   },
 };
