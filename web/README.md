@@ -60,6 +60,8 @@ bash run.sh start
 
 ### Cloudflare Workers
 
+完整部署、域名、验证、排障与回滚步骤见 [Cloudflare 部署操作手册](CLOUDFLARE_DEPLOYMENT.md)。
+
 [DEV-312](https://linear.app/gengyun/issue/DEV-312) 将现有 Next.js 应用适配到 Workers，正式域名为 `https://www.shopkivoo.com`，同时绑定 `shopkivoo.com`。官网与管理端分别部署，管理端不使用此配置。
 
 ```sh

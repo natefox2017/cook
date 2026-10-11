@@ -4,6 +4,8 @@ Standalone operations console built with React, Vite, and shadcn-style component
 
 ## Cloudflare hosting
 
+See the [Cloudflare deployment runbook](../web/CLOUDFLARE_DEPLOYMENT.md) for website/admin setup, scoped credentials, domains, verification, troubleshooting and rollback.
+
 [DEV-314](https://linear.app/gengyun/issue/DEV-314) hosts this existing console at `https://admin.shopkivoo.com`. Workers Assets serves the SPA and nested `/admin/*` routes. The small Worker forwards only `/api/admin-auth`, `/api/admin-dashboard`, `/api/admin-users`, `/api/admin-subscriptions` and `/api/admin-ai` to the configured Supabase functions. It preserves the custom admin bearer and forwards no browser cookies; backend session/role checks remain required. This same-origin proxy avoids modifying existing backend CORS allowlists. It does not proxy database, storage or arbitrary URLs.
 
 For the production build, set `VITE_ADMIN_FUNCTIONS_URL=/api` and the existing project's public `VITE_SUPABASE_PUBLISHABLE_KEY` in ignored `.env.local` or process variables. Never use a service-role key, an admin session or an AI provider secret. Changing these build inputs requires rebuilding. The backend URL is public configuration in `wrangler.jsonc`; API tokens remain in runtime secrets outside Git.
