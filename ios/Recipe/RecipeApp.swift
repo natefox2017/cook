@@ -557,10 +557,19 @@ enum RecipeHorizontalSwipe: Equatable {
     }
 }
 
+struct RecipeRootTabSwipeBlockedPreferenceKey: PreferenceKey {
+    static let defaultValue = false
+
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = value || nextValue()
+    }
+}
+
 private struct RecipeRootTabVisibility: ViewModifier {
     @Binding var selectedTab: RecipeTab
     let tab: RecipeTab
     @State private var isRootVisible = false
+    @State private var isSwipeBlocked = false
 
     func body(content: Content) -> some View {
         content
@@ -571,7 +580,7 @@ private struct RecipeRootTabVisibility: ViewModifier {
             .gesture(
                 DragGesture(minimumDistance: 55)
                     .onEnded { value in
-                        guard isRootVisible, selectedTab == tab,
+                        guard isRootVisible, !isSwipeBlocked, selectedTab == tab,
                             let direction = RecipeHorizontalSwipe(translation: value.translation),
                             let destination = tab.neighbor(in: direction)
                         else {
@@ -580,6 +589,9 @@ private struct RecipeRootTabVisibility: ViewModifier {
                         selectedTab = destination
                     }
             )
+            .onPreferenceChange(RecipeRootTabSwipeBlockedPreferenceKey.self) { isBlocked in
+                isSwipeBlocked = isBlocked
+            }
             .onAppear {
                 isRootVisible = true
             }
