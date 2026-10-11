@@ -138,9 +138,9 @@ func shareExtensionRejectsUnshippedGroupLanguageAndKeepsUITestOverride() throws 
         group.removePersistentDomain(forName: groupSuite)
     }
 
-    RecipeLanguage.mirrorManualSelection("fr", groupDefaults: group)
+    RecipeLanguage.mirrorManualSelection("zz-Unsupported", groupDefaults: group)
     #expect(group.string(forKey: RecipeLanguage.preferenceKey) == nil)
-    group.set("fr", forKey: RecipeLanguage.preferenceKey)
+    group.set("zz-Unsupported", forKey: RecipeLanguage.preferenceKey)
     let invalidChoice = RecipeLanguage.selectedIdentifier(
         processDefaults: process, groupDefaults: group, isExtension: true)
     #expect(
@@ -188,4 +188,30 @@ func recipeLanguageSupportsGermanManualAndTestSelections() throws {
     }
     RecipeLanguage.mirrorManualSelection("de", groupDefaults: group)
     #expect(group.string(forKey: RecipeLanguage.preferenceKey) == "de")
+}
+
+@Test
+func recipeLanguageSupportsFrenchManualAndTestSelections() throws {
+    let supported = RecipeLanguage.currentlyTranslatedLanguages
+    #expect(
+        RecipeLanguage.resolve(
+            arguments: [], supportedIdentifiers: supported, selectedIdentifier: "fr"
+        ).identifier == "fr")
+    #expect(
+        RecipeLanguage.resolve(
+            arguments: ["--uitesting", "--uitesting-locale", "fr"],
+            supportedIdentifiers: supported, selectedIdentifier: "ja"
+        ).identifier == "fr")
+    #expect(
+        RecipeLanguage.resolve(
+            arguments: [], supportedIdentifiers: ["en", "ja"], selectedIdentifier: "fr"
+        ).identifier == "en")
+
+    let suite = "recipe.language.french.\(UUID().uuidString)"
+    let group = try #require(UserDefaults(suiteName: suite))
+    defer {
+        group.removePersistentDomain(forName: suite)
+    }
+    RecipeLanguage.mirrorManualSelection("fr", groupDefaults: group)
+    #expect(group.string(forKey: RecipeLanguage.preferenceKey) == "fr")
 }
