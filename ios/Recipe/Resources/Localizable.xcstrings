@@ -24323,7 +24323,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cela modifie %@ pour %@. Les deux recettes restent dans votre bibliothèque."
+            "value": "Cela modifie le repas %1$@ du %2$@. Les deux recettes restent dans votre bibliothèque."
           }
         },
         "es": {
@@ -39111,7 +39111,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Commencez par %@ gratuits, puis %@."
+            "value": "Profitez de %@ sans frais, puis %@."
           }
         },
         "es": {
