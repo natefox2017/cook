@@ -446,6 +446,12 @@
             "state": "translated",
             "value": "海報預覽"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Postervorschau"
+          }
         }
       }
     },
@@ -473,6 +479,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "限時動態"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Story"
           }
         }
       }
@@ -502,6 +514,12 @@
             "state": "translated",
             "value": "長圖"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langes Bild"
+          }
         }
       }
     },
@@ -530,6 +548,12 @@
             "state": "translated",
             "value": "分享圖片"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bild teilen"
+          }
         }
       }
     },
@@ -557,6 +581,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "複製連結"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link kopieren"
           }
         }
       }
@@ -60636,40 +60666,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Teilen fehlgeschlagen. Versuche es erneut."
-          }
-        }
-      }
-    },
-    "Copy Link": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Copy Link"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "リンクをコピー"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "复制链接"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "複製連結"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Link kopieren"
           }
         }
       }
