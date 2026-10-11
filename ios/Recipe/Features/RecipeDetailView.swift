@@ -328,7 +328,12 @@ struct RecipeDetailView: View {
         let remaining = recipe.ingredients.filter { !used.contains($0.id) }
         if !remaining.isEmpty {
             groups.append(DetailIngredientGroup(
-                id: "remaining", title: groups.isEmpty ? nil : "Other Ingredients",
+                id: "remaining",
+                title: groups.isEmpty ? nil : String(
+                    localized: LocalizedStringResource(
+                        "Other Ingredients", locale: RecipeLanguage.active
+                    )
+                ),
                 ingredients: remaining))
         }
         return groups
