@@ -51,7 +51,8 @@ final class RecipePosterPreviewState {
         }
     }
 
-    typealias Renderer = @MainActor (PublicRecipeSnapshot, URL, RecipePosterFormat) async throws ->
+    typealias Renderer =
+        @MainActor (PublicRecipeSnapshot, URL, RecipePosterFormat) async throws ->
         UIImage
 
     private(set) var image: UIImage?
@@ -320,7 +321,7 @@ private struct RecipePosterPreviewContent: View {
 }
 
 @MainActor
-private struct RecipePosterActivity: UIViewControllerRepresentable {
+struct RecipePosterActivity: UIViewControllerRepresentable {
     let items: [Any]
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
