@@ -47,7 +47,8 @@ final class RecipeAuthServiceTests: XCTestCase {
         try await service.waitForRequests(downloads: 2)
 
         let oldCloud = RecipeStore()
-        try oldCloud.upsert(Recipe(title: "Old session soup", steps: [.init(instruction: "Simmer.")]))
+        try oldCloud.upsert(
+            Recipe(title: "Old session soup", steps: [.init(instruction: "Simmer.")]))
         await service.completeDownload(1, with: .success(try cloudEnvelope(store: oldCloud)))
         await oldLogin.value
         XCTAssertTrue(store.recipes.isEmpty)
@@ -134,10 +135,12 @@ final class RecipeAuthServiceTests: XCTestCase {
         if isFailure {
             await service.completeDeletion(with: .failure(URLError(.notConnectedToInternet)))
         } else {
-            await service.completeDeletion(with: .success(CloudAccountDeletionResult(sessionChanged: false)))
+            await service.completeDeletion(
+                with: .success(CloudAccountDeletionResult(sessionChanged: false)))
         }
         let wasCancelled = try await deletion.value
-        XCTAssertTrue(wasCancelled, "An obsolete deletion must not report success to a new session.")
+        XCTAssertTrue(
+            wasCancelled, "An obsolete deletion must not report success to a new session.")
         XCTAssertNil(defaults.string(forKey: "recipe.sync.deletedAccountPendingSignOut"))
         XCTAssertEqual(coordinator.state, .syncing)
         await service.completeDownload(2, with: .success(nil))
@@ -181,11 +184,13 @@ final class RecipeAuthServiceTests: XCTestCase {
         let newStore = RecipeStore()
         let userID = UUID()
         let oldBinding = Task {
-            await coordinator.bind(store: oldStore, authState: .signedIn(userID: userID, email: nil))
+            await coordinator.bind(
+                store: oldStore, authState: .signedIn(userID: userID, email: nil))
         }
         try await service.waitForRequests(downloads: 1)
         let newBinding = Task {
-            await coordinator.bind(store: newStore, authState: .signedIn(userID: userID, email: nil))
+            await coordinator.bind(
+                store: newStore, authState: .signedIn(userID: userID, email: nil))
         }
         try await service.waitForRequests(downloads: 2)
         let cloud = RecipeStore()
@@ -248,13 +253,76 @@ final class RecipeAuthServiceTests: XCTestCase {
         XCTAssertFalse(coordinator.state.permitsUpload)
     }
 
-    private func cloudEnvelope(store: RecipeStore) throws -> CloudSnapshotEnvelope {
+    func testEditsDuringInitialDownloadRemainPendingAtSameRevision() async throws {
+        try await verifyEditsDuringInitialDownload(remoteRevision: 1)
+    }
+
+    func testEditsDuringInitialDownloadRemainPendingAtNewRevision() async throws {
+        try await verifyEditsDuringInitialDownload(remoteRevision: 2)
+    }
+
+    private func verifyEditsDuringInitialDownload(remoteRevision: Int64) async throws {
+        let service = PausedCloudSyncService()
+        let defaults = makeAuthDefaults()
+        defaults.set(CloudSyncMode.automatic.rawValue, forKey: "recipe.sync.mode")
+        let coordinator = try makeCloudCoordinator(service: service, defaults: defaults)
+        let store = RecipeStore()
+        let cloud = RecipeStore()
+        let originalRecipe = Recipe(
+            title: "Previously synced soup",
+            steps: [.init(instruction: "Simmer.")]
+        )
+        try cloud.upsert(originalRecipe)
+        let userID = UUID()
+        let firstLogin = Task {
+            await coordinator.bind(
+                store: store,
+                authState: .signedIn(userID: userID, email: nil)
+            )
+        }
+        try await service.waitForRequests(downloads: 1)
+        await service.completeDownload(1, with: .success(try cloudEnvelope(store: cloud)))
+        await firstLogin.value
+        await coordinator.authenticationChanged(.signedOut)
+
+        let secondLogin = Task {
+            await coordinator.authenticationChanged(.signedIn(userID: userID, email: nil))
+        }
+        try await service.waitForRequests(downloads: 2)
+        let pendingRecipe = Recipe(
+            title: "Added while cloud download was waiting",
+            steps: [.init(instruction: "Stir.")]
+        )
+        try store.upsert(pendingRecipe)
+        if remoteRevision > 1 {
+            try cloud.upsert(
+                Recipe(title: "Independent remote soup", steps: [.init(instruction: "Boil.")])
+            )
+        }
+        let remote = try cloudEnvelope(store: cloud, revision: remoteRevision)
+        await service.completeDownload(2, with: .success(remote))
+        // Login must schedule the edit itself; a forced manual upload would
+        // hide an incorrectly advanced lastExportedToken.
+        try await service.waitForRequests(uploads: 1)
+        let uploadedRecipeIDs = await service.uploadedRecipeIDs
+        XCTAssertTrue(uploadedRecipeIDs.first?.contains(pendingRecipe.id) == true)
+        await service.completeUpload(
+            with: .success(try cloudEnvelope(store: store, revision: remoteRevision + 1))
+        )
+        await secondLogin.value
+        XCTAssertTrue(store.recipes.contains { $0.id == pendingRecipe.id })
+    }
+
+    private func cloudEnvelope(
+        store: RecipeStore,
+        revision: Int64 = 1
+    ) throws -> CloudSnapshotEnvelope {
         let payload = try store.exportCloudSnapshot()
         return CloudSnapshotEnvelope(
             schemaVersion: payload.version,
             payload: payload,
             clientUpdatedAt: Date(timeIntervalSince1970: 1_791_670_000),
-            revision: 1,
+            revision: revision,
             serverUpdatedAt: Date(timeIntervalSince1970: 1_791_670_001)
         )
     }
@@ -277,7 +345,8 @@ final class RecipeAuthServiceTests: XCTestCase {
         try await service.waitForRequests(deletions: 1)
         // A repeated continuous-session notification must not discard a valid receipt.
         await coordinator.authenticationChanged(.signedIn(userID: userID, email: nil))
-        await service.completeDeletion(with: .success(CloudAccountDeletionResult(sessionChanged: false)))
+        await service.completeDeletion(
+            with: .success(CloudAccountDeletionResult(sessionChanged: false)))
         let result = try await deletion.value
         XCTAssertFalse(result.sessionChanged)
         XCTAssertEqual(coordinator.state, .localOnly)
@@ -326,7 +395,8 @@ final class RecipeAuthServiceTests: XCTestCase {
         try await service.waitForRequests(uploads: 1)
         let currentStore = RecipeStore()
         let loginB = Task {
-            await coordinator.bind(store: currentStore, authState: .signedIn(userID: userB, email: nil))
+            await coordinator.bind(
+                store: currentStore, authState: .signedIn(userID: userB, email: nil))
         }
         try await service.waitForRequests(downloads: 2)
         await service.completeDownload(2, with: .success(nil))
@@ -363,7 +433,8 @@ final class RecipeAuthServiceTests: XCTestCase {
         let userA = UUID()
         let userB = UUID()
         let loginA = Task {
-            await coordinator.bind(store: RecipeStore(), authState: .signedIn(userID: userA, email: nil))
+            await coordinator.bind(
+                store: RecipeStore(), authState: .signedIn(userID: userA, email: nil))
         }
         try await service.waitForRequests(downloads: 1)
         await service.completeDownload(1, with: .success(nil))
@@ -388,15 +459,19 @@ final class RecipeAuthServiceTests: XCTestCase {
             try await coordinator.deleteAccountAndCloudData()
         }
         try await service.waitForRequests(deletions: 2)
-        await service.completeDeletion(1, with: .success(CloudAccountDeletionResult(sessionChanged: true)))
+        await service.completeDeletion(
+            1, with: .success(CloudAccountDeletionResult(sessionChanged: true)))
         let cancelledA = try await deleteA.value
         XCTAssertTrue(cancelledA)
-        XCTAssertEqual(defaults.string(forKey: "recipe.sync.deletedAccountPendingSignOut"), userB.uuidString)
+        XCTAssertEqual(
+            defaults.string(forKey: "recipe.sync.deletedAccountPendingSignOut"), userB.uuidString)
         XCTAssertEqual(coordinator.state, .syncing)
-        await service.completeDeletion(2, with: .success(CloudAccountDeletionResult(sessionChanged: false)))
+        await service.completeDeletion(
+            2, with: .success(CloudAccountDeletionResult(sessionChanged: false)))
         let resultB = try await deleteB.value
         XCTAssertFalse(resultB.sessionChanged)
-        XCTAssertEqual(defaults.string(forKey: "recipe.sync.deletedAccountPendingSignOut"), userB.uuidString)
+        XCTAssertEqual(
+            defaults.string(forKey: "recipe.sync.deletedAccountPendingSignOut"), userB.uuidString)
         let deletedUsers = await service.deletionUserIDs
         XCTAssertEqual(deletedUsers, [userA, userB])
     }
@@ -411,7 +486,8 @@ final class RecipeAuthServiceTests: XCTestCase {
         let coordinator = try makeCloudCoordinator(service: service, defaults: defaults)
         let store = RecipeStore()
         if beforeRequest {
-            try store.upsert(Recipe(title: "Unapproved local soup", steps: [.init(instruction: "Simmer.")]))
+            try store.upsert(
+                Recipe(title: "Unapproved local soup", steps: [.init(instruction: "Simmer.")]))
         }
         let userID = UUID()
         let login = Task {
@@ -431,7 +507,8 @@ final class RecipeAuthServiceTests: XCTestCase {
         }
         try await service.waitForRequests(deletions: 1)
         if beforeRequest {
-            await service.completeDeletion(with: .failure(CloudAccountDeletionRequestError.identityChangedBeforeRequest))
+            await service.completeDeletion(
+                with: .failure(CloudAccountDeletionRequestError.identityChangedBeforeRequest))
         } else {
             await service.completeDeletion(with: .failure(CancellationError()))
         }
@@ -455,8 +532,11 @@ final class RecipeAuthServiceTests: XCTestCase {
         defaults suppliedDefaults: UserDefaults? = nil,
         supportDirectory suppliedRoot: URL? = nil
     ) throws -> CloudSyncCoordinator {
-        let root = suppliedRoot ?? FileManager.default.temporaryDirectory
-            .appendingPathComponent("RecipeCloudSessionTests-\(UUID().uuidString)", isDirectory: true)
+        let root =
+            suppliedRoot
+            ?? FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "RecipeCloudSessionTests-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         addTeardownBlock {
             await service.cancelPendingRequests()
@@ -699,7 +779,8 @@ final class RecipeAuthServiceTests: XCTestCase {
         let fixture = makeDeletionHTTPFixture()
         let userID = UUID()
         fixture.control.setLogin(userID: userID, token: "deletion-session-A")
-        _ = try await fixture.client.auth.signIn(email: "owner@example.test", password: "test-password")
+        _ = try await fixture.client.auth.signIn(
+            email: "owner@example.test", password: "test-password")
         let deletion = Task {
             try await fixture.service.deleteAccountAndCloudData(for: userID)
         }
@@ -730,7 +811,8 @@ final class RecipeAuthServiceTests: XCTestCase {
         let fixture = makeDeletionHTTPFixture()
         let currentUserID = UUID()
         fixture.control.setLogin(userID: currentUserID, token: "deletion-session-B")
-        _ = try await fixture.client.auth.signIn(email: "owner@example.test", password: "test-password")
+        _ = try await fixture.client.auth.signIn(
+            email: "owner@example.test", password: "test-password")
         do {
             _ = try await fixture.service.deleteAccountAndCloudData(for: UUID())
             XCTFail("A different intended owner must never reach the deletion endpoint.")
@@ -745,14 +827,16 @@ final class RecipeAuthServiceTests: XCTestCase {
         let fixture = makeDeletionHTTPFixture()
         let originalUserID = UUID()
         fixture.control.setLogin(userID: originalUserID, token: "deletion-session-A1")
-        _ = try await fixture.client.auth.signIn(email: "owner@example.test", password: "test-password")
+        _ = try await fixture.client.auth.signIn(
+            email: "owner@example.test", password: "test-password")
         let deletion = Task {
             try await fixture.service.deleteAccountAndCloudData(for: originalUserID)
         }
         try await fixture.control.waitForDeletionRequest()
         let currentUserID = reloggedAsSameUser ? originalUserID : UUID()
         fixture.control.setLogin(userID: currentUserID, token: "deletion-session-new")
-        _ = try await fixture.client.auth.signIn(email: "owner@example.test", password: "test-password")
+        _ = try await fixture.client.auth.signIn(
+            email: "owner@example.test", password: "test-password")
         fixture.control.releaseDeletionResponse()
         let result = try await deletion.value
         XCTAssertTrue(result.sessionChanged)
@@ -777,14 +861,17 @@ final class RecipeAuthServiceTests: XCTestCase {
                 return .json(payload: control.loginPayload())
             case "/functions/v1/delete-account":
                 control.recordDeletion(request)
-                return .json(payload: ["ok": true], beforeResponse: {
-                    control.waitUntilResponseReleased()
-                })
+                return .json(
+                    payload: ["ok": true],
+                    beforeResponse: {
+                        control.waitUntilResponseReleased()
+                    })
             case "/auth/v1/logout":
                 control.recordLogout()
                 return .json(statusCode: 401, payload: ["message": "The account was deleted"])
             default:
-                return .json(statusCode: 404, payload: ["message": "Unexpected deletion test request"])
+                return .json(
+                    statusCode: 404, payload: ["message": "Unexpected deletion test request"])
             }
         }
         let configuration = URLSessionConfiguration.ephemeral
@@ -860,7 +947,8 @@ private actor PausedCloudSyncService: RecipeCloudSyncing {
     private(set) var deletionCount = 0
     private var downloads: [Int: CheckedContinuation<CloudSnapshotEnvelope?, any Error>] = [:]
     private var pendingUpload: CheckedContinuation<CloudSnapshotEnvelope, any Error>?
-    private var pendingDeletions: [Int: CheckedContinuation<CloudAccountDeletionResult, any Error>] = [:]
+    private var pendingDeletions:
+        [Int: CheckedContinuation<CloudAccountDeletionResult, any Error>] = [:]
     private(set) var deletionUserIDs: [UUID] = []
     private let maximumDownloads: Int?
 
@@ -901,7 +989,8 @@ private actor PausedCloudSyncService: RecipeCloudSyncing {
         }
     }
 
-    func completeDownload(_ requestID: Int, with result: Result<CloudSnapshotEnvelope?, any Error>) {
+    func completeDownload(_ requestID: Int, with result: Result<CloudSnapshotEnvelope?, any Error>)
+    {
         downloads.removeValue(forKey: requestID)?.resume(with: result)
     }
 
@@ -911,7 +1000,9 @@ private actor PausedCloudSyncService: RecipeCloudSyncing {
         continuation?.resume(with: result)
     }
 
-    func completeDeletion(_ requestID: Int? = nil, with result: Result<CloudAccountDeletionResult, any Error>) {
+    func completeDeletion(
+        _ requestID: Int? = nil, with result: Result<CloudAccountDeletionResult, any Error>
+    ) {
         pendingDeletions.removeValue(forKey: requestID ?? deletionCount)?.resume(with: result)
     }
 

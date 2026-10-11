@@ -406,7 +406,8 @@ final class CloudSyncCoordinator {
         try verifyLocalOnlyResetAllowed()
 
         for directoryName in ["Recipe", "Cook"] {
-            let syncDirectory = supportDirectory
+            let syncDirectory =
+                supportDirectory
                 .appendingPathComponent(directoryName, isDirectory: true)
                 .appendingPathComponent("Sync", isDirectory: true)
             if FileManager.default.fileExists(atPath: syncDirectory.path) {
@@ -655,7 +656,8 @@ final class CloudSyncCoordinator {
                     // Its old in-flight generation was invalidated above, so
                     // restoring .syncing would wait for a discarded completion.
                     state = .error(
-                        RecipeLanguage.localized("Cloud sync changed while this device was saving. Try again.")
+                        RecipeLanguage.localized(
+                            "Cloud sync changed while this device was saving. Try again.")
                     )
                 } else {
                     state = previousState
@@ -730,14 +732,17 @@ final class CloudSyncCoordinator {
 
         do {
             let persistedBase = remoteSnapshot
-            let local = try store.exportCloudSnapshot()
-            let linkedAccountID = localLibraryAccountID
             let remote = try await service.download(for: userID)
             guard accountID == userID,
                 authenticationGeneration == generation
             else {
                 return
             }
+
+            // Edits can arrive while the download is suspended. Compare the
+            // current library before advancing its last exported change token.
+            let local = try store.exportCloudSnapshot()
+            let linkedAccountID = localLibraryAccountID
 
             // A local library associated with another account must never be
             // silently uploaded into the newly signed-in account.
@@ -770,7 +775,8 @@ final class CloudSyncCoordinator {
             if let persistedBase {
                 guard let remote else {
                     state = .error(
-                        RecipeLanguage.localized("The previously synced cloud library is no longer available.")
+                        RecipeLanguage.localized(
+                            "The previously synced cloud library is no longer available.")
                     )
                     return
                 }
@@ -891,7 +897,9 @@ final class CloudSyncCoordinator {
             guard let latest else {
                 if expectedRevision > 0 {
                     state = .error(
-                        RecipeLanguage.localized("The cloud library is no longer available. Sync again before uploading.")
+                        RecipeLanguage.localized(
+                            "The cloud library is no longer available. Sync again before uploading."
+                        )
                     )
                 } else {
                     state = .localOnly
@@ -1053,7 +1061,8 @@ final class CloudSyncCoordinator {
 
                 guard let latest else {
                     state = .error(
-                        RecipeLanguage.localized("Cloud sync changed while this device was saving. Try again.")
+                        RecipeLanguage.localized(
+                            "Cloud sync changed while this device was saving. Try again.")
                     )
                     return
                 }
