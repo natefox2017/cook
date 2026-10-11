@@ -2548,6 +2548,69 @@ final class RecipeUITests: XCTestCase {
         XCTAssertEqual(picker.value as? String, "Português (Brasil)", app.debugDescription)
         attachScreenshot("Brazilian Portuguese language selection", app: app)
     }
+
+    @MainActor
+    func testManualDutchLanguageSelectionAppliesImmediately() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--uitesting-reset-language"]
+        app.launch()
+        defer {
+            app.terminate()
+        }
+
+        let profileTab = app.tabBars.buttons["Profile"]
+        waitUntilReady(profileTab)
+        profileTab.tap()
+
+        let settings = app.buttons["Settings"]
+        reveal(settings, in: app, maximumSwipes: 5)
+        settings.tap()
+
+        let languageAndCountry = app.buttons["Language & Country"]
+        reveal(languageAndCountry, in: app, maximumSwipes: 6)
+        languageAndCountry.tap()
+
+        let picker = app.buttons["settings.languagePicker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5), app.debugDescription)
+        picker.tap()
+        let dutch = app.buttons["Nederlands"].firstMatch
+        XCTAssertTrue(dutch.waitForExistence(timeout: 5), app.debugDescription)
+        dutch.tap()
+
+        XCTAssertTrue(
+            app.navigationBars["Taal en land"].waitForExistence(timeout: 8),
+            app.debugDescription
+        )
+        XCTAssertTrue(app.staticTexts["App-taal"].exists)
+        XCTAssertEqual(picker.value as? String, "Nederlands", app.debugDescription)
+        attachScreenshot("Dutch language selection", app: app)
+
+        let countryPicker = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "Regio van apparaat gebruiken")
+        ).firstMatch
+        XCTAssertTrue(countryPicker.waitForExistence(timeout: 5), app.debugDescription)
+        countryPicker.tap()
+        let netherlands = app.buttons["Nederland"].firstMatch
+        for _ in 0..<20 where !netherlands.exists {
+            app.swipeUp()
+        }
+        XCTAssertTrue(netherlands.waitForExistence(timeout: 5), app.debugDescription)
+        netherlands.tap()
+
+        XCTAssertEqual(picker.value as? String, "Nederlands", app.debugDescription)
+        XCTAssertTrue(app.navigationBars["Taal en land"].exists, app.debugDescription)
+
+        app.terminate()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        let dutchProfileTab = app.tabBars.buttons["Profiel"]
+        waitUntilReady(dutchProfileTab)
+        dutchProfileTab.tap()
+        XCTAssertTrue(
+            app.navigationBars["Profiel"].waitForExistence(timeout: 8),
+            app.debugDescription
+        )
+    }
 }
 
 extension RecipeUITests {

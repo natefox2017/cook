@@ -267,3 +267,27 @@ func manuallySelectedItalianOverridesEnglishTestDefault() {
     #expect(selected.identifier == "it")
     #expect(unsupported.identifier == "en")
 }
+
+@Test
+func manuallySelectedDutchOverridesEnglishAndHonorsUITestLocale() {
+    let supported = RecipeLanguage.currentlyTranslatedLanguages
+
+    #expect(
+        RecipeLanguage.resolve(
+            arguments: ["--uitesting"],
+            supportedIdentifiers: supported,
+            selectedIdentifier: "nl"
+        ).identifier == "nl")
+    #expect(
+        RecipeLanguage.resolve(
+            arguments: ["--uitesting", "--uitesting-locale", "nl"],
+            supportedIdentifiers: supported,
+            selectedIdentifier: nil
+        ).identifier == "nl")
+    #expect(
+        RecipeLanguage.resolve(
+            arguments: [],
+            supportedIdentifiers: ["en", "pt-BR"],
+            selectedIdentifier: "nl"
+        ).identifier == "en")
+}
