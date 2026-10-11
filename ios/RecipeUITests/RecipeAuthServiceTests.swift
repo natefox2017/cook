@@ -775,6 +775,96 @@ final class RecipeAuthServiceTests: XCTestCase {
         XCTAssertEqual(callbackService.state, .signedIn(userID: userID, email: email))
     }
 
+    func testAnotherAccountCallbackPreservesPendingPasswordRecovery() async throws {
+        let recoveryEmail = "recipe-recovery-a@example.test"
+        let otherEmail = "recipe-callback-b@example.test"
+        let otherUserID = UUID()
+        let defaults = makeAuthDefaults()
+        let storage = MemoryAuthStorage()
+        AuthMockURLProtocol.setHandler { request in
+            switch request.url?.path {
+            case "/auth/v1/recover":
+                return .json(payload: [:])
+            case "/auth/v1/token":
+                return .json(payload: sessionPayload(id: otherUserID, email: otherEmail))
+            default:
+                return .json(statusCode: 404, payload: ["message": "Unexpected Auth request"])
+            }
+        }
+
+        let originalService = makeService(defaults: defaults, storage: storage)
+        await waitUntil { originalService.state == .signedOut }
+        try await originalService.sendPasswordReset(to: recoveryEmail)
+        let pendingHash = defaults.string(
+            forKey: "recipe.auth.pending_password_recovery_email_hash"
+        )
+        XCTAssertNotNil(pendingHash)
+
+        // Recreate the service to exercise the persisted cold-launch intent.
+        let callbackService = makeService(defaults: defaults, storage: storage)
+        await waitUntil { callbackService.state == .signedOut }
+        callbackService.handleAuthCallback(
+            URL(string: "cook://auth/callback?code=other-account-code")!
+        )
+        await waitUntil {
+            callbackService.state == .signedIn(userID: otherUserID, email: otherEmail)
+                && callbackService.authCallbackGeneration == 1
+        }
+        XCTAssertTrue(defaults.bool(forKey: "recipe.auth.pending_password_recovery"))
+        XCTAssertEqual(
+            defaults.string(forKey: "recipe.auth.pending_password_recovery_email_hash"),
+            pendingHash
+        )
+
+        // Start a new reset to install a fresh SDK PKCE verifier for this second callback.
+        try await originalService.sendPasswordReset(to: recoveryEmail)
+        // An explicit recovery for B must likewise not erase A's reset intent.
+        callbackService.handleAuthCallback(
+            URL(string: "cook://auth/callback?code=other-recovery-code&type=recovery")!
+        )
+        await waitUntil {
+            callbackService.state == .passwordRecovery(userID: otherUserID)
+                && callbackService.authCallbackGeneration == 2
+        }
+        XCTAssertTrue(defaults.bool(forKey: "recipe.auth.pending_password_recovery"))
+        XCTAssertEqual(
+            defaults.string(forKey: "recipe.auth.pending_password_recovery_email_hash"),
+            pendingHash
+        )
+    }
+
+    func testFailedCallbackPreservesPendingPasswordRecovery() async throws {
+        let defaults = makeAuthDefaults()
+        AuthMockURLProtocol.setHandler { request in
+            if request.url?.path == "/auth/v1/recover" {
+                return .json(payload: [:])
+            }
+            return .json(
+                statusCode: 400,
+                payload: ["code": "bad_code_verifier", "message": "Rejected callback"]
+            )
+        }
+        let service = makeService(defaults: defaults)
+        await waitUntil { service.state == .signedOut }
+        try await service.sendPasswordReset(to: "recipe-recovery@example.test")
+        let pendingHash = defaults.string(
+            forKey: "recipe.auth.pending_password_recovery_email_hash"
+        )
+        XCTAssertNotNil(pendingHash)
+        service.handleAuthCallback(URL(string: "cook://auth/callback?code=rejected-code")!)
+        await waitUntil {
+            if case .error = service.state {
+                return service.authCallbackGeneration == 1
+            }
+            return false
+        }
+        XCTAssertTrue(defaults.bool(forKey: "recipe.auth.pending_password_recovery"))
+        XCTAssertEqual(
+            defaults.string(forKey: "recipe.auth.pending_password_recovery_email_hash"),
+            pendingHash
+        )
+    }
+
     func testAccountDeletionPinsJWTAndRequiresExplicitSignOut() async throws {
         let fixture = makeDeletionHTTPFixture()
         let userID = UUID()
