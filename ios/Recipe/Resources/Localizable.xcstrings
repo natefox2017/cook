@@ -24329,7 +24329,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Esto cambia %@ por %@. Ambas recetas permanecen en tu biblioteca."
+            "value": "Esto cambia la comida %1$@ del %2$@. Ambas recetas permanecen en tu biblioteca."
           }
         },
         "it": {
