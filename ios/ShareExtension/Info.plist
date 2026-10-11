@@ -11,6 +11,7 @@
         <string>zh-Hant</string>
         <string>ja</string>
         <string>de</string>
+        <string>fr</string>
     </array>
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>

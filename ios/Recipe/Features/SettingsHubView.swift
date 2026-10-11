@@ -565,6 +565,7 @@ struct LocalePreferencesView: View {
         ("zh-Hant", "繁體中文"),
         ("ja", "日本語"),
         ("de", "Deutsch"),
+        ("fr", "Français"),
     ]
 
     private var countryCodes: [String] {
