@@ -17,7 +17,6 @@ import {
 
 const TABLE = "recipe_shared_snapshots";
 const RETURNING = "share_id,owner_id,opaque_slug,share_version,scope,created_at,updated_at,revoked_at";
-const MAX_DAILY_CREATES = 200;
 
 interface ShareRow {
   share_id: string;
@@ -125,57 +124,22 @@ export async function handleRecipeShareManage(request: Request): Promise<Respons
 
     if (isPost) {
       const requestHash = await contentDigest(payload);
-      // A retry of an existing request must not consume the daily creation budget.
-      const {data: previous, error: priorError} = await admin.from(TABLE)
-        .select(RETURNING + ",request_hash")
-        .eq("owner_id", userID).eq("idempotency_key", payload.idempotencyKey)
-        .maybeSingle();
-      if (priorError) return failDatabase(priorError, "request_lookup_failed");
-      if (previous) {
-        if (previous.request_hash !== requestHash || previous.revoked_at) {
-          return httpError("idempotency_conflict", 409);
-        }
-        return Response.json(metadata(previous as ShareRow, origin!), {
-          status: 200, headers: privacyHeaders(),
-        });
+      // Quota admission and same-owner retry are serialized in one DB transaction.
+      const {data, error} = await admin.rpc("create_recipe_share_once", {
+        p_owner_id: userID,
+        p_payload: payload,
+        p_slug: randomSlug(),
+        p_request_hash: requestHash,
+      });
+      if (error) return failDatabase(error, "create_failed");
+      if (data?.status === 409) return httpError("idempotency_conflict", 409);
+      if (data?.status === 429) return httpError("rate_limited", 429);
+      if (![200, 201].includes(data?.status) || !data?.share ||
+        data.share.owner_id !== userID || data.share.revoked_at) {
+        return failDatabase(null, "create_invalid_result");
       }
-
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const {count, error: countError} = await admin.from(TABLE)
-        .select("share_id", {head: true, count: "exact"})
-        .eq("owner_id", userID).gte("created_at", since);
-      if (countError) return failDatabase(countError, "quota_failed");
-      if ((count ?? 0) >= MAX_DAILY_CREATES) return httpError("rate_limited", 429);
-
-      const {data, error} = await admin.from(TABLE).insert({
-        owner_id: userID,
-        source_recipe_id: payload.sourceRecipeID,
-        source_client_updated_at: payload.sourceRecipeUpdatedAt,
-        opaque_slug: randomSlug(),
-        share_version: 1,
-        scope: payload.scope,
-        has_distribution_rights: payload.hasDistributionRights,
-        sanitized_snapshot: content,
-        idempotency_key: payload.idempotencyKey,
-        request_hash: requestHash,
-      }).select(RETURNING).single();
-      if (error?.code === "23505") {
-        // Concurrent identical POST: unique (owner_id,idempotency_key) wins.
-        const {data: winner, error: winnerError} = await admin.from(TABLE)
-          .select(RETURNING + ",request_hash")
-          .eq("owner_id", userID).eq("idempotency_key", payload.idempotencyKey)
-          .maybeSingle();
-        if (winnerError) return failDatabase(winnerError, "duplicate_lookup_failed");
-        if (winner && !winner.revoked_at && winner.request_hash === requestHash) {
-          return Response.json(metadata(winner as ShareRow, origin!), {
-            status: 200, headers: privacyHeaders(),
-          });
-        }
-        return httpError("idempotency_conflict", 409);
-      }
-      if (error || !data) return failDatabase(error, "create_failed");
-      return Response.json(metadata(data as ShareRow, origin!), {
-        status: 201, headers: privacyHeaders(),
+      return Response.json(metadata(data.share as ShareRow, origin!), {
+        status: data.status, headers: privacyHeaders(),
       });
     }
 

@@ -4,7 +4,7 @@
 
 create extension if not exists pgtap;
 begin;
-select plan(24);
+select plan(32);
 
 select ok(
   (select relrowsecurity from pg_class where oid = 'public.recipe_shared_snapshots'::regclass),
@@ -140,6 +140,48 @@ select is((select count(*) from public.recipe_shared_snapshots
 select is((select sanitized_snapshot->>'title' from public.recipe_shared_snapshots
  where owner_id='22222222-2222-4222-8222-222222222222'),
  'Soup','deleting A preserves B approved share content');
+
+
+-- Service-only RPC performs quota/retry admission in one transaction.
+select ok(not has_function_privilege('anon',
+ 'public.create_recipe_share_once(uuid,jsonb,text,text)','EXECUTE'),
+ 'anon cannot invoke privileged create admission');
+select ok(not has_function_privilege('authenticated',
+ 'public.create_recipe_share_once(uuid,jsonb,text,text)','EXECUTE'),
+ 'authenticated cannot nominate a create owner through RPC');
+select ok(has_function_privilege('service_role',
+ 'public.create_recipe_share_once(uuid,jsonb,text,text)','EXECUTE'),
+ 'service role can invoke create admission');
+set local role service_role;
+insert into public.recipe_shared_snapshots (
+ owner_id,source_recipe_id,source_client_updated_at,opaque_slug,scope,
+ has_distribution_rights,sanitized_snapshot,idempotency_key,request_hash
+) select owner_id,source_recipe_id,source_client_updated_at,
+ lpad(n::text,43,'q'),scope,has_distribution_rights,sanitized_snapshot,
+ gen_random_uuid(),request_hash
+ from public.recipe_shared_snapshots cross join generate_series(1,198) n;
+select set_config('test.share_payload',
+ '{"idempotencyKey":"55555555-5555-4555-8555-555555555555","sourceRecipeID":"33333333-3333-4333-8333-333333333333","sourceRecipeUpdatedAt":"2026-10-10T11:00:00Z","scope":"summaryAndSource","hasDistributionRights":false,"snapshot":{"title":"Quota soup","ingredients":[],"steps":[]}}',true);
+select is((public.create_recipe_share_once(
+ '22222222-2222-4222-8222-222222222222',current_setting('test.share_payload')::jsonb,
+ repeat('c',43),repeat('c',64))->>'status')::int,201,
+ '199 prior shares admit the 200th intent');
+select is((public.create_recipe_share_once(
+ '22222222-2222-4222-8222-222222222222',
+ jsonb_set(current_setting('test.share_payload')::jsonb,'{idempotencyKey}',
+ '"66666666-6666-4666-8666-666666666666"'),repeat('d',43),repeat('d',64))->>'status')::int,429,
+ '200 prior shares reject the next new intent');
+select is((public.create_recipe_share_once(
+ '22222222-2222-4222-8222-222222222222',current_setting('test.share_payload')::jsonb,
+ repeat('e',43),repeat('c',64))->>'status')::int,200,
+ 'same retry bypasses quota without inserting another slug');
+select is((public.create_recipe_share_once(
+ '22222222-2222-4222-8222-222222222222',current_setting('test.share_payload')::jsonb,
+ repeat('f',43),repeat('f',64))->>'status')::int,409,
+ 'changed retry digest conflicts even at quota');
+select is((select count(*) from public.recipe_shared_snapshots),200::bigint,
+ 'quota rejection and retries keep exactly 200 owner shares');
+reset role;
 
 select * from finish();
 rollback;

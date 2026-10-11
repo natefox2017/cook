@@ -91,3 +91,53 @@ grant all on public.recipe_shared_snapshots to service_role;
 -- Rollback in a disposable local environment only:
 --   DROP TABLE public.recipe_shared_snapshots;
 -- Production rollout/rollback requires separate DEV-50 owner authorization.
+
+
+-- Serialize create admission by owner across database sessions. Hash collisions
+-- only serialize unrelated owners; owner predicates still govern all row access.
+create or replace function public.create_recipe_share_once(
+    p_owner_id uuid, p_payload jsonb, p_slug text, p_request_hash text
+) returns jsonb
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+    existing public.recipe_shared_snapshots%rowtype;
+    created public.recipe_shared_snapshots%rowtype;
+begin
+    perform pg_catalog.pg_advisory_xact_lock(
+        pg_catalog.hashtextextended(p_owner_id::text, 241)
+    );
+    select * into existing from public.recipe_shared_snapshots
+    where owner_id = p_owner_id
+      and idempotency_key = (p_payload ->> 'idempotencyKey')::uuid;
+    if found then
+        if existing.revoked_at is not null or existing.request_hash <> p_request_hash then
+            return pg_catalog.jsonb_build_object('status', 409);
+        end if;
+        return pg_catalog.jsonb_build_object('status', 200, 'share', pg_catalog.to_jsonb(existing));
+    end if;
+    if (select count(*) from public.recipe_shared_snapshots
+        where owner_id = p_owner_id
+          and created_at >= pg_catalog.now() - interval '24 hours') >= 200 then
+        return pg_catalog.jsonb_build_object('status', 429);
+    end if;
+    insert into public.recipe_shared_snapshots (
+        owner_id, source_recipe_id, source_client_updated_at, opaque_slug,
+        scope, has_distribution_rights, sanitized_snapshot,
+        idempotency_key, request_hash
+    ) values (
+        p_owner_id, (p_payload ->> 'sourceRecipeID')::uuid,
+        (p_payload ->> 'sourceRecipeUpdatedAt')::timestamptz, p_slug,
+        p_payload ->> 'scope', (p_payload ->> 'hasDistributionRights')::boolean,
+        p_payload -> 'snapshot', (p_payload ->> 'idempotencyKey')::uuid,
+        p_request_hash
+    ) returning * into created;
+    return pg_catalog.jsonb_build_object('status', 201, 'share', pg_catalog.to_jsonb(created));
+end;
+$$;
+revoke all on function public.create_recipe_share_once(uuid,jsonb,text,text)
+    from public, anon, authenticated;
+grant execute on function public.create_recipe_share_once(uuid,jsonb,text,text)
+    to service_role;
