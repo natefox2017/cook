@@ -923,7 +923,8 @@ final class RecipeUITests: XCTestCase {
         let ingredientInfo = app.buttons.matching(
             NSPredicate(format: "identifier BEGINSWITH %@", "cookingIngredientInfo.")
         ).firstMatch
-        reveal(ingredientInfo, in: app, scrollView: app.scrollViews["cookingScroll"])
+        reveal(
+            ingredientInfo, in: app, scrollView: app.scrollViews["cookingScroll"], maximumSwipes: 3)
         waitUntilReady(ingredientInfo)
         ingredientInfo.tap()
         XCTAssertTrue(
