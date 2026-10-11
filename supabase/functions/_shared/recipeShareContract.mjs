@@ -170,4 +170,3 @@ export function privacyHeaders() {
 export function httpError(code, status, message = "The request could not be completed.") {
   return Response.json({code, message}, {status, headers: privacyHeaders()});
 }
-

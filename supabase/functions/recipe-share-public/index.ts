@@ -69,4 +69,3 @@ async function publicShareResponse(request: Request): Promise<Response> {
 }
 
 Deno.serve(handlePublicShare);
-

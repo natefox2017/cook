@@ -196,4 +196,3 @@ export async function handleRecipeShareManage(request: Request): Promise<Respons
 }
 
 Deno.serve(handleRecipeShareManage);
-
