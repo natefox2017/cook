@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "recipe-pals-site",
+  "account_id": "5eb48a9a09afb3e8b98952ab80de0888",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-11",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": true,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    { "binding": "WORKER_SELF_REFERENCE", "service": "recipe-pals-site" }
+  ],
+  "vars": {
+    "RECIPE_PALS_SITE_URL": "https://www.shopkivoo.com",
+    "RECIPE_PALS_APP_STORE_URL": "",
+    "RECIPE_PALS_PUBLIC_RECIPE_API": ""
+  },
+  "routes": [
+    { "pattern": "www.shopkivoo.com", "custom_domain": true },
+    { "pattern": "shopkivoo.com", "custom_domain": true }
+  ]
+}
