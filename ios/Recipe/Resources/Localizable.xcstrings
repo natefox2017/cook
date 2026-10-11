@@ -26,6 +26,12 @@
             "state": "translated",
             "value": "材料グループ"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zutatengruppen"
+          }
         }
       }
     },
@@ -53,6 +59,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "グループ名"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gruppenname"
           }
         }
       }
@@ -82,6 +94,12 @@
             "state": "translated",
             "value": "グループを上へ移動"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gruppe nach oben verschieben"
+          }
         }
       }
     },
@@ -109,6 +127,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "グループを下へ移動"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gruppe nach unten verschieben"
           }
         }
       }
@@ -138,6 +162,12 @@
             "state": "translated",
             "value": "材料グループを削除"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zutatengruppe entfernen"
+          }
         }
       }
     },
@@ -165,6 +195,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "このグループの材料"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zutaten in dieser Gruppe"
           }
         }
       }
@@ -194,6 +230,12 @@
             "state": "translated",
             "value": "材料グループを追加"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zutatengruppe hinzufügen"
+          }
         }
       }
     },
@@ -221,6 +263,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "各材料グループに名前を付けてください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geben Sie jeder Zutatengruppe einen Namen."
           }
         }
       }
@@ -250,6 +298,12 @@
             "state": "translated",
             "value": "各グループに少なくとも1つの材料を選んでください。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wählen Sie mindestens eine Zutat für jede Gruppe aus."
+          }
         }
       }
     },
@@ -277,6 +331,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "手順の写真を追加"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schrittfoto hinzufügen"
           }
         }
       }
@@ -306,6 +366,12 @@
             "state": "translated",
             "value": "手順の写真を削除"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schrittfoto entfernen"
+          }
         }
       }
     },
@@ -333,6 +399,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "ご自身が所有するか、使用許可を得た写真を使用してください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verwenden Sie Fotos, die Ihnen gehören oder für deren Verwendung Sie eine Erlaubnis haben."
           }
         }
       }
@@ -362,6 +434,12 @@
             "state": "translated",
             "value": "手順の写真"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schrittfoto"
+          }
         }
       }
     },
@@ -389,6 +467,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "このデバイスでは手順の写真を表示できません"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Schrittfoto ist auf diesem Gerät nicht verfügbar"
           }
         }
       }
