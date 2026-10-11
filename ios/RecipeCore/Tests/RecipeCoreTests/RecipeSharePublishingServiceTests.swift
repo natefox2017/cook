@@ -18,6 +18,8 @@ private final class SharePublishingFake {
     var version = 1
     var responseID: UUID?
     var responseURL = "https://recipes.example.org/r/opaque_share_slug"
+    var createdAt = "2026-10-10T11:00:00Z"
+    var updatedAt = "2026-10-10T11:00:00.123Z"
     var revokedAt: String?
     var afterSend: (() -> Void)?
     var transportError: Error?
@@ -52,8 +54,8 @@ private final class SharePublishingFake {
                     "slug": "opaque_share_slug",
                     "shareVersion": self.version,
                     "scope": "summaryAndSource",
-                    "createdAt": "2026-10-10T11:00:00Z",
-                    "updatedAt": "2026-10-10T11:00:00.123Z",
+                    "createdAt": self.createdAt,
+                    "updatedAt": self.updatedAt,
                     "revokedAt": self.revokedAt.map { $0 as Any } ?? NSNull(),
                     "publicURL": self.responseURL,
                 ]
@@ -349,4 +351,44 @@ func publishingCancellationDuringSessionLookupPreventsSendOrSuccess() async thro
         }
         #expect(fake.requests.count == sessionRead - 1)
     }
+}
+
+@Test @MainActor
+func publishingAcceptsPostgRESTUTCMetadataAndRejectsNonUTCOffsets() async throws {
+    let fake = SharePublishingFake()
+    let service = try fake.service()
+    fake.status = 200
+    fake.createdAt = "2026-10-10T11:00:00+00:00"
+    fake.updatedAt = "2026-10-10T11:00:00.123+00:00"
+    fake.revokedAt = "2026-10-10T12:00:00+00:00"
+    let share = try await service.get(shareID: fake.shareID, ownerID: fake.ownerID)
+    #expect(abs(share.updatedAt.timeIntervalSince(share.createdAt) - 0.123) < 0.000001)
+    let revokedAt = try #require(share.revokedAt)
+    #expect(revokedAt.timeIntervalSince(share.createdAt) == 3_600)
+
+    fake.createdAt = "2026-10-10T11:00:00+01:00"
+    await #expect(throws: RecipeSharePublishingError.invalidResponse) {
+        try await service.get(shareID: fake.shareID, ownerID: fake.ownerID)
+    }
+}
+
+@Test @MainActor
+func publishingPreservesSourceTimestampMillisecondsOnCreateAndUpdate() async throws {
+    let fake = SharePublishingFake()
+    let service = try fake.service()
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    var recipe = Recipe(title: "Soup")
+    recipe.updatedAt = try #require(formatter.date(from: "2026-10-10T11:00:00.123Z"))
+    let share = try await service.create(recipe: recipe, approval: shareApproval(recipe),
+        ownerID: fake.ownerID, idempotencyKey: UUID())
+    fake.status = 200
+    fake.version = 2
+    _ = try await service.update(share, recipe: recipe, approval: shareApproval(recipe))
+    for request in fake.requests {
+        let data = try #require(request.httpBody)
+        let body = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(body["sourceRecipeUpdatedAt"] as? String == "2026-10-10T11:00:00.123Z")
+    }
+    #expect(fake.requests.count == 2)
 }

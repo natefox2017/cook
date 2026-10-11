@@ -147,7 +147,13 @@ public struct RecipeSharePublishingService {
     ) throws -> Data {
         let snapshot = try PublicRecipeSnapshot.preview(of: recipe, approvedBy: approval)
         let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
+        encoder.dateEncodingStrategy = .custom { date, encoder in
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            formatter.timeZone = TimeZone(secondsFromGMT: 0)
+            var container = encoder.singleValueContainer()
+            try container.encode(formatter.string(from: date))
+        }
         encoder.outputFormatting = .sortedKeys
         let data = try encoder.encode(ApprovedBody(
             idempotencyKey: idempotencyKey,
@@ -235,7 +241,8 @@ public struct RecipeSharePublishingService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let value = try decoder.singleValueContainer().decode(String.self)
-            guard value.hasSuffix("Z") else {
+            // PostgREST returns timestamptz UTC using +00:00 as well as Z.
+            guard value.hasSuffix("Z") || value.hasSuffix("+00:00") else {
                 throw RecipeSharePublishingError.invalidResponse
             }
             let formatter = ISO8601DateFormatter()
