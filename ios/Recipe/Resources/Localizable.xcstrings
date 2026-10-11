@@ -26,6 +26,12 @@
             "state": "translated",
             "value": "材料グループ"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zutatengruppen"
+          }
         }
       }
     },
@@ -53,6 +59,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "グループ名"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gruppenname"
           }
         }
       }
@@ -82,6 +94,12 @@
             "state": "translated",
             "value": "グループを上へ移動"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gruppe nach oben verschieben"
+          }
         }
       }
     },
@@ -109,6 +127,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "グループを下へ移動"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gruppe nach unten verschieben"
           }
         }
       }
@@ -138,6 +162,12 @@
             "state": "translated",
             "value": "材料グループを削除"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zutatengruppe entfernen"
+          }
         }
       }
     },
@@ -165,6 +195,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "このグループの材料"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zutaten in dieser Gruppe"
           }
         }
       }
@@ -194,6 +230,12 @@
             "state": "translated",
             "value": "材料グループを追加"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zutatengruppe hinzufügen"
+          }
         }
       }
     },
@@ -221,6 +263,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "各材料グループに名前を付けてください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gib jeder Zutatengruppe einen Namen."
           }
         }
       }
@@ -250,6 +298,12 @@
             "state": "translated",
             "value": "各グループに少なくとも1つの材料を選んでください。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle mindestens eine Zutat für jede Gruppe aus."
+          }
         }
       }
     },
@@ -277,6 +331,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "手順の写真を追加"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schrittfoto hinzufügen"
           }
         }
       }
@@ -306,6 +366,12 @@
             "state": "translated",
             "value": "手順の写真を削除"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schrittfoto entfernen"
+          }
         }
       }
     },
@@ -333,6 +399,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "ご自身が所有するか、使用許可を得た写真を使用してください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verwende Fotos, die dir gehören oder für deren Verwendung du eine Erlaubnis hast."
           }
         }
       }
@@ -362,6 +434,12 @@
             "state": "translated",
             "value": "手順の写真"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schrittfoto"
+          }
         }
       }
     },
@@ -389,6 +467,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "このデバイスでは手順の写真を表示できません"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Schrittfoto ist auf diesem Gerät nicht verfügbar"
           }
         }
       }
@@ -418,6 +502,12 @@
             "state": "translated",
             "value": "この手順から調理を開始"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ab diesem Schritt kochen"
+          }
         }
       }
     },
@@ -445,6 +535,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "海報預覽"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Postervorschau"
           }
         }
       }
@@ -474,6 +570,12 @@
             "state": "translated",
             "value": "限時動態"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Story"
+          }
         }
       }
     },
@@ -501,6 +603,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "長圖"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langes Bild"
           }
         }
       }
@@ -530,6 +638,12 @@
             "state": "translated",
             "value": "分享圖片"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bild teilen"
+          }
         }
       }
     },
@@ -557,6 +671,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "複製連結"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link kopieren"
           }
         }
       }
@@ -869,6 +989,12 @@
                   "state": "translated",
                   "value": "%lld Konflikte"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Konflikt"
+                }
               }
             }
           }
@@ -1031,6 +1157,12 @@
                   "state": "translated",
                   "value": "%lld Zutaten zur Einkaufsliste hinzugefügt."
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Zutat zur Einkaufsliste hinzugefügt."
+                }
               }
             }
           }
@@ -1189,6 +1321,12 @@
           "variations": {
             "plural": {
               "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Artikel"
+                }
+              },
+              "one": {
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld Artikel"
@@ -1361,6 +1499,12 @@
                   "state": "translated",
                   "value": "%lld Mahlzeiten für diese Woche geplant"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Mahlzeit für diese Woche geplant"
+                }
               }
             }
           }
@@ -1523,6 +1667,12 @@
                   "state": "translated",
                   "value": "%lld Rezepte"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Rezept"
+                }
               }
             }
           }
@@ -1684,6 +1834,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld Portionen"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Portion"
                 }
               }
             }
@@ -8199,6 +8355,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "Aus %lld gespeicherten Rezepten"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Aus %lld gespeichertem Rezept"
                 }
               }
             }
@@ -27527,6 +27689,12 @@
                   "state": "translated",
                   "value": "%lld Rezepte"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Rezept"
+                }
               }
             }
           }
@@ -27684,6 +27852,12 @@
           "variations": {
             "plural": {
               "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Einkaufsartikel"
+                }
+              },
+              "one": {
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld Einkaufsartikel"
@@ -27848,6 +28022,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld geplante Mahlzeiten"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld geplante Mahlzeit"
                 }
               }
             }
@@ -35209,6 +35389,12 @@
                   "state": "translated",
                   "value": "%lld Tage"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Tag"
+                }
               }
             }
           }
@@ -35369,6 +35555,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld Wochen"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Woche"
                 }
               }
             }
@@ -35531,6 +35723,12 @@
                   "state": "translated",
                   "value": "%lld Monate"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Monat"
+                }
               }
             }
           }
@@ -35692,6 +35890,12 @@
                   "state": "translated",
                   "value": "%lld Jahre"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Jahr"
+                }
               }
             }
           }
@@ -35852,6 +36056,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld Zutaten hinzufügen"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Zutat hinzufügen"
                 }
               }
             }
@@ -36339,6 +36549,12 @@
                   "state": "translated",
                   "value": "Eingeklappt, %lld Artikel"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Eingeklappt, %lld Artikel"
+                }
               }
             }
           }
@@ -36756,6 +36972,12 @@
           "variations": {
             "plural": {
               "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Ausgeklappt, %lld Artikel"
+                }
+              },
+              "one": {
                 "stringUnit": {
                   "state": "translated",
                   "value": "Ausgeklappt, %lld Artikel"
@@ -38051,6 +38273,12 @@
                   "state": "translated",
                   "value": "%lld gekaufte Artikel entfernen"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld gekauften Artikel entfernen"
+                }
               }
             }
           }
@@ -38211,6 +38439,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld Minuten"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Minute"
                 }
               }
             }
@@ -59905,6 +60139,12 @@
             "state": "translated",
             "value": "共有"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilen"
+          }
         }
       }
     },
@@ -59932,6 +60172,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "再試行"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
           }
         }
       }
@@ -59961,6 +60207,12 @@
             "state": "translated",
             "value": "概要と出典"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zusammenfassung und Quelle"
+          }
         }
       }
     },
@@ -59988,6 +60240,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "すべての手順"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vollständige Anleitung"
           }
         }
       }
@@ -60017,6 +60275,12 @@
             "state": "translated",
             "value": "これらの手順を共有する権利があります。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ich habe die Erlaubnis, diese Anleitung zu teilen."
+          }
         }
       }
     },
@@ -60044,6 +60308,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "リンクを公開"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link veröffentlichen"
           }
         }
       }
@@ -60073,6 +60343,12 @@
             "state": "translated",
             "value": "公開版を更新"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffentliche Kopie aktualisieren"
+          }
         }
       }
     },
@@ -60100,6 +60376,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "リンクを取り消す"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link widerrufen"
           }
         }
       }
@@ -60129,6 +60411,12 @@
             "state": "translated",
             "value": "この公開リンクを取り消しますか？"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diesen öffentlichen Link widerrufen?"
+          }
         }
       }
     },
@@ -60156,6 +60444,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "このリンクは使えなくなります。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Link wird nicht mehr funktionieren."
           }
         }
       }
@@ -60185,6 +60479,12 @@
             "state": "translated",
             "value": "共有するにはサインインしてください。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zum Teilen ist eine Anmeldung erforderlich."
+          }
         }
       }
     },
@@ -60212,6 +60512,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "レシピが変更されました。確認してから共有してください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieses Rezept wurde geändert. Überprüfe es vor dem Teilen."
           }
         }
       }
@@ -60241,6 +60547,12 @@
             "state": "translated",
             "value": "アカウントが変更されました。再度サインインしてください。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Konto wurde geändert. Melde dich erneut an."
+          }
         }
       }
     },
@@ -60268,6 +60580,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "公開版が変更されました。再読み込みしてから更新してください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die öffentliche Kopie wurde geändert. Lade sie vor dem Aktualisieren neu."
           }
         }
       }
@@ -60297,6 +60615,12 @@
             "state": "translated",
             "value": "公開版を再読み込み"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffentliche Kopie neu laden"
+          }
         }
       }
     },
@@ -60324,6 +60648,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "共有を利用できません。しばらくしてから再試行してください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilen ist nicht verfügbar. Versuche es später erneut."
           }
         }
       }
@@ -60353,6 +60683,12 @@
             "state": "translated",
             "value": "リクエストが多すぎます。しばらくしてから再試行してください。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu viele Anfragen. Versuche es später erneut."
+          }
         }
       }
     },
@@ -60380,6 +60716,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "公開リンクを利用できません。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der öffentliche Link ist nicht verfügbar."
           }
         }
       }
@@ -60409,33 +60751,11 @@
             "state": "translated",
             "value": "共有できませんでした。再試行してください。"
           }
-        }
-      }
-    },
-    "Copy Link": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Copy Link"
-          }
         },
-        "ja": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "リンクをコピー"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "复制链接"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "複製連結"
+            "value": "Teilen fehlgeschlagen. Versuche es erneut."
           }
         }
       }

@@ -9,7 +9,11 @@ import Foundation
 public enum RecipeLanguage {
     public static let preferenceKey = "recipe.languageOverride"
     public static let currentlyTranslatedLanguages: [String] = [
-        "en", "zh-Hans", "zh-Hant", "ja",
+        "en",
+        "zh-Hans",
+        "zh-Hant",
+        "ja",
+        "de",
     ]
     private static let supportedIdentifiers = Bundle.main.localizations.filter {
         $0.caseInsensitiveCompare("Base") != .orderedSame
