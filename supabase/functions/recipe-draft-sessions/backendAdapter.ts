@@ -546,7 +546,11 @@ export function createRecipeDraftBackendAdapter(
     }
     for (const field of ["p_base_context", "p_next_context", "p_result"]) {
       if (field in args) {
-        requireThat(object(args[field]));
+        requireThat(
+          object(args[field]) ||
+            (name === "approve_recipe_draft_turn" &&
+              field === "p_next_context" && args[field] === null),
+        );
         plain(args[field]);
       }
     }
