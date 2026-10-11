@@ -1079,10 +1079,15 @@ final class RecipeUITests: XCTestCase {
         let country = app.buttons.matching(
             NSPredicate(format: "label BEGINSWITH %@", countryTitle)
         ).firstMatch
-        let selectedCountry = try XCTUnwrap(
+        let andorra = try XCTUnwrap(
             Locale(identifier: "ja").localizedString(forRegionCode: "AD")
         )
         XCTAssertTrue(country.waitForExistence(timeout: 5), app.debugDescription)
+        // Change the choice even if an earlier failed run left this fixture's country selected.
+        let countryCode = country.label.contains(andorra) ? "AE" : "AD"
+        let selectedCountry = try XCTUnwrap(
+            Locale(identifier: "ja").localizedString(forRegionCode: countryCode)
+        )
         country.tap()
         let countryOption = app.buttons[selectedCountry].firstMatch
         reveal(countryOption, in: app, maximumSwipes: 12)
@@ -1115,7 +1120,14 @@ final class RecipeUITests: XCTestCase {
 
         restartedCountry.tap()
         let deviceRegion = app.buttons["端末の地域を使用"].firstMatch
-        reveal(deviceRegion, in: app, maximumSwipes: 12)
+        for _ in 0..<12 {
+            if deviceRegion.exists && deviceRegion.isHittable {
+                break
+            }
+            // The native menu opens at its selected country; the default is above it.
+            app.collectionViews.firstMatch.swipeDown()
+        }
+        waitUntilReady(deviceRegion)
         deviceRegion.tap()
         XCTAssertTrue(restartedCountry.label.contains("端末の地域を使用"))
     }
