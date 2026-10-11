@@ -19,6 +19,8 @@ private final class ConsentFixture {
     var requests: [URLRequest] = []
     var status = 201
     var version = 1
+    var revoked = false
+    var shareScope = RecipeShareScope.summaryAndSource
     var url = "https://recipes.example.org/r/opaque_share_slug"
     var afterSend: (() -> Void)?
     var pause = false
@@ -49,14 +51,19 @@ private final class ConsentFixture {
                 let requestBody = request.httpBody.flatMap {
                     try? JSONSerialization.jsonObject(with: $0) as? [String: Any]
                 }
+                if let scope = requestBody?["scope"] as? String,
+                    let value = RecipeShareScope(rawValue: scope)
+                {
+                    self.shareScope = value
+                }
                 let body: [String: Any] = [
                     "shareID": self.shareID.uuidString,
                     "slug": "opaque_share_slug",
                     "shareVersion": self.version,
-                    "scope": requestBody?["scope"] as? String ?? "summaryAndSource",
+                    "scope": self.shareScope.rawValue,
                     "createdAt": "2026-10-10T11:00:00Z",
                     "updatedAt": "2026-10-10T11:00:00Z",
-                    "revokedAt": NSNull(),
+                    "revokedAt": self.revoked ? "2026-10-10T12:00:00Z" : NSNull(),
                     "publicURL": self.url,
                 ]
                 return (
@@ -449,6 +456,185 @@ final class RecipeShareConsentStateTests: XCTestCase {
             await state.confirm()
             XCTAssertEqual(fake.requests.count, 1)
         }
+    }
+
+    func testPosterRequiresConfirmedPublicationAndKeepsSnapshotAcrossValidation() async throws {
+        let fake = ConsentFixture()
+        let state = try fake.state()
+        XCTAssertNil(state.posterPublication)
+        let unavailable = RecipeShareConsentState(
+            recipeID: fake.recipe!.id, service: nil,
+            currentOwnerID: { fake.currentOwner }, readRecipe: { _ in fake.recipe }
+        )
+        await unavailable.confirm()
+        XCTAssertNil(unavailable.posterPublication)
+
+        await state.confirm()
+        let publication = try XCTUnwrap(state.posterPublication)
+        XCTAssertEqual(publication.snapshot, state.confirmedSnapshot)
+        XCTAssertTrue(publication.snapshot.steps.isEmpty)
+        XCTAssertEqual(publication.ownerID, fake.ownerA)
+        XCTAssertEqual(publication.shareID, fake.shareID)
+        XCTAssertEqual(publication.version, 1)
+        fake.status = 200
+        let valid = await state.isPosterPublicationValid(publication)
+        XCTAssertTrue(valid)
+        XCTAssertEqual(fake.requests.last?.httpMethod, "GET")
+        XCTAssertEqual(
+            fake.requests.last?.url?.lastPathComponent, fake.shareID.uuidString.lowercased())
+        XCTAssertEqual(state.confirmedSnapshot, publication.snapshot)
+        XCTAssertNotNil(state.posterPublication)
+    }
+
+    func testPosterUpdateReplacesBindingAndMetadataReloadCannotMintSnapshot() async throws {
+        let fake = ConsentFixture()
+        let state = try fake.state()
+        await state.confirm()
+        let first = try XCTUnwrap(state.posterPublication)
+        fake.recipe?.title = "Updated soup"
+        fake.recipe?.updatedAt.addTimeInterval(1)
+        fake.recipe?.steps = [.init(instruction: "Stir gently.")]
+        state.select(scope: .fullInstructions, rightsConfirmed: true)
+        fake.version = 2
+        fake.status = 200
+        await state.confirm()
+        let second = try XCTUnwrap(state.posterPublication)
+        XCTAssertEqual(second.version, 2)
+        XCTAssertEqual(second.snapshot.title, "Updated soup")
+        XCTAssertEqual(second.snapshot.steps.count, 1)
+        let requests = fake.requests.count
+        let firstValid = await state.isPosterPublicationValid(first)
+        XCTAssertFalse(firstValid)
+        XCTAssertEqual(fake.requests.count, requests)
+        let secondValid = await state.isPosterPublicationValid(second)
+        XCTAssertTrue(secondValid)
+        await state.reload()
+        XCTAssertNotNil(state.publicURL)
+        XCTAssertNil(state.confirmedSnapshot)
+        XCTAssertNil(state.posterPublication)
+        let afterReload = await state.isPosterPublicationValid(second)
+        XCTAssertFalse(afterReload)
+    }
+
+    func testPosterRenderShareAndCopyUseMatchingOwnerMetadata() async throws {
+        let fake = ConsentFixture()
+        let state = try fake.state()
+        await state.confirm()
+        let publication = try XCTUnwrap(state.posterPublication)
+        fake.status = 200
+        var copied: URL?
+        let poster = RecipePosterPreviewState(
+            snapshot: publication.snapshot, publicURL: publication.publicURL,
+            isStillValid: { await state.isPosterPublicationValid(publication) },
+            copyURL: { copied = $0 }
+        )
+        await poster.render(format: .story)
+        XCTAssertNotNil(poster.image)
+        await poster.share()
+        let activity = try XCTUnwrap(poster.activity)
+        XCTAssertEqual(activity.items.count, 2)
+        XCTAssertTrue(activity.items.first is UIImage)
+        XCTAssertEqual(activity.items.last as? URL, publication.publicURL)
+        poster.activity = nil
+        await poster.copyLink()
+        XCTAssertEqual(copied, publication.publicURL)
+        XCTAssertEqual(fake.requests.filter { $0.httpMethod == "GET" }.count, 4)
+        XCTAssertEqual(state.confirmedSnapshot, publication.snapshot)
+    }
+
+    func testPosterRemoteChangesAndFailureBlockExistingImageAndEveryOutput() async throws {
+        for change in ["version", "revoked", "url", "http"] {
+            let fake = ConsentFixture()
+            let state = try fake.state()
+            await state.confirm()
+            let publication = try XCTUnwrap(state.posterPublication)
+            fake.status = 200
+            var copies = 0
+            let poster = RecipePosterPreviewState(
+                snapshot: publication.snapshot, publicURL: publication.publicURL,
+                isStillValid: { await state.isPosterPublicationValid(publication) },
+                renderer: { _, _, _ in UIImage() },
+                copyURL: { _ in copies += 1 }
+            )
+            await poster.render(format: .story)
+            XCTAssertNotNil(poster.image)
+            switch change {
+            case "version": fake.version = 2
+            case "revoked": fake.revoked = true
+            case "url": fake.url = "https://other.example.org/r/opaque_share_slug"
+            default: fake.status = 503
+            }
+            await poster.share()
+            await poster.copyLink()
+            XCTAssertNil(poster.activity, change)
+            XCTAssertNil(poster.image, change)
+            XCTAssertEqual(copies, 0, change)
+            XCTAssertTrue(poster.isUnavailable, change)
+            XCTAssertNil(state.publicURL, change)
+            XCTAssertNil(state.confirmedSnapshot, change)
+            XCTAssertNil(state.posterPublication, change)
+        }
+    }
+
+    func testPosterValidationRechecksAccountSourceAndClosureAfterAwait() async throws {
+        for change in ["account", "source", "close", "cancel"] {
+            let fake = ConsentFixture()
+            let state = try fake.state()
+            await state.confirm()
+            let publication = try XCTUnwrap(state.posterPublication)
+            fake.status = 200
+            fake.pause = true
+            let validation = Task {
+                await state.isPosterPublicationValid(publication)
+            }
+            while fake.suspended == nil {
+                await Task.yield()
+            }
+            switch change {
+            case "account": fake.currentOwner = fake.ownerB
+            case "source": fake.recipe?.updatedAt.addTimeInterval(1)
+            case "close": state.cancel()
+            default: validation.cancel()
+            }
+            fake.suspended?.resume()
+            let valid = await validation.value
+            XCTAssertFalse(valid, change)
+            if change == "cancel" {
+                // A cancelled check did not expose output or destroy a valid publication.
+                XCTAssertEqual(state.confirmedSnapshot, publication.snapshot)
+            } else {
+                XCTAssertNil(state.posterPublication, change)
+            }
+        }
+    }
+
+    func testPosterLateValidationCannotInvalidateNewerConfirmedPublication() async throws {
+        let fake = ConsentFixture()
+        let state = try fake.state()
+        await state.confirm()
+        let first = try XCTUnwrap(state.posterPublication)
+        fake.status = 200
+        fake.pause = true
+        let validation = Task {
+            await state.isPosterPublicationValid(first)
+        }
+        while fake.suspended == nil {
+            await Task.yield()
+        }
+        fake.pause = false
+        fake.version = 2
+        fake.recipe?.title = "New confirmed soup"
+        fake.recipe?.updatedAt.addTimeInterval(1)
+        state.refreshPreview()
+        await state.confirm()
+        let second = try XCTUnwrap(state.posterPublication)
+        fake.suspended?.resume()
+        let firstValid = await validation.value
+        XCTAssertFalse(firstValid)
+        XCTAssertEqual(state.confirmedSnapshot, second.snapshot)
+        XCTAssertEqual(state.share?.shareVersion, 2)
+        let secondValid = await state.isPosterPublicationValid(second)
+        XCTAssertTrue(secondValid)
     }
 
 }

@@ -108,6 +108,78 @@ final class RecipeShareConsentState {
         return publishedSnapshot
     }
 
+    /// A presentation captures one successful publication, never the mutable local preview.
+    struct PosterPublication: Identifiable {
+        let id = UUID()
+        let snapshot: PublicRecipeSnapshot
+        let publicURL: URL
+        let ownerID: UUID
+        let shareID: UUID
+        let version: Int
+    }
+
+    var posterPublication: PosterPublication? {
+        guard let snapshot = confirmedSnapshot, let publicURL, let share else {
+            return nil
+        }
+        return PosterPublication(
+            snapshot: snapshot, publicURL: publicURL,
+            ownerID: share.authenticatedOwnerID, shareID: share.shareID,
+            version: share.shareVersion
+        )
+    }
+
+    /// Metadata may validate this captured version, but must never replace its snapshot.
+    func isPosterPublicationValid(_ publication: PosterPublication) async -> Bool {
+        guard matches(publication), !Task.isCancelled, let service else {
+            return false
+        }
+        let ticket = generation
+        do {
+            let current = try await service.get(
+                shareID: publication.shareID, ownerID: publication.ownerID
+            )
+            guard !Task.isCancelled, generation == ticket, matches(publication) else {
+                return false
+            }
+            guard current.authenticatedOwnerID == publication.ownerID,
+                current.shareID == publication.shareID,
+                current.shareVersion == publication.version,
+                current.scope == share?.scope,
+                current.publicURL == publication.publicURL,
+                current.revokedAt == nil
+            else {
+                invalidatePosterPublication()
+                return false
+            }
+            return true
+        } catch {
+            // A cancelled or superseded check cannot invalidate a newer successful publication.
+            guard !Task.isCancelled, generation == ticket, matches(publication) else {
+                return false
+            }
+            invalidatePosterPublication()
+            record(error)
+            return false
+        }
+    }
+
+    private func matches(_ publication: PosterPublication) -> Bool {
+        publicURL == publication.publicURL
+            && confirmedSnapshot == publication.snapshot
+            && share?.authenticatedOwnerID == publication.ownerID
+            && share?.shareID == publication.shareID
+            && share?.shareVersion == publication.version
+    }
+
+    private func invalidatePosterPublication() {
+        publishedSnapshot = nil
+        publishedVersion = nil
+        sourceDateAtLinkRead = nil
+        needsReload = true
+        errorKey = "The public link is unavailable."
+    }
+
     var canRetry: Bool {
         intent != nil && errorKey != nil && !needsReload && !isBusy
     }
