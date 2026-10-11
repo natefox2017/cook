@@ -428,7 +428,7 @@ export default function BillingPage({ token, role, onAuthExpired }: BillingPageP
       </section>
 
       {planEditor && (
-        <div className="billing-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !savingPlan) setPlanEditor(null); }}>
+        <div className="billing-dialog-backdrop" role="presentation">
           <section className="billing-dialog" role="dialog" aria-modal="true" aria-labelledby="plan-dialog-title">
             <header><div><span className="billing-dialog-icon"><CreditCard size={18} aria-hidden="true" /></span><h2 id="plan-dialog-title">{planEditor === "new" ? "Add a plan" : "Edit plan"}</h2></div><button type="button" className="billing-dialog-close" aria-label="Close dialog" onClick={() => setPlanEditor(null)}>×</button></header>
             <p className="billing-dialog-copy">Set the product identifier and price used by the selected store.</p>
