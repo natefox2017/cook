@@ -168,8 +168,8 @@ struct RecipeFavoriteArtwork: View {
                         initialValue: FavoriteBurstFrame(),
                         trigger: celebrationCount
                     ) { _, frame in
-                        particles(reach: frame.reach, opacity: frame.opacity)
-                    } keyframes: {
+                        Self.particles(reach: frame.reach, opacity: frame.opacity)
+                    } keyframes: { _ in
                         KeyframeTrack(\.reach) {
                             LinearKeyframe(0, duration: 0.01)
                             CubicKeyframe(1, duration: 0.44)
@@ -205,7 +205,8 @@ struct RecipeFavoriteArtwork: View {
         }
     }
 
-    private func particles(reach: CGFloat, opacity: CGFloat) -> some View {
+    // The animator content is Sendable; particle rendering uses only its frame values.
+    nonisolated private static func particles(reach: CGFloat, opacity: CGFloat) -> some View {
         ZStack {
             ForEach(0..<8, id: \.self) { index in
                 let angle = Double(index) * .pi / 4
