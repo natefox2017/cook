@@ -56,6 +56,12 @@
             "state": "translated",
             "value": "Grupos de ingredientes"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingrediëntgroepen"
+          }
         }
       }
     },
@@ -113,6 +119,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nome do grupo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groepsnaam"
           }
         }
       }
@@ -172,6 +184,12 @@
             "state": "translated",
             "value": "Mover grupo para cima"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groep omhoog verplaatsen"
+          }
         }
       }
     },
@@ -229,6 +247,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mover grupo para baixo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groep omlaag verplaatsen"
           }
         }
       }
@@ -288,6 +312,12 @@
             "state": "translated",
             "value": "Remover grupo de ingredientes"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingrediëntgroep verwijderen"
+          }
         }
       }
     },
@@ -345,6 +375,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ingredientes neste grupo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingrediënten in deze groep"
           }
         }
       }
@@ -404,6 +440,12 @@
             "state": "translated",
             "value": "Adicionar grupo de ingredientes"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingrediëntgroep toevoegen"
+          }
         }
       }
     },
@@ -461,6 +503,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dê um nome a cada grupo de ingredientes."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geef elke ingrediëntgroep een naam."
           }
         }
       }
@@ -520,6 +568,12 @@
             "state": "translated",
             "value": "Escolha pelo menos um ingrediente para cada grupo."
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kies voor elke groep minstens één ingrediënt."
+          }
         }
       }
     },
@@ -577,6 +631,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Adicionar foto da etapa"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Foto bij stap toevoegen"
           }
         }
       }
@@ -636,6 +696,12 @@
             "state": "translated",
             "value": "Remover foto da etapa"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Foto bij stap verwijderen"
+          }
         }
       }
     },
@@ -693,6 +759,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Use fotos que sejam suas ou que você tenha permissão para usar."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gebruik foto's die van jou zijn of waarvoor je toestemming hebt om ze te gebruiken."
           }
         }
       }
@@ -752,6 +824,12 @@
             "state": "translated",
             "value": "Foto da etapa"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Foto bij stap"
+          }
         }
       }
     },
@@ -809,6 +887,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "A foto da etapa está indisponível neste dispositivo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Foto bij stap niet beschikbaar op dit apparaat"
           }
         }
       }
@@ -868,6 +952,12 @@
             "state": "translated",
             "value": "Começar a cozinhar a partir desta etapa"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vanaf deze stap koken"
+          }
         }
       }
     },
@@ -926,6 +1016,12 @@
             "state": "translated",
             "value": "Prévia do pôster"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Postervoorbeeld"
+          }
         }
       }
     },
@@ -980,6 +1076,12 @@
           }
         },
         "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Story"
+          }
+        },
+        "nl": {
           "stringUnit": {
             "state": "translated",
             "value": "Story"
@@ -1042,6 +1144,12 @@
             "state": "translated",
             "value": "Imagem longa"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lange afbeelding"
+          }
         }
       }
     },
@@ -1100,6 +1208,12 @@
             "state": "translated",
             "value": "Compartilhar imagem"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afbeelding delen"
+          }
         }
       }
     },
@@ -1157,6 +1271,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Copiar link"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link kopiëren"
           }
         }
       }
@@ -1583,6 +1703,12 @@
                   "state": "translated",
                   "value": "%lld conflicten"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld conflict"
+                }
               }
             }
           }
@@ -1768,6 +1894,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld ingrediënten aan boodschappen toegevoegd."
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld ingrediënt aan boodschappen toegevoegd."
                 }
               }
             }
@@ -2147,6 +2279,12 @@
                   "state": "translated",
                   "value": "%lld maaltijden gepland deze week"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld maaltijd gepland deze week"
+                }
               }
             }
           }
@@ -2333,6 +2471,12 @@
                   "state": "translated",
                   "value": "%lld recepten"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld recept"
+                }
               }
             }
           }
@@ -2518,6 +2662,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld porties"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld portie"
                 }
               }
             }
@@ -6067,7 +6217,7 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Collecties"
+            "value": "Verzamelingen"
           }
         },
         "ko": {
@@ -9057,6 +9207,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "Uit %lld opgeslagen recepten"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Uit %lld opgeslagen recept"
                 }
               }
             }
@@ -28409,6 +28565,12 @@
                   "state": "translated",
                   "value": "%lld recepten"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld recept"
+                }
               }
             }
           }
@@ -28594,6 +28756,12 @@
                   "state": "translated",
                   "value": "%lld boodschappenitems"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld boodschappenitem"
+                }
               }
             }
           }
@@ -28778,6 +28946,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld geplande maaltijden"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld geplande maaltijd"
                 }
               }
             }
@@ -29252,7 +29426,7 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lidmaatschap van verzameling"
+            "value": "Koppeling aan verzameling"
           }
         },
         "ko": {
@@ -36163,6 +36337,12 @@
                   "state": "translated",
                   "value": "%lld dagen"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld dag"
+                }
               }
             }
           }
@@ -36347,6 +36527,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld weken"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld week"
                 }
               }
             }
@@ -36533,6 +36719,12 @@
                   "state": "translated",
                   "value": "%lld maanden"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld maand"
+                }
               }
             }
           }
@@ -36714,6 +36906,12 @@
           "variations": {
             "plural": {
               "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld jaar"
+                }
+              },
+              "one": {
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld jaar"
@@ -36902,6 +37100,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld ingrediënten toevoegen"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld ingrediënt toevoegen"
                 }
               }
             }
@@ -37413,6 +37617,12 @@
                   "state": "translated",
                   "value": "Ingeklapt, %lld items"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Ingeklapt, %lld item"
+                }
               }
             }
           }
@@ -37857,6 +38067,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "Uitgeklapt, %lld items"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Uitgeklapt, %lld item"
                 }
               }
             }
@@ -39173,6 +39389,12 @@
                   "state": "translated",
                   "value": "%lld gekochte items wissen"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld gekocht item wissen"
+                }
               }
             }
           }
@@ -39358,6 +39580,12 @@
                   "state": "translated",
                   "value": "%lld minuten"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld minuut"
+                }
               }
             }
           }
@@ -39506,6 +39734,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld timers"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld timer"
                 }
               }
             }
@@ -48937,7 +49171,7 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zoeken in deze collectie"
+            "value": "Zoeken in deze verzameling"
           }
         },
         "ko": {
@@ -61081,6 +61315,12 @@
             "state": "translated",
             "value": "Compartilhar"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delen"
+          }
         }
       }
     },
@@ -61138,6 +61378,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tentar novamente"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opnieuw proberen"
           }
         }
       }
@@ -61197,6 +61443,12 @@
             "state": "translated",
             "value": "Resumo e fonte"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Samenvatting en bron"
+          }
         }
       }
     },
@@ -61254,6 +61506,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Modo de preparo completo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volledige bereiding"
           }
         }
       }
@@ -61313,6 +61571,12 @@
             "state": "translated",
             "value": "Tenho permissão para compartilhar este modo de preparo."
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ik heb toestemming om deze bereidingsinstructies te delen."
+          }
         }
       }
     },
@@ -61370,6 +61634,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Publicar link"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link publiceren"
           }
         }
       }
@@ -61429,6 +61699,12 @@
             "state": "translated",
             "value": "Atualizar cópia pública"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Openbare kopie bijwerken"
+          }
         }
       }
     },
@@ -61486,6 +61762,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Revogar link"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link intrekken"
           }
         }
       }
@@ -61545,6 +61827,12 @@
             "state": "translated",
             "value": "Revogar este link público?"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deze openbare link intrekken?"
+          }
         }
       }
     },
@@ -61602,6 +61890,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Este link deixará de funcionar."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deze link werkt daarna niet meer."
           }
         }
       }
@@ -61661,6 +61955,12 @@
             "state": "translated",
             "value": "Entre na conta para compartilhar."
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meld je aan om te delen."
+          }
         }
       }
     },
@@ -61718,6 +62018,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Esta receita mudou. Revise-a antes de compartilhar."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dit recept is gewijzigd. Controleer het voordat je het deelt."
           }
         }
       }
@@ -61777,6 +62083,12 @@
             "state": "translated",
             "value": "Sua conta mudou. Entre novamente."
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je account is gewijzigd. Meld je opnieuw aan."
+          }
         }
       }
     },
@@ -61834,6 +62146,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "A cópia pública mudou. Recarregue-a antes de atualizar."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De openbare kopie is gewijzigd. Laad deze opnieuw voordat je die bijwerkt."
           }
         }
       }
@@ -61893,6 +62211,12 @@
             "state": "translated",
             "value": "Recarregar cópia pública"
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Openbare kopie opnieuw laden"
+          }
         }
       }
     },
@@ -61950,6 +62274,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "O compartilhamento está indisponível. Tente novamente mais tarde."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delen is niet beschikbaar. Probeer het later opnieuw."
           }
         }
       }
@@ -62009,6 +62339,12 @@
             "state": "translated",
             "value": "Muitas solicitações. Tente novamente mais tarde."
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Te veel verzoeken. Probeer het later opnieuw."
+          }
         }
       }
     },
@@ -62066,6 +62402,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "O link público está indisponível."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De openbare link is niet beschikbaar."
           }
         }
       }
@@ -62125,6 +62467,12 @@
             "state": "translated",
             "value": "Não foi possível compartilhar. Tente novamente."
           }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delen is mislukt. Probeer het opnieuw."
+          }
         }
       }
     },
@@ -62182,6 +62530,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Não foi possível interromper o compartilhamento. Sua receita continua salva. Verifique sua conexão e tente novamente."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Het delen kon niet worden gestopt. Je recept is nog steeds opgeslagen. Controleer je verbinding en probeer het opnieuw."
           }
         }
       }
