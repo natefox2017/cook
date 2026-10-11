@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   Activity,
   ArrowUpRight,
@@ -20,6 +20,7 @@ import {
   YAxis,
 } from "recharts";
 import { adminApi, handleExpiredSession, isConfigured } from "./api";
+import { isAdminSession } from "./api-contracts";
 import type { AdminSession, DashboardData } from "./types";
 import UsersPage from "./pages/UsersPage";
 import BillingPage from "./pages/BillingPage";
@@ -44,14 +45,14 @@ function readStoredSession(): AdminSession | null {
     const raw = sessionStorage.getItem(sessionStorageKey);
     if (!raw) return null;
 
-    const saved = JSON.parse(raw) as AdminSession;
-    if (!saved.token || !saved.expiresAt || !saved.admin || Date.parse(saved.expiresAt) <= Date.now()) {
+    const saved: unknown = JSON.parse(raw);
+    if (!isAdminSession(saved) || Date.parse(saved.expiresAt) <= Date.now()) {
       sessionStorage.removeItem(sessionStorageKey);
       return null;
     }
     return saved;
   } catch {
-    sessionStorage.removeItem(sessionStorageKey);
+    try { sessionStorage.removeItem(sessionStorageKey); } catch { /* Storage may be unavailable. */ }
     return null;
   }
 }
@@ -152,20 +153,28 @@ function Overview({ token, onAuthExpired }: { token: string; onAuthExpired: () =
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const requestId = useRef(0);
+
   const refresh = useCallback(async () => {
+    const id = ++requestId.current;
     setLoading(true);
     setError("");
     try {
-      setData(await adminApi.dashboard(token));
+      const result = await adminApi.dashboard(token);
+      if (id === requestId.current) setData(result);
     } catch (cause) {
+      if (id !== requestId.current) return;
       handleExpiredSession(cause, onAuthExpired);
       setError(cause instanceof Error ? cause.message : "Unable to load dashboard data.");
     } finally {
-      setLoading(false);
+      if (id === requestId.current) setLoading(false);
     }
   }, [token, onAuthExpired]);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+    return () => { requestId.current += 1; };
+  }, [refresh]);
 
   if (loading && !data) return <div className="loading-panel"><span className="spinner" /> Loading dashboard…</div>;
   if (error && !data) return <div className="card error-panel"><h2>Dashboard unavailable</h2><p>{error}</p><button className="button button-outline" onClick={() => void refresh()}><RefreshCw size={15} /> Try again</button></div>;
@@ -264,6 +273,8 @@ function AppShell({ session, onLogout, onAuthExpired }: { session: AdminSession;
 function App() {
   const [session, setSession] = useState<AdminSession | null>(readStoredSession);
   const [allowBootstrap, setAllowBootstrap] = useState(false);
+  const sessionGeneration = useRef(0);
+  const activeToken = useRef(session?.token);
 
   useEffect(() => {
     if (!isConfigured) return;
@@ -284,7 +295,9 @@ function App() {
   }, []);
 
   const clearSession = useCallback(() => {
-    sessionStorage.removeItem(sessionStorageKey);
+    sessionGeneration.current += 1;
+    activeToken.current = undefined;
+    try { sessionStorage.removeItem(sessionStorageKey); } catch { /* Clear in-memory state regardless. */ }
     setSession(null);
     window.history.replaceState(null, "", "/admin/login");
   }, []);
@@ -297,11 +310,20 @@ function App() {
       }
       return;
     }
-    adminApi.session(saved.token).then(({ admin }) => setSession({ ...saved, admin })).catch(() => clearSession());
+    let active = true;
+    const generation = sessionGeneration.current;
+    adminApi.session(saved.token).then(({ admin }) => {
+      if (active && generation === sessionGeneration.current) setSession({ ...saved, admin });
+    }).catch(() => {
+      if (active && generation === sessionGeneration.current) clearSession();
+    });
+    return () => { active = false; };
   }, [clearSession]);
 
   const acceptSession = useCallback((next: AdminSession) => {
-    sessionStorage.setItem(sessionStorageKey, JSON.stringify(next));
+    sessionGeneration.current += 1;
+    activeToken.current = next.token;
+    try { sessionStorage.setItem(sessionStorageKey, JSON.stringify(next)); } catch { /* Continue without persistence. */ }
     setSession(next);
     setAllowBootstrap(false);
     const requested = pageFromPath(window.location.pathname);
@@ -316,9 +338,13 @@ function App() {
     clearSession();
   }, [clearSession, session]);
 
+  const onAuthExpired = useCallback(() => {
+    if (session && activeToken.current === session.token) clearSession();
+  }, [session, clearSession]);
+
   if (!session) return <AdminLogin onLogin={acceptSession} allowBootstrap={allowBootstrap} />;
   if (session.admin.mustChangePassword) return <ChangePassword session={session} onUpdated={acceptSession} />;
-  return <AppShell session={session} onLogout={logout} onAuthExpired={clearSession} />;
+  return <AppShell key={session.token} session={session} onLogout={logout} onAuthExpired={onAuthExpired} />;
 }
 
 export default App;

@@ -5,7 +5,7 @@
 
 ## V1 public-share API contract (DEV-216; normative design, NOT DEPLOYED)
 
-**Scope and implementation boundary.** This section freezes the first-party wire contract for [DEV-73](https://linear.app/gengyun/issue/DEV-73), to be implemented by its Server/iOS/QA children. It does **not** certify an existing database, reachable endpoint, authorized staging, public domain, or App Store listing. It reuses `PublicRecipeSnapshot.preview`, `RecipePublicCitation.eligibleURL` and the source-only `web/recipe-share/` consumer; no community feed, public profile, social graph, cross-app fingerprinting, or third-party photo publishing.
+**Scope and implementation boundary.** This section freezes the first-party wire contract for [DEV-73](https://linear.app/gengyun/issue/DEV-73), to be implemented by its Server/iOS/QA children. It does **not** certify an existing database, reachable endpoint, authorized staging, public domain, or App Store listing. It reuses `PublicRecipeSnapshot.preview`, `RecipePublicCitation.eligibleURL` and the source-only `web/` consumer; no community feed, public profile, social graph, cross-app fingerprinting, or third-party photo publishing.
 
 ### Data ownership and trust
 
@@ -16,7 +16,7 @@
 
 ### Exact public payload
 
-Successful visitor GET is JSON with **exactly** the eight properties below; no envelope, metadata, share ID, owner ID, source recipe ID, rights attestation, analytics token, private notes, email, local media path or unknown extra property. The JSON body must pass `validatePublicRecipe` in `web/recipe-share/src/page.mjs` and be produced by the Swift `PublicRecipeSnapshot` allowlist.
+Successful visitor GET is JSON with **exactly** the eight properties below; no envelope, metadata, share ID, owner ID, source recipe ID, rights attestation, analytics token, private notes, email, local media path or unknown extra property. The JSON body must pass `validatePublicRecipe` in `web/lib/public-recipe.mjs` and be produced by the Swift `PublicRecipeSnapshot` allowlist.
 
 ```json
 {
@@ -57,7 +57,7 @@ Use two dedicated Supabase Edge Functions, not a broad public RPC or a common ha
 
 The **public** function has `verify_jwt=false` only because its handler explicitly limits methods and fields; the **management** function has `verify_jwt=true` and independently revalidates the authenticated user before any privileged database operation. Both default deny unsupported verbs. Implementer must verify Supabase deployment path rewriting and feature compatibility locally; if the runtime cannot reliably support route suffixes, expose an explicitly versioned equivalent and update this contract + existing Web client in the **same reviewed contract change**, not ad hoc per agent.
 
-`web/recipe-share/src/server.mjs` already fetches `RECIPE_PALS_PUBLIC_RECIPE_API/<slug>`: configure that variable to the verified HTTPS *base* of `recipe-share-public`. Do not alter the Web loader or mint guest authentication tokens. The native/share poster URL is a **separate** verified first-party HTTPS `/r/{slug}` on the public Web host; it is never the raw Edge API URL. The real Web hostname is **TO VERIFY (DEV-50)**. All `example.com` hostnames here are reserved example values, **not deployed services**.
+`web/lib/recipe-server.mjs` already fetches `RECIPE_PALS_PUBLIC_RECIPE_API/<slug>`: configure that variable to the verified HTTPS *base* of `recipe-share-public`. Do not alter the Web loader or mint guest authentication tokens. The native/share poster URL is a **separate** verified first-party HTTPS `/r/{slug}` on the public Web host; it is never the raw Edge API URL. The real Web hostname is **TO VERIFY (DEV-50)**. All `example.com` hostnames here are reserved example values, **not deployed services**.
 
 ### Management JSON and concurrency
 
@@ -116,7 +116,7 @@ An already-shared recipe cannot claim deletion/revoke completed while offline: n
 | Local share deletion offline or Edge unavailable | Native UI does not say revoked; preserves private record for retry |
 | Real host unknown, Web API unavailable | Publish 503 (no fake public URL); existing SSR reader reports 503 |
 
-Verify schema examples with a JSON parser; use existing `swift test --package-path ios/RecipeCore` and `cd web/recipe-share && npm test` whenever a complete checkout is available. Add backend role/RLS, race, retry and cache tests in the **server implementation task**; run A/B/anonymous signed staging only when [DEV-50](https://linear.app/gengyun/issue/DEV-50) authorizes it. Record CODE/STAGING/DEVICE/PRODUCTION separately in Linear; this document itself proves none of those runtime gates.
+Verify schema examples with a JSON parser; use existing `swift test --package-path ios/RecipeCore` and `cd web && npm test` whenever a complete checkout is available. Add backend role/RLS, race, retry and cache tests in the **server implementation task**; run A/B/anonymous signed staging only when [DEV-50](https://linear.app/gengyun/issue/DEV-50) authorizes it. Record CODE/STAGING/DEVICE/PRODUCTION separately in Linear; this document itself proves none of those runtime gates.
 
 
 ## Deployed competitive pattern
@@ -186,8 +186,8 @@ Never infer a unique person from IP/UA/device fingerprint/cross-app graph. See [
 
 ## Source-only Web visitor implementation (2026-10-10)
 
-A small dependency-free SSR reader has been added under `web/recipe-share/`. With an injected mock public snapshot, Node tests verify HTML escaping, strict private-field rejection, guest readability, revoked-share unavailability, and no fake App Store CTA. Without the server-supplied authorized public API, it returns 503. `noindex`, CSP and no-store headers are default. This component **does not deploy** a Web domain, share database, revocation service, OG asset hosting, App Store listing or Universal Links. See #242/#243/#250/#251 for real-staging and launch gates.
+A small dependency-free SSR reader has been added under `web/`. With an injected mock public snapshot, Node tests verify HTML escaping, strict private-field rejection, guest readability, revoked-share unavailability, and no fake App Store CTA. Without the server-supplied authorized public API, it returns 503. `noindex`, CSP and no-store headers are default. This component **does not deploy** a Web domain, share database, revocation service, OG asset hosting, App Store listing or Universal Links. See #242/#243/#250/#251 for real-staging and launch gates.
 
 ## Optional referral-code validation module (2026-10-10, source only)
 
-`web/recipe-share/src/referrals.mjs` now defines first-party anonymous aggregate-event validation and an **explicitly consented pending invitation-claim contract**. It rejects caller-supplied email/IP/UA/device data, unrecognized events, short/malformed tokens, forged/not-yet-verified inviter codes, self-referrals and repeated claims. It does not identify a person from an App Store click, issue codes, persist event counters, collect cookies or grant any reward. A future authenticated backend must verify inviter ownership and expiry, dedupe rate-limited server-side events, secure claims with RLS and a data-retention policy. Do not enable tracking before local/privacy-staging verification (#245/#250) or payouts before a separate user decision (#246).
+`web/lib/referrals.mjs` now defines first-party anonymous aggregate-event validation and an **explicitly consented pending invitation-claim contract**. It rejects caller-supplied email/IP/UA/device data, unrecognized events, short/malformed tokens, forged/not-yet-verified inviter codes, self-referrals and repeated claims. It does not identify a person from an App Store click, issue codes, persist event counters, collect cookies or grant any reward. A future authenticated backend must verify inviter ownership and expiry, dedupe rate-limited server-side events, secure claims with RLS and a data-retention policy. Do not enable tracking before local/privacy-staging verification (#245/#250) or payouts before a separate user decision (#246).

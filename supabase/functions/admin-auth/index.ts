@@ -38,6 +38,8 @@ import {
   newTotpSecret,
   webauthnConfig,
 } from "./factors.ts";
+import { savePendingFactor, removeObservedFactor, type FactorSnapshot } from "./factor-store.ts";
+import { requirePassword } from "./input.ts";
 import { bootstrapStatus } from "./bootstrap-status.ts";
 
 function routeAction(req: Request): string {
@@ -479,8 +481,8 @@ Deno.serve(async (req) => {
 
     if (action === "login" && method === "POST") {
       const body = await readJson(req);
-      const username = String(body.username ?? "").trim().toLowerCase();
-      const password = String(body.password ?? "");
+      const username = requireString(body, "username").toLowerCase();
+      const password = requirePassword(body, "password");
       if (!username || !password) {
         throw new AppError(
           "validation_error",
@@ -774,20 +776,25 @@ Deno.serve(async (req) => {
       if (consumed.login_challenge_id) {
         await consumeLoginChallenge(consumed.login_challenge_id);
       }
-      const { error: updateError } = await admin.from("admin_passkeys")
+      const { data: updatedCredential, error: updateError } = await admin.from("admin_passkeys")
         .update({
           sign_count: verification.authenticationInfo.newCounter,
           last_used_at: new Date().toISOString(),
         })
         .eq("credential_id", credential.credential_id)
         .eq("admin_id", challenge.admin_id)
-        .eq("sign_count", credential.sign_count);
+        .eq("sign_count", credential.sign_count)
+        .select("credential_id")
+        .maybeSingle();
       if (updateError) {
         throw new AppError(
           "internal_error",
           "Unable to update passkey state",
           500,
         );
+      }
+      if (updatedCredential?.credential_id !== credential.credential_id) {
+        throw new AppError("unauthorized", "Passkey sign-in failed", 401);
       }
       if (
         !await recordLoginEvent(req, {
@@ -817,12 +824,11 @@ Deno.serve(async (req) => {
         isAdminProductionRuntime(),
         async () => {
           const body = await readJson(req);
-          const username = String(body.username ?? "admin").trim()
-            .toLowerCase();
-          const newPassword = String(body.newPassword ?? "");
+          const username = body.username === undefined ? "admin" : requireString(body, "username").toLowerCase();
+          const newPassword = requirePassword(body, "newPassword");
           const currentPassword = body.currentPassword == null
             ? null
-            : String(body.currentPassword);
+            : requirePassword(body, "currentPassword");
           const strength = validateAdminPassword(newPassword);
           if (!strength.ok) {
             throw new AppError(
@@ -917,8 +923,8 @@ Deno.serve(async (req) => {
     if (action === "change-password" && method === "POST") {
       const session = await requireAdminSession(req);
       const body = await readJson(req);
-      const currentPassword = String(body.currentPassword ?? "");
-      const newPassword = String(body.newPassword ?? "");
+      const currentPassword = requirePassword(body, "currentPassword");
+      const newPassword = requirePassword(body, "newPassword");
       if (!currentPassword || !newPassword) {
         throw new AppError(
           "validation_error",
@@ -1063,7 +1069,7 @@ Deno.serve(async (req) => {
     if (action === "totp-setup" && method === "POST") {
       const session = await requireAdminSession(req);
       const { data: current, error } = await admin.from("admin_auth_factors")
-        .select("totp_enabled_at").eq("admin_id", session.adminId)
+        .select("totp_enabled_at, totp_secret_ciphertext, totp_last_counter").eq("admin_id", session.adminId)
         .maybeSingle();
       if (error) {
         throw new AppError(
@@ -1091,21 +1097,7 @@ Deno.serve(async (req) => {
           500,
         );
       }
-      const { error: saveError } = await admin.from("admin_auth_factors")
-        .upsert({
-          admin_id: session.adminId,
-          totp_secret_ciphertext: ciphertext,
-          totp_enabled_at: null,
-          totp_last_counter: -1,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "admin_id" });
-      if (saveError) {
-        throw new AppError(
-          "internal_error",
-          "Unable to prepare TOTP setup",
-          500,
-        );
-      }
+      await savePendingFactor(admin, session.adminId, ciphertext, current as FactorSnapshot | null);
       const account = await loadAdminRow(session.adminId);
       const issuer = "Recipe Pals Admin";
       const label = encodeURIComponent(`${issuer}:${account.username}`);
@@ -1203,11 +1195,7 @@ Deno.serve(async (req) => {
           throw new AppError("unauthorized", "TOTP confirmation failed", 401);
         }
       }
-      const { error: removeError } = await admin.from("admin_auth_factors")
-        .delete().eq("admin_id", session.adminId);
-      if (removeError) {
-        throw new AppError("internal_error", "Unable to remove TOTP", 500);
-      }
+      await removeObservedFactor(admin, session.adminId, factor as FactorSnapshot | null);
       await revokeOtherAdminSessions(session.adminId, session.sessionId);
       return json({ removed: true }, 200, publicCorsHeaders);
     }

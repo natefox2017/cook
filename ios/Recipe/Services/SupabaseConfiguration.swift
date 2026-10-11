@@ -18,11 +18,36 @@ enum RecipeSupabase {
         return makeProductionClient()
     }()
 
+    /// Uses the captured per-invocation JWT without SupabaseClient's auth adapter.
+    static let accountDeletionFunctions: FunctionsClient = {
+        #if DEBUG
+            if RecipeUITestNamespace.isUITesting {
+                let session = makeUITestNetworkSession()
+                return FunctionsClient(
+                    url: URL(string: "https://uitesting.recipe.invalid/functions/v1")!,
+                    headers: ["apikey": "sb_publishable_ui_test_only"],
+                    fetch: { request in
+                        try await session.data(for: request)
+                    }
+                )
+            }
+        #endif
+        let configuration = productionConfiguration()
+        return FunctionsClient(
+            url: configuration.url.appendingPathComponent("functions/v1"),
+            headers: ["apikey": configuration.key]
+        )
+    }()
+
     #if DEBUG
-        static func makeUITestClient() -> SupabaseClient {
+        private static func makeUITestNetworkSession() -> URLSession {
             let configuration = URLSessionConfiguration.ephemeral
             configuration.protocolClasses = [RecipeUITestNetworkURLProtocol.self]
-            let session = URLSession(configuration: configuration)
+            return URLSession(configuration: configuration)
+        }
+
+        static func makeUITestClient() -> SupabaseClient {
+            let session = makeUITestNetworkSession()
             return SupabaseClient(
                 supabaseURL: URL(string: "https://uitesting.recipe.invalid")!,
                 supabaseKey: "sb_publishable_ui_test_only",
@@ -39,6 +64,19 @@ enum RecipeSupabase {
     #endif
 
     private static func makeProductionClient() -> SupabaseClient {
+        let configuration = productionConfiguration()
+        return SupabaseClient(
+            supabaseURL: configuration.url,
+            supabaseKey: configuration.key,
+            options: .init(
+                auth: .init(
+                    storage: KeychainLocalStorage(service: productionAuthStorageService)
+                )
+            )
+        )
+    }
+
+    private static func productionConfiguration() -> (url: URL, key: String) {
         guard
             let urlString = Bundle.main.object(forInfoDictionaryKey: "RecipeSupabaseURL")
                 as? String,
@@ -49,15 +87,7 @@ enum RecipeSupabase {
         else {
             preconditionFailure("Recipe Supabase URL and publishable key are required.")
         }
-        return SupabaseClient(
-            supabaseURL: url,
-            supabaseKey: key,
-            options: .init(
-                auth: .init(
-                    storage: KeychainLocalStorage(service: productionAuthStorageService)
-                )
-            )
-        )
+        return (url, key)
     }
 }
 

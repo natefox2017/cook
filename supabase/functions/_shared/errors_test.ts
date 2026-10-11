@@ -33,11 +33,20 @@ Deno.test("Validation errors can retain public client-actionable details", async
   }
 });
 
-Deno.test("Unhandled exceptions never return raw error messages", async () => {
-  const response = errorResponse(new Error("SUPABASE_SERVICE_ROLE_KEY=secret"));
-  const result = await response.json();
-  if (response.status !== 500 ||
-    JSON.stringify(result).includes("SUPABASE_SERVICE_ROLE_KEY")) {
-    throw new Error("Unhandled exception text was returned to the caller.");
+Deno.test("Unhandled exceptions never expose raw error messages in responses or logs", async () => {
+  const previous = console.error;
+  const logs: unknown[][] = [];
+  console.error = (...args: unknown[]) => { logs.push(args); };
+  try {
+    const response = errorResponse(new Error("SUPABASE_SERVICE_ROLE_KEY=fixture-secret"));
+    const result = await response.json();
+    if (response.status !== 500 || JSON.stringify([result, logs]).includes("fixture-secret")) {
+      throw new Error("Unhandled exception text escaped to a caller or log.");
+    }
+    if (logs.length !== 1 || logs[0][0] !== "unhandled_error") {
+      throw new Error("The fixed diagnostic event was lost.");
+    }
+  } finally {
+    console.error = previous;
   }
 });

@@ -68,89 +68,6 @@ function formatDate(value: string) {
     : new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(date);
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : null;
-}
-
-function numberFrom(record: Record<string, unknown>, ...keys: string[]): number | null {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === "number" && Number.isFinite(value)) return value;
-  }
-  return null;
-}
-
-function normalizeUsage(value: unknown): LLMUsage | null {
-  const payload = asRecord(value);
-  if (!payload) return null;
-
-  const data = asRecord(payload.data) ?? asRecord(payload.usage) ?? payload;
-  const sourceTotals = asRecord(data.totals) ?? asRecord(data.summary);
-  const events = Array.isArray(data.events)
-    ? data.events.map(asRecord).filter((event): event is Record<string, unknown> => event !== null)
-    : [];
-
-  const eventTotals = events.reduce<{
-    requests: number;
-    inputTokens: number;
-    inputTokenCount: number;
-    outputTokens: number;
-    outputTokenCount: number;
-    cachedInputTokens: number;
-    cachedTokenCount: number;
-    latencyTotal: number;
-    latencyCount: number;
-  }>((totals, event) => ({
-    requests: totals.requests + 1,
-    inputTokens: totals.inputTokens + (numberFrom(event, "inputTokens", "input_tokens") ?? 0),
-    inputTokenCount: totals.inputTokenCount + (numberFrom(event, "inputTokens", "input_tokens") === null ? 0 : 1),
-    outputTokens: totals.outputTokens + (numberFrom(event, "outputTokens", "output_tokens") ?? 0),
-    outputTokenCount: totals.outputTokenCount + (numberFrom(event, "outputTokens", "output_tokens") === null ? 0 : 1),
-    cachedInputTokens: totals.cachedInputTokens + (numberFrom(event, "cachedInputTokens", "cached_input_tokens", "cacheReadInputTokens", "cache_read_input_tokens") ?? 0),
-    cachedTokenCount: totals.cachedTokenCount + (numberFrom(event, "cachedInputTokens", "cached_input_tokens", "cacheReadInputTokens", "cache_read_input_tokens") === null ? 0 : 1),
-    latencyTotal: totals.latencyTotal + (numberFrom(event, "latencyMs", "latency_ms") ?? 0),
-    latencyCount: totals.latencyCount + (numberFrom(event, "latencyMs", "latency_ms") === null ? 0 : 1),
-  }), { requests: 0, inputTokens: 0, inputTokenCount: 0, outputTokens: 0, outputTokenCount: 0, cachedInputTokens: 0, cachedTokenCount: 0, latencyTotal: 0, latencyCount: 0 });
-
-  const requests = numberFrom(sourceTotals ?? {}, "requests", "requestCount", "request_count")
-    ?? (events.length ? eventTotals.requests : null);
-  const inputTokens = numberFrom(sourceTotals ?? {}, "inputTokens", "input_tokens")
-    ?? (eventTotals.inputTokenCount === events.length && events.length ? eventTotals.inputTokens : null);
-  const outputTokens = numberFrom(sourceTotals ?? {}, "outputTokens", "output_tokens")
-    ?? (eventTotals.outputTokenCount === events.length && events.length ? eventTotals.outputTokens : null);
-
-  const series = Array.isArray(data.series) ? data.series.filter((item) => {
-    const row = asRecord(item);
-    return row && typeof row.date === "string" &&
-      [row.requests, row.inputTokens, row.outputTokens, row.totalTokens].every(Number.isFinite);
-  }) : [];
-  const byModel = Array.isArray(data.byModel) ? data.byModel.filter((item) => {
-    const row = asRecord(item);
-    return row && typeof row.provider === "string" && typeof row.model === "string" &&
-      [row.requests, row.totalTokens].every(Number.isFinite);
-  }) : [];
-  const cachedInputTokens = numberFrom(sourceTotals ?? {}, "cachedInputTokens", "cached_input_tokens", "cacheReadInputTokens", "cache_read_input_tokens")
-    ?? (eventTotals.cachedTokenCount === events.length && events.length ? eventTotals.cachedInputTokens : null);
-  const averageLatencyMs = numberFrom(sourceTotals ?? {}, "averageLatencyMs", "avgLatencyMs", "average_latency_ms", "avg_latency_ms")
-    ?? (eventTotals.latencyCount === events.length && events.length ? eventTotals.latencyTotal / eventTotals.latencyCount : null);
-
-  return {
-    totals: {
-      requests,
-      inputTokens,
-      outputTokens,
-      totalTokens: numberFrom(sourceTotals ?? {}, "totalTokens", "total_tokens")
-        ?? (inputTokens !== null && outputTokens !== null ? inputTokens + outputTokens : null),
-      cachedInputTokens,
-      averageLatencyMs,
-    },
-    series: series as LLMUsage["series"],
-    byModel: byModel as LLMUsage["byModel"],
-  };
-}
-
 function ErrorNotice({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="llm-error" role="alert">
@@ -200,38 +117,13 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
       ]);
       if (loadId.current !== currentLoadId) return;
       if (providerResponse.status === "fulfilled") {
-        const providerPayload = asRecord(providerResponse.value);
-        const providerData = Array.isArray(providerResponse.value)
-          ? providerResponse.value
-          : Array.isArray(providerPayload?.data)
-          ? providerPayload.data
-          : null;
-        if (providerData) {
-          const normalizedProviders = providerData.flatMap((item): LLMProvider[] => {
-            const provider = asRecord(item);
-            if (!provider || typeof provider.id !== "string" || typeof provider.name !== "string") return [];
-            return [{
-              id: provider.id,
-              name: provider.name,
-              baseUrl: typeof provider.baseUrl === "string" ? provider.baseUrl : "",
-              model: typeof provider.model === "string" ? provider.model : "",
-              active: provider.active === true,
-              apiKeyConfigured: provider.apiKeyConfigured === true,
-              updatedAt: typeof provider.updatedAt === "string" ? provider.updatedAt : "",
-            }];
-          });
-          setProviders(normalizedProviders);
-        } else {
-          setError("Provider settings returned incomplete data.");
-        }
+        setProviders(providerResponse.value.data);
       } else {
         handleExpiredSession(providerResponse.reason, onAuthExpired);
         setError(providerResponse.reason instanceof Error ? providerResponse.reason.message : "Unable to load provider settings.");
       }
       if (usageResponse.status === "fulfilled") {
-        const normalizedUsage = normalizeUsage(usageResponse.value);
-        setUsage(normalizedUsage);
-        if (!normalizedUsage) setError("Usage data could not be read. Provider settings are still available.");
+        setUsage(usageResponse.value);
       } else {
         handleExpiredSession(usageResponse.reason, onAuthExpired);
         setUsage(null);
@@ -280,12 +172,12 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
     const baseUrl = draft.baseUrl.trim();
     try {
       const parsed = new URL(baseUrl);
-      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-        setFormError("Use an HTTP or HTTPS API base URL.");
+      if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.search || parsed.hash) {
+        setFormError("Use an HTTPS API base URL without credentials, query parameters or a fragment.");
         return;
       }
     } catch {
-      setFormError("Enter a valid HTTP or HTTPS API base URL.");
+      setFormError("Enter a valid HTTPS API base URL.");
       return;
     }
     if (currentEditor === "new" && !draft.apiKey.trim()) {
@@ -306,7 +198,7 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
       await load();
     } catch (cause) {
       handleExpiredSession(cause, onAuthExpired);
-      setFormError("Unable to save provider. Check the configuration and try again.");
+      setFormError(cause instanceof Error ? cause.message : "Unable to save provider. Try again.");
     } finally {
       setSaving(false);
     }
@@ -360,13 +252,13 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
             model: editor.model,
           });
       if (!result.ok) {
-        setFormError("The provider could not verify the connection.");
+        setFormError(result.message || "The provider could not verify the connection.");
       } else {
         setConnectionResult("Connection successful.");
       }
     } catch (cause) {
       handleExpiredSession(cause, onAuthExpired);
-      setFormError("Connection test failed. Check the provider settings and try again.");
+      setFormError(cause instanceof Error ? cause.message : "Connection test failed. Try again.");
     } finally {
       setTestingConnection(false);
     }
@@ -511,7 +403,7 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
       </section>
 
       {editor && (
-        <div className="llm-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) closeEditor(); }}>
+        <div className="llm-dialog-backdrop" role="presentation">
           <section className="llm-dialog card" role="dialog" aria-modal="true" aria-labelledby="llm-editor-title">
             <header><span className="llm-dialog-icon"><Cpu size={18} aria-hidden="true" /></span><div><h2 id="llm-editor-title">{editor === "new" ? "Add provider" : "Edit provider"}</h2><p>Connect an OpenAI-compatible API endpoint.</p></div><button type="button" className="icon-button" aria-label="Close dialog" onClick={closeEditor} disabled={saving}>×</button></header>
             <form onSubmit={(event) => void saveProvider(event)}>
@@ -530,7 +422,7 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
       )}
 
       {deleting && (
-        <div className="llm-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !deletingProvider) setDeleting(null); }}>
+        <div className="llm-dialog-backdrop" role="presentation">
           <section className="llm-confirm-dialog card" role="alertdialog" aria-modal="true" aria-labelledby="llm-delete-title" aria-describedby="llm-delete-description">
             <span className="llm-delete-icon"><Trash2 size={19} aria-hidden="true" /></span>
             <h2 id="llm-delete-title">Delete {deleting.name}?</h2>
