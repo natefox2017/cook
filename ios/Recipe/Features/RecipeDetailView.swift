@@ -173,6 +173,7 @@ struct RecipeDetailView: View {
             .font(RecipeTheme.heading(.hero))
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityAddTraits(.isHeader)
+            sourceSummary(recipe)
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 16) { recipeMetadata(recipe) }
                 VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
@@ -211,6 +212,50 @@ struct RecipeDetailView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func sourceSummary(_ recipe: Recipe) -> some View {
+        let sourceName = recipe.sourceName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let author = recipe.authorCredit?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let url = originalSourceURL(recipe)
+        let sourceLabel = sourceName?.isEmpty == false ? sourceName : url?.host
+
+        if sourceLabel?.isEmpty == false || author?.isEmpty == false {
+            VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
+                if let sourceLabel, !sourceLabel.isEmpty {
+                    if let url {
+                        Link(destination: url) {
+                            Label(sourceLabel, systemImage: "arrow.up.right.square")
+                        }
+                        .frame(minHeight: 44, alignment: .leading)
+                        .accessibilityIdentifier("recipeOverviewSource")
+                    } else {
+                        Text(sourceLabel)
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("recipeOverviewSource")
+                    }
+                }
+                if let author, !author.isEmpty {
+                    Text("Creator: \(author)")
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("recipeOverviewAuthor")
+                }
+            }
+            .font(RecipeTheme.text(15, relativeTo: .subheadline))
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func originalSourceURL(_ recipe: Recipe) -> URL? {
+        guard let original = recipe.sourceURL,
+            let url = URL(string: original),
+            ["https", "http"].contains(url.scheme?.lowercased() ?? ""),
+            url.host != nil
+        else {
+            return nil
+        }
+        return url
     }
 
     @ViewBuilder
@@ -598,10 +643,7 @@ struct RecipeDetailView: View {
                         .foregroundStyle(.secondary)
                 }
                 if let original = recipe.sourceURL, !original.isEmpty {
-                    if let url = URL(string: original),
-                        ["https", "http"].contains(url.scheme?.lowercased() ?? ""),
-                        url.host != nil
-                    {
+                    if let url = originalSourceURL(recipe) {
                         Link(destination: url) {
                             Label("Open Original Recipe", systemImage: "arrow.up.right.square")
                         }
@@ -763,15 +805,16 @@ struct RecipeDetailView: View {
                         : LocalizedStringKey("Not favorite")
                 )
                 .accessibilityIdentifier("recipeFavoriteToggle")
+                Button("Edit Recipe", systemImage: "pencil") {
+                    isEditing = true
+                }
+                .accessibilityIdentifier("recipeEdit")
                 Menu {
                     Button("Add to Meal Plan", systemImage: "calendar.badge.plus") {
                         isPlanningMeal = true
                     }
                     Button("Collections", systemImage: "folder.badge.plus") {
                         isManagingCollections = true
-                    }
-                    Button("Edit Recipe", systemImage: "pencil") {
-                        isEditing = true
                     }
                     Button("Delete Recipe", systemImage: "trash", role: .destructive) {
                         isDeleting = true

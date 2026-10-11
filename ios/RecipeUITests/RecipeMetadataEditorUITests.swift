@@ -139,10 +139,9 @@ final class RecipeMetadataEditorUITests: XCTestCase {
 
     @MainActor
     private func openEditor(in app: XCUIApplication) {
-        let options = app.buttons["Recipe Options"]
-        XCTAssertTrue(options.waitForExistence(timeout: 10))
-        options.tap()
-        app.buttons["Edit Recipe"].tap()
+        let edit = app.buttons["recipeEdit"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 10))
+        edit.tap()
         XCTAssertTrue(app.buttons["saveRecipe"].waitForExistence(timeout: 8))
     }
 

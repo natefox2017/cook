@@ -110,8 +110,8 @@ final class RecipeUITests: XCTestCase {
         let savedSoup = app.buttons[Self.savedSoupIdentifier]
         revealLibraryRecipe(savedSoup, in: app)
         savedSoup.tap()
-        app.buttons["Recipe Options"].tap()
-        app.buttons["Edit Recipe"].tap()
+        waitUntilReady(app.buttons["recipeEdit"])
+        app.buttons["recipeEdit"].tap()
 
         let title = app.textFields["recipeName"]
         waitUntilReady(title)
