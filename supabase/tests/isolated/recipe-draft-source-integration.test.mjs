@@ -146,6 +146,7 @@ test('3. foreign and unknown HTTP/worker identifiers preserve existing private s
 test('4. independent workers share real CAS and old request replay survives approval revision',async()=>{
   const f=await fixture();const {sid}=await f.create();const {body}=await f.claim(sid);
   const results=await Promise.all([f.run(sid,body.request_id),f.run(sid,body.request_id)]);eq(f.transportCount,1);eq(results.some(r=>r.state==='terminal'),true);
+  const markers=f.rpcCalls.filter(c=>c.name==='mark_recipe_draft_turn_dispatched');eq(markers.length,2);eq(markers[0].args.p_fencing_token,markers[1].args.p_fencing_token);eq(f.rpcCalls.filter(c=>c.name==='finish_recipe_draft_turn').length,1);
   const polled=await f.http('GET',`/recipe-draft-sessions/${sid}/turns/${body.request_id}`);eq(polled.body.result.status,'proposal');eq(await budget(f.owner),[{settled_tokens:25,reserved_tokens:0}]);
   const conflict=await f.http('POST',`/recipe-draft-sessions/${sid}/turns`,{...body,message:'Changed'});eq(conflict.status,409);eq(conflict.body.code,'IDEMPOTENCY_CONFLICT');
   const approval=await f.approve(sid,body.request_id);const replay=await f.http('POST',`/recipe-draft-sessions/${sid}/turns`,body);eq(replay.status,200);eq(replay.body.result,polled.body.result);eq(replay.body.decision,approval.response.body);
