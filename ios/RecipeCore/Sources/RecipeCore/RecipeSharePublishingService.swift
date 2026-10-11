@@ -2,6 +2,7 @@
 // Purpose: Sends explicitly approved public snapshots through an injected owner-authenticated transport.
 
 import Foundation
+
 #if canImport(FoundationNetworking)
     import FoundationNetworking
 #endif
@@ -87,6 +88,28 @@ public struct RecipeSharePublishingService {
         return result
     }
 
+    /// Server-filtered owner metadata establishes recipe lineage without returning private source fields.
+    public func list(recipeID: UUID, ownerID: UUID) async throws -> [RecipePublishedShare] {
+        let data = try await request(
+            method: "GET", ownerID: ownerID, recipeID: recipeID, successfulStatuses: [200]
+        )
+        struct Envelope: Decodable {
+            let shares: [Metadata]
+        }
+        let metadata = try decoder().decode(Envelope.self, from: data).shares
+        // The server caps results at 200. A full page cannot prove all copies were returned.
+        guard metadata.count < 200 else {
+            throw RecipeSharePublishingError.invalidResponse
+        }
+        let results = try metadata.map {
+            try validated($0, ownerID: ownerID)
+        }
+        guard Set(results.map(\.shareID)).count == results.count else {
+            throw RecipeSharePublishingError.invalidResponse
+        }
+        return results
+    }
+
     public func get(shareID: UUID, ownerID: UUID) async throws -> RecipePublishedShare {
         let data = try await request(
             method: "GET", ownerID: ownerID, shareID: shareID, successfulStatuses: [200]
@@ -155,14 +178,15 @@ public struct RecipeSharePublishingService {
             try container.encode(formatter.string(from: date))
         }
         encoder.outputFormatting = .sortedKeys
-        let data = try encoder.encode(ApprovedBody(
-            idempotencyKey: idempotencyKey,
-            sourceRecipeID: recipe.id,
-            sourceRecipeUpdatedAt: approval.expectedUpdatedAt,
-            scope: approval.scope,
-            hasDistributionRights: approval.hasDistributionRights,
-            snapshot: snapshot
-        ))
+        let data = try encoder.encode(
+            ApprovedBody(
+                idempotencyKey: idempotencyKey,
+                sourceRecipeID: recipe.id,
+                sourceRecipeUpdatedAt: approval.expectedUpdatedAt,
+                scope: approval.scope,
+                hasDistributionRights: approval.hasDistributionRights,
+                snapshot: snapshot
+            ))
         guard data.count <= 2 * 1024 * 1024 else {
             throw RecipeShareValidationError.contentTooLarge
         }
@@ -187,13 +211,24 @@ public struct RecipeSharePublishingService {
 
     private func request(
         method: String, ownerID: UUID, shareID: UUID? = nil,
-        body: Data? = nil, version: Int? = nil, successfulStatuses: Set<Int>
+        body: Data? = nil, version: Int? = nil, recipeID: UUID? = nil,
+        successfulStatuses: Set<Int>
     ) async throws -> Data {
         try Task.checkCancellation()
         let credentials = try await currentSession(ownerID: ownerID)
         try Task.checkCancellation()
-        let url = shareID.map { endpoint.appendingPathComponent($0.uuidString.lowercased()) }
+        var url =
+            shareID.map {
+                endpoint.appendingPathComponent($0.uuidString.lowercased())
+            }
             ?? endpoint
+        if let recipeID {
+            var components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+            components.queryItems = [
+                URLQueryItem(name: "sourceRecipeID", value: recipeID.uuidString.lowercased())
+            ]
+            url = components.url!
+        }
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.timeoutInterval = 20
@@ -237,7 +272,7 @@ public struct RecipeSharePublishingService {
         let publicURL: URL
     }
 
-    private func decode(_ data: Data, ownerID: UUID) throws -> RecipePublishedShare {
+    private func decoder() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let value = try decoder.singleValueContainer().decode(String.self)
@@ -256,8 +291,18 @@ public struct RecipeSharePublishingService {
             }
             return date
         }
-        guard let metadata = try? decoder.decode(Metadata.self, from: data),
-            metadata.shareVersion > 0,
+        return decoder
+    }
+
+    private func decode(_ data: Data, ownerID: UUID) throws -> RecipePublishedShare {
+        guard let metadata = try? decoder().decode(Metadata.self, from: data) else {
+            throw RecipeSharePublishingError.invalidResponse
+        }
+        return try validated(metadata, ownerID: ownerID)
+    }
+
+    private func validated(_ metadata: Metadata, ownerID: UUID) throws -> RecipePublishedShare {
+        guard metadata.shareVersion > 0,
             RecipePublicShareURL.isValid(metadata.publicURL),
             metadata.publicURL.lastPathComponent == metadata.slug
         else {

@@ -27,7 +27,22 @@ final class RecipeAuthService {
     private static let pendingPasswordRecoveryEmailKey =
         "recipe.auth.pending_password_recovery_email_hash"
 
-    private(set) var state: RecipeAuthState = .loading
+    /// A sharing approval belongs to one uninterrupted authenticated account session.
+    private(set) var sharingSessionGeneration = 0
+    private(set) var state: RecipeAuthState = .loading {
+        didSet {
+            if Self.sharingOwner(in: state) != Self.sharingOwner(in: oldValue) {
+                sharingSessionGeneration += 1
+            }
+        }
+    }
+
+    private static func sharingOwner(in state: RecipeAuthState) -> UUID? {
+        if case .signedIn(let userID, _) = state {
+            return userID
+        }
+        return nil
+    }
     private(set) var nonblockingNotice: String?
     /// Advances after each accepted callback so the root view can present Account.
     private(set) var authCallbackGeneration = 0
@@ -42,7 +57,9 @@ final class RecipeAuthService {
         self.defaults = defaults
         Task { [weak self, client] in
             for await (event, session) in client.auth.authStateChanges {
-                guard let self else { return }
+                guard let self else {
+                    return
+                }
                 if event == .passwordRecovery, let session {
                     self.state = .passwordRecovery(userID: session.user.id)
                 } else if let session {
@@ -250,7 +267,9 @@ final class RecipeAuthService {
         guard url.scheme == RecipeSupabase.redirectURL.scheme,
             url.host == RecipeSupabase.redirectURL.host,
             url.path == RecipeSupabase.redirectURL.path
-        else { return }
+        else {
+            return
+        }
 
         let isExplicitRecoveryCallback = callbackType(in: url) == "recovery"
         Task {
@@ -302,8 +321,12 @@ final class RecipeAuthService {
             return nil
         }
         let fragmentItems = fragmentComponents.queryItems ?? []
-        return fragmentItems.first(where: { $0.name == "type" })?.value
-            ?? fragmentItems.first(where: { $0.name == "flow" })?.value
+        return fragmentItems.first(where: {
+            $0.name == "type"
+        })?.value
+            ?? fragmentItems.first(where: {
+                $0.name == "flow"
+            })?.value
     }
 
     private func passwordRecoveryEmailHash(for email: String) -> String {
@@ -312,13 +335,20 @@ final class RecipeAuthService {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
         let digest = SHA256.hash(data: Data(normalizedEmail.utf8))
-        return digest.map { String(format: "%02x", $0) }.joined()
+        return digest.map {
+            String(format: "%02x", $0)
+        }.joined()
     }
 
     static func makeAppleNonce() -> (raw: String, hashed: String) {
         let raw = UUID().uuidString.replacingOccurrences(of: "-", with: "")
         let digest = SHA256.hash(data: Data(raw.utf8))
-        return (raw, digest.map { String(format: "%02x", $0) }.joined())
+        return (
+            raw,
+            digest.map {
+                String(format: "%02x", $0)
+            }.joined()
+        )
     }
 }
 

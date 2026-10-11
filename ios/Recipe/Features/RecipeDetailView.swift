@@ -7,6 +7,7 @@ import SwiftUI
 
 struct RecipeDetailView: View {
     let recipeID: UUID
+    var ownerSharing: RecipeOwnerSharingService = .shared
     @Environment(RecipeStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @Environment(\.locale) private var locale
@@ -15,6 +16,8 @@ struct RecipeDetailView: View {
     @State private var didLoadServings = false
     @State private var didAdjustServings = false
     @State private var isEditing = false
+    @State private var sharePresentation: SharePresentation?
+    @State private var isDeletingRecipe = false
     @State private var isChoosingRecipeCandidates = false
     @State private var cookingPresentation: CookingPresentation?
     @State private var isChoosingIngredients = false
@@ -35,6 +38,11 @@ struct RecipeDetailView: View {
         let startStepID: UUID?
     }
 
+    private struct SharePresentation: Identifiable {
+        let id = UUID()
+        let state: RecipeShareConsentState
+    }
+
     var body: some View {
         Group {
             if let recipe = store.recipe(id: recipeID) {
@@ -50,16 +58,25 @@ struct RecipeDetailView: View {
         .toolbar(.hidden, for: .tabBar)
         .navigationTitle("Recipe")
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
-        .toolbar { detailToolbar }
+        .toolbar {
+            detailToolbar
+        }
+        .sheet(item: $sharePresentation) { presentation in
+            RecipeShareConsentSheet(state: presentation.state)
+        }
         .sheet(isPresented: $isEditing) {
-            if let recipe = store.recipe(id: recipeID) { RecipeEditorView(recipe: recipe) }
+            if let recipe = store.recipe(id: recipeID) {
+                RecipeEditorView(recipe: recipe)
+            }
         }
         .sheet(isPresented: $isChoosingRecipeCandidates) {
             if let recipe = store.recipe(id: recipeID) {
                 RecipeCandidateSelectionView(sourceRecipe: recipe)
             }
         }
-        .sheet(isPresented: $isPlanningMeal) { RecipeMealPlanSheet(recipeID: recipeID) }
+        .sheet(isPresented: $isPlanningMeal) {
+            RecipeMealPlanSheet(recipeID: recipeID)
+        }
         .sheet(isPresented: $isManagingCollections) {
             RecipeCollectionMembershipSheet(recipeID: recipeID)
         }
@@ -100,14 +117,18 @@ struct RecipeDetailView: View {
             titleVisibility: .visible
         ) {
             Button("Delete Original Attachment", role: .destructive) {
-                Task { await deleteSourceArtifact() }
+                Task {
+                    await deleteSourceArtifact()
+                }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Your recipe will stay saved.")
         }
         .alert("Recipe", isPresented: feedbackPresented) {
-            Button("OK", role: .cancel) { feedbackMessage = nil }
+            Button("OK", role: .cancel) {
+                feedbackMessage = nil
+            }
         } message: {
             Text(feedbackMessage ?? "")
         }
@@ -175,7 +196,9 @@ struct RecipeDetailView: View {
             .accessibilityAddTraits(.isHeader)
             sourceSummary(recipe)
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 16) { recipeMetadata(recipe) }
+                HStack(spacing: 16) {
+                    recipeMetadata(recipe)
+                }
                 VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                     recipeMetadata(recipe)
                 }
@@ -261,7 +284,9 @@ struct RecipeDetailView: View {
     @ViewBuilder
     private func recipeCollections(_ recipe: Recipe) -> some View {
         let collectionIDs = store.collectionIDs(forRecipe: recipe.id)
-        let assigned = store.collections.filter { collectionIDs.contains($0.id) }
+        let assigned = store.collections.filter {
+            collectionIDs.contains($0.id)
+        }
 
         if !assigned.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -370,7 +395,9 @@ struct RecipeDetailView: View {
                                 .accessibilityHint("Show ingredient amount details")
                                 .accessibilityIdentifier(
                                     "recipeIngredientInfo.\(ingredient.id.uuidString)")
-                                if ingredient.id != group.ingredients.last?.id { Divider() }
+                                if ingredient.id != group.ingredients.last?.id {
+                                    Divider()
+                                }
                             }
                         }
                         .padding(.horizontal, 16)
@@ -398,13 +425,17 @@ struct RecipeDetailView: View {
             let members = recipe.ingredients.filter {
                 ids.contains($0.id) && !used.contains($0.id)
             }
-            guard !members.isEmpty else { continue }
+            guard !members.isEmpty else {
+                continue
+            }
             used.formUnion(members.map(\.id))
             groups.append(
                 DetailIngredientGroup(
                     id: section.id.uuidString, title: section.title, ingredients: members))
         }
-        let remaining = recipe.ingredients.filter { !used.contains($0.id) }
+        let remaining = recipe.ingredients.filter {
+            !used.contains($0.id)
+        }
         if !remaining.isEmpty {
             groups.append(
                 DetailIngredientGroup(
@@ -556,7 +587,9 @@ struct RecipeDetailView: View {
 
                         if step.temperature != nil || !step.timers.isEmpty {
                             ViewThatFits(in: .horizontal) {
-                                HStack(spacing: 10) { stepSignals(step) }
+                                HStack(spacing: 10) {
+                                    stepSignals(step)
+                                }
                                 VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                                     stepSignals(step)
                                 }
@@ -707,7 +740,9 @@ struct RecipeDetailView: View {
         }
 
         isLoadingSourceArtifact = true
-        defer { isLoadingSourceArtifact = false }
+        defer {
+            isLoadingSourceArtifact = false
+        }
 
         do {
             let url = try await RecipeImportArtifactService().downloadURL(
@@ -747,7 +782,9 @@ struct RecipeDetailView: View {
         }
 
         isDeletingSourceArtifact = true
-        defer { isDeletingSourceArtifact = false }
+        defer {
+            isDeletingSourceArtifact = false
+        }
 
         do {
             // The API resolves artifact ownership from the JWT; never pass an
@@ -763,7 +800,9 @@ struct RecipeDetailView: View {
             }
             guard var recipe = store.recipe(id: recipeID),
                 recipe.importRecord?.result.source.sourceArtifactID == artifactID
-            else { return }
+            else {
+                return
+            }
             recipe.importRecord?.sourceArtifactDeletedAt = .now
             try store.upsert(recipe)
             feedbackMessage = String(
@@ -810,6 +849,12 @@ struct RecipeDetailView: View {
                 }
                 .accessibilityIdentifier("recipeEdit")
                 Menu {
+                    Button("Share", systemImage: "square.and.arrow.up") {
+                        sharePresentation = SharePresentation(
+                            state: ownerSharing.consentState(recipeID: recipeID, store: store)
+                        )
+                    }
+                    .accessibilityIdentifier("recipeShare")
                     Button("Add to Meal Plan", systemImage: "calendar.badge.plus") {
                         isPlanningMeal = true
                     }
@@ -819,6 +864,7 @@ struct RecipeDetailView: View {
                     Button("Delete Recipe", systemImage: "trash", role: .destructive) {
                         isDeleting = true
                     }
+                    .disabled(isDeletingRecipe)
                 } label: {
                     Label("Recipe Options", systemImage: "ellipsis")
                 }
@@ -834,7 +880,9 @@ struct RecipeDetailView: View {
 
     private var servingsSelection: Binding<Int> {
         Binding(
-            get: { servings },
+            get: {
+                servings
+            },
             set: {
                 servings = $0
                 didAdjustServings = true
@@ -842,7 +890,16 @@ struct RecipeDetailView: View {
     }
 
     private var feedbackPresented: Binding<Bool> {
-        Binding(get: { feedbackMessage != nil }, set: { if !$0 { feedbackMessage = nil } })
+        Binding(
+            get: {
+                feedbackMessage != nil
+            },
+            set: {
+                if !$0 {
+                    feedbackMessage = nil
+                }
+            }
+        )
     }
 
     private func showAddedFeedback() {
@@ -855,11 +912,39 @@ struct RecipeDetailView: View {
     }
 
     private func deleteRecipe() {
-        do {
-            try store.deleteRecipe(id: recipeID)
-            CookingView.discardSession(recipeID: recipeID)
-            dismiss()
-        } catch { feedbackMessage = error.localizedDescription }
+        guard !isDeletingRecipe else {
+            return
+        }
+        isDeletingRecipe = true
+        Task { @MainActor in
+            defer {
+                isDeletingRecipe = false
+            }
+            do {
+                if ownerSharing.isConfiguredForOwnerSharing {
+                    try await ownerSharing.deleteRecipe(recipeID: recipeID, store: store)
+                } else {
+                    // This build has never enabled publication. Preserve its private collection flow.
+                    // Missing configuration itself is not evidence about remote public-copy state.
+                    try store.deleteRecipe(id: recipeID)
+                }
+                CookingView.discardSession(recipeID: recipeID)
+                dismiss()
+            } catch is CancellationError {
+                // Cancellation preserves the recipe and does not claim a successful deletion.
+            } catch {
+                guard ownerSharing.isConfiguredForOwnerSharing else {
+                    feedbackMessage = error.localizedDescription
+                    return
+                }
+                feedbackMessage = String(
+                    localized: LocalizedStringResource(
+                        "Could not stop sharing. Your recipe is still saved. Check your connection and try again.",
+                        locale: RecipeLanguage.active
+                    )
+                )
+            }
+        }
     }
 
     private func timerDurationLabel(_ seconds: Int) -> String {
@@ -935,13 +1020,17 @@ private struct RecipeIngredientsSelectionView: View {
                 isPresented: Binding(
                     get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
             ) {
-                Button("OK", role: .cancel) { errorMessage = nil }
+                Button("OK", role: .cancel) {
+                    errorMessage = nil
+                }
             } message: {
                 Text(errorMessage ?? "")
             }
         }
         .onAppear {
-            guard !didLoad, let recipe = store.recipe(id: recipeID) else { return }
+            guard !didLoad, let recipe = store.recipe(id: recipeID) else {
+                return
+            }
             servings = max(1, initialServings)
             selection = Set(recipe.ingredients.map(\.id))
             didLoad = true
@@ -1023,13 +1112,15 @@ private struct RecipeIngredientsSelectionView: View {
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
         .safeAreaInset(edge: .bottom) {
-            Button("Add \(selection.count) ingredient") { add(recipe) }
-                .buttonStyle(PrimaryButtonStyle())
-                .frame(maxWidth: .infinity)
-                .disabled(selection.isEmpty)
-                .accessibilityIdentifier("confirmAddIngredientsButton")
-                .padding(RecipeSpacing.pageInset)
-                .background(.regularMaterial)
+            Button("Add \(selection.count) ingredient") {
+                add(recipe)
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .frame(maxWidth: .infinity)
+            .disabled(selection.isEmpty)
+            .accessibilityIdentifier("confirmAddIngredientsButton")
+            .padding(RecipeSpacing.pageInset)
+            .background(.regularMaterial)
         }
     }
 
@@ -1039,7 +1130,10 @@ private struct RecipeIngredientsSelectionView: View {
 
     private func add(_ recipe: Recipe) {
         do {
-            let knownServings = recipe.servings.map { $0 > 0 } ?? false
+            let knownServings =
+                recipe.servings.map {
+                    $0 > 0
+                } ?? false
             try store.addToGroceries(
                 recipeID: recipeID,
                 servings: knownServings ? servings : nil,
@@ -1138,17 +1232,23 @@ private struct RecipeCollectionMembershipSheet: View {
             .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button("Done") {
+                        dismiss()
+                    }
                 }
             }
             .alert(
                 "Collections",
                 isPresented: Binding(
-                    get: { errorMessage != nil },
+                    get: {
+                        errorMessage != nil
+                    },
                     set: { if !$0 { errorMessage = nil } }
                 )
             ) {
-                Button("OK", role: .cancel) { errorMessage = nil }
+                Button("OK", role: .cancel) {
+                    errorMessage = nil
+                }
             } message: {
                 Text(errorMessage ?? "")
             }
@@ -1195,7 +1295,9 @@ private struct RecipeMealPlanSheet: View {
             Form {
                 DatePicker("Date", selection: $date, displayedComponents: .date)
                 Picker("Meal", selection: $slot) {
-                    ForEach(MealSlot.allCases) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
+                    ForEach(MealSlot.allCases) {
+                        Text(LocalizedStringKey($0.rawValue)).tag($0)
+                    }
                 }
             }
             .navigationTitle("Add to Meal Plan")
@@ -1218,7 +1320,9 @@ private struct RecipeMealPlanSheet: View {
                 isPresented: Binding(
                     get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
             ) {
-                Button("OK", role: .cancel) { errorMessage = nil }
+                Button("OK", role: .cancel) {
+                    errorMessage = nil
+                }
             } message: {
                 Text(errorMessage ?? "Please try again.")
             }
@@ -1326,7 +1430,9 @@ struct RecipeParameterSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button("Done") {
+                        dismiss()
+                    }
                 }
             }
         }
@@ -1453,14 +1559,17 @@ private struct RecipeCandidateSelectionView: View {
                             }
                         } label: {
                             HStack(alignment: .top, spacing: 12) {
-                                Image(systemName: selected.contains(candidate.candidateID)
-                                      ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(RecipeTheme.accentForeground)
-                                    .font(.system(size: 22))
+                                Image(
+                                    systemName: selected.contains(candidate.candidateID)
+                                        ? "checkmark.circle.fill" : "circle"
+                                )
+                                .foregroundStyle(RecipeTheme.accentForeground)
+                                .font(.system(size: 22))
                                 VStack(alignment: .leading, spacing: 5) {
                                     Text(candidate.title ?? "Untitled Recipe")
-                                        .font(RecipeTheme.text(
-                                            16, weight: .semibold, relativeTo: .body))
+                                        .font(
+                                            RecipeTheme.text(
+                                                16, weight: .semibold, relativeTo: .body))
                                     Text(
                                         "\(candidate.ingredients.count) ingredients · \(candidate.steps.count) steps"
                                     )
@@ -1490,12 +1599,16 @@ private struct RecipeCandidateSelectionView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        dismiss()
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save selected") {
-                        do { try saveSelected(); dismiss() }
-                        catch { errorMessage = error.localizedDescription }
+                        do {
+                            try saveSelected()
+                            dismiss()
+                        } catch { errorMessage = error.localizedDescription }
                     }
                     .disabled(selected.isEmpty)
                     .accessibilityIdentifier("saveSelectedCandidateRecipes")
@@ -1504,11 +1617,15 @@ private struct RecipeCandidateSelectionView: View {
             .alert(
                 "Could not save recipes",
                 isPresented: Binding(
-                    get: { errorMessage != nil },
+                    get: {
+                        errorMessage != nil
+                    },
                     set: { if !$0 { errorMessage = nil } }
                 )
             ) {
-                Button("OK", role: .cancel) { errorMessage = nil }
+                Button("OK", role: .cancel) {
+                    errorMessage = nil
+                }
             } message: {
                 Text(errorMessage ?? "")
             }
@@ -1516,14 +1633,19 @@ private struct RecipeCandidateSelectionView: View {
     }
 
     private func saveSelected() throws {
-        guard let sourceRecord = sourceRecipe.importRecord else { return }
+        guard let sourceRecord = sourceRecipe.importRecord else {
+            return
+        }
         for candidate in candidates where selected.contains(candidate.candidateID) {
             let targetID = Self.stableChildID(
                 sourceID: sourceRecipe.id, candidateID: candidate.candidateID)
             // Repeated saves do not duplicate a dish or overwrite user edits.
-            if store.recipe(id: targetID) != nil { continue }
+            if store.recipe(id: targetID) != nil {
+                continue
+            }
             let title = candidate.title ?? "Untitled Recipe"
-            let content = title
+            let content =
+                title
                 + "\n\nIngredients\n" + candidate.ingredients.joined(separator: "\n")
                 + "\n\nInstructions\n" + candidate.steps.joined(separator: "\n")
             var recipe = RecipeDocumentParser.recipe(fromText: content, title: title)
@@ -1567,11 +1689,12 @@ private struct RecipeCandidateSelectionView: View {
     private static func stableChildID(sourceID: UUID, candidateID: String) -> UUID {
         let key = Data("\(sourceID.uuidString):\(candidateID)".utf8)
         let digest = Array(SHA256.hash(data: key))
-        return UUID(uuid: (
-            digest[0], digest[1], digest[2], digest[3],
-            digest[4], digest[5], digest[6], digest[7],
-            digest[8], digest[9], digest[10], digest[11],
-            digest[12], digest[13], digest[14], digest[15]
-        ))
+        return UUID(
+            uuid: (
+                digest[0], digest[1], digest[2], digest[3],
+                digest[4], digest[5], digest[6], digest[7],
+                digest[8], digest[9], digest[10], digest[11],
+                digest[12], digest[13], digest[14], digest[15]
+            ))
     }
 }
