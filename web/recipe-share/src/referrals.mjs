@@ -10,11 +10,19 @@ export class ReferralValidationError extends Error {
   constructor(code) { super(code); this.code = code; }
 }
 
-function isValidAccountID(value) {
+export function isValidAccountID(value) {
   // Identity must be a canonical UUID; the nil UUID is never a real account.
-  return typeof value === "string" &&
+  return typeof value === "string" && value.length === 36 &&
     ACCOUNT_UUID.test(value) &&
     value.toLowerCase() !== NIL_UUID;
+}
+
+export function isValidShareToken(value) {
+  return typeof value === "string" && value.length >= 8 && value.length <= 128 && SHARE_TOKEN.test(value);
+}
+
+export function isValidReferralCode(value) {
+  return typeof value === "string" && value.length >= 16 && value.length <= 64 && REFERRAL_CODE.test(value);
 }
 
 /**
@@ -32,8 +40,7 @@ export function validateAggregateShareEvent(payload) {
   if (keys.some(key => !["kind", "shareToken", "eventID"].includes(key))) {
     throw new ReferralValidationError("unexpected_field");
   }
-  if (!KINDS.has(payload.kind) || typeof payload.shareToken !== "string" ||
-    !SHARE_TOKEN.test(payload.shareToken) || typeof payload.eventID !== "string" ||
+  if (!KINDS.has(payload.kind) || !isValidShareToken(payload.shareToken) || typeof payload.eventID !== "string" ||
     !EVENT_ID.test(payload.eventID)) {
     throw new ReferralValidationError("bad_event");
   }
@@ -65,7 +72,7 @@ export function proposeExplicitInvitationClaim({
     !isValidAccountID(lookedUpInviterID)) {
     throw new ReferralValidationError("server_identity_required");
   }
-  if (!REFERRAL_CODE.test(submittedCode || "") ||
+  if (!isValidReferralCode(submittedCode) ||
     submittedCode !== lookedUpInviteCode) {
     throw new ReferralValidationError("invalid_or_unverified_code");
   }
@@ -76,8 +83,8 @@ export function proposeExplicitInvitationClaim({
     throw new ReferralValidationError("already_claimed");
   }
   return {
-    inviteeID: authenticatedInviteeID,
-    inviterID: lookedUpInviterID,
+    inviteeID: authenticatedInviteeID.toLowerCase(),
+    inviterID: lookedUpInviterID.toLowerCase(),
     code: submittedCode,
     status: "pending_review"
   };
