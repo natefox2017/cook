@@ -9,6 +9,7 @@ struct RecipeShareConsentSheet: View {
     let state: RecipeShareConsentState
     @State private var confirmsRevoke = false
     @State private var presentsShare = false
+    @State private var posterPublication: RecipeShareConsentState.PosterPublication?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -118,6 +119,12 @@ struct RecipeShareConsentSheet: View {
                             presentsShare = true
                         }
                     }
+                    if state.confirmedSnapshot != nil {
+                        Button(text("Poster Preview")) {
+                            posterPublication = state.posterPublication
+                        }
+                        .accessibilityIdentifier("recipeShare.poster")
+                    }
                     if state.share != nil {
                         if !state.needsReload {
                             Button(text("Reload public copy")) {
@@ -158,6 +165,15 @@ struct RecipeShareConsentSheet: View {
         .sheet(isPresented: $presentsShare) {
             ConsentURLActivity(state: state)
         }
+        .sheet(item: $posterPublication) { publication in
+            RecipeSharePosterPreview(
+                snapshot: publication.snapshot,
+                publicURL: publication.publicURL,
+                isStillValid: {
+                    await state.isPosterPublicationValid(publication)
+                }
+            )
+        }
         .environment(\.locale, RecipeLanguage.active)
         .task {
             await state.loadOwnerRecords()
@@ -169,6 +185,7 @@ struct RecipeShareConsentSheet: View {
             if changed {
                 state.cancel()
                 presentsShare = false
+                posterPublication = nil
                 dismiss()
             }
         }
