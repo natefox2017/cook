@@ -440,6 +440,7 @@ async function fixture(blockDNS = false) {
       };
       outgoing.end = () => {
         const bytes = Buffer.concat(f.writes);
+        eq(bytes, f.originalProviderBytes);
         eq(Number(options.headers["Content-Length"]), bytes.length);
         const payload = JSON.parse(bytes.toString("utf8"));
         eq(payload.model, "synthetic-model");
@@ -486,7 +487,13 @@ async function fixture(blockDNS = false) {
     createAIDraftDispatchWorker({
       enabled: true,
       ...f.backend.workerDependencies,
-      safeTransport,
+      // Observe original provider bytes without changing the real transport or request.
+      safeTransport: async (request, policy) => {
+        f.originalProviderBytes = Buffer.from(
+          await request.clone().arrayBuffer(),
+        );
+        return await safeTransport(request, policy);
+      },
       outerTimeoutMs: 10000,
     }).runTurn({ ownerID: as, sessionID: f.sid, requestID: f.tid });
   f.createBody = { job_id: f.job, client_request_id: f.createKey };
