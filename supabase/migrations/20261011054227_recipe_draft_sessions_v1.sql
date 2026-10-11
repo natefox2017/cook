@@ -306,6 +306,7 @@ declare s public.recipe_draft_sessions%rowtype; t public.recipe_draft_turns%rowt
     expected_flags jsonb := '[]'; group_prefix text; receipt_value jsonb;
 begin
     if p_enabled is distinct from true then return jsonb_build_object('code','DRAFT_DISABLED'); end if;
+    if cardinality(p_selected_paths)>0 and array_ndims(p_selected_paths)<>1 then return jsonb_build_object('code','INVALID_INPUT'); end if;
     if p_request_id is null or p_turn_request_id is null or p_expected_revision is null or p_expected_revision<=0
         or p_action is null or p_action not in ('accept','reject') or p_selected_paths is null
         or array_position(p_selected_paths,null) is not null

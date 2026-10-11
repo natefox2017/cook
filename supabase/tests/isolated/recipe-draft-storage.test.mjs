@@ -78,6 +78,8 @@ test('DEV-293 fresh/reapply/rollback, real ACL and transaction contract', async 
     for (const mutate of [c=>c.review_fields=[],c=>c.fields.servings.raw_value='999',c=>c.evidence[0].excerpt='changed']) {
       const invalid=structuredClone(next);mutate(invalid);eq((await approve(invalid)).code,'INVALID_INPUT');eq((await row('recipe_draft_sessions','id=$1',[sid])).revision,1);
     }
+    eq((await query(`select public.approve_recipe_draft_turn($1,$2,$3,$4,1,'accept',ARRAY[['title']],$5,$6,$5,true) v`,[A,sid,t.request_id,randomUUID(),H2,next]))[0].v.code,'INVALID_INPUT');
+    eq((await row('recipe_draft_sessions','id=$1',[sid])).revision,1);
     eq((await approve()).receipt.applied_revision,'2');
     eq((await approve(null)).outcome,'replay');
     eq((await approve(next,'reject',[])).code,'IDEMPOTENCY_CONFLICT');
