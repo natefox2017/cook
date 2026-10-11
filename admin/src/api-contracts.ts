@@ -67,6 +67,10 @@ export function validateAdminResponse(fn: string, path: string, method: string, 
       case "/totp-setup": valid = fields(v, ["secret", "otpauthUri"], string); break;
       case "/factors": valid = object(v) && object(v.totp) && boolean(v.totp.enabled) && nullable(date, v.totp.enabledAt) && list(v.passkeys, x => object(x) && fields(x, ["credential_id", "name"], string) && date(x.created_at) && nullable(date, x.last_used_at)); break;
       case "/login-events": valid = object(v) && number(v.total) && list(v.data, x => object(x) && fields(x, ["id"], string) && date(x.createdAt) && oneOf(x.method, ["password", "totp", "passkey", "bootstrap"]) && boolean(x.success) && ["ipAddress", "userAgent", "failureReason"].every(k => nullable(string, x[k]))); break;
+      case "/logout": valid = object(v) && v.ok === true; break;
+      case "/totp-verify": valid = object(v) && v.enabled === true; break;
+      case "/totp-remove": case "/passkey-remove": valid = object(v) && v.removed === true; break;
+      case "/passkey-registration-verify": valid = object(v) && v.created === true; break;
       default: valid = object(v); break;
     }
   } else if (fn === "admin-dashboard") valid = dashboard(v);
@@ -76,6 +80,7 @@ export function validateAdminResponse(fn: string, path: string, method: string, 
   } else if (fn === "admin-subscriptions") {
     if (route === "/plans" && method === "GET") valid = list(v, plan);
     else if (route.startsWith("/plans") && method !== "DELETE") valid = plan(v);
+    else if (route.startsWith("/plans") && method === "DELETE") valid = object(v) && v.ok === true;
     else if (route === "/records") valid = list(v, x => object(x) && fields(x, ["id", "plan", "status"], string) && fields(x.user, ["id", "displayName", "email"], string) && nullable(y => oneOf(y, ["app_store", "play_store"]), x.platform) && nullable(string, x.productId) && nullable(number, x.amount) && nullable(currency, x.currency) && date(x.startDate) && nullable(date, x.expirationDate));
   } else if (fn === "admin-ai") {
     if (route === "/usage") valid = object(v) && fields(v.totals, ["requests", "inputTokens", "outputTokens", "totalTokens"], x => nullable(number, x)) &&
@@ -84,6 +89,7 @@ export function validateAdminResponse(fn: string, path: string, method: string, 
       list(v.byModel, x => fields(x, ["provider", "model"], string) && fields(x, ["requests", "totalTokens"], number));
     else if (route === "/providers" && method === "GET") valid = object(v) && list(v.data, provider);
     else if (route === "/providers/test") valid = fields(v, ["ok"], boolean) && object(v) && (v.message === undefined || string(v.message));
+    else if (route.startsWith("/providers") && method === "DELETE") valid = object(v) && v.ok === true;
     // Save returns an acknowledgement, not the provider itself.
     else if (route.startsWith("/providers") && method !== "DELETE") valid = fields(v, ["id"], string);
   }

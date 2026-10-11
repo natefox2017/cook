@@ -274,6 +274,7 @@ function App() {
   const [session, setSession] = useState<AdminSession | null>(readStoredSession);
   const [allowBootstrap, setAllowBootstrap] = useState(false);
   const sessionGeneration = useRef(0);
+  const activeToken = useRef(session?.token);
 
   useEffect(() => {
     if (!isConfigured) return;
@@ -295,6 +296,7 @@ function App() {
 
   const clearSession = useCallback(() => {
     sessionGeneration.current += 1;
+    activeToken.current = undefined;
     try { sessionStorage.removeItem(sessionStorageKey); } catch { /* Clear in-memory state regardless. */ }
     setSession(null);
     window.history.replaceState(null, "", "/admin/login");
@@ -320,6 +322,7 @@ function App() {
 
   const acceptSession = useCallback((next: AdminSession) => {
     sessionGeneration.current += 1;
+    activeToken.current = next.token;
     try { sessionStorage.setItem(sessionStorageKey, JSON.stringify(next)); } catch { /* Continue without persistence. */ }
     setSession(next);
     setAllowBootstrap(false);
@@ -335,9 +338,13 @@ function App() {
     clearSession();
   }, [clearSession, session]);
 
+  const onAuthExpired = useCallback(() => {
+    if (session && activeToken.current === session.token) clearSession();
+  }, [session, clearSession]);
+
   if (!session) return <AdminLogin onLogin={acceptSession} allowBootstrap={allowBootstrap} />;
   if (session.admin.mustChangePassword) return <ChangePassword session={session} onUpdated={acceptSession} />;
-  return <AppShell key={session.token} session={session} onLogout={logout} onAuthExpired={clearSession} />;
+  return <AppShell key={session.token} session={session} onLogout={logout} onAuthExpired={onAuthExpired} />;
 }
 
 export default App;
