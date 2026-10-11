@@ -403,7 +403,7 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
       </section>
 
       {editor && (
-        <div className="llm-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) closeEditor(); }}>
+        <div className="llm-dialog-backdrop" role="presentation">
           <section className="llm-dialog card" role="dialog" aria-modal="true" aria-labelledby="llm-editor-title">
             <header><span className="llm-dialog-icon"><Cpu size={18} aria-hidden="true" /></span><div><h2 id="llm-editor-title">{editor === "new" ? "Add provider" : "Edit provider"}</h2><p>Connect an OpenAI-compatible API endpoint.</p></div><button type="button" className="icon-button" aria-label="Close dialog" onClick={closeEditor} disabled={saving}>×</button></header>
             <form onSubmit={(event) => void saveProvider(event)}>
@@ -422,7 +422,7 @@ export function LLMPage({ token, role, onAuthExpired }: LLMPageProps) {
       )}
 
       {deleting && (
-        <div className="llm-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !deletingProvider) setDeleting(null); }}>
+        <div className="llm-dialog-backdrop" role="presentation">
           <section className="llm-confirm-dialog card" role="alertdialog" aria-modal="true" aria-labelledby="llm-delete-title" aria-describedby="llm-delete-description">
             <span className="llm-delete-icon"><Trash2 size={19} aria-hidden="true" /></span>
             <h2 id="llm-delete-title">Delete {deleting.name}?</h2>

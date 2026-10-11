@@ -16,8 +16,7 @@ struct RecipeDetailView: View {
     @State private var didAdjustServings = false
     @State private var isEditing = false
     @State private var isChoosingRecipeCandidates = false
-    @State private var isCooking = false
-    @State private var cookingStartStepID: UUID?
+    @State private var cookingPresentation: CookingPresentation?
     @State private var isChoosingIngredients = false
     @State private var isDeleting = false
     @State private var parameterInfo: RecipeParameterInfo?
@@ -28,6 +27,12 @@ struct RecipeDetailView: View {
     @State private var isLoadingSourceArtifact = false
     @State private var isDeletingSourceArtifact = false
     @State private var confirmsSourceArtifactDeletion = false
+
+    // Keep the requested step in the presentation payload so the first cover cannot read stale state.
+    private struct CookingPresentation: Identifiable {
+        let id = UUID()
+        let startStepID: UUID?
+    }
 
     var body: some View {
         Group {
@@ -65,11 +70,11 @@ struct RecipeDetailView: View {
                 addedIngredientCount = $0
             }
         }
-        .fullScreenCover(isPresented: $isCooking) {
+        .fullScreenCover(item: $cookingPresentation) { presentation in
             CookingView(
                 recipeID: recipeID,
                 servings: didAdjustServings ? servings : nil,
-                startStepID: cookingStartStepID
+                startStepID: presentation.startStepID
             ) { currentServings in
                 servings = currentServings
                 didAdjustServings = false
@@ -137,8 +142,7 @@ struct RecipeDetailView: View {
         .safeAreaInset(edge: .bottom) {
             Button {
                 RecipeInteractionFeedback.action()
-                cookingStartStepID = nil
-                isCooking = true
+                cookingPresentation = CookingPresentation(startStepID: nil)
             } label: {
                 Label("Start Cooking", systemImage: "play.fill")
                     .frame(maxWidth: .infinity)
@@ -478,8 +482,7 @@ struct RecipeDetailView: View {
 
                         Button {
                             RecipeInteractionFeedback.action()
-                            cookingStartStepID = step.id
-                            isCooking = true
+                            cookingPresentation = CookingPresentation(startStepID: step.id)
                         } label: {
                             Label("Cook from Step \(index + 1)", systemImage: "play")
                                 .frame(minHeight: 44)
