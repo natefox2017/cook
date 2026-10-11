@@ -1327,6 +1327,54 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testManualItalianLanguageSelectionIsAvailableAndAppliesImmediately() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--uitesting-reset-language"]
+        app.launch()
+        defer {
+            app.terminate()
+        }
+
+        let profileTab = app.tabBars.buttons["Profile"]
+        waitUntilReady(profileTab)
+        profileTab.tap()
+
+        let settings = app.buttons["Settings"]
+        reveal(settings, in: app, maximumSwipes: 5)
+        settings.tap()
+
+        let languageAndCountry = app.buttons["Language & Country"]
+        reveal(languageAndCountry, in: app, maximumSwipes: 6)
+        languageAndCountry.tap()
+
+        let picker = app.buttons["settings.languagePicker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5), app.debugDescription)
+        picker.tap()
+        let italian = app.buttons["Italiano"].firstMatch
+        XCTAssertTrue(italian.waitForExistence(timeout: 5), app.debugDescription)
+        italian.tap()
+
+        XCTAssertTrue(
+            app.navigationBars["Lingua e paese"].waitForExistence(timeout: 8),
+            app.debugDescription
+        )
+        XCTAssertTrue(app.staticTexts["Lingua dell’app"].exists)
+        XCTAssertEqual(picker.value as? String, "Italiano", app.debugDescription)
+
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.navigationBars["Impostazioni"].waitForExistence(timeout: 8))
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+
+        let italianProfileTab = app.tabBars.buttons["Profilo"]
+        waitUntilReady(italianProfileTab)
+        italianProfileTab.tap()
+        XCTAssertTrue(
+            app.navigationBars["Profilo"].waitForExistence(timeout: 8),
+            app.debugDescription
+        )
+    }
+
+    @MainActor
     func testExportFormatsAreAvailableInBothEntryPoints() {
         let app = launchSeededApp()
         defer {

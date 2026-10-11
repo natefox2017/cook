@@ -13,6 +13,7 @@
         <string>de</string>
         <string>fr</string>
         <string>es</string>
+        <string>it</string>
     </array>
     <key>CFBundleDisplayName</key>
     <string>Recipe Pals</string>
