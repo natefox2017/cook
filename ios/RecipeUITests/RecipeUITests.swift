@@ -751,7 +751,9 @@ final class RecipeUITests: XCTestCase {
         app.buttons["startCooking"].tap()
         assertCookingStep("Step 1 of 3", in: app)
 
-        let stepContent = app.otherElements["cookingStepSwipeSurface"]
+        // SwiftUI exposes the title and instruction as StaticText children.
+        let stepContent = app.staticTexts.matching(identifier: "cookingStepSwipeSurface")
+            .element(boundBy: 1)
         waitUntilReady(stepContent)
         stepContent.swipeLeft()
         assertCookingStep("Step 2 of 3", in: app)
@@ -804,8 +806,9 @@ final class RecipeUITests: XCTestCase {
         XCTAssertEqual(updatedGrocery.value as? String, "Bought")
         XCTAssertTrue(app.navigationBars["Groceries"].exists)
 
-        updatedGrocery.swipeLeft()
-        XCTAssertTrue(app.buttons["Edit"].exists)
+        // Drag across the row, rather than the narrow visible check button.
+        swipeAcrossRoot(updatedGrocery, in: app, towardNext: true)
+        XCTAssertTrue(app.buttons["Edit"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["Delete"].exists)
         XCTAssertTrue(app.navigationBars["Groceries"].exists)
     }
@@ -2275,5 +2278,138 @@ final class RecipeUITests: XCTestCase {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
+    }
+}
+
+extension RecipeUITests {
+    @MainActor
+    func testSearchEditingAndSheetPreventRootTabSwipe() {
+        let app = launchSeededApp()
+        defer {
+            app.terminate()
+        }
+        let search = app.textFields["recipeSearchField"]
+        waitUntilReady(search)
+        search.tap()
+        search.typeText("Garlic")
+        let count = app.staticTexts["recipeCount"]
+        waitUntilReady(count)
+        attachScreenshot("DEV44 Search editing before root swipe", app: app)
+        swipeAcrossRoot(count, in: app, towardNext: true)
+        attachScreenshot("DEV44 Search editing after root swipe", app: app)
+        XCTAssertTrue(app.navigationBars["My Recipes"].exists)
+        XCTAssertTrue(app.keyboards.firstMatch.exists)
+        app.terminate()
+        app.launch()
+        waitUntilReady(app.buttons["addRecipeButton"])
+        app.buttons["addRecipeButton"].tap()
+        XCTAssertTrue(app.navigationBars["Add Recipe"].waitForExistence(timeout: 8))
+        app.swipeLeft()
+        XCTAssertTrue(app.navigationBars["Add Recipe"].exists)
+        app.navigationBars["Add Recipe"].buttons["Done"].tap()
+        XCTAssertTrue(app.navigationBars["My Recipes"].waitForExistence(timeout: 8))
+        attachScreenshot("DEV44 Sheet returns to original tab", app: app)
+    }
+
+    @MainActor
+    func testMealPlanWeekButtonsMatchHeaderGesture() {
+        let app = launchSeededApp()
+        defer {
+            app.terminate()
+        }
+        app.tabBars.buttons["Plan"].tap()
+        let heading = app.staticTexts["mealplan.weekRange"]
+        waitUntilReady(heading)
+        let original = heading.label
+        app.buttons["Next week"].tap()
+        XCTAssertNotEqual(heading.label, original)
+        XCTAssertTrue(app.navigationBars["Meal Plan"].exists)
+        app.buttons["Previous week"].tap()
+        XCTAssertEqual(heading.label, original)
+        attachScreenshot("DEV44 Plan buttons return to original week", app: app)
+    }
+}
+
+extension RecipeUITests {
+    @MainActor
+    func testPushedRecipeKeepsTabAndSystemBackGesture() {
+        let app = launchSeededApp()
+        defer {
+            app.terminate()
+        }
+        openSamplePasta(in: app)
+        app.swipeLeft()
+        XCTAssertTrue(app.navigationBars["Recipe"].exists)
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.45))
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.80, dy: 0.45))
+        start.press(forDuration: 0.05, thenDragTo: end)
+        XCTAssertTrue(app.navigationBars["My Recipes"].waitForExistence(timeout: 8))
+        attachScreenshot("DEV44 System edge back returns to Recipes", app: app)
+    }
+
+    @MainActor
+    func testActiveTimersSurviveStepSwipesAndFinishCancellation() throws {
+        let app = launchSeededApp()
+        defer {
+            app.terminate()
+        }
+        let recipe = app.buttons["recipe.C0010000-0000-4000-8000-000000000005"]
+        reveal(recipe, in: app, maximumSwipes: 4)
+        recipe.tap()
+        let cookFromStep = app.buttons["cookFromStep.4"]
+        revealRecipeStepAction(cookFromStep, in: app)
+        cookFromStep.tap()
+        assertCookingStep("Step 4 of 8", in: app)
+        for _ in 0..<2 {
+            let start = app.buttons["timerStart"].firstMatch
+            revealCookingTimer(start, in: app)
+            start.tap()
+        }
+        let timerPause = app.buttons["timerPause"].firstMatch
+        revealCookingTimer(timerPause, in: app)
+        swipeAcrossRoot(timerPause, in: app, towardNext: true)
+        assertCookingStep("Step 4 of 8", in: app)
+        for _ in 0..<4 {
+            app.buttons["nextStep"].tap()
+        }
+        assertCookingStep("Step 8 of 8", in: app)
+        let timers = app.buttons["cookingTimersButton"]
+        timers.tap()
+        XCTAssertTrue(app.staticTexts["First roast"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Check tray halfway"].exists)
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label == %@", "Pause")).count, 2)
+        attachScreenshot("DEV44 Both timers running at final step", app: app)
+        app.navigationBars.buttons["Done"].tap()
+        let stepContent = try XCTUnwrap(
+            app.staticTexts.matching(identifier: "cookingStepSwipeSurface")
+                .allElementsBoundByIndex.max { left, right in
+                    left.frame.width * left.frame.height < right.frame.width * right.frame.height
+                }
+        )
+        waitUntilReady(stepContent)
+        swipeAcrossRoot(stepContent, in: app, towardNext: true)
+        XCTAssertTrue(
+            app.buttons.matching(identifier: "confirmFinishCooking").firstMatch.waitForExistence(
+                timeout: 8))
+        attachScreenshot("DEV44 Final-step swipe opens finish confirmation", app: app)
+        if app.buttons["Keep Cooking"].exists {
+            app.buttons["Keep Cooking"].tap()
+        } else {
+            let dismissRegion = app.otherElements["PopoverDismissRegion"]
+            waitUntilReady(dismissRegion)
+            dismissRegion.tap()
+        }
+        XCTAssertFalse(app.buttons.matching(identifier: "confirmFinishCooking").firstMatch.exists)
+        assertCookingStep("Step 8 of 8", in: app)
+        timers.tap()
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label == %@", "Pause")).count, 2)
+        app.navigationBars.buttons["Done"].tap()
+        swipeAcrossRoot(stepContent, in: app, towardNext: true)
+        XCTAssertTrue(
+            app.buttons.matching(identifier: "confirmFinishCooking").firstMatch.waitForExistence(
+                timeout: 8))
+        app.buttons.matching(identifier: "confirmFinishCooking").firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Ready to enjoy"].waitForExistence(timeout: 8))
+        attachScreenshot("DEV44 Final-step swipe completes via existing confirmation", app: app)
     }
 }
