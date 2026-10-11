@@ -3,6 +3,7 @@
 
 import AuthenticationServices
 import Foundation
+import RecipeCore
 import Supabase
 import XCTest
 
@@ -28,6 +29,250 @@ final class RecipeAuthServiceTests: XCTestCase {
         XCTAssertFalse(CloudSyncCoordinatorState.conflicts([]).permitsUpload)
         XCTAssertTrue(CloudSyncCoordinatorState.localOnly.permitsUpload)
         XCTAssertTrue(CloudSyncCoordinatorState.synced(.now).permitsUpload)
+    }
+
+    func testOldCloudDownloadCannotApplyAfterReloginToSameUser() async throws {
+        let service = PausedCloudSyncService()
+        let store = RecipeStore()
+        let coordinator = try makeCloudCoordinator(service: service)
+        let userID = UUID()
+        let oldLogin = Task {
+            await coordinator.bind(store: store, authState: .signedIn(userID: userID, email: nil))
+        }
+        try await service.waitForRequests(downloads: 1)
+        await coordinator.authenticationChanged(.signedOut)
+        let newLogin = Task {
+            await coordinator.authenticationChanged(.signedIn(userID: userID, email: nil))
+        }
+        try await service.waitForRequests(downloads: 2)
+
+        let oldCloud = RecipeStore()
+        try oldCloud.upsert(Recipe(title: "Old session soup", steps: [.init(instruction: "Simmer.")]))
+        await service.completeDownload(1, with: .success(try cloudEnvelope(store: oldCloud)))
+        await oldLogin.value
+        XCTAssertTrue(store.recipes.isEmpty)
+        XCTAssertEqual(coordinator.state, .syncing)
+        XCTAssertFalse(coordinator.state.permitsUpload)
+        XCTAssertNil(coordinator.lastSyncedAt)
+
+        await service.completeDownload(2, with: .success(nil))
+        await newLogin.value
+        XCTAssertEqual(coordinator.state, .localOnly)
+        let uploads = await service.uploadCount
+        XCTAssertEqual(uploads, 0)
+    }
+
+    func testOldCloudDownloadErrorCannotReplaceNewSessionState() async throws {
+        let service = PausedCloudSyncService()
+        let store = RecipeStore()
+        let coordinator = try makeCloudCoordinator(service: service)
+        let userID = UUID()
+        let oldLogin = Task {
+            await coordinator.bind(store: store, authState: .signedIn(userID: userID, email: nil))
+        }
+        try await service.waitForRequests(downloads: 1)
+        await coordinator.authenticationChanged(.signedOut)
+        let newLogin = Task {
+            await coordinator.authenticationChanged(.signedIn(userID: userID, email: nil))
+        }
+        try await service.waitForRequests(downloads: 2)
+
+        await service.completeDownload(1, with: .failure(URLError(.notConnectedToInternet)))
+        await oldLogin.value
+        XCTAssertEqual(coordinator.state, .syncing)
+        XCTAssertFalse(coordinator.state.permitsUpload)
+        await service.completeDownload(2, with: .success(nil))
+        await newLogin.value
+        XCTAssertEqual(coordinator.state, .localOnly)
+    }
+
+    func testOldCloudUploadCannotMarkReloggedSessionSynced() async throws {
+        try await verifyStaleUploadCompletion(isConflict: false)
+    }
+
+    func testOldCloudConflictCannotDownloadOrRetryUnderReloggedSession() async throws {
+        try await verifyStaleUploadCompletion(isConflict: true)
+    }
+
+    // These fake-service cases cover coordinator sync state and its caller's
+    // result only. They do not exercise Supabase's deletion or local sign-out.
+    func testOldCoordinatorDeletionCannotClearReloggedSyncState() async throws {
+        try await verifyStaleDeletionCompletion(isFailure: false)
+    }
+
+    func testOldCoordinatorDeletionErrorReportsCancellation() async throws {
+        try await verifyStaleDeletionCompletion(isFailure: true)
+    }
+
+    private func verifyStaleDeletionCompletion(isFailure: Bool) async throws {
+        let service = PausedCloudSyncService()
+        let coordinator = try makeCloudCoordinator(service: service)
+        let store = RecipeStore()
+        let userID = UUID()
+        let login = Task {
+            await coordinator.bind(store: store, authState: .signedIn(userID: userID, email: nil))
+        }
+        try await service.waitForRequests(downloads: 1)
+        await service.completeDownload(1, with: .success(nil))
+        await login.value
+        let deletion = Task {
+            do {
+                try await coordinator.deleteAccountAndCloudData()
+                return false
+            } catch is CancellationError {
+                return true
+            }
+        }
+        try await service.waitForRequests(deletions: 1)
+        await coordinator.authenticationChanged(.signedOut)
+        let newLogin = Task {
+            await coordinator.authenticationChanged(.signedIn(userID: userID, email: nil))
+        }
+        try await service.waitForRequests(downloads: 2)
+
+        if isFailure {
+            await service.completeDeletion(with: .failure(URLError(.notConnectedToInternet)))
+        } else {
+            await service.completeDeletion(with: .success(()))
+        }
+        let wasCancelled = try await deletion.value
+        XCTAssertTrue(wasCancelled, "An obsolete deletion must not report success to a new session.")
+        XCTAssertEqual(coordinator.state, .syncing)
+        await service.completeDownload(2, with: .success(nil))
+        await newLogin.value
+        XCTAssertEqual(coordinator.state, .localOnly)
+        let sync = Task {
+            await coordinator.syncNow()
+        }
+        try await service.waitForRequests(downloads: 3)
+        await service.completeDownload(3, with: .success(nil))
+        await sync.value
+    }
+
+    func testCurrentCloudSessionStillAppliesConfirmedDownload() async throws {
+        let service = PausedCloudSyncService()
+        let coordinator = try makeCloudCoordinator(service: service)
+        let store = RecipeStore()
+        let cloud = RecipeStore()
+        let recipe = Recipe(title: "Current session soup", steps: [.init(instruction: "Simmer.")])
+        try cloud.upsert(recipe)
+        let userID = UUID()
+        let login = Task {
+            await coordinator.bind(store: store, authState: .signedIn(userID: userID, email: nil))
+        }
+        try await service.waitForRequests(downloads: 1)
+        // An unchanged signed-in notification represents the same continuous
+        // session, not a sign-out/relogin boundary that cancels valid work.
+        await coordinator.authenticationChanged(.signedIn(userID: userID, email: nil))
+        let envelope = try cloudEnvelope(store: cloud)
+        await service.completeDownload(1, with: .success(envelope))
+        await login.value
+        XCTAssertEqual(store.recipes.map(\.id), [recipe.id])
+        let serverTime = try XCTUnwrap(envelope.serverUpdatedAt)
+        XCTAssertEqual(coordinator.state, .synced(serverTime))
+    }
+
+    func testOldCloudDownloadCannotApplyAfterRebindingStore() async throws {
+        let service = PausedCloudSyncService()
+        let coordinator = try makeCloudCoordinator(service: service)
+        let oldStore = RecipeStore()
+        let newStore = RecipeStore()
+        let userID = UUID()
+        let oldBinding = Task {
+            await coordinator.bind(store: oldStore, authState: .signedIn(userID: userID, email: nil))
+        }
+        try await service.waitForRequests(downloads: 1)
+        let newBinding = Task {
+            await coordinator.bind(store: newStore, authState: .signedIn(userID: userID, email: nil))
+        }
+        try await service.waitForRequests(downloads: 2)
+        let cloud = RecipeStore()
+        try cloud.upsert(Recipe(title: "Old binding soup", steps: [.init(instruction: "Simmer.")]))
+        await service.completeDownload(1, with: .success(try cloudEnvelope(store: cloud)))
+        await oldBinding.value
+        XCTAssertTrue(oldStore.recipes.isEmpty)
+        XCTAssertTrue(newStore.recipes.isEmpty)
+        XCTAssertEqual(coordinator.state, .syncing)
+        await service.completeDownload(2, with: .success(nil))
+        await newBinding.value
+        XCTAssertEqual(coordinator.state, .localOnly)
+    }
+
+    private func verifyStaleUploadCompletion(isConflict: Bool) async throws {
+        // A pre-fix conflict retry must fail the assertion, not suspend forever
+        // on a third download while this test awaits the original upload task.
+        let service = PausedCloudSyncService(maximumDownloads: 2)
+        let coordinator = try makeCloudCoordinator(service: service)
+        let store = RecipeStore()
+        let recipe = Recipe(title: "Private local soup", steps: [.init(instruction: "Simmer.")])
+        try store.upsert(recipe)
+        let userID = UUID()
+        let login = Task {
+            await coordinator.bind(store: store, authState: .signedIn(userID: userID, email: nil))
+        }
+        try await service.waitForRequests(downloads: 1)
+        await service.completeDownload(1, with: .success(nil))
+        await login.value
+        let upload = Task {
+            await coordinator.chooseInitialSync(.mergeLibraries)
+        }
+        try await service.waitForRequests(uploads: 1)
+        await coordinator.authenticationChanged(.signedOut)
+        let newLogin = Task {
+            await coordinator.authenticationChanged(.signedIn(userID: userID, email: nil))
+        }
+        try await service.waitForRequests(downloads: 2)
+
+        if isConflict {
+            await service.completeUpload(with: .failure(RecipeCloudSyncError.revisionConflict))
+        } else {
+            await service.completeUpload(with: .success(try cloudEnvelope(store: store)))
+        }
+        await upload.value
+        XCTAssertEqual(coordinator.state, .syncing)
+        XCTAssertNil(coordinator.lastSyncedAt)
+        XCTAssertEqual(store.recipes.map(\.id), [recipe.id])
+        let downloads = await service.downloadCount
+        let uploads = await service.uploadCount
+        XCTAssertEqual(downloads, 2)
+        XCTAssertEqual(uploads, 1)
+
+        await service.completeDownload(2, with: .success(nil))
+        await newLogin.value
+        if case .initialChoice = coordinator.state {
+        } else {
+            XCTFail("The new login must still require consent for its local library.")
+        }
+        XCTAssertFalse(coordinator.state.permitsUpload)
+    }
+
+    private func cloudEnvelope(store: RecipeStore) throws -> CloudSnapshotEnvelope {
+        let payload = try store.exportCloudSnapshot()
+        return CloudSnapshotEnvelope(
+            schemaVersion: payload.version,
+            payload: payload,
+            clientUpdatedAt: Date(timeIntervalSince1970: 1_791_670_000),
+            revision: 1,
+            serverUpdatedAt: Date(timeIntervalSince1970: 1_791_670_001)
+        )
+    }
+
+    private func makeCloudCoordinator(service: PausedCloudSyncService) throws -> CloudSyncCoordinator {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("RecipeCloudSessionTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        addTeardownBlock {
+            await service.cancelPendingRequests()
+            try? FileManager.default.removeItem(at: root)
+        }
+        let defaults = makeAuthDefaults()
+        defaults.set(CloudSyncMode.manual.rawValue, forKey: "recipe.sync.mode")
+        return CloudSyncCoordinator(
+            service: service,
+            defaults: defaults,
+            monitorsNetworkChanges: false,
+            supportDirectory: root
+        )
     }
 
     func testGoogleOAuthCancellationIsNotAnAuthenticationError() {
@@ -287,6 +532,88 @@ final class RecipeAuthServiceTests: XCTestCase {
         let suiteName = "RecipeAuthServiceTests-\(UUID().uuidString)"
         defaultsSuiteName = suiteName
         return UserDefaults(suiteName: suiteName)!
+    }
+}
+
+/// Pauses real coordinator calls at its existing service boundary; never uses Auth or network.
+private actor PausedCloudSyncService: RecipeCloudSyncing {
+    private(set) var downloadCount = 0
+    private(set) var uploadCount = 0
+    private(set) var deletionCount = 0
+    private var downloads: [Int: CheckedContinuation<CloudSnapshotEnvelope?, any Error>] = [:]
+    private var pendingUpload: CheckedContinuation<CloudSnapshotEnvelope, any Error>?
+    private var pendingDeletion: CheckedContinuation<Void, any Error>?
+    private let maximumDownloads: Int?
+
+    init(maximumDownloads: Int? = nil) {
+        self.maximumDownloads = maximumDownloads
+    }
+
+    func download(for userID: UUID) async throws -> CloudSnapshotEnvelope? {
+        downloadCount += 1
+        if let maximumDownloads, downloadCount > maximumDownloads {
+            throw URLError(.badServerResponse)
+        }
+        let requestID = downloadCount
+        return try await withCheckedThrowingContinuation { continuation in
+            downloads[requestID] = continuation
+        }
+    }
+
+    func upload(
+        _ snapshot: CloudSnapshotEnvelope,
+        expectedRevision: Int64,
+        for userID: UUID
+    ) async throws -> CloudSnapshotEnvelope {
+        uploadCount += 1
+        return try await withCheckedThrowingContinuation { continuation in
+            pendingUpload = continuation
+        }
+    }
+
+    func deleteAccountAndCloudData() async throws {
+        deletionCount += 1
+        try await withCheckedThrowingContinuation { continuation in
+            pendingDeletion = continuation
+        }
+    }
+
+    func completeDownload(_ requestID: Int, with result: Result<CloudSnapshotEnvelope?, any Error>) {
+        downloads.removeValue(forKey: requestID)?.resume(with: result)
+    }
+
+    func completeUpload(with result: Result<CloudSnapshotEnvelope, any Error>) {
+        let continuation = pendingUpload
+        pendingUpload = nil
+        continuation?.resume(with: result)
+    }
+
+    func completeDeletion(with result: Result<Void, any Error>) {
+        let continuation = pendingDeletion
+        pendingDeletion = nil
+        continuation?.resume(with: result)
+    }
+
+    func waitForRequests(downloads: Int = 0, uploads: Int = 0, deletions: Int = 0) async throws {
+        for _ in 0..<100 {
+            if downloadCount >= downloads, uploadCount >= uploads, deletionCount >= deletions {
+                return
+            }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        throw URLError(.timedOut)
+    }
+
+    func cancelPendingRequests() {
+        let pending = Array(downloads.values)
+        downloads.removeAll()
+        for continuation in pending {
+            continuation.resume(throwing: CancellationError())
+        }
+        completeUpload(with: .failure(CancellationError()))
+        let continuation = pendingDeletion
+        pendingDeletion = nil
+        continuation?.resume(throwing: CancellationError())
     }
 }
 

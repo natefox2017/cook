@@ -254,11 +254,15 @@ final class CloudSyncCoordinator {
 
     @ObservationIgnored private let service: any RecipeCloudSyncing
     @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let supportDirectory: URL
     @ObservationIgnored private let pathMonitor = NWPathMonitor()
     @ObservationIgnored private let pathQueue = DispatchQueue(
         label: "com.modelhub.recipe.cloud-sync-path")
     @ObservationIgnored private var store: RecipeStore?
     @ObservationIgnored private var accountID: UUID?
+    // A user UUID can recur after sign-out. In-flight work belongs to one
+    // continuous authenticated session, not every later login by that user.
+    @ObservationIgnored private var authenticationGeneration = UUID()
     @ObservationIgnored private var remoteSnapshot: CloudSnapshotEnvelope?
     @ObservationIgnored private var mergeBaseSnapshot: RecipeLibrarySnapshot?
     @ObservationIgnored private var expectedRevision: Int64 = 0
@@ -272,10 +276,12 @@ final class CloudSyncCoordinator {
     init(
         service: any RecipeCloudSyncing = SupabaseCloudSync(),
         defaults: UserDefaults = .standard,
-        monitorsNetworkChanges: Bool = true
+        monitorsNetworkChanges: Bool = true,
+        supportDirectory: URL = .applicationSupportDirectory
     ) {
         self.service = service
         self.defaults = defaults
+        self.supportDirectory = supportDirectory
         let storedMode =
             defaults.string(forKey: "recipe.sync.mode")
             ?? defaults.string(forKey: "cook.sync.mode")
@@ -360,7 +366,7 @@ final class CloudSyncCoordinator {
         try verifyLocalOnlyResetAllowed()
 
         for directoryName in ["Recipe", "Cook"] {
-            let syncDirectory = URL.applicationSupportDirectory
+            let syncDirectory = supportDirectory
                 .appendingPathComponent(directoryName, isDirectory: true)
                 .appendingPathComponent("Sync", isDirectory: true)
             if FileManager.default.fileExists(atPath: syncDirectory.path) {
@@ -370,6 +376,11 @@ final class CloudSyncCoordinator {
     }
 
     func bind(store: RecipeStore, authState: RecipeAuthState) async {
+        if self.store !== store {
+            // Pending work captured the previous store and must not establish
+            // a sync lineage for a newly bound library, even for the same user.
+            await authenticationChanged(.signedOut)
+        }
         self.store = store
         await authenticationChanged(authState)
     }
@@ -378,10 +389,16 @@ final class CloudSyncCoordinator {
         switch authState {
         case .signedIn(let userID, _):
             if accountID == userID {
+                let generation = authenticationGeneration
                 await refreshFromCloudIfAllowed()
+                guard authenticationGeneration == generation else {
+                    return
+                }
                 await syncLocalChangesIfAllowed()
                 return
             }
+            authenticationGeneration = UUID()
+            let generation = authenticationGeneration
             accountID = userID
             remoteSnapshot = loadPersistedBase(for: userID)
             mergeBaseSnapshot = nil
@@ -393,8 +410,12 @@ final class CloudSyncCoordinator {
                     forKey: lastSyncedKey(for: userID)
                 ) as? Date
             await loadAccountSnapshot(userID: userID)
+            guard authenticationGeneration == generation else {
+                return
+            }
             await syncLocalChangesIfAllowed()
         case .signedOut:
+            authenticationGeneration = UUID()
             accountID = nil
             remoteSnapshot = nil
             mergeBaseSnapshot = nil
@@ -419,8 +440,15 @@ final class CloudSyncCoordinator {
         self.mode = mode
         defaults.set(mode.rawValue, forKey: "recipe.sync.mode")
         if mode != .manual {
+            let generation = authenticationGeneration
             Task {
+                guard authenticationGeneration == generation else {
+                    return
+                }
                 await refreshFromCloudIfAllowed()
+                guard authenticationGeneration == generation else {
+                    return
+                }
                 await syncLocalChangesIfAllowed()
             }
         }
@@ -502,8 +530,13 @@ final class CloudSyncCoordinator {
         if case .initialChoice = state { return }
         if case .conflicts = state { return }
 
+        let generation = authenticationGeneration
         await refreshFromCloudIfAllowed(force: true)
-        guard accountID == requestedAccountID else { return }
+        guard accountID == requestedAccountID,
+            authenticationGeneration == generation
+        else {
+            return
+        }
         // A failed download is not permission to overwrite unknown server data.
         // Do not bypass a first-sync consent screen or unresolved conflicts.
         guard state.permitsUpload else { return }
@@ -511,25 +544,43 @@ final class CloudSyncCoordinator {
     }
 
     func appBecameActive() async {
+        let generation = authenticationGeneration
         await refreshFromCloudIfAllowed()
+        guard authenticationGeneration == generation else {
+            return
+        }
         await syncLocalChangesIfAllowed()
     }
 
     func deleteAccountAndCloudData() async throws {
         guard let deletingAccountID = accountID else {
             state = .localOnly
-            return
+            throw CancellationError()
         }
 
-        try await service.deleteAccountAndCloudData()
+        let generation = authenticationGeneration
+        do {
+            try await service.deleteAccountAndCloudData()
+        } catch {
+            guard accountID == deletingAccountID,
+                authenticationGeneration == generation
+            else {
+                throw CancellationError()
+            }
+            throw error
+        }
+        guard accountID == deletingAccountID,
+            authenticationGeneration == generation
+        else {
+            throw CancellationError()
+        }
 
         try? removePersistedBase(for: deletingAccountID)
         if localLibraryAccountID == deletingAccountID {
             try linkLocalLibrary(to: nil)
         }
 
-        guard accountID == deletingAccountID else { return }
-
+        authenticationGeneration = UUID()
         accountID = nil
         remoteSnapshot = nil
         mergeBaseSnapshot = nil
@@ -542,6 +593,7 @@ final class CloudSyncCoordinator {
 
     private func loadAccountSnapshot(userID: UUID) async {
         guard let store else { return }
+        let generation = authenticationGeneration
         state = .syncing
 
         do {
@@ -549,7 +601,11 @@ final class CloudSyncCoordinator {
             let local = try store.exportCloudSnapshot()
             let linkedAccountID = localLibraryAccountID
             let remote = try await service.download(for: userID)
-            guard accountID == userID else { return }
+            guard accountID == userID,
+                authenticationGeneration == generation
+            else {
+                return
+            }
 
             // A local library associated with another account must never be
             // silently uploaded into the newly signed-in account.
@@ -609,7 +665,11 @@ final class CloudSyncCoordinator {
                     with: remote.payload,
                     base: persistedBase.payload
                 )
-                guard accountID == userID else { return }
+                guard accountID == userID,
+                    authenticationGeneration == generation
+                else {
+                    return
+                }
 
                 mergeBaseSnapshot = persistedBase.payload
                 remoteSnapshot = remote
@@ -659,7 +719,11 @@ final class CloudSyncCoordinator {
                 state = .localOnly
             }
         } catch {
-            guard accountID == userID else { return }
+            guard accountID == userID,
+                authenticationGeneration == generation
+            else {
+                return
+            }
             state = .error(error.localizedDescription)
         }
     }
@@ -676,13 +740,18 @@ final class CloudSyncCoordinator {
         if case .initialChoice = state { return }
         if case .conflicts = state { return }
 
+        let generation = authenticationGeneration
         isSyncing = true
         state = .syncing
         defer { isSyncing = false }
 
         do {
             let latest = try await service.download(for: accountID)
-            guard self.accountID == accountID else { return }
+            guard self.accountID == accountID,
+                authenticationGeneration == generation
+            else {
+                return
+            }
 
             guard let latest else {
                 if expectedRevision > 0 {
@@ -713,7 +782,11 @@ final class CloudSyncCoordinator {
                 with: latest.payload,
                 base: base
             )
-            guard self.accountID == accountID else { return }
+            guard self.accountID == accountID,
+                authenticationGeneration == generation
+            else {
+                return
+            }
 
             mergeBaseSnapshot = base
             remoteSnapshot = latest
@@ -733,7 +806,11 @@ final class CloudSyncCoordinator {
                 state = .conflicts(conflicts)
             }
         } catch {
-            guard self.accountID == accountID else { return }
+            guard self.accountID == accountID,
+                authenticationGeneration == generation
+            else {
+                return
+            }
             state = .error(error.localizedDescription)
         }
     }
@@ -762,6 +839,7 @@ final class CloudSyncCoordinator {
     private func uploadLocalSnapshot(forceFollowUp: Bool = false) async {
         guard let store, let accountID else { return }
         guard !isSyncing else { return }
+        let generation = authenticationGeneration
         do {
             let payload = try store.exportCloudSnapshot()
             if !store.hasUserData && (payload.deletedEntities ?? []).isEmpty
@@ -778,6 +856,11 @@ final class CloudSyncCoordinator {
                 isSyncing = false
                 if followUpSyncNeeded {
                     Task { @MainActor in
+                        guard self.accountID == accountID,
+                            self.authenticationGeneration == generation
+                        else {
+                            return
+                        }
                         if forceFollowUp {
                             await self.uploadLocalSnapshot(forceFollowUp: true)
                         } else {
@@ -796,7 +879,11 @@ final class CloudSyncCoordinator {
             do {
                 let saved = try await service.upload(
                     pending, expectedRevision: expectedRevision, for: accountID)
-                guard self.accountID == accountID else { return }
+                guard self.accountID == accountID,
+                    authenticationGeneration == generation
+                else {
+                    return
+                }
                 remoteSnapshot = saved
                 mergeBaseSnapshot = nil
                 expectedRevision = saved.revision
@@ -806,10 +893,18 @@ final class CloudSyncCoordinator {
                 markSynced(saved.serverUpdatedAt)
                 followUpSyncNeeded = store.changeToken != submittedToken
             } catch RecipeCloudSyncError.revisionConflict {
-                guard self.accountID == accountID else { return }
+                guard self.accountID == accountID,
+                    authenticationGeneration == generation
+                else {
+                    return
+                }
                 let base = remoteSnapshot?.payload
                 let latest = try await service.download(for: accountID)
-                guard self.accountID == accountID else { return }
+                guard self.accountID == accountID,
+                    authenticationGeneration == generation
+                else {
+                    return
+                }
 
                 guard let latest else {
                     state = .error(
@@ -822,7 +917,11 @@ final class CloudSyncCoordinator {
                     with: latest.payload,
                     base: base
                 )
-                guard self.accountID == accountID else { return }
+                guard self.accountID == accountID,
+                    authenticationGeneration == generation
+                else {
+                    return
+                }
 
                 mergeBaseSnapshot = base
                 remoteSnapshot = latest
@@ -837,7 +936,11 @@ final class CloudSyncCoordinator {
                 }
             }
         } catch {
-            guard self.accountID == accountID else { return }
+            guard self.accountID == accountID,
+                authenticationGeneration == generation
+            else {
+                return
+            }
             state = .error(error.localizedDescription)
         }
     }
@@ -854,7 +957,7 @@ final class CloudSyncCoordinator {
     }
 
     private var localEraseMarkerURL: URL {
-        URL.applicationSupportDirectory
+        supportDirectory
             .appendingPathComponent("Recipe", isDirectory: true)
             .appendingPathComponent(".localErasePending")
     }
@@ -885,7 +988,7 @@ final class CloudSyncCoordinator {
     }
 
     private func syncBaseURL(for userID: UUID) -> URL {
-        URL.applicationSupportDirectory
+        supportDirectory
             .appendingPathComponent("Recipe", isDirectory: true)
             .appendingPathComponent("Sync", isDirectory: true)
             .appendingPathComponent(
