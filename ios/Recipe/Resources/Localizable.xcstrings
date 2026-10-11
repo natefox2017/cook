@@ -62,6 +62,12 @@
             "state": "translated",
             "value": "Ingrediëntgroepen"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "재료 그룹"
+          }
         }
       }
     },
@@ -125,6 +131,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Groepsnaam"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "그룹 이름"
           }
         }
       }
@@ -190,6 +202,12 @@
             "state": "translated",
             "value": "Groep omhoog verplaatsen"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "그룹 위로 이동"
+          }
         }
       }
     },
@@ -253,6 +271,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Groep omlaag verplaatsen"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "그룹 아래로 이동"
           }
         }
       }
@@ -318,6 +342,12 @@
             "state": "translated",
             "value": "Ingrediëntgroep verwijderen"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "재료 그룹 제거"
+          }
         }
       }
     },
@@ -381,6 +411,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ingrediënten in deze groep"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 그룹의 재료"
           }
         }
       }
@@ -446,6 +482,12 @@
             "state": "translated",
             "value": "Ingrediëntgroep toevoegen"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "재료 그룹 추가"
+          }
         }
       }
     },
@@ -509,6 +551,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Geef elke ingrediëntgroep een naam."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "각 재료 그룹에 이름을 지정하세요."
           }
         }
       }
@@ -574,6 +622,12 @@
             "state": "translated",
             "value": "Kies voor elke groep minstens één ingrediënt."
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "각 그룹에 재료를 하나 이상 선택하세요."
+          }
         }
       }
     },
@@ -637,6 +691,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Foto bij stap toevoegen"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "단계 사진 추가"
           }
         }
       }
@@ -702,6 +762,12 @@
             "state": "translated",
             "value": "Foto bij stap verwijderen"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "단계 사진 제거"
+          }
         }
       }
     },
@@ -765,6 +831,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gebruik foto's die van jou zijn of waarvoor je toestemming hebt om ze te gebruiken."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "직접 소유하거나 사용 허가를 받은 사진을 사용하세요."
           }
         }
       }
@@ -830,6 +902,12 @@
             "state": "translated",
             "value": "Foto bij stap"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "단계 사진"
+          }
         }
       }
     },
@@ -893,6 +971,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Foto bij stap niet beschikbaar op dit apparaat"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 기기에서 단계 사진을 사용할 수 없음"
           }
         }
       }
@@ -958,6 +1042,12 @@
             "state": "translated",
             "value": "Vanaf deze stap koken"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 단계부터 요리 시작"
+          }
         }
       }
     },
@@ -1021,6 +1111,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Postervoorbeeld"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "포스터 미리보기"
           }
         }
       }
@@ -1086,6 +1182,12 @@
             "state": "translated",
             "value": "Story"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스토리"
+          }
         }
       }
     },
@@ -1149,6 +1251,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lange afbeelding"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "긴 이미지"
           }
         }
       }
@@ -1214,6 +1322,12 @@
             "state": "translated",
             "value": "Afbeelding delen"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이미지 공유"
+          }
         }
       }
     },
@@ -1277,6 +1391,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Link kopiëren"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "링크 복사"
           }
         }
       }
@@ -61321,6 +61441,12 @@
             "state": "translated",
             "value": "Delen"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공유"
+          }
         }
       }
     },
@@ -61384,6 +61510,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Opnieuw proberen"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "다시 시도"
           }
         }
       }
@@ -61449,6 +61581,12 @@
             "state": "translated",
             "value": "Samenvatting en bron"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "요약 및 출처"
+          }
         }
       }
     },
@@ -61512,6 +61650,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Volledige bereiding"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "전체 조리 방법"
           }
         }
       }
@@ -61577,6 +61721,12 @@
             "state": "translated",
             "value": "Ik heb toestemming om deze bereidingsinstructies te delen."
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 조리 방법을 공유할 권한이 있습니다."
+          }
         }
       }
     },
@@ -61640,6 +61790,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Link publiceren"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "링크 공개"
           }
         }
       }
@@ -61705,6 +61861,12 @@
             "state": "translated",
             "value": "Openbare kopie bijwerken"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공개 사본 업데이트"
+          }
         }
       }
     },
@@ -61768,6 +61930,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Link intrekken"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "링크 취소"
           }
         }
       }
@@ -61833,6 +62001,12 @@
             "state": "translated",
             "value": "Deze openbare link intrekken?"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 공개 링크를 취소할까요?"
+          }
         }
       }
     },
@@ -61896,6 +62070,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deze link werkt daarna niet meer."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 링크를 더 이상 사용할 수 없게 됩니다."
           }
         }
       }
@@ -61961,6 +62141,12 @@
             "state": "translated",
             "value": "Meld je aan om te delen."
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공유하려면 로그인해야 합니다."
+          }
         }
       }
     },
@@ -62024,6 +62210,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dit recept is gewijzigd. Controleer het voordat je het deelt."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 레시피가 변경되었습니다. 공유하기 전에 확인하세요."
           }
         }
       }
@@ -62089,6 +62281,12 @@
             "state": "translated",
             "value": "Je account is gewijzigd. Meld je opnieuw aan."
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "계정이 변경되었습니다. 다시 로그인하세요."
+          }
         }
       }
     },
@@ -62152,6 +62350,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "De openbare kopie is gewijzigd. Laad deze opnieuw voordat je die bijwerkt."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공개 사본이 변경되었습니다. 업데이트하기 전에 다시 불러오세요."
           }
         }
       }
@@ -62217,6 +62421,12 @@
             "state": "translated",
             "value": "Openbare kopie opnieuw laden"
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공개 사본 다시 불러오기"
+          }
         }
       }
     },
@@ -62280,6 +62490,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delen is niet beschikbaar. Probeer het later opnieuw."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공유 기능을 사용할 수 없습니다. 나중에 다시 시도하세요."
           }
         }
       }
@@ -62345,6 +62561,12 @@
             "state": "translated",
             "value": "Te veel verzoeken. Probeer het later opnieuw."
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "요청이 너무 많습니다. 나중에 다시 시도하세요."
+          }
         }
       }
     },
@@ -62408,6 +62630,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "De openbare link is niet beschikbaar."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공개 링크를 사용할 수 없습니다."
           }
         }
       }
@@ -62473,6 +62701,12 @@
             "state": "translated",
             "value": "Delen is mislukt. Probeer het opnieuw."
           }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공유하지 못했습니다. 다시 시도하세요."
+          }
         }
       }
     },
@@ -62536,6 +62770,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Het delen kon niet worden gestopt. Je recept is nog steeds opgeslagen. Controleer je verbinding en probeer het opnieuw."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공유를 중지하지 못했습니다. 레시피는 저장된 상태로 유지됩니다. 연결 상태를 확인하고 다시 시도하세요."
           }
         }
       }

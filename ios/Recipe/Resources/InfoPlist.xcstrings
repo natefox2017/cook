@@ -368,7 +368,7 @@
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "요리 모드가 열려 있는 동안 선택적으로 ‘다음’, ‘이전’, ‘반복’ 음성 명령을 인식합니다."
+            "value": "요리 모드가 열려 있는 동안 선택적으로 영어 음성 명령 Next, Previous, Repeat를 인식합니다."
           }
         },
         "nl": {

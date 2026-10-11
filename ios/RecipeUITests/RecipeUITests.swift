@@ -2611,6 +2611,86 @@ final class RecipeUITests: XCTestCase {
             app.debugDescription
         )
     }
+
+    @MainActor
+    func testManualKoreanLanguageAndCountryPersistAcrossRestart() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--uitesting-reset-language"]
+        app.launch()
+        defer {
+            app.terminate()
+        }
+
+        let profile = app.tabBars.buttons["Profile"]
+        waitUntilReady(profile)
+        profile.tap()
+
+        let settings = app.buttons["Settings"]
+        reveal(settings, in: app, maximumSwipes: 5)
+        settings.tap()
+        let languageAndCountry = app.buttons["Language & Country"]
+        reveal(languageAndCountry, in: app, maximumSwipes: 6)
+        languageAndCountry.tap()
+
+        let picker = app.buttons["settings.languagePicker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5), app.debugDescription)
+        picker.tap()
+        let korean = app.buttons["한국어"].firstMatch
+        XCTAssertTrue(korean.waitForExistence(timeout: 5), app.debugDescription)
+        korean.tap()
+
+        let localeTitle = "언어 및 국가"
+        XCTAssertTrue(app.navigationBars[localeTitle].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["앱 언어"].exists)
+        XCTAssertEqual(picker.value as? String, "한국어", app.debugDescription)
+
+        let countryTitle = "국가 또는 지역"
+        let countryPicker = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", countryTitle)
+        ).firstMatch
+        XCTAssertTrue(countryPicker.waitForExistence(timeout: 5), app.debugDescription)
+        let korea = try XCTUnwrap(
+            Locale(identifier: "ko").localizedString(forRegionCode: "KR")
+        )
+        let japan = try XCTUnwrap(
+            Locale(identifier: "ko").localizedString(forRegionCode: "JP")
+        )
+        let countryCode = countryPicker.label.contains(korea) ? "JP" : "KR"
+        let selectedCountry = countryCode == "KR" ? korea : japan
+        countryPicker.tap()
+        let countryOption = app.buttons[selectedCountry].firstMatch
+        for _ in 0..<20 where !countryOption.exists || !countryOption.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(countryOption.waitForExistence(timeout: 5), app.debugDescription)
+        countryOption.tap()
+
+        XCTAssertEqual(picker.value as? String, "한국어", app.debugDescription)
+        XCTAssertTrue(countryPicker.label.contains(selectedCountry), app.debugDescription)
+        attachScreenshot("Korean language with independent country", app: app)
+
+        app.terminate()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        let restartedProfile = app.tabBars.buttons["프로필"]
+        waitUntilReady(restartedProfile)
+        restartedProfile.tap()
+        let restartedSettings = app.buttons["설정"]
+        reveal(restartedSettings, in: app, maximumSwipes: 5)
+        restartedSettings.tap()
+        let restartedLocale = app.buttons["언어 및 국가"]
+        reveal(restartedLocale, in: app, maximumSwipes: 6)
+        restartedLocale.tap()
+
+        XCTAssertTrue(app.navigationBars[localeTitle].waitForExistence(timeout: 8))
+        let restartedPicker = app.buttons["settings.languagePicker"]
+        XCTAssertEqual(restartedPicker.value as? String, "한국어", app.debugDescription)
+        let restartedCountry = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", countryTitle)
+        ).firstMatch
+        XCTAssertTrue(restartedCountry.label.contains(selectedCountry), app.debugDescription)
+        attachScreenshot("Korean language and country retained after restart", app: app)
+    }
 }
 
 extension RecipeUITests {
