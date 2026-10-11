@@ -753,6 +753,7 @@ final class RecipeAuthServiceTests: XCTestCase {
         await waitUntil { callbackService.state == .passwordRecovery(userID: userID) }
         XCTAssertEqual(callbackService.authCallbackGeneration, 1)
         XCTAssertFalse(defaults.bool(forKey: "recipe.auth.pending_password_recovery"))
+        XCTAssertNil(defaults.string(forKey: "recipe.auth.pending_password_recovery_email_hash"))
 
         do {
             try await callbackService.setRecoveredPassword("short-password")
