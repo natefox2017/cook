@@ -9,31 +9,20 @@ import type {
   LLMProvider,
   LLMProviderInput,
   LLMUsageRange,
+  LLMUsage,
   SubscriptionPlan,
   SubscriptionRecord,
 } from "./types";
 import { parseRevenue } from "./revenue";
-import { isSecureApiEndpoint } from "./api-endpoint";
+import { AdminApiError, sendAdminRequest } from "./api-request";
+import { validateAdminResponse } from "./api-contracts";
 
 const functionsBase = import.meta.env.VITE_ADMIN_FUNCTIONS_URL?.replace(/\/$/, "");
 const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const isConfigured = Boolean(functionsBase && apiKey);
 
-export class AdminApiError extends Error {
-  readonly status: number;
-  readonly code?: string;
-
-  constructor(
-    message: string,
-    status: number,
-    code?: string,
-  ) {
-    super(message);
-    this.status = status;
-    this.code = code;
-  }
-}
+export { AdminApiError } from "./api-request";
 
 async function request<T>(
   functionName: string,
@@ -41,36 +30,8 @@ async function request<T>(
   token: string | undefined,
   options: { method?: string; body?: unknown; headers?: Record<string, string>; redirect?: RequestRedirect } = {},
 ): Promise<T> {
-  if (!functionsBase || !apiKey) {
-    throw new AdminApiError("Add the Supabase function URL and publishable key to admin/.env.local.", 0);
-  }
-
-  const response = await fetch(`${functionsBase}/${functionName}${path}`, {
-    method: options.method ?? "GET",
-    headers: {
-      apikey: apiKey,
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...options.headers,
-    },
-    ...(options.body ? { body: JSON.stringify(options.body) } : {}),
-    ...(options.redirect ? { redirect: options.redirect } : {}),
-    cache: "no-store",
-  });
-
-  const result = await response.json().catch(() => null);
-  if (!response.ok) {
-    const message = typeof result?.message === "string"
-      ? result.message
-      : typeof result?.error?.message === "string"
-      ? result.error.message
-      : typeof result?.error_description === "string"
-      ? result.error_description
-      : typeof result?.error === "string"
-      ? result.error
-      : `Request failed (${response.status})`;
-    throw new AdminApiError(message, response.status, result?.code ?? result?.error?.code);
-  }
+  const result = await sendAdminRequest(functionsBase, apiKey, window.location.origin, `${functionName}${path}`, token, options);
+  validateAdminResponse(functionName, path, options.method ?? "GET", result);
   return result as T;
 }
 
@@ -103,7 +64,7 @@ export const adminApi = {
     });
   },
   bootstrap(username: string, newPassword: string, bootstrapToken: string, currentPassword?: string) {
-    return request<AdminSession>("admin-auth", "/bootstrap", undefined, {
+    return request<AdminLoginResult>("admin-auth", "/bootstrap", undefined, {
       method: "POST",
       headers: { Authorization: `Bearer ${bootstrapToken}` },
       body: { username, newPassword, ...(currentPassword ? { currentPassword } : {}) },
@@ -188,10 +149,7 @@ export const adminApi = {
     return request<{ data: LLMProvider[] }>("admin-ai", "/providers", token);
   },
   saveLlmProvider(token: string, input: LLMProviderInput, id?: string) {
-    if (input.apiKey && !isSecureApiEndpoint(functionsBase, window.location.origin)) {
-      throw new AdminApiError("Saving an API key requires the configured HTTPS Supabase function endpoint. The key was not sent.", 0);
-    }
-    return request<LLMProvider>("admin-ai", id ? `/providers/${encodeURIComponent(id)}` : "/providers", token, {
+    return request<{ id: string }>("admin-ai", id ? `/providers/${encodeURIComponent(id)}` : "/providers", token, {
       method: id ? "PUT" : "POST",
       body: input,
       ...(input.apiKey ? { redirect: "error" as const } : {}),
@@ -207,9 +165,6 @@ export const adminApi = {
     model: string;
     apiKey?: string;
   }) {
-    if (!isSecureApiEndpoint(functionsBase, window.location.origin)) {
-      throw new AdminApiError("Connection tests require the configured HTTPS Supabase function endpoint. The key was not sent.", 0);
-    }
     return request<{ ok: boolean; message?: string }>("admin-ai", "/providers/test", token, {
       method: "POST",
       body: input,
@@ -217,7 +172,7 @@ export const adminApi = {
     });
   },
   llmUsage(token: string, range: LLMUsageRange) {
-    return request<unknown>("admin-ai", `/usage?range=${range}`, token);
+    return request<LLMUsage>("admin-ai", `/usage?range=${range}`, token);
   },
 };
 

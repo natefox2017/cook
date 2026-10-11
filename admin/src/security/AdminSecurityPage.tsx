@@ -1,7 +1,7 @@
 // Developer: gengyun
 // Purpose: Configure the signed-in administrator's TOTP and passkey factors.
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { KeyRound, LoaderCircle, RefreshCw, ShieldCheck, Smartphone, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { adminApi, handleExpiredSession } from "../api";
@@ -24,19 +24,24 @@ export function AdminSecurityPage({ token, onAuthExpired }: AdminSecurityPagePro
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
+  const requestId = useRef(0);
+
   const load = useCallback(async () => {
+    const id = ++requestId.current;
     try {
       const [nextFactors, history] = await Promise.all([
         adminApi.securityFactors(token),
         adminApi.loginEvents(token),
       ]);
+      if (id !== requestId.current) return;
       setFactors(nextFactors);
       setEvents(history.data);
     } catch (cause) {
+      if (id !== requestId.current) return;
       handleExpiredSession(cause, onAuthExpired);
       setError(cause instanceof Error ? cause.message : "Unable to load security settings.");
     } finally {
-      setLoading(false);
+      if (id === requestId.current) setLoading(false);
     }
   }, [token, onAuthExpired]);
 
@@ -47,28 +52,14 @@ export function AdminSecurityPage({ token, onAuthExpired }: AdminSecurityPagePro
   }
 
   useEffect(() => {
-    let active = true;
-    Promise.all([adminApi.securityFactors(token), adminApi.loginEvents(token)])
-      .then(([value, history]) => {
-        if (active) {
-          setFactors(value);
-          setEvents(history.data);
-        }
-      })
-      .catch((cause: unknown) => {
-        handleExpiredSession(cause, onAuthExpired);
-        if (active) setError(cause instanceof Error ? cause.message : "Unable to load security settings.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    void load();
     const expire = () => onAuthExpired();
     window.addEventListener("admin-auth-expired", expire);
     return () => {
-      active = false;
+      requestId.current += 1;
       window.removeEventListener("admin-auth-expired", expire);
     };
-  }, [token, onAuthExpired]);
+  }, [load, onAuthExpired]);
 
   async function run(action: string, operation: () => Promise<void>) {
     setBusy(action);
@@ -138,7 +129,7 @@ export function AdminSecurityPage({ token, onAuthExpired }: AdminSecurityPagePro
           <h1>Security</h1>
           <p className="muted">Manage two-step verification and passkeys.</p>
         </div>
-        <button type="button" className="button button-outline" onClick={refresh} disabled={loading}>
+        <button type="button" className="button button-outline" onClick={refresh} disabled={loading || busy !== ""}>
           <RefreshCw size={15} className={loading ? "spin" : ""} aria-hidden="true" /> Refresh
         </button>
       </header>
