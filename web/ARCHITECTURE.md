@@ -8,6 +8,8 @@
 
 部署选择 `output: 'standalone'`，运行在 Node.js 22+ 后面。纯 `output: 'export'` 需要构建时知道所有动态路径，无法自然承载 APP 随时生成的新分享字符串，而且不提供请求时的服务端快照读取。本需求采用 Node 服务包，首页仍静态生成。
 
+[DEV-312](https://linear.app/gengyun/issue/DEV-312) 增加 Cloudflare Workers 部署：OpenNext 适配同一 Next.js 应用，使用 Node 兼容运行时和 Workers Assets，只读静态资源缓存复用构建页面。没有增加数据库或 R2；动态下载和分享路由保留原合同。`www.shopkivoo.com` 为 canonical 域名，根域名也映射至同一网站。Node standalone 打包继续保留，运行时配置来源分别为 Node 环境变量和 Workers `vars`。
+
 官方资料：
 
 - [Dynamic Segments](https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes)：动态路径参数。

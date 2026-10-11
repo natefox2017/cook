@@ -58,6 +58,26 @@ bash run.sh start
 
 ## 发布配置
 
+### Cloudflare Workers
+
+[DEV-312](https://linear.app/gengyun/issue/DEV-312) 将现有 Next.js 应用适配到 Workers，正式域名为 `https://www.shopkivoo.com`，同时绑定 `shopkivoo.com`。官网与管理端分别部署，管理端不使用此配置。
+
+```sh
+cd web
+npm ci
+npm run build:cloudflare
+npm run preview:cloudflare # 本地 workerd 验证，默认 localhost:8787
+npm run deploy:cloudflare # 构建并部署，需在进程环境中配置 CLOUDFLARE_API_TOKEN
+```
+
+`wrangler.jsonc` 保持严格 JSON 格式；`vars` 是公开网站配置，构建脚本同时将这些值传给 Next.js，确保 sitemap 与运行时配置一致。真实商店和快照 API 未验证前保留空值。修改配置需重新构建、部署。API Token 只放运行环境密钥中，不写入此文件、Git 或前端。
+
+OpenNext 使用只读静态资源缓存承载构建时页面，无需 R2、KV、D1 或付费数据库；不支持 ISR/运行时缓存写入。分享路由仍逐次访问 API，保持 no-store。字体、图片、JS/CSS 直接由 Workers Assets 提供；静态响应通过 `public/_headers` 保留安全头。免费计划的动态请求和 CPU 上限仍适用，构建与本地预览无法代替生产流量监测。
+
+Next.js 固定为 OpenNext 当前支持的 `15.5.27` 补丁版本。`16.4.0` 在本地 Workers 暴露 preview-props 清单兼容问题；升级 Next/OpenNext 时必须实际验证 workerd 路由，不能仅凭 Node 构建成功判断可部署。
+
+`npm run package` 的 Node 独立服务包继续可用，不能直接作为 Workers 上传包；Workers 的产物在 `.open-next/`。
+
 隐私协议和用户协议目前明确标记为待审核草稿，尚缺运营主体、联系地址、生效日期、真实处理商/留存政策和法律审核。下载链接未配置时不会生成假的商店链接。正式发布前替换草稿、补齐真实域名和商店链接，并按 DEV-71 / DEV-73 的分享验收要求验证已发布、已撤回和服务故障的访客访问。源码和本地构建不等于 APP、公开 API 或官网已上线。
 
 ## 素材
