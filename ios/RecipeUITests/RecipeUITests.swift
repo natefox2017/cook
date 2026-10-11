@@ -1050,7 +1050,9 @@ final class RecipeUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--uitesting-reset-language"]
         app.launch()
-        defer { app.terminate() }
+        defer {
+            app.terminate()
+        }
 
         let profile = app.tabBars.buttons["Profile"]
         waitUntilReady(profile)
