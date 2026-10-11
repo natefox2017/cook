@@ -99,7 +99,7 @@ export async function handleRequest(
         .select("*", { count: "exact", head: true })
         .in("status", ["active", "trialing"])
         .neq("plan", "free"),
-      admin.from("profiles").select("registration_type, device_type", { count: "exact" }),
+      admin.from("profiles").select("registration_provider, device_type", { count: "exact" }),
       admin.from("subscriptions").select("user_id, plan, product_id, status", { count: "exact" }),
       admin
         .from("purchase_events")
@@ -116,7 +116,7 @@ export async function handleRequest(
       admin
         .from("profiles")
         .select(
-          "id, email, display_name, registration_type, device_type, registration_ip, created_at",
+          "id, email, display_name, registration_provider, device_type, registration_ip, created_at",
         )
         .order("created_at", { ascending: false })
         .limit(5),
@@ -170,14 +170,13 @@ export async function handleRequest(
       unknown: 0,
     };
     const byDeviceType = {
-      iphone: 0,
-      ipad: 0,
+      ios: 0,
       android: 0,
       web: 0,
       unknown: 0,
     };
     for (const row of profiles ?? []) {
-      const reg = String(row.registration_type ?? "unknown");
+      const reg = String(row.registration_provider ?? "unknown");
       if (reg in byRegistrationType) {
         byRegistrationType[reg as keyof typeof byRegistrationType] += 1;
       } else {
@@ -385,7 +384,7 @@ export async function handleRequest(
         type: "user",
         title: `${p.display_name || p.email || "User"} joined`,
         subtitle: [
-          p.registration_type ?? "unknown",
+          p.registration_provider ?? "unknown",
           p.device_type ?? "unknown",
           p.registration_ip ?? "",
         ]
@@ -426,7 +425,7 @@ export async function handleRequest(
         type: "payment",
         title: `${pay.eventType}`,
         subtitle: `${pay.userLabel} · ${pay.store} · ${
-          pay.amount == null ? "—" : `$${pay.amount}`
+          pay.amount == null || !pay.currency ? "—" : `${pay.amount} ${pay.currency}`
         }`,
         createdAt: pay.createdAt,
       });
@@ -490,8 +489,7 @@ export async function handleRequest(
             },
           ],
           byDeviceType: [
-            { key: "iphone", label: "iPhone", value: byDeviceType.iphone },
-            { key: "ipad", label: "iPad", value: byDeviceType.ipad },
+            { key: "ios", label: "iOS", value: byDeviceType.ios },
             { key: "android", label: "Android", value: byDeviceType.android },
             { key: "web", label: "Web", value: byDeviceType.web },
             { key: "unknown", label: "Unknown", value: byDeviceType.unknown },
