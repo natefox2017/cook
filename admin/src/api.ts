@@ -14,7 +14,7 @@ import type {
   SubscriptionRecord,
 } from "./types";
 import { parseRevenue } from "./revenue";
-import { AdminApiError, sendAdminRequest } from "./api-request";
+import { sendAdminRequest } from "./api-request";
 import { validateAdminResponse } from "./api-contracts";
 
 const functionsBase = import.meta.env.VITE_ADMIN_FUNCTIONS_URL?.replace(/\/$/, "");
@@ -22,7 +22,7 @@ const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const isConfigured = Boolean(functionsBase && apiKey);
 
-export { AdminApiError } from "./api-request";
+export { AdminApiError, handleExpiredSession } from "./api-request";
 
 async function request<T>(
   functionName: string,
@@ -175,7 +175,3 @@ export const adminApi = {
     return request<LLMUsage>("admin-ai", `/usage?range=${range}`, token);
   },
 };
-
-export function handleExpiredSession(error: unknown, onAuthExpired: () => void) {
-  if (error instanceof AdminApiError && error.status === 401) onAuthExpired();
-}

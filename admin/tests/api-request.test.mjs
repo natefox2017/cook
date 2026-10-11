@@ -37,3 +37,13 @@ test('invalid JSON and network exceptions produce safe readable errors', async (
     await assert.rejects(sendAdminRequest('/api','public',origin,'admin-users','fixture'), e => e.status === 503 && e.code === 'server_misconfigured');
   } finally { globalThis.fetch = previous; }
 });
+
+test('factor confirmation failures retain session while real expiry and legacy expiry log out', async () => {
+  const { handleExpiredSession } = await import('../src/api-request.ts');
+  let expired=0;
+  for(const message of ['TOTP code is invalid','TOTP confirmation failed','Password confirmation failed','Current password is incorrect']) handleExpiredSession(new AdminApiError(message,401,'unauthorized'),()=>expired++);
+  assert.equal(expired,0);
+  handleExpiredSession(new AdminApiError('Invalid or expired admin session',401,'unauthorized'),()=>expired++);
+  handleExpiredSession(new AdminApiError('Session expired',401,'session_expired'),()=>expired++);
+  assert.equal(expired,2);
+});
