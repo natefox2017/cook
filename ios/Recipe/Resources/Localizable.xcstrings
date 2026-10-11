@@ -24335,7 +24335,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ verrà sostituito con %@. Entrambe le ricette resteranno nella tua raccolta."
+            "value": "Questo modifica il pasto %1$@ per %2$@. Entrambe le ricette restano nella tua raccolta."
           }
         },
         "pt-BR": {
