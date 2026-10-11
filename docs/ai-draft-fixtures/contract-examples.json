@@ -1,0 +1,441 @@
+{
+  "description": "Original synthetic static DEV-291 examples; not runtime evidence.",
+  "cases": [
+    {
+      "name": "create",
+      "schema": "CreateSessionRequest",
+      "valid": true,
+      "data": {
+        "job_id": "22222222-2222-4222-8222-222222222222",
+        "client_request_id": "33333333-3333-4333-8333-333333333333"
+      }
+    },
+    {
+      "name": "turn request",
+      "schema": "TurnRequest",
+      "valid": true,
+      "data": {
+        "request_id": "33333333-3333-4333-8333-333333333333",
+        "expected_revision": "1",
+        "message": "Keep the source wording."
+      }
+    },
+    {
+      "name": "session",
+      "schema": "Session",
+      "valid": true,
+      "data": {
+        "session_id": "11111111-1111-4111-8111-111111111111",
+        "job_id": "22222222-2222-4222-8222-222222222222",
+        "client_request_id": "33333333-3333-4333-8333-333333333333",
+        "revision": "1",
+        "source_fingerprint": "fixture-source-sha256",
+        "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "context": {
+          "status": "needs_review",
+          "fields": {
+            "ingredients[0].amount": {
+              "raw_value": "salt to taste",
+              "evidence_ids": [
+                "44444444-4444-4444-8444-444444444444"
+              ],
+              "user_confirmed": false,
+              "origin": "extracted"
+            }
+          },
+          "evidence": [
+            {
+              "id": "44444444-4444-4444-8444-444444444444",
+              "excerpt": "Add salt to taste."
+            }
+          ],
+          "review_fields": [
+            "ingredients[0].amount"
+          ]
+        },
+        "overlay": {},
+        "budget": {
+          "reserved_tokens": 0,
+          "settled_tokens": 0,
+          "dispatch_count": 0
+        }
+      },
+      "operation": [
+        "/recipe-draft-sessions",
+        "post",
+        "201"
+      ]
+    },
+    {
+      "name": "pending",
+      "schema": "Turn",
+      "valid": true,
+      "data": {
+        "session_id": "11111111-1111-4111-8111-111111111111",
+        "request_id": "33333333-3333-4333-8333-333333333333",
+        "based_revision": "1",
+        "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "state": "pending",
+        "result": null,
+        "decision": null
+      },
+      "operation": [
+        "/recipe-draft-sessions/{session_id}/turns",
+        "post",
+        "202"
+      ]
+    },
+    {
+      "name": "proposal",
+      "schema": "Turn",
+      "valid": true,
+      "data": {
+        "session_id": "11111111-1111-4111-8111-111111111111",
+        "request_id": "33333333-3333-4333-8333-333333333333",
+        "based_revision": "1",
+        "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "state": "terminal",
+        "result": {
+          "status": "proposal",
+          "origin": "AI_suggested",
+          "requires_approval": true,
+          "questions": [],
+          "suggestions": [
+            {
+              "path": "ingredients[0].amount",
+              "raw_value": "salt to taste",
+              "evidence_ids": [
+                "44444444-4444-4444-8444-444444444444"
+              ],
+              "reason": "Exact source wording."
+            }
+          ]
+        },
+        "decision": null
+      },
+      "operation": [
+        "/recipe-draft-sessions/{session_id}/turns",
+        "post",
+        "200"
+      ]
+    },
+    {
+      "name": "unavailable",
+      "schema": "Turn",
+      "valid": true,
+      "data": {
+        "session_id": "11111111-1111-4111-8111-111111111111",
+        "request_id": "33333333-3333-4333-8333-333333333333",
+        "based_revision": "1",
+        "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "state": "terminal",
+        "result": {
+          "status": "unavailable",
+          "code": "PROVIDER_OUTCOME_UNKNOWN"
+        },
+        "decision": null
+      },
+      "operation": [
+        "/recipe-draft-sessions/{session_id}/turns/{request_id}",
+        "get",
+        "200"
+      ]
+    },
+    {
+      "name": "no review",
+      "schema": "Turn",
+      "valid": true,
+      "data": {
+        "session_id": "11111111-1111-4111-8111-111111111111",
+        "request_id": "33333333-3333-4333-8333-333333333333",
+        "based_revision": "1",
+        "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "state": "terminal",
+        "result": {
+          "status": "no_review_needed"
+        },
+        "decision": null
+      }
+    },
+    {
+      "name": "accept",
+      "schema": "ApprovalRequest",
+      "valid": true,
+      "data": {
+        "request_id": "44444444-4444-4444-8444-444444444444",
+        "expected_revision": "1",
+        "action": "accept",
+        "selected_paths": [
+          "ingredients[0].amount"
+        ]
+      }
+    },
+    {
+      "name": "reject",
+      "schema": "ApprovalRequest",
+      "valid": true,
+      "data": {
+        "request_id": "44444444-4444-4444-8444-444444444444",
+        "expected_revision": "1",
+        "action": "reject",
+        "selected_paths": []
+      }
+    },
+    {
+      "name": "receipt",
+      "schema": "ApprovalReceipt",
+      "valid": true,
+      "data": {
+        "session_id": "11111111-1111-4111-8111-111111111111",
+        "turn_request_id": "33333333-3333-4333-8333-333333333333",
+        "request_id": "44444444-4444-4444-8444-444444444444",
+        "action": "accept",
+        "selected_paths": [
+          "ingredients[0].amount"
+        ],
+        "applied_revision": "2"
+      },
+      "operation": [
+        "/recipe-draft-sessions/{session_id}/turns/{request_id}/approval",
+        "post",
+        "200"
+      ]
+    },
+    {
+      "name": "error",
+      "schema": "APIError",
+      "valid": true,
+      "data": {
+        "code": "BUDGET_EXHAUSTED",
+        "message": "Draft budget exhausted.",
+        "recoverable": true,
+        "request_id": "33333333-3333-4333-8333-333333333333"
+      }
+    },
+    {
+      "name": "max revision",
+      "schema": "Revision",
+      "valid": true,
+      "data": "9223372036854775807"
+    },
+    {
+      "name": "owner injection",
+      "schema": "CreateSessionRequest",
+      "valid": false,
+      "data": {
+        "job_id": "22222222-2222-4222-8222-222222222222",
+        "client_request_id": "33333333-3333-4333-8333-333333333333",
+        "owner_id": "11111111-1111-4111-8111-111111111111"
+      }
+    },
+    {
+      "name": "provider injection",
+      "schema": "TurnRequest",
+      "valid": false,
+      "data": {
+        "request_id": "33333333-3333-4333-8333-333333333333",
+        "expected_revision": "1",
+        "message": "",
+        "provider": "attacker"
+      }
+    },
+    {
+      "name": "numeric revision",
+      "schema": "TurnRequest",
+      "valid": false,
+      "data": {
+        "request_id": "33333333-3333-4333-8333-333333333333",
+        "expected_revision": 1,
+        "message": ""
+      }
+    },
+    {
+      "name": "revision overflow",
+      "schema": "Revision",
+      "valid": false,
+      "data": "9223372036854775808"
+    },
+    {
+      "name": "leading zero",
+      "schema": "Revision",
+      "valid": false,
+      "data": "01"
+    },
+    {
+      "name": "bad uuid",
+      "schema": "CreateSessionRequest",
+      "valid": false,
+      "data": {
+        "job_id": "not-a-uuid",
+        "client_request_id": "33333333-3333-4333-8333-333333333333"
+      }
+    },
+    {
+      "name": "long message",
+      "schema": "TurnRequest",
+      "valid": false,
+      "data": {
+        "request_id": "33333333-3333-4333-8333-333333333333",
+        "expected_revision": "1",
+        "message": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "name": "empty accept",
+      "schema": "ApprovalRequest",
+      "valid": false,
+      "data": {
+        "request_id": "44444444-4444-4444-8444-444444444444",
+        "expected_revision": "1",
+        "action": "accept",
+        "selected_paths": []
+      }
+    },
+    {
+      "name": "reject with patch",
+      "schema": "ApprovalRequest",
+      "valid": false,
+      "data": {
+        "request_id": "44444444-4444-4444-8444-444444444444",
+        "expected_revision": "1",
+        "action": "reject",
+        "selected_paths": [
+          "ingredients[0].amount"
+        ]
+      }
+    },
+    {
+      "name": "raw patch injection",
+      "schema": "ApprovalRequest",
+      "valid": false,
+      "data": {
+        "request_id": "44444444-4444-4444-8444-444444444444",
+        "expected_revision": "1",
+        "action": "accept",
+        "selected_paths": [
+          "ingredients[0].amount"
+        ],
+        "raw_value": "invented"
+      }
+    },
+    {
+      "name": "proposal missing approval",
+      "schema": "GenerationResult",
+      "valid": false,
+      "data": {
+        "status": "proposal",
+        "origin": "AI_suggested",
+        "requires_approval": false,
+        "questions": [],
+        "suggestions": [
+          {
+            "path": "ingredients[0].amount",
+            "raw_value": "salt to taste",
+            "evidence_ids": [
+              "44444444-4444-4444-8444-444444444444"
+            ],
+            "reason": "Exact source wording."
+          }
+        ]
+      }
+    },
+    {
+      "name": "pending proposal",
+      "schema": "Turn",
+      "valid": false,
+      "data": {
+        "session_id": "11111111-1111-4111-8111-111111111111",
+        "request_id": "33333333-3333-4333-8333-333333333333",
+        "based_revision": "1",
+        "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "state": "pending",
+        "result": {
+          "status": "proposal",
+          "origin": "AI_suggested",
+          "requires_approval": true,
+          "questions": [],
+          "suggestions": [
+            {
+              "path": "ingredients[0].amount",
+              "raw_value": "salt to taste",
+              "evidence_ids": [
+                "44444444-4444-4444-8444-444444444444"
+              ],
+              "reason": "Exact source wording."
+            }
+          ]
+        },
+        "decision": null
+      }
+    },
+    {
+      "name": "budget overflow",
+      "schema": "Budget",
+      "valid": false,
+      "data": {
+        "reserved_tokens": 32769,
+        "settled_tokens": 0,
+        "dispatch_count": 0
+      }
+    },
+    {
+      "name": "unknown path",
+      "schema": "ApprovalRequest",
+      "valid": false,
+      "data": {
+        "request_id": "44444444-4444-4444-8444-444444444444",
+        "expected_revision": "1",
+        "action": "accept",
+        "selected_paths": [
+          "owner_id"
+        ]
+      }
+    },
+    {
+      "name": "session read",
+      "schema": "Session",
+      "valid": true,
+      "data": {
+        "session_id": "11111111-1111-4111-8111-111111111111",
+        "job_id": "22222222-2222-4222-8222-222222222222",
+        "client_request_id": "33333333-3333-4333-8333-333333333333",
+        "revision": "1",
+        "source_fingerprint": "fixture-source-sha256",
+        "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "context": {
+          "status": "needs_review",
+          "fields": {
+            "ingredients[0].amount": {
+              "raw_value": "salt to taste",
+              "evidence_ids": [
+                "44444444-4444-4444-8444-444444444444"
+              ],
+              "user_confirmed": false,
+              "origin": "extracted"
+            }
+          },
+          "evidence": [
+            {
+              "id": "44444444-4444-4444-8444-444444444444",
+              "excerpt": "Add salt to taste."
+            }
+          ],
+          "review_fields": [
+            "ingredients[0].amount"
+          ]
+        },
+        "overlay": {},
+        "budget": {
+          "reserved_tokens": 0,
+          "settled_tokens": 0,
+          "dispatch_count": 0
+        }
+      },
+      "operation": [
+        "/recipe-draft-sessions/{session_id}",
+        "get",
+        "200"
+      ]
+    }
+  ]
+}

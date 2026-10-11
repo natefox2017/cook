@@ -78,7 +78,7 @@ export async function handleRequest(
       { count: activePaidUsers, error: activePaidError },
       { data: profiles, count: profileCount, error: profilesError },
       { data: subscriptions, count: subscriptionCount, error: subscriptionsError },
-      { data: purchaseEvents, error: purchaseError },
+      { data: purchaseEvents, count: purchaseCount, error: purchaseError },
       { data: downloadRows, count: downloadsCount, error: downloadError },
       { data: recentProfiles },
       { data: recentRecipes },
@@ -105,6 +105,7 @@ export async function handleRequest(
         .from("purchase_events")
         .select(
           "id, user_id, event_type, store, raw_event, created_at, product_id",
+          { count: "exact" },
         )
         .order("created_at", { ascending: false })
         .limit(5000),
@@ -132,6 +133,11 @@ export async function handleRequest(
         "Failed to load payment events",
         500,
       );
+    }
+    // A configured PostgREST maxRows can be lower than the requested limit.
+    if (!Array.isArray(purchaseEvents) || !Number.isSafeInteger(purchaseCount) ||
+      purchaseCount == null || purchaseCount < 0 || purchaseCount !== purchaseEvents.length) {
+      throw new AppError("internal_error", "Payment event history is incomplete", 503);
     }
     if (downloadError) {
       throw new AppError(

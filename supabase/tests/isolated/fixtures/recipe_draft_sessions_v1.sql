@@ -1,0 +1,30 @@
+-- Developer: gengyun
+-- Purpose: Real-role pgTAP ACL assertions for DEV-293; only synthetic identities.
+begin;
+select plan(20);
+select ok(not rolsuper and not rolbypassrls,'authenticated is subject to RLS') from pg_roles where rolname='authenticated';
+select ok((select bool_and(relrowsecurity) from pg_class where relname in ('recipe_draft_sessions','recipe_draft_turns','recipe_draft_approvals','recipe_draft_owner_budgets')),'all four tables enable RLS');
+select ok(not has_table_privilege('anon','public.recipe_draft_sessions','SELECT'),'anon no sessions');
+select ok(not has_table_privilege('authenticated','public.recipe_draft_sessions','INSERT'),'no client insert');
+select ok(not has_table_privilege('authenticated','public.recipe_draft_turns','UPDATE'),'no client turn update');
+select ok(not has_table_privilege('authenticated','public.recipe_draft_owner_budgets','DELETE'),'no client budget deletion');
+select ok(not exists(select 1 from pg_proc where proname like '%recipe_draft_%' and has_function_privilege('anon',oid,'EXECUTE')),'anon no RPC/helper');
+select ok(not exists(select 1 from pg_proc where proname like '%recipe_draft_%' and has_function_privilege('authenticated',oid,'EXECUTE')),'authenticated no RPC/helper');
+select ok(has_function_privilege('service_role','public.claim_recipe_draft_turn(uuid,uuid,uuid,bigint,text,text,text,boolean)','EXECUTE'),'service claim');
+select ok(not has_function_privilege('service_role','public.recipe_draft_settle(uuid,uuid,uuid,jsonb,integer)','EXECUTE'),'service no direct helper');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+select is((select count(*)::int from public.recipe_draft_sessions),1,'owner A session');
+select is((select count(*)::int from public.recipe_draft_turns),0,'initial no turns');
+select is((select count(*)::int from public.recipe_draft_approvals),0,'initial no approvals');
+select is((select count(*)::int from public.recipe_draft_owner_budgets),0,'initial no budgets');
+select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',true);
+select is((select count(*)::int from public.recipe_draft_sessions),0,'owner B cannot see A');
+select is((select count(*)::int from public.recipe_draft_turns),0,'owner B no turns');
+select is((select count(*)::int from public.recipe_draft_approvals),0,'owner B no approvals');
+select is((select count(*)::int from public.recipe_draft_owner_budgets),0,'owner B no budgets');
+select throws_ok('insert into public.recipe_draft_sessions(owner_id) values (auth.uid())','42501',null,'client DML rejected');
+reset role;
+select is((select count(*)::int from pg_policies where tablename like 'recipe_draft_%'),4,'four owner select policies');
+select * from finish();
+rollback;
