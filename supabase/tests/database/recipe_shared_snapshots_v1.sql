@@ -1,6 +1,7 @@
 -- Developer: Recipe Pals
 -- Purpose: DEV-241 owner/anonymous sharing isolation in a DISPOSABLE local Supabase database.
--- Apply the reviewed SQL via a CLI-generated migration before running this pgTAP fixture.
+-- Apply migrations/20261011044118_recipe_shared_snapshots_v1.sql in a disposable DB.
+-- Offline replay/rollback: tests/isolated/recipe-share-migration.test.mjs.
 
 create extension if not exists pgtap;
 begin;
@@ -185,4 +186,3 @@ reset role;
 
 select * from finish();
 rollback;
-
