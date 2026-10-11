@@ -12,6 +12,7 @@
         <string>ja</string>
         <string>de</string>
         <string>fr</string>
+        <string>es</string>
     </array>
     <key>CFBundleDisplayName</key>
     <string>Recipe Pals</string>

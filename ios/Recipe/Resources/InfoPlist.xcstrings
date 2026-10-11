@@ -356,7 +356,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reconocer los comandos de voz opcionales «Siguiente», «Anterior» y «Repetir» mientras esté abierto el modo Cocina."
+            "value": "Reconocer los comandos de voz opcionales «Next», «Previous» y «Repeat» mientras esté abierto el modo Cocina."
           }
         },
         "it": {

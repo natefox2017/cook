@@ -64,6 +64,22 @@ func userLanguageChoiceOverridesEnglishUnlessUITestForcesItsLocale() {
 }
 
 @Test
+func manuallySelectedSpanishIsSupportedInTheAppAndShareExtension() {
+    let supported = RecipeLanguage.currentlyTranslatedLanguages
+    let manualSelection = RecipeLanguage.resolve(
+        arguments: ["--uitesting"], supportedIdentifiers: supported,
+        selectedIdentifier: "es"
+    )
+    let forcedUITestLocale = RecipeLanguage.resolve(
+        arguments: ["--uitesting", "--uitesting-locale", "fr"],
+        supportedIdentifiers: supported, selectedIdentifier: "es"
+    )
+
+    #expect(manualSelection.identifier == "es")
+    #expect(forcedUITestLocale.identifier == "fr")
+}
+
+@Test
 func shareExtensionReadsHostLanguageFromAppGroupRatherThanItsOwnDefaults() throws {
     let suitePrefix = "recipe.language.tests.\(UUID().uuidString)"
     let hostSuite = suitePrefix + ".host"
