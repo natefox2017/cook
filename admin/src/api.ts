@@ -13,6 +13,7 @@ import type {
   SubscriptionRecord,
 } from "./types";
 import { parseRevenue } from "./revenue";
+import { isSecureApiEndpoint } from "./api-endpoint";
 
 const functionsBase = import.meta.env.VITE_ADMIN_FUNCTIONS_URL?.replace(/\/$/, "");
 const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -206,7 +207,7 @@ export const adminApi = {
     model: string;
     apiKey?: string;
   }) {
-    if (!functionsBase || new URL(functionsBase).protocol !== "https:") {
+    if (!isSecureApiEndpoint(functionsBase, window.location.origin)) {
       throw new AdminApiError("Connection tests require the configured HTTPS Supabase function endpoint. The key was not sent.", 0);
     }
     return request<{ ok: boolean; message?: string }>("admin-ai", "/providers/test", token, {
