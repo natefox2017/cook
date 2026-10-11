@@ -59177,6 +59177,148 @@
           }
         }
       }
+    },
+    "Your Recipe Pals account and cloud data were deleted. Sign out to clear the saved session on this iPhone. Local recipes were kept.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Recipe Pals account and cloud data were deleted. Sign out to clear the saved session on this iPhone. Local recipes were kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的 Recipe Pals 账户和云端数据已删除。请退出登录，以清除此 iPhone 上保存的登录会话。本地食谱已保留。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的 Recipe Pals 帳號和雲端資料已刪除。請登出，以清除此 iPhone 上儲存的登入工作階段。本機食譜已保留。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals のアカウントとクラウドデータを削除しました。この iPhone に保存されたログイン情報を消去するには、サインアウトしてください。端末内のレシピは保持されています。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Recipe Pals Konto und deine Cloud-Daten wurden gelöscht. Melde dich ab, um die gespeicherte Sitzung auf diesem iPhone zu entfernen. Lokale Rezepte wurden beibehalten."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre compte Recipe Pals et vos données dans le cloud ont été supprimés. Déconnectez-vous pour effacer la session enregistrée sur cet iPhone. Les recettes locales ont été conservées."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu cuenta de Recipe Pals y los datos en la nube se han eliminado. Cierra sesión para borrar la sesión guardada en este iPhone. Las recetas locales se han conservado."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo account Recipe Pals e i dati nel cloud sono stati eliminati. Esci dall’account per cancellare la sessione salvata su questo iPhone. Le ricette locali sono state conservate."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sua conta do Recipe Pals e os dados na nuvem foram excluídos. Saia da conta para apagar a sessão salva neste iPhone. As receitas locais foram mantidas."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je Recipe Pals-account en cloudgegevens zijn verwijderd. Log uit om de opgeslagen sessie op deze iPhone te wissen. Lokale recepten zijn behouden."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals 계정과 클라우드 데이터가 삭제되었습니다. 이 iPhone에 저장된 로그인 세션을 지우려면 로그아웃하세요. 기기에 저장된 레시피는 유지되었습니다."
+          }
+        }
+      }
+    },
+    "Your Recipe Pals account and cloud data were deleted. Sign out to clear the saved session on this iPhone. Local recipes were kept. Some local sync files still need cleanup.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Recipe Pals account and cloud data were deleted. Sign out to clear the saved session on this iPhone. Local recipes were kept. Some local sync files still need cleanup."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的 Recipe Pals 账户和云端数据已删除。请退出登录，以清除此 iPhone 上保存的登录会话。本地食谱已保留。 部分本地同步文件仍需清理。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的 Recipe Pals 帳號和雲端資料已刪除。請登出，以清除此 iPhone 上儲存的登入工作階段。本機食譜已保留。 部分本機同步檔案仍需清理。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals のアカウントとクラウドデータを削除しました。この iPhone に保存されたログイン情報を消去するには、サインアウトしてください。端末内のレシピは保持されています。 一部の端末内の同期ファイルは、まだ削除する必要があります。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Recipe Pals Konto und deine Cloud-Daten wurden gelöscht. Melde dich ab, um die gespeicherte Sitzung auf diesem iPhone zu entfernen. Lokale Rezepte wurden beibehalten. Einige lokale Synchronisierungsdateien müssen noch bereinigt werden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre compte Recipe Pals et vos données dans le cloud ont été supprimés. Déconnectez-vous pour effacer la session enregistrée sur cet iPhone. Les recettes locales ont été conservées. Certains fichiers de synchronisation locaux doivent encore être nettoyés."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu cuenta de Recipe Pals y los datos en la nube se han eliminado. Cierra sesión para borrar la sesión guardada en este iPhone. Las recetas locales se han conservado. Aún es necesario limpiar algunos archivos locales de sincronización."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo account Recipe Pals e i dati nel cloud sono stati eliminati. Esci dall’account per cancellare la sessione salvata su questo iPhone. Le ricette locali sono state conservate. Alcuni file di sincronizzazione locali devono ancora essere rimossi."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sua conta do Recipe Pals e os dados na nuvem foram excluídos. Saia da conta para apagar a sessão salva neste iPhone. As receitas locais foram mantidas. Alguns arquivos locais de sincronização ainda precisam ser removidos."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je Recipe Pals-account en cloudgegevens zijn verwijderd. Log uit om de opgeslagen sessie op deze iPhone te wissen. Lokale recepten zijn behouden. Sommige lokale synchronisatiebestanden moeten nog worden opgeschoond."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe Pals 계정과 클라우드 데이터가 삭제되었습니다. 이 iPhone에 저장된 로그인 세션을 지우려면 로그아웃하세요. 기기에 저장된 레시피는 유지되었습니다. 일부 로컬 동기화 파일은 아직 정리가 필요합니다."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

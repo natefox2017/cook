@@ -67,6 +67,16 @@ enum CloudSyncMode: String, CaseIterable, Sendable, Hashable {
     case manual = "Manually"
 }
 
+/// Confirms server deletion without implying the SDK's saved session was cleared.
+struct CloudAccountDeletionResult: Equatable, Sendable {
+    let sessionChanged: Bool
+    var needsLocalSyncCleanup = false
+}
+
+enum CloudAccountDeletionRequestError: Error {
+    case identityChangedBeforeRequest
+}
+
 /// Protocol boundary used by the UI/store. The production implementation is
 /// backed by Supabase Auth + an owner-scoped user_snapshots row.
 protocol RecipeCloudSyncing: Sendable {
@@ -76,7 +86,7 @@ protocol RecipeCloudSyncing: Sendable {
         for userID: UUID
     ) async throws -> CloudSnapshotEnvelope
     func download(for userID: UUID) async throws -> CloudSnapshotEnvelope?
-    func deleteAccountAndCloudData() async throws
+    func deleteAccountAndCloudData(for userID: UUID) async throws -> CloudAccountDeletionResult
 }
 
 /// Used until the Supabase project is active/configured. It never pretends a
@@ -101,7 +111,9 @@ struct UnconfiguredCloudSync: RecipeCloudSyncing {
         _ = userID
         throw NotConfigured()
     }
-    func deleteAccountAndCloudData() async throws { throw NotConfigured() }
+    func deleteAccountAndCloudData(for userID: UUID) async throws -> CloudAccountDeletionResult {
+        throw NotConfigured()
+    }
 }
 
 enum RecipeCloudSyncError: LocalizedError {
@@ -133,9 +145,14 @@ enum RecipeCloudSyncError: LocalizedError {
 /// Supabase implementation uses the signed-in user's JWT and the database's RLS.
 struct SupabaseCloudSync: RecipeCloudSyncing {
     private let client: SupabaseClient
+    private let accountDeletionFunctions: FunctionsClient
 
-    init(client: SupabaseClient = RecipeSupabase.client) {
+    init(
+        client: SupabaseClient = RecipeSupabase.client,
+        accountDeletionFunctions: FunctionsClient = RecipeSupabase.accountDeletionFunctions
+    ) {
         self.client = client
+        self.accountDeletionFunctions = accountDeletionFunctions
     }
 
     func upload(
@@ -198,11 +215,32 @@ struct SupabaseCloudSync: RecipeCloudSyncing {
         )
     }
 
-    func deleteAccountAndCloudData() async throws {
-        try await client.functions.invoke("delete-account")
-        // The edge function has already deleted the server identity. A local-only
-        // sign-out clears its Keychain session without relying on that deleted user.
-        try await client.auth.signOut(scope: .local)
+    func deleteAccountAndCloudData(for userID: UUID) async throws -> CloudAccountDeletionResult {
+        // A destructive request never refreshes or mutates the global session.
+        // An expired captured token is rejected by the server's normal Auth check.
+        guard let session = client.auth.currentSession,
+            session.user.id == userID
+        else {
+            throw CloudAccountDeletionRequestError.identityChangedBeforeRequest
+        }
+
+        // SupabaseClient's request adapter replaces Authorization with the
+        // current session. This independent transport keeps the intended JWT.
+        try await accountDeletionFunctions.invoke(
+            "delete-account",
+            options: FunctionInvokeOptions(
+                method: .post,
+                headers: ["Authorization": "Bearer " + session.accessToken]
+            )
+        )
+
+        // AuthClient has no conditional compare-and-remove sign-out. Never
+        // automatically clear a session that could have changed during deletion.
+        let current = client.auth.currentSession
+        return CloudAccountDeletionResult(
+            sessionChanged: current?.user.id != userID
+                || current?.accessToken != session.accessToken
+        )
     }
 
     private static func parseDate(_ value: String) -> Date? {
@@ -248,6 +286,7 @@ enum RecipeLocalResetError: LocalizedError {
 /// Coordinates account changes, user-approved first sync, and revision-checked updates.
 @Observable @MainActor
 final class CloudSyncCoordinator {
+    private static let deletedAccountKey = "recipe.sync.deletedAccountPendingSignOut"
     private(set) var state: CloudSyncCoordinatorState = .localOnly
     private(set) var lastSyncedAt: Date?
     private(set) var mode: CloudSyncMode
@@ -263,6 +302,7 @@ final class CloudSyncCoordinator {
     // A user UUID can recur after sign-out. In-flight work belongs to one
     // continuous authenticated session, not every later login by that user.
     @ObservationIgnored private var authenticationGeneration = UUID()
+    @ObservationIgnored private var deletingGeneration: UUID?
     @ObservationIgnored private var remoteSnapshot: CloudSnapshotEnvelope?
     @ObservationIgnored private var mergeBaseSnapshot: RecipeLibrarySnapshot?
     @ObservationIgnored private var expectedRevision: Int64 = 0
@@ -379,7 +419,7 @@ final class CloudSyncCoordinator {
         if self.store !== store {
             // Pending work captured the previous store and must not establish
             // a sync lineage for a newly bound library, even for the same user.
-            await authenticationChanged(.signedOut)
+            invalidateCloudSession()
         }
         self.store = store
         await authenticationChanged(authState)
@@ -388,6 +428,15 @@ final class CloudSyncCoordinator {
     func authenticationChanged(_ authState: RecipeAuthState) async {
         switch authState {
         case .signedIn(let userID, _):
+            if accountID == userID, deletingGeneration == authenticationGeneration {
+                // An unchanged auth notification cannot invalidate its own
+                // pending deletion receipt or restart sync behind its barrier.
+                return
+            }
+            guard !isAccountDeletionBlocked(userID) else {
+                invalidateCloudSession()
+                return
+            }
             if accountID == userID {
                 let generation = authenticationGeneration
                 await refreshFromCloudIfAllowed()
@@ -415,15 +464,11 @@ final class CloudSyncCoordinator {
             }
             await syncLocalChangesIfAllowed()
         case .signedOut:
-            authenticationGeneration = UUID()
-            accountID = nil
-            remoteSnapshot = nil
-            mergeBaseSnapshot = nil
-            expectedRevision = 0
-            automaticSyncPaused = false
-            deferredInitialChoice = nil
-            lastSyncedAt = nil
-            state = .localOnly
+            // Only an actual auth sign-out clears the durable deletion barrier.
+            // Binding a store or recreating the coordinator must not clear it.
+            defaults.removeObject(forKey: Self.deletedAccountKey)
+            defaults.synchronize()
+            invalidateCloudSession()
         case .loading,
             .authenticating,
             .emailCodeSent,
@@ -460,6 +505,9 @@ final class CloudSyncCoordinator {
     }
 
     func chooseInitialSync(_ choice: InitialCloudSyncChoice) async {
+        guard let accountID, !isAccountDeletionBlocked(accountID) else {
+            return
+        }
         guard case .initialChoice(let local, let cloud) = state,
             let store
         else {
@@ -494,6 +542,9 @@ final class CloudSyncCoordinator {
     }
 
     func resolveConflicts(with choices: [LibraryMergeChoice]) async {
+        guard let accountID, !isAccountDeletionBlocked(accountID) else {
+            return
+        }
         guard let store, let remoteSnapshot else { return }
         do {
             let conflicts = try store.mergeCloudLibrary(
@@ -514,6 +565,10 @@ final class CloudSyncCoordinator {
 
     func syncNow() async {
         guard let requestedAccountID = accountID else {
+            state = .localOnly
+            return
+        }
+        guard !isAccountDeletionBlocked(requestedAccountID) else {
             state = .localOnly
             return
         }
@@ -552,35 +607,109 @@ final class CloudSyncCoordinator {
         await syncLocalChangesIfAllowed()
     }
 
-    func deleteAccountAndCloudData() async throws {
+    func deleteAccountAndCloudData() async throws -> CloudAccountDeletionResult {
+        guard deletingGeneration == nil else {
+            throw CancellationError()
+        }
         guard let deletingAccountID = accountID else {
             state = .localOnly
             throw CancellationError()
         }
+        let previousState = state
+        let previouslyPaused = automaticSyncPaused
 
+        // Persist before sending the destructive request, so even a crash or
+        // ambiguous network failure cannot resume sync with a deleted identity.
+        defaults.set(deletingAccountID.uuidString, forKey: Self.deletedAccountKey)
+        guard defaults.synchronize() else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        authenticationGeneration = UUID()
         let generation = authenticationGeneration
+        deletingGeneration = generation
+        defer {
+            if deletingGeneration == generation {
+                deletingGeneration = nil
+            }
+        }
+        automaticSyncPaused = true
+        state = .syncing
+        var result: CloudAccountDeletionResult
         do {
-            try await service.deleteAccountAndCloudData()
+            result = try await service.deleteAccountAndCloudData(for: deletingAccountID)
         } catch {
             guard accountID == deletingAccountID,
                 authenticationGeneration == generation
             else {
                 throw CancellationError()
             }
+            if error is CloudAccountDeletionRequestError,
+                isAccountDeletionBlocked(deletingAccountID)
+            {
+                // The service cancels before its request when the captured
+                // identity is already stale. Do not block an undeleted account.
+                defaults.removeObject(forKey: Self.deletedAccountKey)
+                defaults.synchronize()
+                automaticSyncPaused = previouslyPaused
+                if case .syncing = previousState {
+                    // Its old in-flight generation was invalidated above, so
+                    // restoring .syncing would wait for a discarded completion.
+                    state = .error(
+                        RecipeLanguage.localized("Cloud sync changed while this device was saving. Try again.")
+                    )
+                } else {
+                    state = previousState
+                }
+                throw CancellationError()
+            }
+            state = .error(error.localizedDescription)
             throw error
         }
+
         guard accountID == deletingAccountID,
-            authenticationGeneration == generation
+            authenticationGeneration == generation,
+            !result.sessionChanged
         else {
+            if accountID == deletingAccountID, authenticationGeneration == generation {
+                automaticSyncPaused = true
+                state = .localOnly
+            }
             throw CancellationError()
         }
 
-        try? removePersistedBase(for: deletingAccountID)
-        if localLibraryAccountID == deletingAccountID {
-            try linkLocalLibrary(to: nil)
-        }
+        // Only the still-current session owns this barrier. An old completion
+        // must not restore it after sign-out or overwrite another user's marker.
+        defaults.set(deletingAccountID.uuidString, forKey: Self.deletedAccountKey)
+        result.needsLocalSyncCleanup = !defaults.synchronize()
 
+        // Confirmed server deletion is terminal for sync before fallible local
+        // cleanup. A cache error is a success notice, never a deletion retry.
+        invalidateCloudSession()
+        do {
+            try removePersistedBase(for: deletingAccountID)
+        } catch {
+            result.needsLocalSyncCleanup = true
+        }
+        if localLibraryAccountID == deletingAccountID {
+            do {
+                try linkLocalLibrary(to: nil)
+                if !defaults.synchronize() {
+                    result.needsLocalSyncCleanup = true
+                }
+            } catch {
+                result.needsLocalSyncCleanup = true
+            }
+        }
+        return result
+    }
+
+    private func isAccountDeletionBlocked(_ userID: UUID) -> Bool {
+        defaults.string(forKey: Self.deletedAccountKey) == userID.uuidString
+    }
+
+    private func invalidateCloudSession() {
         authenticationGeneration = UUID()
+        deletingGeneration = nil
         accountID = nil
         remoteSnapshot = nil
         mergeBaseSnapshot = nil
@@ -592,6 +721,9 @@ final class CloudSyncCoordinator {
     }
 
     private func loadAccountSnapshot(userID: UUID) async {
+        guard !isAccountDeletionBlocked(userID) else {
+            return
+        }
         guard let store else { return }
         let generation = authenticationGeneration
         state = .syncing
@@ -730,6 +862,9 @@ final class CloudSyncCoordinator {
 
     private func refreshFromCloudIfAllowed(force: Bool = false) async {
         guard let store, let accountID else { return }
+        guard !isAccountDeletionBlocked(accountID) else {
+            return
+        }
         guard !isSyncing else { return }
         guard force || (!automaticSyncPaused && canSyncAutomatically) else {
             return
@@ -838,6 +973,9 @@ final class CloudSyncCoordinator {
 
     private func uploadLocalSnapshot(forceFollowUp: Bool = false) async {
         guard let store, let accountID else { return }
+        guard !isAccountDeletionBlocked(accountID) else {
+            return
+        }
         guard !isSyncing else { return }
         let generation = authenticationGeneration
         do {
@@ -854,7 +992,14 @@ final class CloudSyncCoordinator {
             var followUpSyncNeeded = false
             defer {
                 isSyncing = false
-                if followUpSyncNeeded {
+                if self.authenticationGeneration != generation {
+                    // The old operation held the shared upload slot while a
+                    // new session could make edits. Reconsider only the current
+                    // session's normal consent, mode and state gates.
+                    Task { @MainActor in
+                        await self.syncLocalChangesIfAllowed()
+                    }
+                } else if followUpSyncNeeded {
                     Task { @MainActor in
                         guard self.accountID == accountID,
                             self.authenticationGeneration == generation
