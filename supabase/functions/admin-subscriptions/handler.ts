@@ -223,13 +223,14 @@ export async function handleRequest(
         .from("subscriptions")
         .select(
           "user_id, product_id, plan, status, store, expires_at, created_at, updated_at",
+          { count: "exact" },
         )
         .order("updated_at", { ascending: false })
         .limit(500);
       if (platform === "app_store" || platform === "play_store") {
         query = query.eq("store", platform);
       }
-      const { data, error } = await query;
+      const { data, count, error } = await query;
       if (error) {
         throw new AppError(
           "internal_error",
@@ -238,7 +239,8 @@ export async function handleRequest(
         );
       }
 
-      if (!hasCompletePage(data, 500)) {
+      if (!Array.isArray(data) || !Number.isSafeInteger(count) ||
+        count == null || count < 0 || count !== data.length || !hasCompletePage(data, 500)) {
         throw new AppError(
           "internal_error",
           "Subscription records are incomplete. Narrow the filter or retry.",
@@ -302,9 +304,9 @@ export async function handleRequest(
       });
 
       if (userIds.length) {
-        const { data: events, error: eventError } = await admin
+        const { data: events, count: eventCount, error: eventError } = await admin
           .from("purchase_events")
-          .select("user_id, product_id, store, raw_event, created_at, event_type")
+          .select("user_id, product_id, store, raw_event, created_at, event_type", { count: "exact" })
           .in("user_id", userIds)
           .order("created_at", { ascending: false })
           .limit(2000);
@@ -315,7 +317,9 @@ export async function handleRequest(
             500,
           );
         }
-        if (!hasCompletePage(events, 2000)) {
+        if (!Array.isArray(events) || !Number.isSafeInteger(eventCount) ||
+          eventCount == null || eventCount < 0 || eventCount !== events.length ||
+          !hasCompletePage(events, 2000)) {
           throw new AppError(
             "internal_error",
             "Purchase history is incomplete. Narrow the selection or retry.",
@@ -347,15 +351,21 @@ export async function handleRequest(
       const platform = url.searchParams.get("platform");
       let query = admin
         .from("purchase_events")
-        .select("store, raw_event, created_at, event_type")
+        .select("store, raw_event, created_at, event_type", { count: "exact" })
         .order("created_at", { ascending: true })
         .limit(5000);
       if (platform === "app_store" || platform === "play_store") {
         query = query.eq("store", platform);
       }
-      const { data, error } = await query;
+      const { data, count, error } = await query;
       if (error) {
         throw new AppError("internal_error", "Failed to load revenue", 500);
+      }
+
+      // Exact counts detect server-side limits below our requested cap.
+      if (!Array.isArray(data) || !Number.isSafeInteger(count) ||
+        count == null || count < 0 || count !== data.length) {
+        throw new AppError("internal_error", "Revenue history is incomplete", 503);
       }
 
       const ledger = new RecordedRevenueLedger();
