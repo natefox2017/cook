@@ -169,7 +169,7 @@ struct RecipeFavoriteArtwork: View {
                         trigger: celebrationCount
                     ) { _, frame in
                         particles(reach: frame.reach, opacity: frame.opacity)
-                    } keyframes: {
+                    } keyframes: { _ in
                         KeyframeTrack(\.reach) {
                             LinearKeyframe(0, duration: 0.01)
                             CubicKeyframe(1, duration: 0.44)
