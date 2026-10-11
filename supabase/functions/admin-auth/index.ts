@@ -38,6 +38,7 @@ import {
   newTotpSecret,
   webauthnConfig,
 } from "./factors.ts";
+import { requirePassword } from "./input.ts";
 import { bootstrapStatus } from "./bootstrap-status.ts";
 
 function routeAction(req: Request): string {
@@ -479,8 +480,8 @@ Deno.serve(async (req) => {
 
     if (action === "login" && method === "POST") {
       const body = await readJson(req);
-      const username = String(body.username ?? "").trim().toLowerCase();
-      const password = String(body.password ?? "");
+      const username = requireString(body, "username").toLowerCase();
+      const password = requirePassword(body, "password");
       if (!username || !password) {
         throw new AppError(
           "validation_error",
@@ -822,12 +823,11 @@ Deno.serve(async (req) => {
         isAdminProductionRuntime(),
         async () => {
           const body = await readJson(req);
-          const username = String(body.username ?? "admin").trim()
-            .toLowerCase();
-          const newPassword = String(body.newPassword ?? "");
+          const username = body.username === undefined ? "admin" : requireString(body, "username").toLowerCase();
+          const newPassword = requirePassword(body, "newPassword");
           const currentPassword = body.currentPassword == null
             ? null
-            : String(body.currentPassword);
+            : requirePassword(body, "currentPassword");
           const strength = validateAdminPassword(newPassword);
           if (!strength.ok) {
             throw new AppError(
@@ -922,8 +922,8 @@ Deno.serve(async (req) => {
     if (action === "change-password" && method === "POST") {
       const session = await requireAdminSession(req);
       const body = await readJson(req);
-      const currentPassword = String(body.currentPassword ?? "");
-      const newPassword = String(body.newPassword ?? "");
+      const currentPassword = requirePassword(body, "currentPassword");
+      const newPassword = requirePassword(body, "newPassword");
       if (!currentPassword || !newPassword) {
         throw new AppError(
           "validation_error",

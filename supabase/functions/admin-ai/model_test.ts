@@ -138,3 +138,13 @@ Deno.test("reported zero cached input remains zero rather than unknown", () => {
   );
   assertEquals(response.totals.cachedInputTokens, 0);
 });
+
+Deno.test("provider input rejects coerced flags, key types and insecure URLs", () => {
+  const valid = {name:"Example",baseUrl:"https://example.com/v1",model:"model-x",active:false};
+  assertEquals(parseProviderInput(valid).active, false);
+  assertEquals(parseProviderInput(valid).apiKey, "");
+  for (const invalid of [
+    {...valid,active:"false"},{...valid,active:null},{...valid,apiKey:{}},{...valid,apiKey:null},
+    {...valid,apiKey:"key\r\nInjected: value"},{...valid,baseUrl:"http://example.com"},
+  ]) assertThrows(() => parseProviderInput(invalid));
+});

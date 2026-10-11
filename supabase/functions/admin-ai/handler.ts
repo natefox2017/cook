@@ -2,6 +2,7 @@
 // Purpose: Serve the current admin AI provider and usage API contract safely.
 
 import ipaddr from "ipaddr.js";
+import { readBoundedJSONObject } from "../_shared/bounded-json.ts";
 import {
   type AISecret,
   encryptAISecret,
@@ -334,16 +335,8 @@ function parseBody(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-async function readJson(req: Request): Promise<unknown> {
-  try {
-    return await req.json();
-  } catch {
-    throw new AppError(
-      "validation_error",
-      "Request body must be valid JSON",
-      400,
-    );
-  }
+async function readJson(req: Request): Promise<Record<string, unknown>> {
+  return readBoundedJSONObject(req, 16 * 1024);
 }
 
 function parseProviderURL(raw: string, requireHTTPS: boolean): URL {
