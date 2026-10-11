@@ -32,7 +32,7 @@ export async function shareResponse(slug, { api = process.env.RECIPE_PALS_PUBLIC
     if (base) {
       try {
         const response = await fetcher(`${base}/${slug}`, {
-          headers: { Accept: 'application/json' }, cache: 'no-store', redirect: 'error',
+          headers: { Accept: 'application/json' }, cache: 'no-store', redirect: 'manual',
           signal: AbortSignal.timeout(8000),
         });
         if ([404, 410].includes(response.status)) {
