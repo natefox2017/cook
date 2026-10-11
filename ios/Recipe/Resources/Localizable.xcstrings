@@ -869,6 +869,12 @@
                   "state": "translated",
                   "value": "%lld Konflikte"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Konflikt"
+                }
               }
             }
           }
@@ -1031,6 +1037,12 @@
                   "state": "translated",
                   "value": "%lld Zutaten zur Einkaufsliste hinzugefügt."
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Zutat zur Einkaufsliste hinzugefügt."
+                }
               }
             }
           }
@@ -1189,6 +1201,12 @@
           "variations": {
             "plural": {
               "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Artikel"
+                }
+              },
+              "one": {
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld Artikel"
@@ -1361,6 +1379,12 @@
                   "state": "translated",
                   "value": "%lld Mahlzeiten für diese Woche geplant"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Mahlzeit für diese Woche geplant"
+                }
               }
             }
           }
@@ -1523,6 +1547,12 @@
                   "state": "translated",
                   "value": "%lld Rezepte"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Rezept"
+                }
               }
             }
           }
@@ -1684,6 +1714,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld Portionen"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Portion"
                 }
               }
             }
@@ -8199,6 +8235,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "Aus %lld gespeicherten Rezepten"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Aus %lld gespeichertem Rezept"
                 }
               }
             }
@@ -27527,6 +27569,12 @@
                   "state": "translated",
                   "value": "%lld Rezepte"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Rezept"
+                }
               }
             }
           }
@@ -27684,6 +27732,12 @@
           "variations": {
             "plural": {
               "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Einkaufsartikel"
+                }
+              },
+              "one": {
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld Einkaufsartikel"
@@ -27848,6 +27902,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld geplante Mahlzeiten"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld geplante Mahlzeit"
                 }
               }
             }
@@ -35209,6 +35269,12 @@
                   "state": "translated",
                   "value": "%lld Tage"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Tag"
+                }
               }
             }
           }
@@ -35369,6 +35435,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld Wochen"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Woche"
                 }
               }
             }
@@ -35531,6 +35603,12 @@
                   "state": "translated",
                   "value": "%lld Monate"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Monat"
+                }
               }
             }
           }
@@ -35692,6 +35770,12 @@
                   "state": "translated",
                   "value": "%lld Jahre"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Jahr"
+                }
               }
             }
           }
@@ -35852,6 +35936,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld Zutaten hinzufügen"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Zutat hinzufügen"
                 }
               }
             }
@@ -36339,6 +36429,12 @@
                   "state": "translated",
                   "value": "Eingeklappt, %lld Artikel"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Eingeklappt, %lld Artikel"
+                }
               }
             }
           }
@@ -36756,6 +36852,12 @@
           "variations": {
             "plural": {
               "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Ausgeklappt, %lld Artikel"
+                }
+              },
+              "one": {
                 "stringUnit": {
                   "state": "translated",
                   "value": "Ausgeklappt, %lld Artikel"
@@ -38051,6 +38153,12 @@
                   "state": "translated",
                   "value": "%lld gekaufte Artikel entfernen"
                 }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld gekauften Artikel entfernen"
+                }
               }
             }
           }
@@ -38211,6 +38319,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld Minuten"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Minute"
                 }
               }
             }
