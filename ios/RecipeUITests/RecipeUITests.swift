@@ -1066,7 +1066,7 @@ final class RecipeUITests: XCTestCase {
         let picker = app.buttons["settings.languagePicker"]
         XCTAssertTrue(picker.waitForExistence(timeout: 5), app.debugDescription)
         picker.tap()
-        let japanese = app.staticTexts["日本語"].firstMatch
+        let japanese = app.buttons["日本語"].firstMatch
         XCTAssertTrue(japanese.waitForExistence(timeout: 5), app.debugDescription)
         japanese.tap()
         XCTAssertTrue(
