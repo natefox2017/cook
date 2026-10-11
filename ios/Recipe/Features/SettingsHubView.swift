@@ -566,6 +566,7 @@ struct LocalePreferencesView: View {
         ("zh-Hans", "简体中文"),
         ("zh-Hant", "繁體中文"),
         ("ja", "日本語"),
+        ("ko", "한국어"),
         ("de", "Deutsch"),
         ("fr", "Français"),
         ("es", "Español"),

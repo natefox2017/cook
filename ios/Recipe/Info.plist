@@ -16,6 +16,7 @@
         <string>it</string>
         <string>pt-BR</string>
         <string>nl</string>
+        <string>ko</string>
     </array>
     <key>CFBundleDisplayName</key>
     <string>Recipe Pals</string>

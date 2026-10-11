@@ -291,3 +291,27 @@ func manuallySelectedDutchOverridesEnglishAndHonorsUITestLocale() {
             selectedIdentifier: "nl"
         ).identifier == "en")
 }
+
+@Test
+func manuallySelectedKoreanOverridesEnglishAndHonorsUITestLocale() {
+    let supported = RecipeLanguage.currentlyTranslatedLanguages
+
+    #expect(
+        RecipeLanguage.resolve(
+            arguments: ["--uitesting"],
+            supportedIdentifiers: supported,
+            selectedIdentifier: "ko"
+        ).identifier == "ko")
+    #expect(
+        RecipeLanguage.resolve(
+            arguments: ["--uitesting", "--uitesting-locale", "ko"],
+            supportedIdentifiers: supported,
+            selectedIdentifier: nil
+        ).identifier == "ko")
+    #expect(
+        RecipeLanguage.resolve(
+            arguments: [],
+            supportedIdentifiers: ["en", "nl"],
+            selectedIdentifier: "ko"
+        ).identifier == "en")
+}

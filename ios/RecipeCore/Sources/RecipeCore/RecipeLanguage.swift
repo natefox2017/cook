@@ -19,6 +19,7 @@ public enum RecipeLanguage {
         "it",
         "pt-BR",
         "nl",
+        "ko",
     ]
     private static let supportedIdentifiers = Bundle.main.localizations.filter {
         $0.caseInsensitiveCompare("Base") != .orderedSame
