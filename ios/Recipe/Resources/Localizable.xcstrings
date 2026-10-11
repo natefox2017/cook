@@ -24341,7 +24341,7 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Isso altera %@ para %@. Ambas as receitas continuam na biblioteca."
+            "value": "Isso altera a refeição %1$@ de %2$@. Ambas as receitas continuam na biblioteca."
           }
         },
         "nl": {
