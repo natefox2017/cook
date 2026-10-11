@@ -13,6 +13,10 @@
         <string>de</string>
         <string>fr</string>
         <string>es</string>
+        <string>it</string>
+        <string>pt-BR</string>
+        <string>nl</string>
+        <string>ko</string>
     </array>
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
