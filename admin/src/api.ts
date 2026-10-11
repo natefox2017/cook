@@ -9,10 +9,10 @@ import type {
   LLMProvider,
   LLMProviderInput,
   LLMUsageRange,
-  RevenueData,
   SubscriptionPlan,
   SubscriptionRecord,
 } from "./types";
+import { parseRevenue } from "./revenue";
 
 const functionsBase = import.meta.env.VITE_ADMIN_FUNCTIONS_URL?.replace(/\/$/, "");
 const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -160,9 +160,9 @@ export const adminApi = {
     const query = platform ? `?platform=${platform}` : "";
     return request<SubscriptionRecord[]>("admin-subscriptions", `/records${query}`, token);
   },
-  revenue(token: string, platform?: "app_store" | "play_store") {
+  async revenue(token: string, platform?: "app_store" | "play_store") {
     const query = platform ? `?platform=${platform}` : "";
-    return request<RevenueData>("admin-subscriptions", `/revenue${query}`, token);
+    return parseRevenue(await request<unknown>("admin-subscriptions", `/revenue${query}`, token));
   },
   savePlan(token: string, input: Omit<SubscriptionPlan, "id" | "updatedAt">, id?: string) {
     return request<SubscriptionPlan>("admin-subscriptions", id ? `/plans/${encodeURIComponent(id)}` : "/plans", token, {
