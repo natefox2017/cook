@@ -556,6 +556,7 @@ struct MealPlanSettingsView: View {
 
 
 struct LocalePreferencesView: View {
+    @Environment(\.locale) private var locale
     @AppStorage(RecipeLanguage.preferenceKey) private var languageOverride = ""
     @AppStorage("recipe.countryOverride") private var countryOverride = ""
     private let languages: [(id: String, label: String)] = [
@@ -598,13 +599,18 @@ struct LocalePreferencesView: View {
                 }
             }
             Section {
-                Text("Country is a preference for future regional content. It does not change your account country or App Store subscriptions.")
-                    .font(RecipeTheme.text(13, relativeTo: .footnote))
+                Text(
+                    "Country is a preference for future regional content. It does not change your account country or App Store subscriptions."
+                )
+                .font(RecipeTheme.text(13, relativeTo: .footnote))
             }
         }
         .scrollContentBackground(.hidden)
         .background(RecipeTheme.canvas)
-        .navigationTitle("Language & Country")
+        // Resolve a changing title value so native navigation updates after a manual language change.
+        .navigationTitle(
+            String(localized: LocalizedStringResource("Language & Country", locale: locale))
+        )
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }

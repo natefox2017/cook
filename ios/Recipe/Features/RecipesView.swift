@@ -94,6 +94,8 @@ struct RecipesView: View {
             RecipePerformanceSignposts.setLibraryScrollActive(phase != .idle)
         }
         .accessibilityIdentifier("recipeLibraryScroll")
+        // Keep editing in the current tab until the search field relinquishes focus.
+        .preference(key: RecipeRootTabSwipeBlockedPreferenceKey.self, value: isSearchFocused)
         .background(RecipeTheme.canvas)
         .navigationTitle("My Recipes")
         .navigationBarTitleDisplayMode(titleDisplayMode)

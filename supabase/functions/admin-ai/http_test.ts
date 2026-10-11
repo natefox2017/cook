@@ -3,7 +3,57 @@
 
 import { assertEquals } from "jsr:@std/assert@1.0.14";
 import { AppError } from "../_shared/errors.ts";
-import { handleRequest } from "./handler.ts";
+import {
+  handleRequest,
+  ProviderProbeError,
+  providerStatusError,
+  readProviderStatus,
+} from "./handler.ts";
+
+Deno.test("provider failures expose only fixed diagnostics, never raw exceptions", async () => {
+  for (
+    const cause of [
+      providerStatusError(401),
+      providerStatusError(403),
+      providerStatusError(429),
+      providerStatusError(502),
+      new ProviderProbeError(
+        "Provider DNS lookup failed on the server. Check the hostname and server DNS support.",
+      ),
+      new Error("secret-key-and-private-upstream-body"),
+    ]
+  ) {
+    const fixture = dependencies();
+    fixture.testProvider = async () => {
+      throw cause;
+    };
+    const response = await handleRequest(
+      new Request("https://example.test/admin-ai/providers/test", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer admin",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "Fixture",
+          baseUrl: "https://example.com/v1",
+          model: "fixture",
+          apiKey: "secret-key",
+        }),
+      }),
+      fixture,
+    );
+    const body = await response.json();
+    assertEquals(body.ok, false);
+    assertEquals(
+      body.message,
+      cause instanceof ProviderProbeError
+        ? cause.message
+        : "Provider check failed",
+    );
+    assertEquals(JSON.stringify(body).includes("secret-key"), false);
+  }
+});
 
 const roles = ["owner", "admin", "operator", "readonly"] as const;
 
@@ -251,5 +301,45 @@ Deno.test("saved-key probes ignore caller endpoint, model, and key overrides", a
   } finally {
     if (oldKey === undefined) Deno.env.delete("COOKAPP_AI_SECRET_KEY_V2");
     else Deno.env.set("COOKAPP_AI_SECRET_KEY_V2", oldKey);
+  }
+});
+
+Deno.test("native provider status parsing handles split lines and rejects invalid/oversized replies", async () => {
+  for (
+    const [parts, expected] of [[["HTTP/1.1 2", "00 OK\r\n"], 200], [[
+      "HTTP/1.1 401 Unauthorized\r\n",
+    ], 401]]
+  ) {
+    const chunks = (parts as string[]).map((part) =>
+      new TextEncoder().encode(part)
+    );
+    const reader = {
+      read: async (buffer: Uint8Array) => {
+        const chunk = chunks.shift();
+        if (!chunk) return null;
+        buffer.set(chunk);
+        return chunk.length;
+      },
+    };
+    assertEquals(await readProviderStatus(reader), expected);
+  }
+  for (const text of ["invalid\r\n", "x".repeat(8192)]) {
+    let offset = 0;
+    const data = new TextEncoder().encode(text);
+    const reader = {
+      read: async (buffer: Uint8Array) => {
+        const chunk = data.subarray(offset, offset + buffer.length);
+        buffer.set(chunk);
+        offset += chunk.length;
+        return chunk.length || null;
+      },
+    };
+    let rejected = false;
+    try {
+      await readProviderStatus(reader);
+    } catch {
+      rejected = true;
+    }
+    assertEquals(rejected, true);
   }
 });

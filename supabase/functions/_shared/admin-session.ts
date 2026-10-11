@@ -59,14 +59,14 @@ export async function requireAdminSession(req: Request): Promise<{
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     throw new AppError(
-      "unauthorized",
+      "session_expired",
       "Missing or invalid Authorization header",
       401,
     );
   }
   const token = authHeader.slice("Bearer ".length).trim();
   if (!token) {
-    throw new AppError("unauthorized", "Missing bearer token", 401);
+    throw new AppError("session_expired", "Missing bearer token", 401);
   }
 
   const tokenHash = await sha256Hex(token);
@@ -86,9 +86,9 @@ export async function requireAdminSession(req: Request): Promise<{
   }
   if (
     !data || data.revoked_at ||
-    new Date(data.expires_at).getTime() <= Date.now()
+    !Number.isFinite(Date.parse(data.expires_at)) || Date.parse(data.expires_at) <= Date.now()
   ) {
-    throw new AppError("unauthorized", "Invalid or expired admin session", 401);
+    throw new AppError("session_expired", "Invalid or expired admin session", 401);
   }
 
   const account = data.admin_accounts as
@@ -98,7 +98,7 @@ export async function requireAdminSession(req: Request): Promise<{
   const row = Array.isArray(account) ? account[0] : account;
   const username = row?.username;
   if (!username) {
-    throw new AppError("unauthorized", "Invalid admin session", 401);
+    throw new AppError("session_expired", "Invalid admin session", 401);
   }
 
   return {
