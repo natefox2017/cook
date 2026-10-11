@@ -126,6 +126,10 @@ function fixture({ totp = true, locked = false, verified = true, counter = 7, co
     json: (body, status = 200) => new Response(JSON.stringify(body), { status }),
     errorResponse: (error) => new Response(JSON.stringify({ error: error.message }), { status: error.status ?? 500 }),
     readBoundedJSONObject: (request) => request.json(),
+    requirePassword: (body, key) => {
+      if (typeof body[key] !== "string" || !body[key] || body[key].length > 4096) throw new AppError("validation_error", "Invalid password", 400);
+      return body[key];
+    },
     log: () => {}, parseAdminRole: (role) => role,
     isAdminProductionRuntime: () => false, isDefaultAdminCredentials: () => false,
     hashChallenge: async (value) => value, newChallenge: () => "password-token",
