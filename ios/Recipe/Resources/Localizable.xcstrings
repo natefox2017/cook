@@ -418,6 +418,12 @@
             "state": "translated",
             "value": "この手順から調理を開始"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ab diesem Schritt kochen"
+          }
         }
       }
     },
