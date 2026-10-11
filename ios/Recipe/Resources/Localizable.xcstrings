@@ -1,6 +1,34 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Start Cooking from This Step": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Cooking from This Step"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从这一步开始烹饪"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "從這一步開始烹飪"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この手順から調理を開始"
+          }
+        }
+      }
+    },
     "Links & social": {
       "localizations": {
         "ja": {
