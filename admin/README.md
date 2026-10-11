@@ -2,7 +2,24 @@
 
 Standalone operations console built with React, Vite, and shadcn-style components.
 
-## Run locally
+## Cloudflare hosting
+
+[DEV-314](https://linear.app/gengyun/issue/DEV-314) hosts this existing console at `https://admin.shopkivoo.com`. Workers Assets serves the SPA and nested `/admin/*` routes. The small Worker forwards only `/api/admin-auth`, `/api/admin-dashboard`, `/api/admin-users`, `/api/admin-subscriptions` and `/api/admin-ai` to the configured Supabase functions. It preserves the custom admin bearer and forwards no browser cookies; backend session/role checks remain required. This same-origin proxy avoids modifying existing backend CORS allowlists. It does not proxy database, storage or arbitrary URLs.
+
+For the production build, set `VITE_ADMIN_FUNCTIONS_URL=/api` and the existing project's public `VITE_SUPABASE_PUBLISHABLE_KEY` in ignored `.env.local` or process variables. Never use a service-role key, an admin session or an AI provider secret. Changing these build inputs requires rebuilding. The backend URL is public configuration in `wrangler.jsonc`; API tokens remain in runtime secrets outside Git.
+
+```sh
+npm ci
+npm run lint
+node --test worker.test.mjs
+npm run build
+npm run preview:cloudflare
+npm run deploy:cloudflare
+```
+
+Deployment requires `CLOUDFLARE_API_TOKEN` with Workers deployment and this zone's DNS/domain permissions. No paid services are created. HTML/API responses are not stored by the browser; hashed assets are immutable. Search engine indexing is disabled. The existing administrator login is still required; deployment never resets an owner password or initializes a new owner. Passkeys additionally depend on the backend's approved `ADMIN_WEBAUTHN_ORIGIN` and RP ID; verify that separately before claiming passkey login from this host.
+
+## Local configuration
 
 1. Copy `.env.example` to `.env.local` and set the Supabase project Functions URL and publishable key.
 2. Run `./run-admin.sh` from the repository root, or run `npm install && npm run dev` in this directory.
