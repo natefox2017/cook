@@ -31,7 +31,7 @@ test('DEV-293 fresh/reapply/rollback, real ACL and transaction contract', async 
   const create = async (job,c=context,owner=A,key=randomUUID()) => rpc('create_recipe_draft_session',[owner,key,job,{fixture:'original'},c,H,true]);
   const claim = (sid,id=randomUUID(),rev=1,msg='review',hash=H,owner=A,ctxhash=H) => rpc('claim_recipe_draft_turn',[owner,sid,id,rev,msg,hash,ctxhash,true]);
   const mark = t => rpc('mark_recipe_draft_turn_dispatched',[A,t.session_id,t.request_id,t.fencing_token,true]);
-  const finish = (t,result=proposal,usage=null) => rpc('finish_recipe_draft_turn',[A,t.session_id,t.request_id,t.fencing_token,result,usage]);
+  const finish = (t,result=proposal,usage=null,state='dispatched_unknown') => rpc('finish_recipe_draft_turn',[A,t.session_id,t.request_id,t.fencing_token,result,usage,state]);
   const expire = t => query(`update public.recipe_draft_turns set lease_expires_at=now()-interval '1 second' where session_id=$1 and request_id=$2`,[t.session_id,t.request_id]);
   const budget = async date => row('recipe_draft_owner_budgets',date?'owner_id=$1 and utc_date=$2':'owner_id=$1',[A,...(date?[date]:[])]);
   try {
@@ -96,7 +96,7 @@ test('DEV-293 fresh/reapply/rollback, real ACL and transaction contract', async 
     const t3=(await claim(sid,randomUUID(),2,'review',H,A,H2)).turn;
     eq((await rpc('recover_recipe_draft_turn',[A,sid,t3.request_id,false])).turn.settled_tokens,0);
     const t4=(await claim(sid,randomUUID(),2,'review',H,A,H2)).turn;
-    eq((await finish(t4,{status:'unavailable',code:'PROVIDER_UNAVAILABLE'},null)).turn.settled_tokens,0);
+    eq((await finish(t4,{status:'unavailable',code:'PROVIDER_UNAVAILABLE'},null,'predispatch')).turn.settled_tokens,0);
     const t5=(await claim(sid,randomUUID(),2,'review',H,A,H2)).turn;await mark(t5);
     await query('update public.recipe_draft_sessions set revision=3 where id=$1',[sid]);
     eq((await finish(t5,proposal,0)).turn.result.code,'STALE_REVISION');
@@ -106,10 +106,18 @@ test('DEV-293 fresh/reapply/rollback, real ACL and transaction contract', async 
     for(let i=0;i<100;i++)large.fields[`steps[${i}].instruction`]={raw_value:'x'.repeat(1500),evidence_ids:[E],user_confirmed:true,origin:'extracted'};
     const largeSid=(await create(job,large)).session.id;eq((await claim(largeSid)).turn.result.status,'no_review_needed');
     eq((await row('recipe_draft_sessions','id=$1',[largeSid])).reserved_tokens,0);
+    // A losing preflight cannot settle a same-fence winner that already marked dispatch.
+    const raceSid=(await create(job)).session.id;const raceTurn=(await claim(raceSid)).turn;
+    eq((await finish(raceTurn,{status:'unavailable',code:'PROVIDER_UNAVAILABLE'},null)).code,'CLAIM_EXPIRED');
+    await mark(raceTurn);
+    eq((await finish(raceTurn,{status:'unavailable',code:'PROVIDER_UNAVAILABLE'},null,'predispatch')).code,'CLAIM_EXPIRED');
+    eq((await row('recipe_draft_turns','request_id=$1',[raceTurn.request_id])).state,'pending');
+    eq((await row('recipe_draft_turns','request_id=$1',[raceTurn.request_id])).reserved_tokens,4096);
+    eq((await finish(raceTurn,proposal,0)).turn.state,'terminal');
     // Trusted DEV283 preparation rejects/no-review results consume zero dispatch/cost.
     for(const outcome of [{status:'rejected',code:'INVALID_EVIDENCE'},{status:'no_review_needed'}]) {
       const ps=(await create(job)).session.id;const pt=(await claim(ps)).turn;
-      eq((await finish(pt,outcome,null)).turn.settled_tokens,0);
+      eq((await finish(pt,outcome,null,'predispatch')).turn.settled_tokens,0);
       eq((await row('recipe_draft_sessions','id=$1',[ps])).dispatch_count,0);
     }
     // Populated records are invisible to another real RLS subject.

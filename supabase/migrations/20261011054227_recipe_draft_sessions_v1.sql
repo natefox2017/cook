@@ -253,7 +253,7 @@ declare item jsonb; key text; ids jsonb; begin
 exception when others then return false;
 end $$;
 
-create or replace function public.finish_recipe_draft_turn(p_owner_id uuid,p_session_id uuid,p_request_id uuid,p_fencing_token uuid,p_result jsonb,p_validated_usage integer default null)
+create or replace function public.finish_recipe_draft_turn(p_owner_id uuid,p_session_id uuid,p_request_id uuid,p_fencing_token uuid,p_result jsonb,p_validated_usage integer default null,p_expected_dispatch_state text default 'dispatched_unknown')
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare s public.recipe_draft_sessions%rowtype; t public.recipe_draft_turns%rowtype; cost integer; result_value jsonb; begin
     select * into s from public.recipe_draft_sessions where owner_id=p_owner_id and id=p_session_id for update;
@@ -261,6 +261,8 @@ declare s public.recipe_draft_sessions%rowtype; t public.recipe_draft_turns%rowt
     select * into t from public.recipe_draft_turns where owner_id=p_owner_id and session_id=p_session_id and request_id=p_request_id for update;
     if not found then return jsonb_build_object('code','NOT_FOUND'); end if;
     if t.state <> 'pending' or t.fencing_token is distinct from p_fencing_token then return jsonb_build_object('code','CLAIM_EXPIRED'); end if;
+    if p_expected_dispatch_state is null or p_expected_dispatch_state not in ('predispatch','dispatched_unknown') then return jsonb_build_object('code','INVALID_INPUT'); end if;
+    if t.dispatch_state<>p_expected_dispatch_state then return jsonb_build_object('code','CLAIM_EXPIRED'); end if;
     if not public.recipe_draft_result_valid(p_result) then return jsonb_build_object('code','INVALID_INPUT'); end if;
     if t.dispatch_state='predispatch' and p_result->>'status'='proposal' then return jsonb_build_object('code','INVALID_INPUT'); end if;
     cost := case when t.dispatch_state='predispatch' then 0 when p_validated_usage between 0 and 4096 then p_validated_usage else 4096 end;
