@@ -35,8 +35,18 @@ function user(v: unknown): boolean {
     nullable(date, v.lastLoginAt) && nullable(x => oneOf(x, ["monthly", "yearly", "lifetime"]), v.subscriptionBillingPeriod);
 }
 
+function providerEndpoint(v: unknown): boolean {
+  if (typeof v !== "string") return false;
+  try {
+    const url = new URL(v);
+    return url.protocol === "https:" && !url.username && !url.password && !url.search && !url.hash;
+  } catch {
+    return false;
+  }
+}
+
 function provider(v: unknown): boolean {
-  return object(v) && fields(v, ["id", "name", "baseUrl", "model"], string) && boolean(v.active) && boolean(v.apiKeyConfigured) && date(v.updatedAt);
+  return object(v) && fields(v, ["id", "name", "baseUrl", "model"], string) && providerEndpoint(v.baseUrl) && boolean(v.active) && boolean(v.apiKeyConfigured) && date(v.updatedAt);
 }
 
 function dashboard(v: unknown): boolean {
