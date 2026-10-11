@@ -94,7 +94,18 @@ struct CookingView: View {
                 if complete { voice.stop() }
             }
             .sheet(isPresented: $isShowingIngredients) { ingredientSheet }
-            .sheet(item: $parameterInfo) { info in RecipeParameterSheet(info: info) }
+            .sheet(item: $parameterInfo) { info in
+                RecipeParameterSheet(info: info) {
+                    guard let step = recipe?.steps.first(where: { $0.id == info.stepID }),
+                        let definition = step.timers.first(where: { $0.id == info.timerID })
+                    else {
+                        return
+                    }
+                    // The existing session stores one timer per definition ID;
+                    // starting an already-running timer preserves its deadline.
+                    startTimer(definition, stepID: step.id)
+                }
+            }
             .sheet(isPresented: $isShowingTimers) { timersSheet }
             .confirmationDialog(
                 "Finish and stop active timers?",
@@ -240,7 +251,9 @@ struct CookingView: View {
                 .gesture(
                     DragGesture(minimumDistance: 55)
                         .onEnded { value in
-                            guard let direction = RecipeHorizontalSwipe(translation: value.translation)
+                            guard
+                                let direction = RecipeHorizontalSwipe(
+                                    translation: value.translation)
                             else {
                                 return
                             }
@@ -288,7 +301,7 @@ struct CookingView: View {
                                 onStart: { startTimer(definition, stepID: step.id) },
                                 onPause: { pauseTimer(definition.id) },
                                 onReset: { resetTimer(definition, stepID: step.id) },
-                                onInfo: { parameterInfo = .timer(definition) }
+                                onInfo: { parameterInfo = .timer(definition, stepID: step.id) }
                             )
                         }
                     }
@@ -393,7 +406,8 @@ struct CookingView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Show ingredient amount details")
-                        .accessibilityIdentifier("cookingIngredientInfo.\(ingredient.id.uuidString)")
+                        .accessibilityIdentifier(
+                            "cookingIngredientInfo.\(ingredient.id.uuidString)")
                     }
                 }
             }
@@ -591,7 +605,9 @@ struct CookingView: View {
                     voice.isListening ? "Stop voice control" : "Hands-free voice control",
                     systemImage: voice.isListening ? "mic.fill" : "mic.slash")
             }
-            .disabled(recipe?.steps.isEmpty != false || session.isComplete || requiresSessionRecovery)
+            .disabled(
+                recipe?.steps.isEmpty != false || session.isComplete || requiresSessionRecovery
+            )
             .accessibilityIdentifier("cookingVoiceToggle")
 
             Button {
@@ -775,7 +791,8 @@ struct CookingView: View {
                             } label: {
                                 Text(active.label)
                                     .font(
-                                        RecipeTheme.text(16, weight: .semibold, relativeTo: .headline)
+                                        RecipeTheme.text(
+                                            16, weight: .semibold, relativeTo: .headline)
                                     )
                             }
                             .buttonStyle(.plain)
@@ -784,7 +801,8 @@ struct CookingView: View {
                             .accessibilityIdentifier("cookingTimerRename.\(active.id.uuidString)")
                         } else {
                             Text(active.label)
-                                .font(RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
+                                .font(
+                                    RecipeTheme.text(16, weight: .semibold, relativeTo: .headline))
                         }
                         Text(
                             remaining == 0
@@ -1606,7 +1624,6 @@ private enum CookingClockFormatter {
         return String(format: "%02d:%02d", seconds / 60, seconds % 60)
     }
 }
-
 
 /// Opt-in foreground-only on-device speech control. No recording is stored/uploaded.
 @MainActor

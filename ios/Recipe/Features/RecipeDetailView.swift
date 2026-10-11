@@ -20,6 +20,7 @@ struct RecipeDetailView: View {
     @State private var isChoosingIngredients = false
     @State private var isDeleting = false
     @State private var parameterInfo: RecipeParameterInfo?
+    @State private var parameterCookingStepID: UUID?
     @State private var feedbackMessage: String?
     @State private var addedIngredientCount: Int?
     @State private var isPlanningMeal = false
@@ -62,8 +63,13 @@ struct RecipeDetailView: View {
         .sheet(isPresented: $isManagingCollections) {
             RecipeCollectionMembershipSheet(recipeID: recipeID)
         }
-        .sheet(item: $parameterInfo) { info in
-            RecipeParameterSheet(info: info)
+        .sheet(item: $parameterInfo, onDismiss: startParameterCooking) { info in
+            RecipeParameterSheet(
+                info: info,
+                timerActionTitle: "Start Cooking from This Step"
+            ) {
+                parameterCookingStepID = info.stepID
+            }
         }
         .sheet(isPresented: $isChoosingIngredients, onDismiss: showAddedFeedback) {
             RecipeIngredientsSelectionView(recipeID: recipeID, initialServings: servings) {
@@ -232,13 +238,34 @@ struct RecipeDetailView: View {
     @ViewBuilder
     private func recipeMetadata(_ recipe: Recipe) -> some View {
         if let prep = recipe.prepMinutes, prep >= 0 {
-            Label("Prep \(prep) min", systemImage: "clock")
+            Button {
+                parameterInfo = .timing(recipe)
+            } label: {
+                Label("Prep \(prep) min", systemImage: "clock")
+                    .frame(minHeight: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("recipeTimeInfo.prep")
         }
         if let cook = recipe.cookMinutes, cook >= 0 {
-            Label("Cook \(cook) min", systemImage: "flame")
+            Button {
+                parameterInfo = .timing(recipe)
+            } label: {
+                Label("Cook \(cook) min", systemImage: "flame")
+                    .frame(minHeight: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("recipeTimeInfo.cook")
         }
         if let total = recipe.totalMinutes, recipe.prepMinutes == nil || recipe.cookMinutes == nil {
-            Label("Total \(total) min", systemImage: "clock")
+            Button {
+                parameterInfo = .timing(recipe)
+            } label: {
+                Label("Total \(total) min", systemImage: "clock")
+                    .frame(minHeight: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("recipeTimeInfo.total")
         }
         if let originalServings = recipe.servings, originalServings > 0 {
             Label("\(servings) servings", systemImage: "person.2")
@@ -275,8 +302,10 @@ struct RecipeDetailView: View {
                     VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
                         if let title = group.title {
                             Text(title)
-                                .font(RecipeTheme.text(
-                                    15, weight: .semibold, relativeTo: .subheadline))
+                                .font(
+                                    RecipeTheme.text(
+                                        15, weight: .semibold, relativeTo: .subheadline)
+                                )
                                 .foregroundStyle(RecipeTheme.accentForeground)
                         }
                         VStack(spacing: 0) {
@@ -288,8 +317,9 @@ struct RecipeDetailView: View {
                                 } label: {
                                     RecipeIngredientLine(
                                         ingredient: ingredient, servings: servings,
-                                        originalServings: recipe.servings)
-                                        .contentShape(Rectangle())
+                                        originalServings: recipe.servings
+                                    )
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityHint("Show ingredient amount details")
@@ -315,7 +345,6 @@ struct RecipeDetailView: View {
         }
     }
 
-
     private func ingredientGroups(for recipe: Recipe) -> [DetailIngredientGroup] {
         var groups: [DetailIngredientGroup] = []
         var used: Set<UUID> = []
@@ -326,19 +355,23 @@ struct RecipeDetailView: View {
             }
             guard !members.isEmpty else { continue }
             used.formUnion(members.map(\.id))
-            groups.append(DetailIngredientGroup(
-                id: section.id.uuidString, title: section.title, ingredients: members))
+            groups.append(
+                DetailIngredientGroup(
+                    id: section.id.uuidString, title: section.title, ingredients: members))
         }
         let remaining = recipe.ingredients.filter { !used.contains($0.id) }
         if !remaining.isEmpty {
-            groups.append(DetailIngredientGroup(
-                id: "remaining",
-                title: groups.isEmpty ? nil : String(
-                    localized: LocalizedStringResource(
-                        "Other Ingredients", locale: RecipeLanguage.active
-                    )
-                ),
-                ingredients: remaining))
+            groups.append(
+                DetailIngredientGroup(
+                    id: "remaining",
+                    title: groups.isEmpty
+                        ? nil
+                        : String(
+                            localized: LocalizedStringResource(
+                                "Other Ingredients", locale: RecipeLanguage.active
+                            )
+                        ),
+                    ingredients: remaining))
         }
         return groups
     }
@@ -380,7 +413,9 @@ struct RecipeDetailView: View {
                             Text("Protein: \(NSDecimalNumber(decimal: protein).stringValue) g")
                         }
                         if let carbohydrates = nutrition.carbohydratesGrams {
-                            Text("Carbohydrates: \(NSDecimalNumber(decimal: carbohydrates).stringValue) g")
+                            Text(
+                                "Carbohydrates: \(NSDecimalNumber(decimal: carbohydrates).stringValue) g"
+                            )
                         }
                         if let fat = nutrition.fatGrams {
                             Text("Fat: \(NSDecimalNumber(decimal: fat).stringValue) g")
@@ -462,7 +497,8 @@ struct RecipeDetailView: View {
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityHint("Show ingredient amount details")
-                                    .accessibilityIdentifier("recipeStepIngredientInfo.\(ingredient.id.uuidString)")
+                                    .accessibilityIdentifier(
+                                        "recipeStepIngredientInfo.\(ingredient.id.uuidString)")
                                 }
                             }
                             .padding(12)
@@ -497,6 +533,15 @@ struct RecipeDetailView: View {
         }
     }
 
+    private func startParameterCooking() {
+        guard let stepID = parameterCookingStepID else {
+            return
+        }
+        parameterCookingStepID = nil
+        // Present only after the parameter sheet has finished dismissing.
+        cookingPresentation = CookingPresentation(startStepID: stepID)
+    }
+
     @ViewBuilder
     private func stepSignals(_ step: RecipeStep) -> some View {
         if let temperature = step.temperature, !temperature.text.isEmpty {
@@ -515,7 +560,7 @@ struct RecipeDetailView: View {
         ForEach(step.timers) { timer in
             let duration = timerDurationLabel(timer.durationSeconds)
             Button {
-                parameterInfo = .timer(timer)
+                parameterInfo = .timer(timer, stepID: step.id)
             } label: {
                 Label(
                     timer.label.isEmpty ? duration : "\(timer.label) · \(duration)",
@@ -878,8 +923,7 @@ private struct RecipeIngredientsSelectionView: View {
                     LocalizedStringKey(
                         selection.count == recipe.ingredients.count ? "Deselect All" : "Select All"
                     )
-                )
-                {
+                ) {
                     selection =
                         selection.count == recipe.ingredients.count
                         ? [] : Set(recipe.ingredients.map(\.id))
@@ -1137,12 +1181,13 @@ private struct RecipeMealPlanSheet: View {
     }
 }
 
-
 /// Reuses original recipe fields; unavailable measurements remain unknown.
 struct RecipeParameterInfo: Identifiable {
     let id = UUID()
     let title: String
     let lines: [String]
+    var stepID: UUID?
+    var timerID: UUID?
 
     static func ingredient(
         _ ingredient: RecipeIngredient, servings: Int?, originalServings: Int?
@@ -1169,18 +1214,43 @@ struct RecipeParameterInfo: Identifiable {
         return RecipeParameterInfo(title: "Temperature", lines: lines)
     }
 
-    static func timer(_ timer: RecipeStepTimer) -> RecipeParameterInfo {
+    static func timing(_ recipe: Recipe) -> RecipeParameterInfo {
+        var lines: [String] = []
+        if let prep = recipe.prepMinutes, prep >= 0 {
+            let title = String(
+                localized: LocalizedStringResource(
+                    "Prep time (minutes)", locale: RecipeLanguage.active))
+            lines.append("\(title): \(prep.formatted())")
+        }
+        if let cook = recipe.cookMinutes, cook >= 0 {
+            let title = String(
+                localized: LocalizedStringResource(
+                    "Cook time (minutes)", locale: RecipeLanguage.active))
+            lines.append("\(title): \(cook.formatted())")
+        }
+        return RecipeParameterInfo(
+            title: String(
+                localized: LocalizedStringResource("Cooking Time", locale: RecipeLanguage.active)),
+            lines: lines
+        )
+    }
+
+    static func timer(_ timer: RecipeStepTimer, stepID: UUID) -> RecipeParameterInfo {
         let amount = Duration.seconds(timer.durationSeconds).formatted(
             .units(width: .wide, maximumUnitCount: 2))
         return RecipeParameterInfo(
             title: timer.label.isEmpty ? "Step timer" : timer.label,
-            lines: ["Duration: \(amount)", "Start Cooking from this step to use the timer."]
+            lines: ["Duration: \(amount)"],
+            stepID: stepID,
+            timerID: timer.id
         )
     }
 }
 
 struct RecipeParameterSheet: View {
     let info: RecipeParameterInfo
+    var timerActionTitle: LocalizedStringKey = "Start Timer"
+    var onTimerAction: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -1191,6 +1261,17 @@ struct RecipeParameterSheet: View {
                         .font(RecipeTheme.text(16, relativeTo: .body))
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                if info.timerID != nil, let onTimerAction {
+                    Button {
+                        onTimerAction()
+                        dismiss()
+                    } label: {
+                        Label(timerActionTitle, systemImage: "play.fill")
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .accessibilityIdentifier("parameterTimerAction")
                 }
                 Spacer(minLength: 0)
             }
@@ -1254,42 +1335,46 @@ struct RecipeInteractiveInstructionText: View {
             .fixedSize(horizontal: false, vertical: true)
             .textSelection(.enabled)
             .accessibilityIdentifier(accessibilityID)
-            .environment(\.openURL, OpenURLAction { url in
-                guard url.scheme == "recipe-parameter", url.host == "item",
-                    let index = Int(url.lastPathComponent),
-                    let parameter = targets[index]
-                else {
-                    return .systemAction
-                }
-
-                switch parameter {
-                case .ingredient(let ingredientID):
-                    guard step.linkedIngredientIDs.contains(ingredientID),
-                        let ingredient = recipe.ingredients.first(where: {
-                            $0.id == ingredientID
-                        })
+            .environment(
+                \.openURL,
+                OpenURLAction { url in
+                    guard url.scheme == "recipe-parameter", url.host == "item",
+                        let index = Int(url.lastPathComponent),
+                        let parameter = targets[index]
                     else {
-                        return .discarded
+                        return .systemAction
                     }
-                    selection = .ingredient(
-                        ingredient, servings: servings,
-                        originalServings: recipe.servings
-                    )
-                case .temperature:
-                    guard let temperature = step.temperature else {
-                        return .discarded
+
+                    switch parameter {
+                    case .ingredient(let ingredientID):
+                        guard step.linkedIngredientIDs.contains(ingredientID),
+                            let ingredient = recipe.ingredients.first(where: {
+                                $0.id == ingredientID
+                            })
+                        else {
+                            return .discarded
+                        }
+                        selection = .ingredient(
+                            ingredient, servings: servings,
+                            originalServings: recipe.servings
+                        )
+                    case .temperature:
+                        guard let temperature = step.temperature else {
+                            return .discarded
+                        }
+                        selection = .temperature(temperature)
+                    case .timer(let timerID):
+                        guard
+                            let timer = step.timers.first(where: {
+                                $0.id == timerID
+                            })
+                        else {
+                            return .discarded
+                        }
+                        selection = .timer(timer, stepID: step.id)
                     }
-                    selection = .temperature(temperature)
-                case .timer(let timerID):
-                    guard let timer = step.timers.first(where: {
-                        $0.id == timerID
-                    }) else {
-                        return .discarded
-                    }
-                    selection = .timer(timer)
-                }
-                return .handled
-            })
+                    return .handled
+                })
     }
 }
 
@@ -1298,7 +1383,6 @@ private struct DetailIngredientGroup: Identifiable {
     let title: String?
     let ingredients: [RecipeIngredient]
 }
-
 
 /// Explicit multi-dish picker. A source can remain in the private library for
 /// future review; no dish is saved automatically or merged into a false recipe.
