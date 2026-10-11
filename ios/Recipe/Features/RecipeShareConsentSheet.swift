@@ -11,27 +11,23 @@ struct RecipeShareConsentSheet: View {
     @State private var presentsShare = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    Picker(
-                        text("Share"),
-                        selection: Binding(
-                            get: { state.scope },
-                            set: { state.select(scope: $0, rightsConfirmed: false) }
-                        )
-                    ) {
-                        Text(text("Summary and source")).tag(RecipeShareScope.summaryAndSource)
-                        Text(text("Full instructions")).tag(RecipeShareScope.fullInstructions)
-                    }
+                    scopePicker
                     if state.scope == .fullInstructions {
                         Toggle(
                             text("I have permission to share these instructions."),
                             isOn: Binding(
-                                get: { state.rightsConfirmed },
-                                set: { state.select(scope: state.scope, rightsConfirmed: $0) }
+                                get: {
+                                    state.rightsConfirmed
+                                },
+                                set: {
+                                    state.select(scope: state.scope, rightsConfirmed: $0)
+                                }
                             ))
                     }
                 }
@@ -81,34 +77,41 @@ struct RecipeShareConsentSheet: View {
                         ProgressView()
                     } else if state.needsReload {
                         Button(text("Reload public copy")) {
-                            Task { await state.reload() }
+                            Task {
+                                await state.reload()
+                            }
                         }
                     } else if state.canRetry {
                         Button(text("Retry")) {
-                            Task { await state.retry() }
+                            Task {
+                                await state.retry()
+                            }
                         }
                     } else {
                         Button(text(state.share == nil ? "Publish link" : "Update public copy")) {
-                            Task { await state.confirm() }
+                            Task {
+                                await state.confirm()
+                            }
                         }
                         .disabled(state.preview == nil)
                     }
                     if state.publicURL != nil {
                         Button(text("Copy Link")) {
-                            // Revalidate current owner/source at the point of disclosure.
-                            if let currentURL = state.publicURL {
-                                UIPasteboard.general.url = currentURL
-                            }
+                            copyLink()
                         }
                         Button(text("Share")) {
-                            guard state.publicURL != nil else { return }
+                            guard state.publicURL != nil else {
+                                return
+                            }
                             presentsShare = true
                         }
                     }
                     if state.share != nil {
                         if !state.needsReload {
                             Button(text("Reload public copy")) {
-                                Task { await state.reload() }
+                                Task {
+                                    await state.reload()
+                                }
                             }
                             .disabled(state.isBusy)
                         }
@@ -132,7 +135,9 @@ struct RecipeShareConsentSheet: View {
             }
             .confirmationDialog(text("Revoke this public link?"), isPresented: $confirmsRevoke) {
                 Button(text("Revoke link"), role: .destructive) {
-                    Task { await state.revoke() }
+                    Task {
+                        await state.revoke()
+                    }
                 }
             } message: {
                 Text(text("This link will stop working."))
@@ -142,12 +147,51 @@ struct RecipeShareConsentSheet: View {
             ConsentURLActivity(state: state)
         }
         .environment(\.locale, RecipeLanguage.active)
-        .onDisappear { state.cancel() }
+        .onDisappear {
+            state.cancel()
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 state.refreshPreview()
             }
         }
+    }
+
+    @ViewBuilder
+    private var scopePicker: some View {
+        // Large accessibility text needs full labels for informed sharing consent.
+        if dynamicTypeSize.isAccessibilitySize {
+            scopeSelection.pickerStyle(.inline)
+        } else {
+            scopeSelection
+        }
+    }
+
+    private var scopeSelection: some View {
+        Picker(
+            text("Share"),
+            selection: Binding(
+                get: {
+                    state.scope
+                },
+                set: {
+                    state.select(scope: $0, rightsConfirmed: false)
+                }
+            )
+        ) {
+            Text(text("Summary and source")).tag(RecipeShareScope.summaryAndSource)
+            Text(text("Full instructions")).tag(RecipeShareScope.fullInstructions)
+        }
+    }
+
+    /// Revalidates authorization at disclosure time; an unavailable link leaves the clipboard alone.
+    @discardableResult
+    func copyLink(to pasteboard: UIPasteboard = .general) -> Bool {
+        guard let currentURL = state.publicURL else {
+            return false
+        }
+        pasteboard.url = currentURL
+        return true
     }
 
     private struct IngredientRow: Identifiable {
@@ -183,12 +227,22 @@ struct RecipeShareConsentSheet: View {
 
 /// Rechecks authorization on tap and controller creation; only the validated URL is disclosed.
 @MainActor
-private struct ConsentURLActivity: UIViewControllerRepresentable {
+struct ConsentURLActivity: UIViewControllerRepresentable {
     let state: RecipeShareConsentState
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        let items: [Any] = state.publicURL.map { [$0] } ?? []
-        return UIActivityViewController(activityItems: items, applicationActivities: nil)
+        makeController()
+    }
+
+    func makeController() -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems(), applicationActivities: nil)
+    }
+
+    /// Reads the latest owner/source when constructing the system controller, never a cached URL.
+    func activityItems() -> [Any] {
+        state.publicURL.map {
+            [$0]
+        } ?? []
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {

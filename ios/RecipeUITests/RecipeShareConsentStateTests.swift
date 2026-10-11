@@ -3,6 +3,8 @@
 
 import Foundation
 import RecipeCore
+import SwiftUI
+import UIKit
 import XCTest
 
 @testable import Recipe
@@ -31,13 +33,17 @@ private final class ConsentFixture {
             managementEndpoint: URL(
                 string: "https://api.example.org/functions/v1/recipe-share-manage")!,
             session: {
-                guard let owner = self.currentOwner else { return nil }
+                guard let owner = self.currentOwner else {
+                    return nil
+                }
                 return RecipeSharePublishingSession(ownerID: owner, accessToken: "fake.token")
             },
             send: { request in
                 self.requests.append(request)
                 if self.pause {
-                    await withCheckedContinuation { self.suspended = $0 }
+                    await withCheckedContinuation {
+                        self.suspended = $0
+                    }
                 }
                 self.afterSend?()
                 let requestBody = request.httpBody.flatMap {
@@ -66,8 +72,12 @@ private final class ConsentFixture {
     func state(existing: RecipeShareConsentExistingShare? = nil) throws -> RecipeShareConsentState {
         RecipeShareConsentState(
             recipeID: recipe!.id, service: try service(),
-            currentOwnerID: { self.currentOwner },
-            readRecipe: { id in self.recipe?.id == id ? self.recipe : nil },
+            currentOwnerID: {
+                self.currentOwner
+            },
+            readRecipe: { id in
+                self.recipe?.id == id ? self.recipe : nil
+            },
             existingShare: existing
         )
     }
@@ -105,8 +115,12 @@ final class RecipeShareConsentStateTests: XCTestCase {
         let fake = ConsentFixture()
         let state = try fake.state()
         fake.pause = true
-        let operation = Task { await state.confirm() }
-        while fake.suspended == nil { await Task.yield() }
+        let operation = Task {
+            await state.confirm()
+        }
+        while fake.suspended == nil {
+            await Task.yield()
+        }
         operation.cancel()
         fake.suspended?.resume()
         await operation.value
@@ -168,8 +182,12 @@ final class RecipeShareConsentStateTests: XCTestCase {
         let fake = ConsentFixture()
         let state = try fake.state()
         fake.pause = true
-        let first = Task { await state.confirm() }
-        while fake.suspended == nil { await Task.yield() }
+        let first = Task {
+            await state.confirm()
+        }
+        while fake.suspended == nil {
+            await Task.yield()
+        }
         await state.confirm()
         XCTAssertEqual(fake.requests.count, 1)
         state.cancel()
@@ -207,7 +225,9 @@ final class RecipeShareConsentStateTests: XCTestCase {
     func testSourceChangeDuringRequestAndDeletionDuringRetryRejectResult() async throws {
         let fake = ConsentFixture()
         let state = try fake.state()
-        fake.afterSend = { fake.recipe?.updatedAt.addTimeInterval(1) }
+        fake.afterSend = {
+            fake.recipe?.updatedAt.addTimeInterval(1)
+        }
         await state.confirm()
         XCTAssertNil(state.share)
         XCTAssertNil(state.publicURL)
@@ -224,7 +244,9 @@ final class RecipeShareConsentStateTests: XCTestCase {
     func testOwnerChangeDuringRequestDoesNotExposeShare() async throws {
         let fake = ConsentFixture()
         let state = try fake.state()
-        fake.afterSend = { fake.currentOwner = fake.ownerB }
+        fake.afterSend = {
+            fake.currentOwner = fake.ownerB
+        }
         await state.confirm()
         XCTAssertNil(state.share)
         XCTAssertNil(state.publicURL)
@@ -311,4 +333,122 @@ final class RecipeShareConsentStateTests: XCTestCase {
         XCTAssertTrue(fake.requests.isEmpty)
         XCTAssertNil(wrongOwner.publicURL)
     }
+
+    func testCopyActionUsesIsolatedPasteboardAndRechecksAuthorization() async throws {
+        let fake = ConsentFixture()
+        let state = try fake.state()
+        let sheet = RecipeShareConsentSheet(state: state)
+        let name = UIPasteboard.Name("recipe.consent.test." + UUID().uuidString)
+        let pasteboard = try XCTUnwrap(UIPasteboard(name: name, create: true))
+        defer {
+            UIPasteboard.remove(withName: name)
+        }
+        pasteboard.string = "Existing clipboard"
+        XCTAssertFalse(sheet.copyLink(to: pasteboard))
+        XCTAssertEqual(pasteboard.string, "Existing clipboard")
+        await state.confirm()
+        XCTAssertTrue(sheet.copyLink(to: pasteboard))
+        XCTAssertEqual(pasteboard.url?.absoluteString, fake.url)
+        pasteboard.string = "Keep this text"
+        fake.currentOwner = fake.ownerB
+        XCTAssertFalse(sheet.copyLink(to: pasteboard))
+        fake.currentOwner = fake.ownerA
+        fake.recipe?.updatedAt.addTimeInterval(1)
+        XCTAssertFalse(sheet.copyLink(to: pasteboard))
+        XCTAssertEqual(pasteboard.string, "Keep this text")
+        state.cancel()
+        XCTAssertFalse(sheet.copyLink(to: pasteboard))
+    }
+
+    func testSystemControllerInputIsURLOnlyAndRechecksAfterTap() async throws {
+        let fake = ConsentFixture()
+        let state = try fake.state()
+        let activity = ConsentURLActivity(state: state)
+        XCTAssertTrue(activity.activityItems().isEmpty)
+        await state.confirm()
+        XCTAssertEqual(activity.activityItems().count, 1)
+        XCTAssertEqual(activity.activityItems().first as? URL, state.publicURL)
+        // Construct the actual UIKit adapter; this does not select a system share destination.
+        let controller = activity.makeController()
+        XCTAssertNil(controller.presentingViewController)
+        fake.currentOwner = fake.ownerB
+        XCTAssertTrue(activity.activityItems().isEmpty)
+        fake.currentOwner = fake.ownerA
+        state.cancel()
+        XCTAssertTrue(activity.activityItems().isEmpty)
+    }
+
+    func testCopyAndSystemPayloadStayUnavailableUntilRecoveryAndAfterRevoke() async throws {
+        let fake = ConsentFixture()
+        let state = try fake.state()
+        let sheet = RecipeShareConsentSheet(state: state)
+        let activity = ConsentURLActivity(state: state)
+        let name = UIPasteboard.Name("recipe.consent.test." + UUID().uuidString)
+        let pasteboard = try XCTUnwrap(UIPasteboard(name: name, create: true))
+        defer {
+            UIPasteboard.remove(withName: name)
+        }
+        fake.status = 503
+        await state.confirm()
+        XCTAssertFalse(sheet.copyLink(to: pasteboard))
+        XCTAssertTrue(activity.activityItems().isEmpty)
+        fake.status = 201
+        await state.retry()
+        XCTAssertEqual(try fake.key(0), try fake.key(1))
+        XCTAssertTrue(sheet.copyLink(to: pasteboard))
+        XCTAssertEqual(activity.activityItems().count, 1)
+        fake.status = 204
+        await state.revoke()
+        XCTAssertFalse(sheet.copyLink(to: pasteboard))
+        XCTAssertTrue(activity.activityItems().isEmpty)
+        XCTAssertNotNil(fake.recipe)
+    }
+
+    func testHostedSheetRendersNormalAndAccessibilityTypeAndCancelsOnRemoval() async throws {
+        for size in [DynamicTypeSize.large, .accessibility5] {
+            let fake = ConsentFixture()
+            fake.recipe?.title = "Lemon soup with roasted vegetables and a long descriptive title"
+            let state = try fake.state()
+            await state.confirm()
+            let root = AnyView(
+                RecipeShareConsentSheet(state: state)
+                    .dynamicTypeSize(size)
+                    .preferredColorScheme(.light)
+            )
+            let host = UIHostingController(rootView: root)
+            let scene = try XCTUnwrap(
+                UIApplication.shared.connectedScenes.compactMap {
+                    $0 as? UIWindowScene
+                }.first
+            )
+            let window = UIWindow(windowScene: scene)
+            window.frame = CGRect(x: 0, y: 0, width: 402, height: 874)
+            window.rootViewController = host
+            window.isHidden = false
+            defer {
+                window.isHidden = true
+                window.rootViewController = nil
+            }
+            host.view.setNeedsLayout()
+            host.view.layoutIfNeeded()
+            try await Task.sleep(for: .milliseconds(300))
+            let image = UIGraphicsImageRenderer(bounds: host.view.bounds).image { _ in
+                XCTAssertTrue(
+                    host.view.drawHierarchy(in: host.view.bounds, afterScreenUpdates: true))
+            }
+            XCTAssertEqual(image.size, host.view.bounds.size)
+            XCTAssertGreaterThan(try XCTUnwrap(image.pngData()).count, 1_000)
+            let attachment = XCTAttachment(image: image)
+            attachment.name = "ConsentSheet-" + String(describing: size)
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            // Exercise the real onDisappear modifier rather than calling state.cancel directly.
+            host.rootView = AnyView(EmptyView())
+            try await Task.sleep(for: .milliseconds(100))
+            XCTAssertNil(state.publicURL)
+            await state.confirm()
+            XCTAssertEqual(fake.requests.count, 1)
+        }
+    }
+
 }
