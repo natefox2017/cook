@@ -706,3 +706,44 @@ test("result code objects cannot execute coercion or escape wire as objects", as
   assert.equal((await send(f, "/" + sid + "/turns/" + tid, "GET")).status, 500);
   assert.equal(calls, 0);
 });
+
+test("approval current expected revision with stale turn reaches authoritative CAS", async () => {
+  for (
+    const [change, code] of [
+      [{ based_revision: "1" }, "TURN_ALREADY_DECIDED"],
+      [{ based_revision: "2", context_hash: "b".repeat(64) }, "STALE_REVISION"],
+    ]
+  ) {
+    const f = fixture();
+    f.s.revision = "2";
+    f.s.effective_context.fields.title.user_confirmed = true;
+    f.s.effective_context.fields.title.raw_value = "Soup";
+    f.s.effective_context.review_fields = [];
+    f.s.effective_context.status = "ready";
+    Object.assign(f.t, change);
+    f.rpc = () => ({ code });
+    const r = await send(f, "/" + sid + "/turns/" + tid + "/approval", "POST", {
+      ...approvalBody(),
+      expected_revision: "2",
+    });
+    assert.equal(r.status, 409);
+    assert.equal(r.body.code, code);
+    assert.equal(f.calls.length, 1);
+    assert.equal(f.calls[0][1].p_next_context, null);
+  }
+  const f = fixture();
+  f.t.state = "pending";
+  f.t.result = null;
+  f.rpc = () => ({ code: "INVALID_INPUT" });
+  assert.equal(
+    (await send(
+      f,
+      "/" + sid + "/turns/" + tid + "/approval",
+      "POST",
+      approvalBody(),
+    )).status,
+    422,
+  );
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls[0][1].p_next_context, null);
+});

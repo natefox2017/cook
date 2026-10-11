@@ -708,6 +708,10 @@ export async function handleRequest(
     let nextHash = wireSession.context_hash;
     if (
       revision(body.expected_revision) === wireSession.revision &&
+      revision(t.based_revision) === wireSession.revision &&
+      hash(t.context_hash) === wireSession.context_hash &&
+      t.state === "terminal" &&
+      t.result !== null && object(t.result).status === "proposal" &&
       BigInt(wireSession.revision as string) < MAX_REV
     ) {
       next = approvalContext(s, t, body);
