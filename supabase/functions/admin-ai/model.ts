@@ -59,6 +59,9 @@ export function parseUsageRange(value: string | null): UsageRange {
 export function parseProviderInput(
   value: Record<string, unknown>,
 ): ProviderInput {
+  if (typeof value.active !== "boolean" || (value.apiKey !== undefined && typeof value.apiKey !== "string")) {
+    throw new AppError("validation_error", "active must be a boolean and apiKey must be a string", 400);
+  }
   const name = typeof value.name === "string" ? value.name.trim() : "";
   const baseUrl = typeof value.baseUrl === "string" ? value.baseUrl.trim() : "";
   const model = typeof value.model === "string" ? value.model.trim() : "";
@@ -72,7 +75,7 @@ export function parseProviderInput(
       400,
     );
   }
-  if (apiKey.length > 8192) {
+  if (apiKey.length > 8192 || /[\r\n]/.test(apiKey)) {
     throw new AppError(
       "validation_error",
       "Provider key exceeds the supported size",
@@ -93,17 +96,17 @@ export function parseProviderInput(
   } catch {
     throw new AppError(
       "validation_error",
-      "Provider URL must be an absolute HTTP or HTTPS URL",
+      "Provider URL must be an absolute HTTPS URL",
       400,
     );
   }
   if (
-    (url.protocol !== "https:" && url.protocol !== "http:") ||
+    url.protocol !== "https:" ||
     url.username || url.password || url.search || url.hash
   ) {
     throw new AppError(
       "validation_error",
-      "Provider URL must use HTTP or HTTPS without credentials, query, or fragment",
+      "Provider URL must use HTTPS without credentials, query, or fragment",
       400,
     );
   }

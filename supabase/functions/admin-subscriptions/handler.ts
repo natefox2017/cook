@@ -9,23 +9,13 @@ import { utcMonthKey } from "../_shared/monthBuckets.ts";
 import { RecordedRevenueLedger, isRecordedPurchaseEvent, recordedPurchaseAmount } from "../_shared/recordedRevenue.ts";
 import { hasCompletePage } from "../_shared/reportPage.ts";
 
-type Platform = "app_store" | "play_store";
+import { readBoundedJSONObject } from "../_shared/bounded-json.ts";
+import { parsePlanBody } from "./plan-input.ts";
 
 function routeParts(req: Request): string[] {
   const parts = new URL(req.url).pathname.split("/").filter(Boolean);
   const index = parts.findIndex((part) => part === "admin-subscriptions");
   return index >= 0 ? parts.slice(index + 1) : parts.slice(-2);
-}
-
-async function readJson(req: Request): Promise<Record<string, unknown>> {
-  try {
-    const body = await req.json();
-    return body && typeof body === "object"
-      ? body as Record<string, unknown>
-      : {};
-  } catch {
-    throw new AppError("validation_error", "Invalid JSON body", 400);
-  }
 }
 
 function mapPlan(row: Record<string, unknown>) {
@@ -41,58 +31,6 @@ function mapPlan(row: Record<string, unknown>) {
     active: Boolean(row.active),
     description: row.description ?? null,
     updatedAt: row.updated_at,
-  };
-}
-
-function parsePlanBody(body: Record<string, unknown>) {
-  const planKey = String(body.planKey ?? "").trim();
-  const displayName = String(body.displayName ?? "").trim();
-  const platform = String(body.platform ?? "").trim() as Platform;
-  const productId = String(body.productId ?? "").trim();
-  const currency = String(body.currency ?? "USD").trim().toUpperCase() ||
-    "USD";
-  const billingPeriod = String(body.billingPeriod ?? "").trim();
-  const description = body.description == null || body.description === ""
-    ? null
-    : String(body.description);
-  const price = Number(body.price);
-  const active = Boolean(body.active ?? true);
-
-  if (!planKey || !displayName || !productId) {
-    throw new AppError(
-      "validation_error",
-      "planKey, displayName, and productId are required",
-      400,
-    );
-  }
-  if (platform !== "app_store" && platform !== "play_store") {
-    throw new AppError(
-      "validation_error",
-      "platform must be app_store or play_store",
-      400,
-    );
-  }
-  if (!["monthly", "yearly", "lifetime"].includes(billingPeriod)) {
-    throw new AppError("validation_error", "invalid billingPeriod", 400);
-  }
-  if (!Number.isFinite(price) || price < 0) {
-    throw new AppError(
-      "validation_error",
-      "price must be a non-negative number",
-      400,
-    );
-  }
-
-  return {
-    plan_key: planKey,
-    display_name: displayName,
-    platform,
-    product_id: productId,
-    price,
-    currency,
-    billing_period: billingPeriod,
-    active,
-    description,
   };
 }
 
@@ -162,7 +100,7 @@ export async function handleRequest(
     }
 
     if (resource === "plans" && method === "POST" && !id) {
-      const payload = parsePlanBody(await readJson(req));
+      const payload = parsePlanBody(await readBoundedJSONObject(req, 16 * 1024));
       const { data, error } = await admin
         .from("subscription_plans")
         .insert(payload)
@@ -186,7 +124,7 @@ export async function handleRequest(
     }
 
     if (resource === "plans" && method === "PUT" && id) {
-      const payload = parsePlanBody(await readJson(req));
+      const payload = parsePlanBody(await readBoundedJSONObject(req, 16 * 1024));
       const { data, error } = await admin
         .from("subscription_plans")
         .update(payload)

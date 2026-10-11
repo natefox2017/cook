@@ -262,6 +262,7 @@ test("RPC allowlist exact parameters and plain payload shapes reject before tran
     const args of [
       { ...finishArgs(), extra: true },
       { ...finishArgs(), p_result: [] },
+      { ...finishArgs(), p_result: null },
       { ...finishArgs(), p_result: { n: NaN } },
       { ...finishArgs(), p_expected_dispatch_state: "other" },
       { ...finishArgs(), p_validated_usage: 4097 },
@@ -291,6 +292,8 @@ test("RPC allowlist exact parameters and plain payload shapes reject before tran
       { p_selected_paths: ["secret"] },
       { p_action: "reject" },
       { p_next_context: [] },
+      { p_next_context: "invalid" },
+      { p_next_context: false },
     ]
   ) {
     await assert.rejects(
@@ -301,6 +304,59 @@ test("RPC allowlist exact parameters and plain payload shapes reject before tran
     );
   }
   assert.equal(f.calls.length, 0);
+});
+test("approval replay preserves null next context while other context null remains invalid", async () => {
+  const receipt = {
+    session_id: sessionID,
+    turn_request_id: requestID,
+    request_id: id(8),
+    action: "accept",
+    selected_paths: ["title"],
+    applied_revision: "2",
+  };
+  const bodies = [];
+  const f = fixture({
+    postgrestTransport: async (req) => {
+      if (req.method === "GET") {
+        return response([{
+          id: job,
+          owner_id: owner,
+          result: { status: "needs_review" },
+        }]);
+      }
+      bodies.push(JSON.parse(await req.text()));
+      return response({ receipt });
+    },
+  });
+  const args = {
+    p_owner_id: owner,
+    p_session_id: sessionID,
+    p_turn_request_id: requestID,
+    p_request_id: id(8),
+    p_expected_revision: "1",
+    p_action: "accept",
+    p_selected_paths: ["title"],
+    p_approval_hash: hash,
+    p_next_context: null,
+    p_next_context_hash: hash,
+    p_enabled: true,
+  };
+  assert.deepEqual(
+    await f.handlerDependencies.rpc("approve_recipe_draft_turn", args),
+    { receipt },
+  );
+  assert.deepEqual(bodies, [args]);
+  assert(Object.hasOwn(bodies[0], "p_next_context"));
+  assert.equal(bodies[0].p_next_context, null);
+  const snapshot =
+    (await f.handlerDependencies.loadOwnedJob(owner, job)).result;
+  await assert.rejects(
+    f.handlerDependencies.rpc("create_recipe_draft_session", {
+      ...createArgs(snapshot),
+      p_base_context: null,
+    }),
+  );
+  assert.equal(bodies.length, 1);
 });
 test("RPC valid safe results retain decimal revisions and discard incidental error data", async () => {
   const f = fixture({

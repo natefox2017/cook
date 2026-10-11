@@ -336,12 +336,12 @@ final class RecipeTimerNotificationTests: XCTestCase {
         let queuedTestSchedule = TimerNotifications.schedule(
             id: testID,
             title: "QA timer removed during scheduling",
-            seconds: 120
+            deadline: Date().addingTimeInterval(120)
         )
         let normalSchedule = TimerNotifications.schedule(
             id: normalID,
             title: "Normal timer preserved",
-            seconds: 120
+            deadline: Date().addingTimeInterval(120)
         )
         await TimerNotifications.cancelAll(matchingPrefixes: [testPrefix])
         try await queuedTestSchedule.value
@@ -366,14 +366,14 @@ final class RecipeTimerNotificationTests: XCTestCase {
             let oldRequest = TimerNotifications.schedule(
                 id: id,
                 title: "QA stale request \(attempt)",
-                seconds: 120
+                deadline: Date().addingTimeInterval(120)
             )
             TimerNotifications.cancel(id: id)
             let latestTitle = "QA latest request \(attempt)"
             let newRequest = TimerNotifications.schedule(
                 id: id,
                 title: latestTitle,
-                seconds: 120
+                deadline: Date().addingTimeInterval(120)
             )
             try await newRequest.value
             try await oldRequest.value
@@ -397,8 +397,10 @@ final class RecipeTimerNotificationTests: XCTestCase {
             TimerNotifications.cancel(id: secondID)
         }
 
-        let first = TimerNotifications.schedule(id: firstID, title: "QA first", seconds: 120)
-        let second = TimerNotifications.schedule(id: secondID, title: "QA second", seconds: 120)
+        let first = TimerNotifications.schedule(
+            id: firstID, title: "QA first", deadline: Date().addingTimeInterval(120))
+        let second = TimerNotifications.schedule(
+            id: secondID, title: "QA second", deadline: Date().addingTimeInterval(120))
         try await first.value
         try await second.value
 
@@ -432,8 +434,10 @@ final class RecipeTimerNotificationTests: XCTestCase {
             TimerNotifications.cancel(id: id)
         }
 
-        try await TimerNotifications.schedule(id: id, title: "QA timer verification", seconds: 1)
-            .value
+        try await TimerNotifications.schedule(
+            id: id, title: "QA timer verification", deadline: Date().addingTimeInterval(1)
+        )
+        .value
         let result = await XCTWaiter.fulfillment(of: [callback], timeout: 6)
         XCTAssertEqual(result, .completed)
         XCTAssertEqual(recorder.options, [.banner, .sound])
