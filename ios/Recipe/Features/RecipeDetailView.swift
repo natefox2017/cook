@@ -464,6 +464,8 @@ struct RecipeDetailView: View {
                             }
                         }
 
+                        RecipeStepPhotosView(recipe: recipe, stepID: step.id)
+
                         let linkedIngredients = recipe.ingredients.filter {
                             step.linkedIngredientIDs.contains($0.id)
                         }

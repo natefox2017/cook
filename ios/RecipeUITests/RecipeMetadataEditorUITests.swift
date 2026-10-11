@@ -74,6 +74,17 @@ final class RecipeMetadataEditorUITests: XCTestCase {
         XCTAssertTrue(save.isEnabled)
         save.tap()
         waitForEditorDismissal(in: app)
+        let detailPhotos = app.images.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'stepPhoto.'"))
+        XCTAssertEqual(detailPhotos.count, 2)
+        for photo in detailPhotos.allElementsBoundByIndex {
+            reveal(photo, in: app)
+            XCTAssertTrue(photo.isHittable)
+        }
+        let detailAttachment = XCTAttachment(screenshot: app.screenshot())
+        detailAttachment.name = "DEV52 saved step photos displayed in recipe detail"
+        detailAttachment.lifetime = .keepAlways
+        add(detailAttachment)
 
         openEditor(in: app)
         let wet = groupNames(in: app).firstMatch
@@ -163,7 +174,9 @@ final class RecipeMetadataEditorUITests: XCTestCase {
             if element.exists && element.isHittable {
                 return
             }
-            let form = app.collectionViews.firstMatch
+            let form =
+                app.collectionViews.firstMatch.exists
+                ? app.collectionViews.firstMatch : app.scrollViews.firstMatch
             if element.exists && element.frame.maxY < form.frame.minY + 12 {
                 form.swipeDown()
             } else {
