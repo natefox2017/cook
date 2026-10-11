@@ -7,6 +7,7 @@ import {
   handleRequest,
   ProviderProbeError,
   providerStatusError,
+  readProviderStatus,
 } from "./handler.ts";
 
 Deno.test("provider failures expose only fixed diagnostics, never raw exceptions", async () => {
@@ -300,5 +301,45 @@ Deno.test("saved-key probes ignore caller endpoint, model, and key overrides", a
   } finally {
     if (oldKey === undefined) Deno.env.delete("COOKAPP_AI_SECRET_KEY_V2");
     else Deno.env.set("COOKAPP_AI_SECRET_KEY_V2", oldKey);
+  }
+});
+
+Deno.test("native provider status parsing handles split lines and rejects invalid/oversized replies", async () => {
+  for (
+    const [parts, expected] of [[["HTTP/1.1 2", "00 OK\r\n"], 200], [[
+      "HTTP/1.1 401 Unauthorized\r\n",
+    ], 401]]
+  ) {
+    const chunks = (parts as string[]).map((part) =>
+      new TextEncoder().encode(part)
+    );
+    const reader = {
+      read: async (buffer: Uint8Array) => {
+        const chunk = chunks.shift();
+        if (!chunk) return null;
+        buffer.set(chunk);
+        return chunk.length;
+      },
+    };
+    assertEquals(await readProviderStatus(reader), expected);
+  }
+  for (const text of ["invalid\r\n", "x".repeat(8192)]) {
+    let offset = 0;
+    const data = new TextEncoder().encode(text);
+    const reader = {
+      read: async (buffer: Uint8Array) => {
+        const chunk = data.subarray(offset, offset + buffer.length);
+        buffer.set(chunk);
+        offset += chunk.length;
+        return chunk.length || null;
+      },
+    };
+    let rejected = false;
+    try {
+      await readProviderStatus(reader);
+    } catch {
+      rejected = true;
+    }
+    assertEquals(rejected, true);
   }
 });
