@@ -1238,6 +1238,47 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testProfileNavigationTitleUpdatesAfterManualFrenchSelection() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--uitesting-reset-language"]
+        app.launch()
+        defer {
+            app.terminate()
+        }
+
+        let profileTab = app.tabBars.buttons["Profile"]
+        waitUntilReady(profileTab)
+        profileTab.tap()
+
+        let settings = app.buttons["Settings"]
+        reveal(settings, in: app, maximumSwipes: 5)
+        settings.tap()
+
+        let languageAndCountry = app.buttons["Language & Country"]
+        reveal(languageAndCountry, in: app, maximumSwipes: 6)
+        languageAndCountry.tap()
+
+        let picker = app.buttons["settings.languagePicker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5), app.debugDescription)
+        picker.tap()
+        let french = app.buttons["Français"].firstMatch
+        XCTAssertTrue(french.waitForExistence(timeout: 5), app.debugDescription)
+        french.tap()
+
+        XCTAssertTrue(app.navigationBars["Langue et pays"].waitForExistence(timeout: 8))
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.navigationBars["Réglages"].waitForExistence(timeout: 8))
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        let frenchProfileTab = app.tabBars.buttons["Profil"]
+        waitUntilReady(frenchProfileTab)
+        frenchProfileTab.tap()
+        XCTAssertTrue(
+            app.navigationBars["Profil"].waitForExistence(timeout: 8),
+            app.debugDescription
+        )
+    }
+
+    @MainActor
     func testExportFormatsAreAvailableInBothEntryPoints() {
         let app = launchSeededApp()
         defer {
