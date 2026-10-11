@@ -526,3 +526,39 @@ private final class RecipeNotificationPresentationRecorder: NSObject,
         )
     }
 }
+
+@MainActor
+final class RecipeParameterInfoTests: XCTestCase {
+    func testTimingInfoPreservesMissingInvalidAndZeroValues() {
+        let missing = RecipeParameterInfo.timing(Recipe(title: "Unknown times"))
+        XCTAssertTrue(missing.lines.isEmpty)
+        XCTAssertNil(missing.timerID)
+
+        let partial = RecipeParameterInfo.timing(
+            Recipe(title: "Prep only", prepMinutes: 20, cookMinutes: nil)
+        )
+        XCTAssertEqual(partial.lines.count, 1)
+        XCTAssertTrue(partial.lines[0].hasSuffix(": 20"))
+
+        let invalid = RecipeParameterInfo.timing(
+            Recipe(title: "Invalid cook time", prepMinutes: nil, cookMinutes: -1)
+        )
+        XCTAssertTrue(invalid.lines.isEmpty)
+
+        let zero = RecipeParameterInfo.timing(
+            Recipe(title: "No cooking required", prepMinutes: 15, cookMinutes: 0)
+        )
+        XCTAssertEqual(zero.lines.count, 2)
+        XCTAssertTrue(zero.lines[1].hasSuffix(": 0"))
+    }
+
+    func testTimerInfoCarriesOriginalStepAndTimerIdentity() {
+        let stepID = UUID()
+        let timer = RecipeStepTimer(label: "Rest", durationSeconds: 1_200)
+        let info = RecipeParameterInfo.timer(timer, stepID: stepID)
+        XCTAssertEqual(info.stepID, stepID)
+        XCTAssertEqual(info.timerID, timer.id)
+        XCTAssertEqual(info.title, "Rest")
+        XCTAssertEqual(info.lines.count, 1)
+    }
+}

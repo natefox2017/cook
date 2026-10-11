@@ -899,6 +899,100 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testParameterTimerActionsUseExistingSession() {
+        let app = launchSeededApp()
+        defer {
+            app.terminate()
+        }
+        let recipe = app.buttons["recipe.C0010000-0000-4000-8000-000000000005"]
+        reveal(recipe, in: app, maximumSwipes: 4)
+        recipe.tap()
+
+        let prepInfo = app.buttons["recipeTimeInfo.prep"]
+        revealRecipeStepAction(prepInfo, in: app)
+        prepInfo.tap()
+        XCTAssertTrue(app.navigationBars["Cooking Time"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Prep time (minutes): 20"].exists)
+        XCTAssertTrue(app.staticTexts["Cook time (minutes): 45"].exists)
+        XCTAssertFalse(app.buttons["parameterTimerAction"].exists)
+        attachScreenshot("DEV81 Source-backed preparation and cooking times", app: app)
+        app.navigationBars.buttons["Done"].tap()
+
+        let servingsStepper = app.steppers.firstMatch
+        revealRecipeStepAction(servingsStepper, in: app)
+        servingsStepper.buttons["recipeServingsStepper-Increment"].tap()
+
+        let stepAction = app.buttons["cookFromStep.4"]
+        revealRecipeStepAction(stepAction, in: app)
+        let detailTimer = app.buttons.matching(
+            NSPredicate(
+                format: "identifier == %@ AND label CONTAINS %@",
+                "recipeStepTimerInfo", "First roast")
+        ).firstMatch
+        revealRecipeStepAction(detailTimer, in: app)
+        detailTimer.tap()
+        XCTAssertTrue(app.navigationBars["First roast"].waitForExistence(timeout: 8))
+        let parameterAction = app.buttons["parameterTimerAction"]
+        XCTAssertEqual(parameterAction.label, "Start Cooking from This Step")
+        attachScreenshot("DEV81 Detail timer information action", app: app)
+        parameterAction.tap()
+        assertCookingStep("Step 4 of 8", in: app)
+        XCTAssertFalse(
+            app.buttons["timerPause"].exists, "Entering Cooking must not start a hidden timer")
+        app.buttons["Ingredients"].tap()
+        XCTAssertTrue(app.steppers["5 servings"].waitForExistence(timeout: 8))
+        app.navigationBars.buttons["Done"].tap()
+
+        let timerInfo = app.buttons.matching(
+            NSPredicate(
+                format: "identifier == %@ AND label CONTAINS %@",
+                "cookingTimerInfo", "First roast")
+        ).firstMatch
+        revealCookingTimer(timerInfo, in: app)
+        timerInfo.tap()
+        XCTAssertTrue(parameterAction.waitForExistence(timeout: 8))
+        XCTAssertEqual(parameterAction.label, "Start Timer")
+        parameterAction.tap()
+        let pause = app.buttons["timerPause"].firstMatch
+        XCTAssertTrue(pause.waitForExistence(timeout: 8))
+        let timerValue = app.staticTexts["cookingTimerValue"].firstMatch
+        let initialValue = timerValue.value as? String ?? ""
+        let countdownChanged = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value != %@", initialValue),
+            object: timerValue
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [countdownChanged], timeout: 5), .completed)
+        let beforeRepeat = timerValue.value as? String ?? ""
+
+        for _ in 0..<2 {
+            timerInfo.tap()
+            XCTAssertTrue(parameterAction.waitForExistence(timeout: 8))
+            parameterAction.tap()
+            XCTAssertTrue(pause.waitForExistence(timeout: 8))
+            XCTAssertLessThanOrEqual(
+                timerValue.value as? String ?? "", beforeRepeat,
+                "Repeated Start Timer must preserve the running deadline")
+        }
+        XCTAssertEqual(app.buttons.matching(identifier: "timerPause").count, 1)
+        app.buttons["cookingTimersButton"].tap()
+        XCTAssertTrue(app.staticTexts["First roast"].waitForExistence(timeout: 8))
+        XCTAssertEqual(
+            app.collectionViews.buttons.matching(NSPredicate(format: "label == %@", "Pause")).count,
+            1)
+        XCTAssertFalse(app.collectionViews.staticTexts["Check tray halfway"].exists)
+        attachScreenshot("DEV81 One existing timer after repeated parameter actions", app: app)
+        app.navigationBars.buttons["Done"].tap()
+        assertCookingStep("Step 4 of 8", in: app)
+        app.buttons["Close"].tap()
+        waitUntilReady(detailTimer)
+        XCTAssertTrue(detailTimer.isHittable, "Returning must preserve the detail scroll position")
+        detailTimer.tap()
+        XCTAssertTrue(app.navigationBars["First roast"].waitForExistence(timeout: 8))
+        app.navigationBars.buttons["Done"].tap()
+        waitUntilReady(detailTimer)
+    }
+
+    @MainActor
     func testCookingParameterDetailsDoNotChangeStepProgress() {
         let app = launchSeededApp()
         defer { app.terminate() }
