@@ -59905,6 +59905,12 @@
             "state": "translated",
             "value": "共有"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilen"
+          }
         }
       }
     },
@@ -59932,6 +59938,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "再試行"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
           }
         }
       }
@@ -59961,6 +59973,12 @@
             "state": "translated",
             "value": "概要と出典"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zusammenfassung und Quelle"
+          }
         }
       }
     },
@@ -59988,6 +60006,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "すべての手順"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vollständige Anleitung"
           }
         }
       }
@@ -60017,6 +60041,12 @@
             "state": "translated",
             "value": "これらの手順を共有する権利があります。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ich habe die Erlaubnis, diese Anleitung zu teilen."
+          }
         }
       }
     },
@@ -60044,6 +60074,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "リンクを公開"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link veröffentlichen"
           }
         }
       }
@@ -60073,6 +60109,12 @@
             "state": "translated",
             "value": "公開版を更新"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffentliche Kopie aktualisieren"
+          }
         }
       }
     },
@@ -60100,6 +60142,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "リンクを取り消す"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link widerrufen"
           }
         }
       }
@@ -60129,6 +60177,12 @@
             "state": "translated",
             "value": "この公開リンクを取り消しますか？"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diesen öffentlichen Link widerrufen?"
+          }
         }
       }
     },
@@ -60156,6 +60210,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "このリンクは使えなくなります。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Link wird nicht mehr funktionieren."
           }
         }
       }
@@ -60185,6 +60245,12 @@
             "state": "translated",
             "value": "共有するにはサインインしてください。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zum Teilen ist eine Anmeldung erforderlich."
+          }
         }
       }
     },
@@ -60212,6 +60278,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "レシピが変更されました。確認してから共有してください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieses Rezept wurde geändert. Überprüfe es vor dem Teilen."
           }
         }
       }
@@ -60241,6 +60313,12 @@
             "state": "translated",
             "value": "アカウントが変更されました。再度サインインしてください。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Konto wurde geändert. Melde dich erneut an."
+          }
         }
       }
     },
@@ -60268,6 +60346,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "公開版が変更されました。再読み込みしてから更新してください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die öffentliche Kopie wurde geändert. Lade sie vor dem Aktualisieren neu."
           }
         }
       }
@@ -60297,6 +60381,12 @@
             "state": "translated",
             "value": "公開版を再読み込み"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffentliche Kopie neu laden"
+          }
         }
       }
     },
@@ -60324,6 +60414,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "共有を利用できません。しばらくしてから再試行してください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilen ist nicht verfügbar. Versuche es später erneut."
           }
         }
       }
@@ -60353,6 +60449,12 @@
             "state": "translated",
             "value": "リクエストが多すぎます。しばらくしてから再試行してください。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu viele Anfragen. Versuche es später erneut."
+          }
         }
       }
     },
@@ -60380,6 +60482,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "公開リンクを利用できません。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der öffentliche Link ist nicht verfügbar."
           }
         }
       }
@@ -60409,6 +60517,12 @@
             "state": "translated",
             "value": "共有できませんでした。再試行してください。"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilen fehlgeschlagen. Versuche es erneut."
+          }
         }
       }
     },
@@ -60436,6 +60550,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "複製連結"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link kopieren"
           }
         }
       }
