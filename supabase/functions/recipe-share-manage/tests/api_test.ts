@@ -107,6 +107,7 @@ async function syntheticFetch(input: RequestInfo | URL, init?: RequestInit) {
     row = {
       share_id: shareID,
       owner_id: args.p_owner_id,
+      source_recipe_id: args.p_payload.sourceRecipeID,
       opaque_slug: args.p_slug,
       share_version: 1,
       scope: args.p_payload.scope,
@@ -154,10 +155,14 @@ function request(
   body: unknown = payload,
   token = "owner-a",
   version?: string,
+  sourceRecipeID?: string,
 ) {
   return new Request(
     "https://edge.invalid/functions/v1/recipe-share-manage" +
-      (id ? "/" + id : ""),
+      (id ? "/" + id : "") +
+      (sourceRecipeID === undefined
+        ? ""
+        : "?sourceRecipeID=" + encodeURIComponent(sourceRecipeID)),
     {
       method,
       headers: {
@@ -281,6 +286,39 @@ Deno.test("offline Deno SDK: owner auth, publish/guest/update/revoke and private
       1,
     );
     await status(manage(request("GET", shareID, undefined, "owner-b")), 404);
+    const filtered = await (await status(
+      manage(request("GET", "", undefined, "owner-a", undefined, key)),
+      200,
+    )).json();
+    equal(filtered.shares, [created]);
+    assert(!JSON.stringify(filtered).includes("sourceRecipeID"));
+    assert(!JSON.stringify(filtered).includes("source_recipe_id"));
+    assert(!JSON.stringify(filtered).includes("sanitized_snapshot"));
+    for (const [token, recipeID] of [["owner-a", other], ["owner-b", key]]) {
+      equal(
+        (await (await status(
+          manage(request("GET", "", undefined, token, undefined, recipeID)),
+          200,
+        )).json()).shares,
+        [],
+      );
+    }
+    const priorRESTCalls = calls.filter((call) =>
+      call.includes("/rest/")
+    ).length;
+    for (const invalid of ["", "bad-uuid"]) {
+      equal(
+        (await (await status(
+          manage(request("GET", "", undefined, "owner-a", undefined, invalid)),
+          400,
+        )).json()).code,
+        "invalid_input",
+      );
+    }
+    equal(
+      calls.filter((call) => call.includes("/rest/")).length,
+      priorRESTCalls,
+    );
     equal(
       (await (await status(
         manage(request("GET", "", undefined, "owner-b")),

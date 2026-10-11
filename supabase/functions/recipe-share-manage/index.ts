@@ -101,6 +101,12 @@ export async function handleRecipeShareManage(request: Request): Promise<Respons
   if (isGet) {
     const query = admin.from(TABLE).select(RETURNING).eq("owner_id", userID);
     if (tail.length === 0) {
+      const sourceRecipeID = new URL(request.url).searchParams.get("sourceRecipeID");
+      if (sourceRecipeID !== null) {
+        if (!isUUID(sourceRecipeID)) return httpError("invalid_input", 400);
+        // Lineage narrows the verified owner's list; it never grants ownership.
+        query.eq("source_recipe_id", sourceRecipeID.toLowerCase());
+      }
       const {data, error} = await query.order("created_at", {ascending: false}).limit(200);
       if (error) return failDatabase(error, "owner_list_failed");
       return Response.json({shares: (data as ShareRow[]).map((row) => metadata(row, origin!))}, {
