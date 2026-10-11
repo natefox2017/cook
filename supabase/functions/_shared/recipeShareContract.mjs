@@ -23,13 +23,6 @@ export function utcTimestamp(v) {
     ? d.toISOString() : null;
 }
 
-// Swift String.count counts extended grapheme clusters, not UTF-16 units.
-const textSegments = new Intl.Segmenter("und", {granularity: "grapheme"});
-function textExceeds(value, maximum) {
-  let count = 0;
-  for (const _ of textSegments.segment(value)) if (++count > maximum) return true;
-  return false;
-}
 function privateHomeHost(host) {
   return host === "home.arpa" || host.endsWith(".home.arpa");
 }
@@ -55,7 +48,7 @@ export function publicCitation(v) {
 export function publicSnapshot(v) {
   const keys = ["title", "summary", "sourceURL", "servings", "prepMinutes", "cookMinutes", "ingredients", "steps"];
   if (!exactly(v, keys) || typeof v.title !== "string" || !v.title.trim() ||
-    textExceeds(v.title, 180) || typeof v.summary !== "string" || textExceeds(v.summary, 2000) ||
+    v.title.length > 180 || typeof v.summary !== "string" || v.summary.length > 2000 ||
     !(v.sourceURL === null || publicCitation(v.sourceURL)) ||
     !(v.servings === null || (Number.isInteger(v.servings) && v.servings >= 1 && v.servings <= 100)) ||
     !["prepMinutes", "cookMinutes"].every((name) => v[name] === null ||
@@ -64,12 +57,12 @@ export function publicSnapshot(v) {
     !Array.isArray(v.steps) || v.steps.length > 100) return null;
   if (v.ingredients.some((item) =>
     !exactly(item, ["name", "amountText"]) ||
-    typeof item.name !== "string" || !item.name.trim() || textExceeds(item.name, 180) ||
-    typeof item.amountText !== "string" || textExceeds(item.amountText, 120))) return null;
+    typeof item.name !== "string" || !item.name.trim() || item.name.length > 180 ||
+    typeof item.amountText !== "string" || item.amountText.length > 120)) return null;
   if (v.steps.some((item) =>
     !exactly(item, ["title", "instruction"]) || typeof item.title !== "string" ||
-    textExceeds(item.title, 220) || typeof item.instruction !== "string" ||
-    !item.instruction.trim() || textExceeds(item.instruction, 6000))) return null;
+    item.title.length > 220 || typeof item.instruction !== "string" ||
+    !item.instruction.trim() || item.instruction.length > 6000)) return null;
   return {
     title: v.title, summary: v.summary, sourceURL: v.sourceURL,
     servings: v.servings, prepMinutes: v.prepMinutes, cookMinutes: v.cookMinutes,

@@ -129,9 +129,13 @@ test("bounded request parses valid JSON, rejects oversized, malformed and invali
      assert.equal(webOrigin("https://recipes." + host), null);
    }
  });
- test("text limits count extended grapheme clusters like Swift Character", () => {
-   for (const symbol of ["🍋", "e\u0301", "👨‍👩‍👧‍👦"]) {
-     assert.ok(publicSnapshot({...snapshot, title: symbol.repeat(180)}));
-     assert.equal(publicSnapshot({...snapshot, title: symbol.repeat(181)}), null);
+ test("text limits match Swift utf16.count and Web String.length", () => {
+   for (const symbol of ["🍋", "e\u0301"]) {
+     assert.equal(symbol.length, 2);
+     assert.ok(publicSnapshot({...snapshot, title: symbol.repeat(90)}));
+     assert.equal(publicSnapshot({...snapshot, title: symbol.repeat(91)}), null);
    }
+   const family = "👨‍👩‍👧‍👦";
+   assert.ok(publicSnapshot({...snapshot, title: family.repeat(16) + "abcd"}));
+   assert.equal(publicSnapshot({...snapshot, title: family.repeat(16) + "abcde"}), null);
  });
