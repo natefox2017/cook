@@ -43,9 +43,11 @@ struct MealPlanView: View {
             Section {
                 VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
                     HStack(spacing: 8) {
-                        Button("Previous week", systemImage: "chevron.left") { moveWeek(by: -1) }
-                            .labelStyle(.iconOnly)
-                            .frame(width: 44, height: 44)
+                        Button("Previous week", systemImage: "chevron.left") {
+                            moveWeek(by: -1)
+                        }
+                        .labelStyle(.iconOnly)
+                        .frame(width: 44, height: 44)
                         Spacer(minLength: 0)
                         Text(weekDescription)
                             .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
@@ -56,10 +58,12 @@ struct MealPlanView: View {
                             .gesture(
                                 DragGesture(minimumDistance: 40)
                                     .onEnded { value in
-                                        guard let direction = RecipeHorizontalSwipe(
-                                            translation: value.translation,
-                                            minimumDistance: 65
-                                        ) else {
+                                        guard
+                                            let direction = RecipeHorizontalSwipe(
+                                                translation: value.translation,
+                                                minimumDistance: 65
+                                            )
+                                        else {
                                             return
                                         }
                                         moveWeek(by: direction == .next ? 1 : -1)
@@ -67,10 +71,14 @@ struct MealPlanView: View {
                             )
                             .accessibilityIdentifier("mealplan.weekRange")
                         Spacer(minLength: 0)
-                        Button("Next week", systemImage: "chevron.right") { moveWeek(by: 1) }
-                            .labelStyle(.iconOnly)
-                            .frame(width: 44, height: 44)
+                        Button("Next week", systemImage: "chevron.right") {
+                            moveWeek(by: 1)
+                        }
+                        .labelStyle(.iconOnly)
+                        .frame(width: 44, height: 44)
                     }
+                    // List's automatic row style invokes both arrow actions on a tap.
+                    .buttonStyle(.borderless)
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             ForEach(weekDates, id: \.self) { date in
