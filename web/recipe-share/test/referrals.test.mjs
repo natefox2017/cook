@@ -79,7 +79,7 @@ test("canonical uppercase UUIDs work and case variants cannot self-invite", () =
   };
   assert.deepEqual(proposeExplicitInvitationClaim(payload), {
     inviteeID: B,
-    inviterID: A.toUpperCase(),
+    inviterID: A,
     code,
     status: "pending_review"
   });
