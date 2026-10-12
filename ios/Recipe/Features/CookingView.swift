@@ -1661,24 +1661,14 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
             startGate.complete(attempt)
         }
 
-        let authorization = await withCheckedContinuation {
-            (continuation: CheckedContinuation<SFSpeechRecognizerAuthorizationStatus, Never>) in
-            SFSpeechRecognizer.requestAuthorization {
-                continuation.resume(returning: $0)
-            }
-        }
+        let authorization = await Self.requestSpeechAuthorization()
         // Stop/background may invalidate the attempt while iOS presents consent.
         guard startGate.isCurrent(attempt) else { return }
         guard authorization == .authorized else {
             status = "Enable speech recognition in iOS Settings to use hands-free control."
             return
         }
-        let micGranted = await withCheckedContinuation {
-            (continuation: CheckedContinuation<Bool, Never>) in
-            AVAudioSession.sharedInstance().requestRecordPermission {
-                continuation.resume(returning: $0)
-            }
-        }
+        let micGranted = await Self.requestMicrophonePermission()
         guard startGate.isCurrent(attempt) else { return }
         guard micGranted else {
             status = "Microphone access is off. Step buttons still work."
@@ -1706,6 +1696,32 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
         }
     }
 
+    private nonisolated static func requestSpeechAuthorization() async
+        -> SFSpeechRecognizerAuthorizationStatus
+    {
+        await withCheckedContinuation(isolation: nil) { continuation in
+            SFSpeechRecognizer.requestAuthorization { status in
+                continuation.resume(returning: status)
+            }
+        }
+    }
+
+    private nonisolated static func requestMicrophonePermission() async -> Bool {
+        await withCheckedContinuation(isolation: nil) { continuation in
+            AVAudioApplication.requestRecordPermission { granted in
+                continuation.resume(returning: granted)
+            }
+        }
+    }
+
+    private nonisolated static func makeAudioTapHandler(
+        request: SFSpeechAudioBufferRecognitionRequest
+    ) -> AVAudioNodeTapBlock {
+        { buffer, _ in
+            request.append(buffer)
+        }
+    }
+
     private func beginCycle() throws {
         guard wantsListening, let recognition else { return }
         let token = UUID()
@@ -1717,10 +1733,12 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
 
         let node = engine.inputNode
         let format = node.outputFormat(forBus: 0)
-        node.installTap(onBus: 0, bufferSize: 1024, format: format) {
-            [weak request] buffer, _ in
-            request?.append(buffer)
-        }
+        node.installTap(
+            onBus: 0,
+            bufferSize: 1024,
+            format: format,
+            block: Self.makeAudioTapHandler(request: request)
+        )
         tapInstalled = true
         recognitionTask = recognition.recognitionTask(with: request) {
             [weak self] result, error in
