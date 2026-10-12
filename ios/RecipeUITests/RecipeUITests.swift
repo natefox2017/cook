@@ -2659,10 +2659,20 @@ final class RecipeUITests: XCTestCase {
         let selectedCountry = countryCode == "KR" ? korea : japan
         countryPicker.tap()
         let countryOption = app.buttons[selectedCountry].firstMatch
-        for _ in 0..<20 where !countryOption.exists || !countryOption.isHittable {
-            app.swipeUp()
+        let countryOptionsList = try XCTUnwrap(app.collectionViews.allElementsBoundByIndex.last)
+        let currentCountry = countryPicker.label.replacingOccurrences(
+            of: "\(countryTitle), ", with: "")
+        let scrollTowardEarlierCountries = currentCountry != "기기 지역 사용"
+            && currentCountry.localizedStandardCompare(selectedCountry) == .orderedDescending
+        // Slow swipes on the picker itself keep a long native list from skipping target rows.
+        for _ in 0..<22 where !countryOption.isHittable {
+            if scrollTowardEarlierCountries {
+                countryOptionsList.swipeDown(velocity: .slow)
+            } else {
+                countryOptionsList.swipeUp(velocity: .slow)
+            }
         }
-        XCTAssertTrue(countryOption.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(countryOption.isHittable, app.debugDescription)
         countryOption.tap()
 
         XCTAssertEqual(picker.value as? String, "한국어", app.debugDescription)
