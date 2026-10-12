@@ -6,7 +6,7 @@ in Supabase or another server-side secret store.
 
 ## Redirect URL
 
-The app handles the `cook://auth/callback` URL for email confirmation and password
+The app handles the `recipePals://auth/callback` URL for email confirmation and password
 recovery. Keep this URI in the Supabase Auth redirect allowlist and in
 `ios/Recipe/Info.plist`; the live project's allowlist has not been verified.
 
@@ -61,7 +61,7 @@ No new Google SDK, on-device Google secret, or extra account store is required.
    minimum `openid`, email, profile scopes.
 2. Under Supabase `cookapp` → Authentication → Providers → Google, enable the
    provider and configure that Web Client ID and Client Secret.
-3. Supabase Auth redirect URLs must allow `cook://auth/callback` in addition
+3. Supabase Auth redirect URLs must allow `recipePals://auth/callback` in addition
    to Google Cloud's *HTTPS* callback. These are two different redirect steps.
 4. Verify successful login, user cancellation, restart/session restoration and
    returning from the OAuth browser on a signed iPhone. Do not call the provider
@@ -97,7 +97,7 @@ project reports `ACTIVE_HEALTHY`. Its public Auth settings report email
 authentication enabled, email auto-confirm disabled, and both Apple and Google
 providers disabled. New email accounts therefore require confirmation, but successful
 message delivery has not been tested. The settings endpoint does not expose the
-redirect allowlist, so the exact `cook://auth/callback` allowlist entry is not
+redirect allowlist, so the exact `recipePals://auth/callback` allowlist entry is not
 verified. No Apple provider secret or email credential is stored in the iOS
 client; the target contains the Sign in with Apple entitlement, while the
 local signed provisioning profile was verified to contain team `WT475Q2P69`,

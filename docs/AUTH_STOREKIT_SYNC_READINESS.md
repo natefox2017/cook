@@ -14,7 +14,7 @@ the local HTTP evidence below does not complete their device acceptance.
   the app's publishable key returned Apple **disabled**, Google **disabled**,
   email **enabled**, signup enabled and email auto-confirm disabled. No account
   was created and no mail was requested on this hosted project.
-- The app and `Info.plist` agree on `cook://auth/callback`. Public settings do
+- The app and `Info.plist` agree on `recipePals://auth/callback`. Public settings do
   not expose the redirect allowlist or SMTP/templates. The existing local CLI
   management token returned 401 on a read-only configuration request; these
   fields remain unverified, not presumed absent.
@@ -69,7 +69,7 @@ native iOS path. See [Supabase's native Swift and web Apple configuration](https
   audience/test users and `openid`, email and profile scopes, then enable Google
   in Supabase with the Web Client ID and secret stored in the secure provider
   form. See [Google configuration](https://supabase.com/docs/guides/auth/social-login/auth-google).
-- Inspect Supabase URL Configuration and add the exact `cook://auth/callback`
+- Inspect Supabase URL Configuration and add the exact `recipePals://auth/callback`
   redirect if absent, preserving existing entries. This is the app-return URI,
   distinct from Google's HTTPS redirect above.
 - Inspect the Magic Link template: the primary numeric-code screen requires
