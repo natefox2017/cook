@@ -195,14 +195,7 @@ struct RecipeDetailView: View {
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityAddTraits(.isHeader)
             sourceSummary(recipe)
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 16) {
-                    recipeMetadata(recipe)
-                }
-                VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
-                    recipeMetadata(recipe)
-                }
-            }
+            recipeMetadata(recipe)
             .font(RecipeTheme.text(15, weight: .regular, relativeTo: .subheadline))
             .foregroundStyle(.secondary)
             if !recipe.summary.isEmpty {
@@ -307,46 +300,75 @@ struct RecipeDetailView: View {
 
     @ViewBuilder
     private func recipeMetadata(_ recipe: Recipe) -> some View {
-        if let prep = recipe.prepMinutes, prep >= 0 {
-            Button {
-                parameterInfo = .timing(recipe)
-            } label: {
-                Label("Prep \(prep) min", systemImage: "clock")
-                    .frame(minHeight: 44)
+        let hasTiming =
+            (recipe.prepMinutes.map { $0 >= 0 } ?? false)
+            || (recipe.cookMinutes.map { $0 >= 0 } ?? false)
+            || (recipe.totalMinutes != nil
+                && (recipe.prepMinutes == nil || recipe.cookMinutes == nil))
+
+        Grid(
+            alignment: .leading,
+            horizontalSpacing: RecipeSpacing.medium,
+            verticalSpacing: RecipeSpacing.xSmall
+        ) {
+            if hasTiming {
+                GridRow {
+                    if let prep = recipe.prepMinutes, prep >= 0 {
+                        Button {
+                            parameterInfo = .timing(recipe)
+                        } label: {
+                            Label("Prep \(prep) min", systemImage: "clock")
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("recipeTimeInfo.prep")
+                    }
+                    if let cook = recipe.cookMinutes, cook >= 0 {
+                        Button {
+                            parameterInfo = .timing(recipe)
+                        } label: {
+                            Label("Cook \(cook) min", systemImage: "flame")
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("recipeTimeInfo.cook")
+                    }
+                    if let total = recipe.totalMinutes,
+                        recipe.prepMinutes == nil || recipe.cookMinutes == nil
+                    {
+                        Button {
+                            parameterInfo = .timing(recipe)
+                        } label: {
+                            Label("Total \(total) min", systemImage: "clock")
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("recipeTimeInfo.total")
+                    }
+                }
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("recipeTimeInfo.prep")
-        }
-        if let cook = recipe.cookMinutes, cook >= 0 {
-            Button {
-                parameterInfo = .timing(recipe)
-            } label: {
-                Label("Cook \(cook) min", systemImage: "flame")
-                    .frame(minHeight: 44)
+
+            GridRow {
+                if let originalServings = recipe.servings, originalServings > 0 {
+                    Label("\(servings) servings", systemImage: "person.2")
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                }
+                if let cuisine = recipe.cuisine, !cuisine.isEmpty {
+                    Label(cuisine, systemImage: "fork.knife")
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                } else {
+                    Text(LocalizedStringKey(recipe.category.rawValue))
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                }
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("recipeTimeInfo.cook")
-        }
-        if let total = recipe.totalMinutes, recipe.prepMinutes == nil || recipe.cookMinutes == nil {
-            Button {
-                parameterInfo = .timing(recipe)
-            } label: {
-                Label("Total \(total) min", systemImage: "clock")
-                    .frame(minHeight: 44)
+
+            if let difficulty = recipe.difficulty {
+                GridRow {
+                    Label(LocalizedStringKey(difficulty.rawValue), systemImage: "gauge.medium")
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .gridCellColumns(2)
+                }
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("recipeTimeInfo.total")
-        }
-        if let originalServings = recipe.servings, originalServings > 0 {
-            Label("\(servings) servings", systemImage: "person.2")
-        }
-        if let difficulty = recipe.difficulty {
-            Label(LocalizedStringKey(difficulty.rawValue), systemImage: "gauge.medium")
-        }
-        if let cuisine = recipe.cuisine, !cuisine.isEmpty {
-            Label(cuisine, systemImage: "fork.knife")
-        } else {
-            Text(LocalizedStringKey(recipe.category.rawValue))
         }
     }
 
