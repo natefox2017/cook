@@ -635,6 +635,34 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
+    func testRecipeDetailHidesTabBarAndRestoresOnBack() {
+        let app = launchSeededApp()
+        defer {
+            app.terminate()
+        }
+
+        let recipesTab = app.tabBars.buttons["Recipes"]
+        for _ in 0..<2 {
+            let recipe = app.buttons["recipe.C0010000-0000-4000-8000-000000000001"]
+            waitUntilReady(recipe)
+            recipe.tap()
+
+            let startCooking = app.buttons["startCooking"]
+            waitUntilReady(startCooking)
+            waitUntilNotHittable(app.tabBars.firstMatch)
+            XCTAssertFalse(recipesTab.isHittable, "Pushed Recipe detail must hide the root tab bar")
+            XCTAssertTrue(startCooking.isHittable)
+
+            let back = app.navigationBars["Recipe"].buttons.firstMatch
+            waitUntilReady(back)
+            back.tap()
+
+            waitUntilReady(recipesTab)
+            XCTAssertTrue(app.navigationBars["My Recipes"].exists)
+        }
+    }
+
+    @MainActor
     func testRootTabsUseNativeTitlesAndSecondaryPagesHideTabBar() {
         let app = launchSeededApp()
         defer {
