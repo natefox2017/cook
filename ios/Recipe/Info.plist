@@ -41,7 +41,7 @@
             <string>com.modelhub.recipe.auth</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>cook</string>
+                <string>recipePals</string>
             </array>
         </dict>
     </array>
