@@ -28,7 +28,7 @@ MIGRATIONS = [
     "20261008030120_bind_snapshot_writes_to_owner.sql",
     "20261008050000_restrict_user_snapshot_writes_to_rpc.sql",
 ]
-CALLBACK = "cook://auth/callback"
+CALLBACK = "recipePals://auth/callback"
 CHECKS = []
 
 
