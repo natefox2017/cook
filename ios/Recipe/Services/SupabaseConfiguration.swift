@@ -5,7 +5,7 @@ import Foundation
 import Supabase
 
 enum RecipeSupabase {
-    static let redirectURL = URL(string: "cook://auth/callback")!
+    static let redirectURL = URL(string: "recipePals://auth/callback")!
     static let productionAuthStorageService = "com.modelhub.cook.supabase-auth"
     static let uiTestAuthStorageService = "com.shopkivoo.recipe.uitesting-auth"
 

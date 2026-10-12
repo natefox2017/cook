@@ -659,7 +659,7 @@ final class RecipeAuthServiceTests: XCTestCase {
         XCTAssertEqual(service.state, .needsEmailVerification(email))
 
         service.handleAuthCallback(
-            URL(string: "cook://auth/callback?code=local-confirmation-code")!
+            URL(string: "recipePals://auth/callback?code=local-confirmation-code")!
         )
         await waitUntil {
             service.state == .signedIn(userID: userID, email: email)
@@ -696,7 +696,7 @@ final class RecipeAuthServiceTests: XCTestCase {
         await waitUntil { service.state == .signedOut }
 
         service.handleAuthCallback(
-            URL(string: "cook://auth/callback?code=missing-local-verifier")!
+            URL(string: "recipePals://auth/callback?code=missing-local-verifier")!
         )
         await waitUntil {
             if case .error = service.state {
@@ -749,7 +749,9 @@ final class RecipeAuthServiceTests: XCTestCase {
 
         let callbackService = makeService(defaults: defaults, storage: storage)
         await waitUntil { callbackService.state == .signedOut }
-        callbackService.handleAuthCallback(URL(string: "cook://auth/callback?code=local-code")!)
+        callbackService.handleAuthCallback(
+            URL(string: "recipePals://auth/callback?code=local-code")!
+        )
         await waitUntil { callbackService.state == .passwordRecovery(userID: userID) }
         XCTAssertEqual(callbackService.authCallbackGeneration, 1)
         XCTAssertFalse(defaults.bool(forKey: "recipe.auth.pending_password_recovery"))
@@ -805,7 +807,7 @@ final class RecipeAuthServiceTests: XCTestCase {
         let callbackService = makeService(defaults: defaults, storage: storage)
         await waitUntil { callbackService.state == .signedOut }
         callbackService.handleAuthCallback(
-            URL(string: "cook://auth/callback?code=other-account-code")!
+            URL(string: "recipePals://auth/callback?code=other-account-code")!
         )
         await waitUntil {
             callbackService.state == .signedIn(userID: otherUserID, email: otherEmail)
@@ -821,7 +823,7 @@ final class RecipeAuthServiceTests: XCTestCase {
         try await originalService.sendPasswordReset(to: recoveryEmail)
         // An explicit recovery for B must likewise not erase A's reset intent.
         callbackService.handleAuthCallback(
-            URL(string: "cook://auth/callback?code=other-recovery-code&type=recovery")!
+            URL(string: "recipePals://auth/callback?code=other-recovery-code&type=recovery")!
         )
         await waitUntil {
             callbackService.state == .passwordRecovery(userID: otherUserID)
@@ -852,7 +854,9 @@ final class RecipeAuthServiceTests: XCTestCase {
             forKey: "recipe.auth.pending_password_recovery_email_hash"
         )
         XCTAssertNotNil(pendingHash)
-        service.handleAuthCallback(URL(string: "cook://auth/callback?code=rejected-code")!)
+        service.handleAuthCallback(
+            URL(string: "recipePals://auth/callback?code=rejected-code")!
+        )
         await waitUntil {
             if case .error = service.state {
                 return service.authCallbackGeneration == 1
