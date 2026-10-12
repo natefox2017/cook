@@ -668,6 +668,37 @@ final class RecipeAuthServiceTests: XCTestCase {
         XCTAssertFalse(defaults.bool(forKey: "recipe.auth.pending_password_recovery"))
     }
 
+    func testEmailMagicLinkCallbackCompletesPasswordlessSignIn() async throws {
+        let userID = UUID()
+        let email = "recipe-magic-link@example.test"
+        let defaults = makeAuthDefaults()
+        let storage = MemoryAuthStorage()
+        AuthMockURLProtocol.setHandler { request in
+            switch request.url?.path {
+            case "/auth/v1/otp":
+                return .json(payload: [:])
+            case "/auth/v1/token":
+                return .json(payload: sessionPayload(id: userID, email: email))
+            default:
+                return .json(statusCode: 404, payload: ["message": "Unexpected Auth request"])
+            }
+        }
+
+        let service = makeService(defaults: defaults, storage: storage)
+        await waitUntil { service.state == .signedOut }
+
+        try await service.sendEmailCode(to: email)
+        XCTAssertEqual(service.state, .emailCodeSent(email))
+
+        service.handleAuthCallback(
+            URL(string: "recipePals://auth/callback?code=local-magic-link-code")!
+        )
+        await waitUntil {
+            service.state == .signedIn(userID: userID, email: email)
+                && service.authCallbackGeneration == 1
+        }
+    }
+
     func testStoredSessionIsRestoredWhenAuthServiceIsRecreated() async throws {
         let userID = UUID()
         let email = "recipe-restore@example.test"

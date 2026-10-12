@@ -34517,6 +34517,71 @@
         }
       }
     },
+    "Check %@ for a sign-in link. If your email instead includes a 6-digit code, enter it below.": {
+      "comment": "User-facing Recipe iOS copy.",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请查看 %@ 中的登录链接。如果收到的是6位验证码，请在下方输入。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請查看 %@ 中的登入連結。如果收到的是6位驗證碼，請在下方輸入。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ に届いたサインインリンクを確認してください。6桁のコードを受け取った場合は、下に入力してください。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prüfe %@ auf einen Anmeldelink. Wenn du stattdessen einen 6-stelligen Code erhalten hast, gib ihn unten ein."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consultez %@ pour trouver un lien de connexion. Si vous avez reçu un code à 6 chiffres, saisissez-le ci-dessous."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Busca en %@ un enlace para iniciar sesión. Si recibiste un código de 6 dígitos, introdúcelo abajo."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controlla %@ per trovare un link di accesso. Se hai ricevuto un codice a 6 cifre, inseriscilo qui sotto."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confira %@ para encontrar um link de acesso. Se você recebeu um código de 6 dígitos, digite-o abaixo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controleer %@ op een aanmeldlink. Heb je in plaats daarvan een code van 6 cijfers ontvangen? Vul die dan hieronder in."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@에서 로그인 링크를 확인하세요. 대신 6자리 코드를 받았다면 아래에 입력하세요."
+          }
+        }
+      }
+    },
     "Check %@ to verify your account, then return to Recipe Pals.": {
       "localizations": {
         "zh-Hans": {
@@ -48474,144 +48539,144 @@
         }
       }
     },
-    "6-digit code": {
+    "6-digit code, if included": {
       "comment": "User-facing Recipe iOS copy.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "6 位验证码"
+            "value": "如有验证码请输入6位数"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "6 位驗證碼"
+            "value": "如有驗證碼請輸入6位數"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "6桁の認証コード"
+            "value": "コードを入力（受信した場合）"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "6-stelliger Code"
+            "value": "6-stelliger Code (falls enthalten)"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Code à 6 chiffres"
+            "value": "Code à 6 chiffres (si reçu)"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Código de 6 dígitos"
+            "value": "Código de 6 dígitos (si lo recibiste)"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Codice a 6 cifre"
+            "value": "Codice a 6 cifre (se ricevuto)"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Código de 6 dígitos"
+            "value": "Código de 6 dígitos (se recebido)"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Code van 6 cijfers"
+            "value": "Code van 6 cijfers (indien ontvangen)"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "6자리 코드"
+            "value": "6자리 코드 (받은 경우)"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Código de 6 dígitos"
+            "value": "Código de 6 dígitos (se recebido)"
           }
         }
       }
     },
-    "Resend Code": {
+    "Resend Email": {
       "comment": "User-facing Recipe iOS copy.",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重新发送验证码"
+            "value": "重新发送邮件"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "重新傳送驗證碼"
+            "value": "重新傳送郵件"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "認証コードを再送信"
+            "value": "メールを再送信"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Code erneut senden"
+            "value": "E-Mail erneut senden"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Renvoyer le code"
+            "value": "Renvoyer l’e-mail"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reenviar código"
+            "value": "Reenviar correo"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Invia di nuovo il codice"
+            "value": "Invia di nuovo l’email"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reenviar código"
+            "value": "Reenviar e-mail"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Code opnieuw versturen"
+            "value": "E-mail opnieuw versturen"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "코드 다시 보내기"
+            "value": "이메일 다시 보내기"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reenviar código"
+            "value": "Reenviar e-mail"
           }
         }
       }
@@ -48825,71 +48890,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Usar uma senha"
-          }
-        }
-      }
-    },
-    "Enter the code sent to %@.": {
-      "comment": "User-facing Recipe iOS copy.",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "输入发送至 %@ 的验证码。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "輸入傳送至 %@ 的驗證碼。"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ に送信された認証コードを入力してください。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gib den an %@ gesendeten Code ein."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saisissez le code envoyé à %@."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Introduce el código enviado a %@."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inserisci il codice inviato a %@."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Digite o código enviado para %@."
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voer de code in die naar %@ is verstuurd."
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@로 보낸 코드를 입력하세요."
           }
         }
       }
