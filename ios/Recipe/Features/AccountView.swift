@@ -243,7 +243,7 @@ struct AccountView: View {
                 .accountInputStyle()
 
             if let codeEmail {
-                TextField("6-digit code", text: $emailCode)
+                TextField("6-digit code, if included", text: $emailCode)
                     .keyboardType(.numberPad)
                     .textContentType(.oneTimeCode)
                     .textInputAutocapitalization(.never)
@@ -268,7 +268,7 @@ struct AccountView: View {
                 .accessibilityIdentifier("account.submit")
 
                 HStack {
-                    Button("Resend Code") {
+                    Button("Resend Email") {
                         sendEmailCode(to: codeEmail)
                     }
                     .disabled(isAuthenticating)
@@ -515,7 +515,7 @@ struct AccountView: View {
             return (
                 String(
                     localized: LocalizedStringResource(
-                        "Enter the code sent to \(address).",
+                        "Check \(address) for a sign-in link. If your email instead includes a 6-digit code, enter it below.",
                         locale: RecipeLanguage.active
                     )
                 ),
