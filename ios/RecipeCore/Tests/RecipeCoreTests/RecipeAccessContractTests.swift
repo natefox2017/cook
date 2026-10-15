@@ -259,6 +259,14 @@ private let expiredAccessJSON = #"""
         }
     }
 
+    @Test func unicodeDigitTimestampIsRejected() {
+        #expect(throws: RecipeAccessContractError.invalidResponse) {
+            _ = try decode(
+                RecipeAccessResponse.self,
+                from: #"{"owner_id":"\#(owner)","server_time":"2026-10-１5T00:00:00.000Z","policy_version":1,"stage":"freeTest","entitlement":{"status":"free","valid_until":null},"capabilities":[{"id":"pdf_export","entitled":false,"quota":null}]}"#)
+        }
+    }
+
     @Test func reservationRejectsNonUnitEstimate() {
         #expect(throws: RecipeAccessContractError.invalidResponse) {
             _ = try decode(

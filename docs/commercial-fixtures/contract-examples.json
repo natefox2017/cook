@@ -1,6 +1,23 @@
 {
   "description": "Original synthetic static DEV-425 commercial examples; not runtime evidence. Shared by the Swift and TypeScript DTO validators.",
   "schema_version": 1,
+  "canonical_hash_vector": {
+    "rule": "input_hash = lowercase SHA-256 of UTF-8 bytes of canonicalJSON({capability, source}), reusing recipe-draft-sessions/canonicalJSON.ts (object keys sorted, array order unchanged, source wire object includes nulls).",
+    "input": {
+      "capability": "smart_import",
+      "source": {
+        "origin": "import_job",
+        "job_id": "e0000000-0000-4000-8000-000000000005",
+        "candidate_ids": [
+          "candidate-v2-0123456789abcdef0123456789abcdef"
+        ],
+        "session_id": null,
+        "turn_request_id": null
+      }
+    },
+    "canonical_json": "{\"capability\":\"smart_import\",\"source\":{\"candidate_ids\":[\"candidate-v2-0123456789abcdef0123456789abcdef\"],\"job_id\":\"e0000000-0000-4000-8000-000000000005\",\"origin\":\"import_job\",\"session_id\":null,\"turn_request_id\":null}}",
+    "input_hash": "8112d1301f59643be4f901540b62e35e2b3c930aee69513d39d14a0c2d31dfc3"
+  },
   "examples": {
     "free_access": {
       "operation": "GET /recipe-access",
@@ -287,6 +304,23 @@
           "candidate_ids": null,
           "session_id": "f0000000-0000-4000-8000-000000000004",
           "turn_request_id": "f0000000-0000-4000-8000-000000000005"
+        }
+      }
+    },
+    "finalize_request_import_primary": {
+      "operation": "POST /recipe-usage/{operation_id}/finalize",
+      "schema": "FinalizeRequest",
+      "data": {
+        "capability": "smart_import",
+        "input_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source": {
+          "origin": "import_job",
+          "job_id": "e0000000-0000-4000-8000-000000000005",
+          "candidate_ids": [
+            "primary"
+          ],
+          "session_id": null,
+          "turn_request_id": null
         }
       }
     },

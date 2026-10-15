@@ -77,7 +77,7 @@ private func accessDaysInMonth(_ month: Int, _ year: Int) -> Int? {
 /// normalization. Mirrors the TypeScript round-trip check: invalid dates (e.g. 2026-02-30) reject,
 /// and the fractional second is preserved so reset_at/period_start comparisons match JS exactly.
 private let accessTimestampRegex = try! NSRegularExpression(
-    pattern: #"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$"#)
+    pattern: #"^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,3}))?Z$"#)
 
 private func accessTimestampDate(_ value: String) -> Date? {
     let range = NSRange(value.startIndex..<value.endIndex, in: value)
