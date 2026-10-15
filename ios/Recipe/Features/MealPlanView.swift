@@ -19,6 +19,7 @@ struct MealPlanView: View {
     @State private var recipePicker: MealPlanPickerPresentation?
     @State private var mealToDelete: MealPlanEntry?
     @State private var errorMessage: String?
+    @State private var showGenerator = false
 
     // Use the same configured calendar for date order, counts, and navigation.
     private var calendar: Calendar {
@@ -129,12 +130,21 @@ struct MealPlanView: View {
         .navigationBarTitleDisplayMode(titleDisplayMode)
         .tint(RecipeTheme.accent)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Auto Plan", systemImage: "wand.and.stars") {
+                    showGenerator = true
+                }
+                .accessibilityIdentifier("mealplan.autoplan")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Today") { selectedDate = Date() }
             }
         }
         .sheet(item: $recipePicker) { presentation in
             MealPlanRecipePicker(date: presentation.date, slot: presentation.slot)
+        }
+        .sheet(isPresented: $showGenerator) {
+            MealPlanGeneratorSheet()
         }
         .confirmationDialog(
             "Remove planned meal?",
