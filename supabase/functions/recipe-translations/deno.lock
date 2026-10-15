@@ -1,6 +1,8 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@std/assert@1.0.14": "1.0.14",
+    "jsr:@std/internal@^1.0.10": "1.0.14",
     "jsr:@supabase/supabase-js@2.117.3": "2.117.3",
     "npm:@supabase/auth-js@2.117.3": "2.117.3",
     "npm:@supabase/functions-js@2.117.3": "2.117.3",
@@ -10,6 +12,15 @@
     "npm:ipaddr.js@2.2.0": "2.2.0"
   },
   "jsr": {
+    "@std/assert@1.0.14": {
+      "integrity": "68d0d4a43b365abc927f45a9b85c639ea18a9fab96ad92281e493e4ed84abaa4",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
+    },
+    "@std/internal@1.0.14": {
+      "integrity": "291516b3d4c35024d6ffbc0a9df5bf4c64116e05b50012cf846710152d2ffdf7"
+    },
     "@supabase/supabase-js@2.117.3": {
       "integrity": "f188c6d5a1bc5510445cf5f535702292753d534a22c64bd92962094fe6111f94",
       "dependencies": [

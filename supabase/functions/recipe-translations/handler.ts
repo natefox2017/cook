@@ -29,6 +29,14 @@ import {
 
 type Row = Record<string, unknown>;
 
+/** Opaque pre-flight provider state: everything needed to reach the provider without a side effect. */
+export interface PreparedTranslation {
+  baseUrl: string;
+  body: string;
+  key: string;
+  timeoutMs: number;
+}
+
 export interface Dependencies {
   verifiedOwner(
     request: Request,
@@ -44,8 +52,12 @@ export interface Dependencies {
     capability: InternalCapability,
     inputHash: string,
   ): Promise<Row | null>;
-  /** The independent bounded provider (throws a distinct error per failure mode). */
-  translate(prompt: string, signal: AbortSignal): Promise<unknown>;
+  /** Pre-flight provider checks (route config, secret, request budget); never reaches the provider.
+   *  Throws a distinct error per definite failure that happens before any provider side effect. */
+  prepare(prompt: string): Promise<PreparedTranslation>;
+  /** The bounded provider fetch + envelope parse; throws UNAVAILABLE for an ambiguous transport
+   *  outcome and RESPONSE for a known provider-returned invalid response. */
+  dispatch(prepared: PreparedTranslation, signal: AbortSignal): Promise<unknown>;
   reserve(
     owner: string,
     operationID: string,
@@ -64,7 +76,10 @@ export interface Dependencies {
     payload: Row,
     resultID: string,
   ): Promise<InternalUsageResult>;
+  /** Release a still-reserved unit (no provider side effect happened). */
   release(owner: string, operationID: string): Promise<InternalUsageResult>;
+  /** Release a dispatched unit whose provider outcome is definitively known-invalid. */
+  releaseFailed(owner: string, operationID: string): Promise<InternalUsageResult>;
 }
 
 const CAPABILITY: InternalCapability = "recipe_translation";
@@ -154,14 +169,6 @@ function retryAfterSeconds(until: unknown): string {
   return String(Math.max(0, Math.ceil(ms / 1000)));
 }
 
-/** Definite provider failures happened before any provider side effect; the unit is released. */
-function isDefiniteProviderFailure(message: string): boolean {
-  return message === "TRANSLATION_PROVIDER_DISABLED" ||
-    message === "TRANSLATION_PROVIDER_INPUT" ||
-    message === "TRANSLATION_PROVIDER_INPUT_BUDGET" ||
-    message === "TRANSLATION_PROVIDER_SECRET";
-}
-
 export async function handleRequest(
   request: Request,
   deps: Dependencies,
@@ -238,60 +245,74 @@ export async function handleRequest(
       "INTERNAL_ERROR",
     );
 
-    // Dispatch fence: a prior dispatched attempt left the unit dispatched_unknown, so re-call the
-    // provider directly instead of re-marking. A committed reservation replays the stored durable
-    // outcome without a second charge; released/expired reservations without a re-servable proposal
-    // fail closed.
+    // Reservation replay + dispatch fence. A committed reservation replays the stored durable
+    // outcome without a second charge or provider side effect. A dispatched_unknown reservation is
+    // an in-flight fence whose provider outcome may have succeeded, so it is never re-dispatched
+    // (double invocation) and never released; released/expired reservations have no re-servable
+    // proposal. Every non-reserved terminal or fenced state fails closed here.
     const nested = reservation.reservation;
     const reservationStatus =
       nested !== null && typeof nested === "object" && !Array.isArray(nested)
         ? (nested as Row).status
         : "reserved";
-    if (reservationStatus === "dispatched_unknown") {
-      // Already fenced; the held unit is still accounted, so re-call the provider directly.
-    } else if (reservationStatus === "reserved") {
-      const dispatched = rpcResult(
-        await deps.markDispatched(owner, parsed.proposal_id),
-        "INTERNAL_ERROR",
-      );
-      requireThat(
-        dispatched.code === "DISPATCHED" ||
-          dispatched.code === "RESERVATION_EXPIRED",
-        "INTERNAL_ERROR",
-      );
-      if (dispatched.code === "RESERVATION_EXPIRED") {
-        return error("PROVIDER_UNAVAILABLE", requestID);
-      }
-    } else if (reservationStatus === "committed") {
+    if (reservationStatus === "committed") {
       // Recover the already-finalized proposal and return it verbatim without a second charge or
       // a provider side effect. Committed is set atomically with the finalization insert, so the
       // durable payload must exist; a missing row is an internal inconsistency.
       const stored = await deps.loadFinalizedResult(owner, CAPABILITY, inputHash);
       requireThat(stored !== null, "INTERNAL_ERROR");
       return json(stored);
-    } else {
+    }
+    if (reservationStatus !== "reserved") {
+      return error("PROVIDER_UNAVAILABLE", requestID);
+    }
+
+    // Pre-flight provider checks (route config, secret, request budget) never reach the provider.
+    // A definite failure here releases the still-reserved unit: no provider side effect happened,
+    // so there is nothing to fence and the reservation must not leak the monthly quota.
+    let prepared: PreparedTranslation;
+    try {
+      prepared = await deps.prepare(buildPrompt(parsed));
+    } catch {
+      await deps.release(owner, parsed.proposal_id);
+      return error("PROVIDER_UNAVAILABLE", requestID);
+    }
+
+    // Dispatch fence: transition reserved -> dispatched_unknown immediately before the provider fetch
+    // so a crash after dispatch can never auto-release and re-dispatch a possibly-succeeded outcome.
+    const dispatched = rpcResult(
+      await deps.markDispatched(owner, parsed.proposal_id),
+      "INTERNAL_ERROR",
+    );
+    requireThat(
+      dispatched.code === "DISPATCHED" ||
+        dispatched.code === "RESERVATION_EXPIRED",
+      "INTERNAL_ERROR",
+    );
+    if (dispatched.code === "RESERVATION_EXPIRED") {
       return error("PROVIDER_UNAVAILABLE", requestID);
     }
 
     let proposal: TranslationProposal;
     try {
-      const raw = await deps.translate(
-        buildPrompt(parsed),
-        AbortSignal.timeout(DEADLINE_MS),
-      );
+      const raw = await deps.dispatch(prepared, AbortSignal.timeout(DEADLINE_MS));
       proposal = validateProviderOutput(raw, parsed);
     } catch (err) {
-      // Provider output is unusable (numeric/structural fabrication or transport failure):
-      // the held unit is released and the request fails before any finalize.
-      await deps.release(owner, parsed.proposal_id);
-      if (err instanceof TranslationContractError) {
-        return error("PROVIDER_UNAVAILABLE", requestID);
+      // A known-invalid provider result (structural/numeric fabrication, or a provider-returned
+      // invalid envelope) releases the held unit. An ambiguous transport failure keeps the
+      // unknown-outcome fence because the provider may have succeeded.
+      const knownInvalid =
+        err instanceof TranslationContractError ||
+        (err instanceof Error && err.message === "TRANSLATION_PROVIDER_RESPONSE");
+      if (knownInvalid) {
+        await deps.releaseFailed(owner, parsed.proposal_id);
       }
       return error("PROVIDER_UNAVAILABLE", requestID);
     }
 
     if (JSON.stringify(proposal).length > MAX_OUTPUT_BYTES) {
-      await deps.release(owner, parsed.proposal_id);
+      // The provider was invoked and returned a known-invalid oversized result.
+      await deps.releaseFailed(owner, parsed.proposal_id);
       return error("PROVIDER_UNAVAILABLE", requestID);
     }
 

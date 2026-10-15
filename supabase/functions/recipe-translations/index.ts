@@ -14,12 +14,14 @@ import {
   type InternalCapability,
   type InternalSource,
   markDispatchedInternal,
+  releaseFailedInternal,
   releaseInternal,
   reserveInternal,
 } from "../_shared/recipeInternalUsage.ts";
 import {
   handleRequest,
   type Dependencies,
+  type PreparedTranslation,
 } from "./handler.ts";
 
 type Row = Record<string, unknown>;
@@ -96,7 +98,7 @@ export function createRecipeTranslationDependencies(
     return (data as Record<string, unknown>) ?? {};
   };
 
-  const translate: Dependencies["translate"] = async (prompt, signal) => {
+  const prepare: Dependencies["prepare"] = async (prompt) => {
     const config = await loadRouteConfiguration(admin);
     if (!config) throw new Error("TRANSLATION_PROVIDER_DISABLED");
 
@@ -127,13 +129,6 @@ export function createRecipeTranslationDependencies(
     ) {
       throw new Error("TRANSLATION_PROVIDER_SECRET");
     }
-
-    const transport = createAIDraftSafeTransport({
-      enabled: true,
-      timeoutMs: Number.isSafeInteger(config.route.timeout_ms)
-        ? (config.route.timeout_ms as number)
-        : 60_000,
-    });
 
     const body = JSON.stringify({
       model: parsed.model,
@@ -167,20 +162,36 @@ export function createRecipeTranslationDependencies(
       throw new Error("TRANSLATION_PROVIDER_SECRET");
     }
 
+    return {
+      baseUrl: parsed.baseUrl,
+      body,
+      key,
+      timeoutMs: Number.isSafeInteger(config.route.timeout_ms)
+        ? (config.route.timeout_ms as number)
+        : 60_000,
+    };
+  };
+
+  const dispatch: Dependencies["dispatch"] = async (prepared, signal) => {
+    const transport = createAIDraftSafeTransport({
+      enabled: true,
+      timeoutMs: prepared.timeoutMs,
+    });
+
     let response: Response;
     try {
       const request = new Request(
-        `${parsed.baseUrl.replace(/\/$/, "")}/chat/completions`,
+        `${prepared.baseUrl.replace(/\/$/, "")}/chat/completions`,
         {
           method: "POST",
           redirect: "error",
           signal,
           headers: {
-            Authorization: `Bearer ${key}`,
+            Authorization: `Bearer ${prepared.key}`,
             Accept: "application/json",
             "Content-Type": "application/json",
           },
-          body,
+          body: prepared.body,
         },
       );
       response = await transport(request, {
@@ -298,7 +309,8 @@ export function createRecipeTranslationDependencies(
       }
       return payload as Row;
     },
-    translate,
+    prepare,
+    dispatch,
     reserve: (
       owner,
       operationID,
@@ -333,6 +345,8 @@ export function createRecipeTranslationDependencies(
         resultID,
       ),
     release: (owner, operationID) => releaseInternal(rpc, owner, operationID),
+    releaseFailed: (owner, operationID) =>
+      releaseFailedInternal(rpc, owner, operationID),
   };
 }
 

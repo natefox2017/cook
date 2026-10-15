@@ -19,7 +19,13 @@ function dependencies(overrides: Partial<Dependencies> = {}): Dependencies {
     stage: "commercial",
     loadOwnedRecipe: async () => ({ id: RECIPE, updatedAt: REVISION }),
     loadFinalizedResult: async () => null,
-    translate: async () => ({
+    prepare: async () => ({
+      baseUrl: "https://provider.invalid/v1",
+      body: "{}",
+      key: "test-key",
+      timeoutMs: 60_000,
+    }),
+    dispatch: async () => ({
       title: "番茄汤",
       summary: "一碗温暖的汤。",
       ingredient_names: [{ id: INGREDIENT, translated: "番茄" }],
@@ -31,6 +37,7 @@ function dependencies(overrides: Partial<Dependencies> = {}): Dependencies {
     markDispatched: async () => ({ code: "DISPATCHED" }),
     finalize: async () => ({ code: "FINALIZED" }),
     release: async () => ({ code: "RELEASED" }),
+    releaseFailed: async () => ({ code: "RELEASED" }),
     ...overrides,
   };
 }
@@ -76,7 +83,7 @@ Deno.test("returns a reviewable proposal for a valid translation", async () => {
 
 Deno.test("rejects provider output that fabricates a number in a vague amount", async () => {
   const deps = dependencies({
-    translate: async () => ({
+    dispatch: async () => ({
       title: "番茄汤",
       summary: "一碗温暖的汤。",
       ingredient_names: [{ id: INGREDIENT, translated: "番茄" }],
@@ -91,7 +98,7 @@ Deno.test("rejects provider output that fabricates a number in a vague amount", 
 
 Deno.test("rejects provider output that changes step numbers", async () => {
   const deps = dependencies({
-    translate: async () => ({
+    dispatch: async () => ({
       title: "番茄汤",
       summary: "一碗温暖的汤。",
       ingredient_names: [{ id: INGREDIENT, translated: "番茄" }],
@@ -146,7 +153,7 @@ Deno.test("returns the persisted proposal on a committed reservation replay with
     source_name: null,
   };
   let markDispatchedCalled = false;
-  let translateCalled = false;
+  let dispatchCalled = false;
   const deps = dependencies({
     reserve: async () => ({ code: "REPLAY", reservation: { status: "committed" } }),
     loadFinalizedResult: async () => persisted,
@@ -154,8 +161,8 @@ Deno.test("returns the persisted proposal on a committed reservation replay with
       markDispatchedCalled = true;
       return { code: "DISPATCHED" };
     },
-    translate: async () => {
-      translateCalled = true;
+    dispatch: async () => {
+      dispatchCalled = true;
       return persisted;
     },
   });
@@ -165,12 +172,12 @@ Deno.test("returns the persisted proposal on a committed reservation replay with
   assertEquals(body.title, "番茄汤");
   assertEquals(body.ingredient_names[0].translated, "番茄");
   assertEquals(markDispatchedCalled, false);
-  assertEquals(translateCalled, false);
+  assertEquals(dispatchCalled, false);
 });
 
 Deno.test("rejects provider output that drops ingredient names for a non-empty recipe", async () => {
   const deps = dependencies({
-    translate: async () => ({
+    dispatch: async () => ({
       title: "番茄汤",
       summary: "一碗温暖的汤。",
       ingredient_names: [],
@@ -185,7 +192,7 @@ Deno.test("rejects provider output that drops ingredient names for a non-empty r
 
 Deno.test("rejects provider output that drops step instructions for a non-empty recipe", async () => {
   const deps = dependencies({
-    translate: async () => ({
+    dispatch: async () => ({
       title: "番茄汤",
       summary: "一碗温暖的汤。",
       ingredient_names: [{ id: INGREDIENT, translated: "番茄" }],
@@ -196,4 +203,102 @@ Deno.test("rejects provider output that drops step instructions for a non-empty 
   });
   const response = await handleRequest(request(), deps);
   assertEquals(response.status, 503);
+});
+
+Deno.test("releases a still-reserved unit when pre-flight provider checks fail", async () => {
+  let released = false;
+  let markDispatchedCalled = false;
+  let dispatchCalled = false;
+  const deps = dependencies({
+    prepare: async () => {
+      throw new Error("TRANSLATION_PROVIDER_DISABLED");
+    },
+    release: async () => {
+      released = true;
+      return { code: "RELEASED" };
+    },
+    markDispatched: async () => {
+      markDispatchedCalled = true;
+      return { code: "DISPATCHED" };
+    },
+    dispatch: async () => {
+      dispatchCalled = true;
+      return {};
+    },
+  });
+  const response = await handleRequest(request(), deps);
+  assertEquals(response.status, 503);
+  assertEquals(released, true);
+  assertEquals(markDispatchedCalled, false);
+  assertEquals(dispatchCalled, false);
+});
+
+Deno.test("keeps the dispatch fence when the provider transport outcome is ambiguous", async () => {
+  let released = false;
+  let releaseFailed = false;
+  let markDispatchedCalled = false;
+  const deps = dependencies({
+    dispatch: async () => {
+      throw new Error("TRANSLATION_PROVIDER_UNAVAILABLE");
+    },
+    release: async () => {
+      released = true;
+      return { code: "RELEASED" };
+    },
+    releaseFailed: async () => {
+      releaseFailed = true;
+      return { code: "RELEASED" };
+    },
+    markDispatched: async () => {
+      markDispatchedCalled = true;
+      return { code: "DISPATCHED" };
+    },
+  });
+  const response = await handleRequest(request(), deps);
+  assertEquals(response.status, 503);
+  assertEquals(markDispatchedCalled, true);
+  assertEquals(released, false);
+  assertEquals(releaseFailed, false);
+});
+
+Deno.test("releases a known-invalid dispatched provider outcome", async () => {
+  let releaseFailed = false;
+  const deps = dependencies({
+    dispatch: async () => {
+      throw new Error("TRANSLATION_PROVIDER_RESPONSE");
+    },
+    releaseFailed: async () => {
+      releaseFailed = true;
+      return { code: "RELEASED" };
+    },
+  });
+  const response = await handleRequest(request(), deps);
+  assertEquals(response.status, 503);
+  assertEquals(releaseFailed, true);
+});
+
+Deno.test("fails closed on a dispatched_unknown replay without re-dispatching", async () => {
+  let prepareCalled = false;
+  let markDispatchedCalled = false;
+  let dispatchCalled = false;
+  const deps = dependencies({
+    reserve: async () => ({ code: "REPLAY", reservation: { status: "dispatched_unknown" } }),
+    prepare: async () => {
+      prepareCalled = true;
+      return { baseUrl: "https://provider.invalid/v1", body: "{}", key: "k", timeoutMs: 60_000 };
+    },
+    markDispatched: async () => {
+      markDispatchedCalled = true;
+      return { code: "DISPATCHED" };
+    },
+    dispatch: async () => {
+      dispatchCalled = true;
+      return {};
+    },
+  });
+  const response = await handleRequest(request(), deps);
+  assertEquals(response.status, 503);
+  assertEquals(prepareCalled, false);
+  assertEquals(markDispatchedCalled, false);
+  assertEquals(dispatchCalled, false);
 });
