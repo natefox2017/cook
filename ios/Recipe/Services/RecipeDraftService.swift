@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Bridges the authenticated owner draft flow (session -> turn -> review -> approve) to durable settlement and private save.
+// Purpose: Bridges the authenticated owner draft flow (reserve -> generate -> review -> approve -> durable finalize/ACK -> private save) with stable operation identity.
 
 import Foundation
 import Observation
@@ -9,19 +9,46 @@ import RecipeCore
 enum RecipeDraftServiceError: Error, Equatable {
     case notSignedIn
     case ownerChanged
+    case notComposable
 }
 
-/// DEV-428 publishes this composition contract: an approved draft turn plus its
-/// authoritative session become the canonical saveable recipe and the 64-hex
-/// input hash that the settlement routes verify. This lane injects the contract
-/// so it can be filled by DEV-428 without blocking the independent draft flow.
-struct RecipeDraftComposition: Hashable, Sendable {
-    let inputHash: String
-    let recipe: Recipe
+/// DEV-428 freezes `composeApprovedDraftFields`, the pure approved-payload -> saveable-ready-recipe
+/// contract. This lane injects that contract so it can be provided by DEV-428/DEV-431 without
+/// blocking the independent draft flow. `nil` is the fail-closed outcome (an approval that leaves
+/// review fields open is not a saveable recipe).
+struct RecipeDraftApprovedSnapshot: Hashable, Sendable {
+    let context: RecipeDraftContext
+    let result: RecipeDraftGenerationResult
+    let selectedPaths: [String]
+    let appliedRevision: RecipeDraftRevision
 
-    init(inputHash: String, recipe: Recipe) {
+    init(
+        context: RecipeDraftContext,
+        result: RecipeDraftGenerationResult,
+        selectedPaths: [String],
+        appliedRevision: RecipeDraftRevision
+    ) {
+        self.context = context
+        self.result = result
+        self.selectedPaths = selectedPaths
+        self.appliedRevision = appliedRevision
+    }
+}
+
+/// Stable ai_edit settlement identity: reserved before generation and carried unchanged through
+/// approval, durable intent, finalize, local write, ACK and recovery. The same operation_id,
+/// source and input_hash are the idempotency key the server uses to never double-charge.
+struct RecipeDraftSettlementIdentity: Hashable, Sendable {
+    let operationID: UUID
+    let sessionID: String
+    let turnRequestID: UUID
+    let inputHash: String
+
+    init(operationID: UUID, sessionID: String, turnRequestID: UUID, inputHash: String) {
+        self.operationID = operationID
+        self.sessionID = sessionID
+        self.turnRequestID = turnRequestID
         self.inputHash = inputHash
-        self.recipe = recipe
     }
 }
 
@@ -283,16 +310,26 @@ final class RecipeDraftDurableStore: @unchecked Sendable {
 /// closures so networking and the auth bridge stay outside this lane.
 @MainActor @Observable
 final class RecipeDraftService {
-    typealias Compose = @Sendable (
-        _ session: RecipeDraftSession,
-        _ approval: RecipeDraftApprovalReceipt
-    ) throws -> RecipeDraftComposition
+    /// Mirrors the server `computeInputHash(capability, source)`: the lowercase SHA-256 of
+    /// canonicalJSON({capability, source}). DEV-427 owns the exact canonicalization; this lane
+    /// injects it so the client never invents a hashing implementation.
+    typealias ComputeInputHash = @Sendable (RecipeCapability, RecipeUsageSource) throws -> String
+
+    /// Releases a confirmed-not-dispatched or not-committed reservation (no frozen DEV-425 DTO;
+    /// DEV-427 provides the route). Takes the lowercase operation_id.
+    typealias Release = @Sendable (String) async throws -> Void
+
+    /// Mirrors DEV-428 `composeApprovedDraftFields(snapshot)`: the approved snapshot becomes the
+    /// saveable recipe, or `nil` (fail-closed) when the approval leaves review fields open.
+    typealias Compose = @Sendable (RecipeDraftApprovedSnapshot) throws -> Recipe?
 
     typealias RecipeWrite = @Sendable (Recipe) throws -> Void
 
     private let client: RecipeDraftClient
     private let compose: Compose
     private let writeRecipe: RecipeWrite
+    private let computeInputHash: ComputeInputHash
+    private let release: Release
     private let currentOwnerID: @Sendable () async -> UUID?
     private let authenticate: RecipeDraftClient.Authenticate
     private let isOwnerCurrent: RecipeDraftClient.IsOwnerCurrent
@@ -303,6 +340,7 @@ final class RecipeDraftService {
     private var ownerID: UUID?
     private var session: RecipeDraftSession?
     private var turn: RecipeDraftTurn?
+    private var pendingIdentity: RecipeDraftSettlementIdentity?
     private var lastJobID: UUID?
     private var lastClientRequestID: UUID?
     private var inFlight = false
@@ -319,6 +357,8 @@ final class RecipeDraftService {
         send: @escaping RecipeDraftClient.Send = {
             try await RecipeShareHTTPTransport.send($0)
         },
+        computeInputHash: @escaping ComputeInputHash,
+        release: @escaping Release,
         compose: @escaping Compose,
         writeRecipe: @escaping RecipeWrite,
         durableStore: RecipeDraftDurableStore = .applicationSupport()
@@ -329,6 +369,8 @@ final class RecipeDraftService {
         self.isOwnerCurrent = isOwnerCurrent
         self.currentOwnerID = currentOwnerID
         self.send = send
+        self.computeInputHash = computeInputHash
+        self.release = release
         self.compose = compose
         self.writeRecipe = writeRecipe
         self.durableStore = durableStore
@@ -343,7 +385,8 @@ final class RecipeDraftService {
 
     // MARK: - Public flow
 
-    /// Creates or resumes the owner's session for a job, runs one no-chat turn, and polls to terminal.
+    /// Creates or resumes the owner's session, reserves one ai_edit unit before generation, runs
+    /// one no-chat turn with the reserved turn_request_id, and polls to terminal.
     func start(jobID: UUID, clientRequestID: UUID) async {
         guard !inFlight else { return }
         guard isEnabled else {
@@ -361,7 +404,26 @@ final class RecipeDraftService {
                 jobID: jobID, clientRequestID: clientRequestID, ownerID: owner
             )
             self.session = session
-            let turn = try await runTurn(session: session, ownerID: owner)
+            let identity = try await reserveForTurn(session: session, ownerID: owner)
+            self.pendingIdentity = identity
+
+            // Dispatch is the only point where a reservation can be released as
+            // "known not dispatched"; every later failure is post-dispatch.
+            let dispatched: RecipeDraftTurn
+            do {
+                dispatched = try await dispatchTurn(
+                    session: session, requestID: identity.turnRequestID, ownerID: owner
+                )
+            } catch {
+                try? await release(identity.operationID.uuidString.lowercased())
+                throw error
+            }
+            let turn = try await awaitTerminalTurn(
+                session: session,
+                requestID: identity.turnRequestID,
+                ownerID: owner,
+                initial: dispatched
+            )
             self.turn = turn
             phase = terminalPhase(turn, session: session)
         } catch {
@@ -379,7 +441,8 @@ final class RecipeDraftService {
         phase = .reviewing(review.deselecting(path))
     }
 
-    /// Accepts the selected AI suggestions, then durably settles: compose -> finalize -> local write -> ACK.
+    /// Accepts the selected AI suggestions, then durably settles the already-reserved operation:
+    /// compose -> durable intent -> finalize -> local write -> ACK.
     func approve() async {
         guard case .reviewing(let review) = phase else { return }
         guard !review.selectedPaths.isEmpty else { return }
@@ -392,9 +455,14 @@ final class RecipeDraftService {
         defer { inFlight = false }
         do {
             let owner = try await refreshedOwner()
-            guard let session, let turn else { throw RecipeDraftClientError.invalidResponse }
+            guard
+                let session, let turn, let result = turn.result,
+                let identity = pendingIdentity
+            else {
+                throw RecipeDraftClientError.invalidResponse
+            }
             let sessionID = try uuid(session.sessionID)
-            let turnRequestID = try uuid(turn.requestID)
+            let turnRequestID = identity.turnRequestID
             phase = .approving
             let receipt = try await client.approveTurn(
                 sessionID: sessionID,
@@ -405,19 +473,24 @@ final class RecipeDraftService {
                 selectedPaths: Array(review.selectedPaths).sorted(),
                 ownerID: owner
             )
-            let updatedSession = try await client.fetchSession(
-                sessionID: sessionID, ownerID: owner
+            let snapshot = RecipeDraftApprovedSnapshot(
+                context: session.context,
+                result: result,
+                selectedPaths: receipt.selectedPaths,
+                appliedRevision: receipt.appliedRevision
             )
             let recipeID = try await settle(
-                receipt: receipt, session: updatedSession, ownerID: owner
+                identity: identity, snapshot: snapshot, ownerID: owner
             )
+            pendingIdentity = nil
             phase = .saved(recipeID)
         } catch {
             phase = .failed(failure(for: error))
         }
     }
 
-    /// Rejects all AI suggestions and returns control to the existing manual save flow.
+    /// Rejects all AI suggestions, releases the not-committed reservation, and returns control
+    /// to the existing manual save flow.
     func rejectAI() async {
         guard case .reviewing = phase else { return }
         guard !inFlight else { return }
@@ -440,6 +513,10 @@ final class RecipeDraftService {
                 selectedPaths: [],
                 ownerID: owner
             )
+            if let identity = pendingIdentity {
+                try? await release(identity.operationID.uuidString.lowercased())
+            }
+            pendingIdentity = nil
             phase = .manualFallback
         } catch {
             phase = .failed(failure(for: error))
@@ -469,8 +546,9 @@ final class RecipeDraftService {
         phase = .idle
     }
 
-    /// Replays the current owner's durable settlement intents. A finalized intent only
-    /// re-runs local write + ACK; a pre-finalize intent re-runs finalize (idempotent by operationID).
+    /// Replays the current owner's durable settlement intents. A finalized intent only re-runs
+    /// local write + ACK; a pre-finalize intent re-runs finalize (idempotent by operation_id).
+    /// Never re-reserves or re-dispatches: recovery reuses the persisted operation_id unchanged.
     func recoverPendingSettlement() async {
         guard let owner = await currentOwnerID() else { return }
         self.ownerID = owner
@@ -494,6 +572,47 @@ final class RecipeDraftService {
                 continue
             }
         }
+    }
+
+    // MARK: - Reservation
+
+    private func reserveForTurn(
+        session: RecipeDraftSession, ownerID: UUID
+    ) async throws -> RecipeDraftSettlementIdentity {
+        let operationID = UUID()
+        let turnRequestID = UUID()
+        let source = try RecipeUsageSource(
+            sessionID: session.sessionID,
+            turnRequestID: turnRequestID.uuidString.lowercased()
+        )
+        let inputHash = try computeInputHash(.aiEdit, source)
+        let request = try RecipeReservationRequest(
+            operationID: operationID.uuidString.lowercased(),
+            capability: .aiEdit,
+            inputHash: inputHash,
+            estimatedUnits: 1,
+            source: source
+        )
+        let reservation = try await reserve(request, ownerID: ownerID)
+        guard reservation.status == .reserved,
+            reservation.operationID == operationID.uuidString.lowercased()
+        else {
+            throw RecipeDraftClientError.invalidResponse
+        }
+        return RecipeDraftSettlementIdentity(
+            operationID: operationID,
+            sessionID: session.sessionID,
+            turnRequestID: turnRequestID,
+            inputHash: inputHash
+        )
+    }
+
+    private func reserve(
+        _ request: RecipeReservationRequest, ownerID: UUID
+    ) async throws -> RecipeReservation {
+        try await performSettlement(
+            path: ["reservations"], ownerID: ownerID, body: request, statuses: [200, 201]
+        )
     }
 
     // MARK: - Draft flow
@@ -524,29 +643,37 @@ final class RecipeDraftService {
         return session
     }
 
-    private func runTurn(session: RecipeDraftSession, ownerID: UUID) async throws
-        -> RecipeDraftTurn
-    {
-        let requestID = UUID()
-        var turn = try await client.createTurn(
+    private func dispatchTurn(
+        session: RecipeDraftSession, requestID: UUID, ownerID: UUID
+    ) async throws -> RecipeDraftTurn {
+        try await client.createTurn(
             sessionID: try uuid(session.sessionID),
             requestID: requestID,
             expectedRevision: session.revision,
             message: "",
             ownerID: ownerID
         )
+    }
+
+    private func awaitTerminalTurn(
+        session: RecipeDraftSession,
+        requestID: UUID,
+        ownerID: UUID,
+        initial: RecipeDraftTurn
+    ) async throws -> RecipeDraftTurn {
+        var current = initial
         var attempts = 0
-        while turn.state == "pending" && attempts < 60 {
+        while current.state == "pending" && attempts < 60 {
             try Task.checkCancellation()
             try await Task.sleep(for: .milliseconds(1000))
-            turn = try await client.fetchTurn(
+            current = try await client.fetchTurn(
                 sessionID: try uuid(session.sessionID),
                 requestID: requestID,
                 ownerID: ownerID
             )
             attempts += 1
         }
-        return turn
+        return current
     }
 
     private func terminalPhase(
@@ -582,25 +709,28 @@ final class RecipeDraftService {
     // MARK: - Settlement
 
     private func settle(
-        receipt: RecipeDraftApprovalReceipt, session: RecipeDraftSession, ownerID: UUID
+        identity: RecipeDraftSettlementIdentity,
+        snapshot: RecipeDraftApprovedSnapshot,
+        ownerID: UUID
     ) async throws -> UUID {
-        let composition = try compose(session, receipt)
-        let operationID = UUID()
+        guard let composed = try compose(snapshot) else {
+            throw RecipeDraftServiceError.notComposable
+        }
         let intent = RecipeDraftSettlementIntent(
             ownerID: ownerID,
-            operationID: operationID,
-            sessionID: receipt.sessionID,
-            turnRequestID: receipt.turnRequestID,
-            inputHash: composition.inputHash,
-            recipe: composition.recipe
+            operationID: identity.operationID,
+            sessionID: identity.sessionID,
+            turnRequestID: identity.turnRequestID.uuidString.lowercased(),
+            inputHash: identity.inputHash,
+            recipe: composed
         )
         try durableStore.upsertIntent(intent)
 
         let response = try await finalize(
-            operationID: operationID,
-            inputHash: composition.inputHash,
-            sessionID: receipt.sessionID,
-            turnRequestID: receipt.turnRequestID,
+            operationID: identity.operationID,
+            inputHash: identity.inputHash,
+            sessionID: identity.sessionID,
+            turnRequestID: identity.turnRequestID.uuidString.lowercased(),
             ownerID: ownerID
         )
         guard let recipeID = UUID(uuidString: response.recipeID) else {
@@ -612,12 +742,12 @@ final class RecipeDraftService {
         )
         try durableStore.upsertIntent(finalizedIntent)
 
-        var recipe = composition.recipe
+        var recipe = composed
         recipe.id = recipeID
         try writeRecipe(recipe)
 
-        _ = try await ack(operationID: operationID, ownerID: ownerID)
-        try durableStore.removeIntent(ownerID: ownerID, operationID: operationID)
+        _ = try await ack(operationID: identity.operationID, ownerID: ownerID)
+        try durableStore.removeIntent(ownerID: ownerID, operationID: identity.operationID)
         return recipeID
     }
 
@@ -674,7 +804,7 @@ final class RecipeDraftService {
     private struct EmptyBody: Encodable {}
 
     private func performSettlement<T: Decodable>(
-        path: [String], ownerID: UUID, body: (any Encodable)?
+        path: [String], ownerID: UUID, body: (any Encodable)?, statuses: Set<Int> = [200]
     ) async throws -> T {
         let credential = try await authenticate(ownerID)
         try Task.checkCancellation()
@@ -707,7 +837,7 @@ final class RecipeDraftService {
         guard data.count <= RecipeShareHTTPTransport.maximumBodyBytes else {
             throw RecipeDraftClientError.invalidResponse
         }
-        guard response.statusCode == 200 else {
+        guard statuses.contains(response.statusCode) else {
             if let error = try? JSONDecoder().decode(RecipeUsageAPIError.self, from: data) {
                 throw error
             }
@@ -732,6 +862,7 @@ final class RecipeDraftService {
     private func clearDraftState() {
         session = nil
         turn = nil
+        pendingIdentity = nil
         lastJobID = nil
         lastClientRequestID = nil
     }
@@ -771,6 +902,11 @@ final class RecipeDraftService {
             case .ownerChanged:
                 return RecipeDraftFailure(
                     kind: .authRequired, code: nil, message: Message.ownerChanged
+                )
+            case .notComposable:
+                return RecipeDraftFailure(
+                    kind: .invalidInput, code: nil, message: Message.notComposable,
+                    recoverable: false
                 )
             }
         }
@@ -887,6 +1023,12 @@ private enum Message {
     static let invalidInput = String(
         localized: LocalizedStringResource(
             "This recipe couldn't be reviewed as provided. Enter the details manually to continue.",
+            locale: RecipeLanguage.active
+        )
+    )
+    static let notComposable = String(
+        localized: LocalizedStringResource(
+            "Some details are still missing. Complete them manually to continue.",
             locale: RecipeLanguage.active
         )
     )
