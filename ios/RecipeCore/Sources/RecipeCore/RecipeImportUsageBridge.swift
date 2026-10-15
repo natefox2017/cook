@@ -40,18 +40,20 @@ public struct RecipeImportUsageBridge: Sendable {
         self.store = store
     }
 
-    /// Reserves one candidate. A 402 quota/upgrade outcome persists an `awaitingUpgrade` operation so
-    /// the input is never lost; other failures propagate for a normal retry without state change.
+    /// Reserves one candidate. The stable operation ID and its `reserving` intent are persisted before
+    /// the network call, so a lost-response retry replays the same ID (idempotent REPLAY) instead of
+    /// double-charging. A 402 quota/upgrade outcome transitions the intent to `awaitingUpgrade`.
     public func reserve(
         ownerID: UUID,
         jobID: UUID,
         candidateID: String,
         receiptID: UUID
     ) async throws -> RecipeImportUsageReserveOutcome {
+        let operationID = RecipeImportUsageOperation.stableOperationID(
+            ownerID: ownerID, jobID: jobID, candidateID: candidateID)
         let source = try RecipeUsageSource(
             importJobID: jobID.uuidString.lowercased(), candidateIDs: [candidateID])
         let inputHash = try RecipeUsageInputHash.compute(capability: .smartImport, source: source)
-        let operationID = UUID()
         let request = try RecipeReservationRequest(
             operationID: operationID.uuidString.lowercased(),
             capability: .smartImport,
@@ -59,42 +61,41 @@ public struct RecipeImportUsageBridge: Sendable {
             estimatedUnits: 1,
             source: source
         )
+
+        // Durable intent must exist before the network call; a later replay of the same operation ID
+        // is the only idempotency key the frozen contract exposes.
+        let pending = RecipeImportUsageOperation(
+            operationID: operationID,
+            ownerID: ownerID,
+            jobID: jobID,
+            candidateID: candidateID,
+            receiptID: receiptID,
+            state: .reserving
+        )
+        try store.save(pending)
+
         do {
             let reservation = try await client.reserve(ownerID: ownerID, request: request)
-            let operation = RecipeImportUsageOperation(
-                operationID: operationID,
-                ownerID: ownerID,
-                jobID: jobID,
-                candidateID: candidateID,
-                receiptID: receiptID,
-                state: .reserved,
-                reservedUntil: reservation.reservedUntil
-            )
-            try store.save(operation)
+            try reconcile(reservation, operationID: operationID)
+            let reserved = pending.marking(state: .reserved, reservedUntil: reservation.reservedUntil)
+            try store.save(reserved)
             return .reserved(reservation)
         } catch let failure as RecipeUsageFailure where failure.isAwaitingUpgrade {
-            let operation = RecipeImportUsageOperation(
-                operationID: operationID,
-                ownerID: ownerID,
-                jobID: jobID,
-                candidateID: candidateID,
-                receiptID: receiptID,
-                state: .awaitingUpgrade
-            )
-            try store.save(operation)
-            return .awaitingUpgrade(operation)
+            let awaiting = pending.marking(state: .awaitingUpgrade)
+            try store.save(awaiting)
+            return .awaitingUpgrade(awaiting)
         }
     }
 
-    /// Re-reserves every `awaitingUpgrade` operation for an owner using its original operation ID
-    /// (idempotent REPLAY). It never rebuilds the import job or re-fetches cached results.
+    /// Re-reserves every pending (`reserving` or `awaitingUpgrade`) operation for an owner using its
+    /// stable operation ID (idempotent REPLAY). It never rebuilds the import job or re-fetches cached results.
     public func recover(ownerID: UUID) async throws -> RecipeImportUsageRecoveryReport {
         var recovered: [RecipeImportUsageOperation] = []
         var stillAwaitingUpgrade: [RecipeImportUsageOperation] = []
         var failed: [UUID: RecipeUsageFailure] = [:]
 
         for operation in try store.operations(for: ownerID)
-        where operation.state == .awaitingUpgrade {
+        where operation.state == .awaitingUpgrade || operation.state == .reserving {
             let source = try operation.usageSource()
             let request = try RecipeReservationRequest(
                 operationID: operation.operationID.uuidString.lowercased(),
@@ -105,11 +106,14 @@ public struct RecipeImportUsageBridge: Sendable {
             )
             do {
                 let reservation = try await client.reserve(ownerID: ownerID, request: request)
+                try reconcile(reservation, operationID: operation.operationID)
                 let updated = operation.marking(state: .reserved, reservedUntil: reservation.reservedUntil)
                 try store.save(updated)
                 recovered.append(updated)
             } catch let failure as RecipeUsageFailure where failure.isAwaitingUpgrade {
-                stillAwaitingUpgrade.append(operation)
+                let awaiting = operation.marking(state: .awaitingUpgrade)
+                try store.save(awaiting)
+                stillAwaitingUpgrade.append(awaiting)
             } catch let failure as RecipeUsageFailure {
                 failed[operation.operationID] = failure
             } catch {
@@ -122,6 +126,20 @@ public struct RecipeImportUsageBridge: Sendable {
             stillAwaitingUpgrade: stillAwaitingUpgrade,
             failed: failed
         )
+    }
+
+    /// Reconciles the server reservation against the stable operation it was requested for. A
+    /// mismatched operation ID would indicate a server bug or a duplicated request and must never be
+    /// persisted as this operation's reservation.
+    private func reconcile(_ reservation: RecipeReservation, operationID: UUID) throws {
+        guard reservation.operationID == operationID.uuidString.lowercased() else {
+            throw RecipeUsageFailure.api(
+                .internalError,
+                recoverable: true,
+                message: "The reservation response did not match the requested operation.",
+                requestID: nil
+            )
+        }
     }
 
     /// Settles a reserved operation and returns the server-authored stable recipe ID and payload hash.
