@@ -1,12 +1,16 @@
 // Developer: gengyun
 // Purpose: Persists owner-scoped import usage operations so an upgrade can resume the original reservation without losing input.
 
+import CryptoKit
 import Foundation
 
 /// One candidate reservation in the import usage lifecycle. A multi-candidate selection produces one
 /// operation per selected candidate; each settles exactly one unit through the frozen usage routes.
 public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifiable {
     public enum State: String, Codable, Hashable, Sendable {
+        /// Durable intent persisted before the reserve call; the server answer is not yet known.
+        /// Recovery replays the same stable operation ID instead of minting a second reservation.
+        case reserving
         /// Reserve hit a 402 quota/upgrade outcome; the input is preserved until the owner upgrades.
         case awaitingUpgrade
         /// Reserve succeeded; finalize/ack is still owed. Never auto-release a dispatched reserve.
@@ -47,6 +51,22 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
         self.reservedUntil = reservedUntil
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+    }
+
+    /// Derives a stable operation ID from the owner + job + candidate so a lost-response retry replays
+    /// the exact same reservation instead of minting a second one (double charge). The frozen contract's
+    /// idempotency key is the operation ID, so it must be canonical and reproducible across retries.
+    public static func stableOperationID(ownerID: UUID, jobID: UUID, candidateID: String) -> UUID {
+        let key = Data(
+            "\(ownerID.uuidString.lowercased()):\(jobID.uuidString.lowercased()):\(candidateID)".utf8)
+        let digest = Array(SHA256.hash(data: key))
+        return UUID(
+            uuid: (
+                digest[0], digest[1], digest[2], digest[3],
+                digest[4], digest[5], digest[6], digest[7],
+                digest[8], digest[9], digest[10], digest[11],
+                digest[12], digest[13], digest[14], digest[15]
+            ))
     }
 
     /// The frozen usage source this operation settles against; recomputed deterministically on recovery.
