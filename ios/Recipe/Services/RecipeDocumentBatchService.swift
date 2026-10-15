@@ -277,12 +277,12 @@ struct RecipeDocumentBatchUsageSaveBoundary: RecipeDocumentBatchSaveBoundary {
         _ candidate: RecipeDocumentBatchSaveCandidate,
         jobID: UUID
     ) async throws {
-        let jobIDText = jobID.uuidString
+        let jobIDText = jobID.uuidString.lowercased()
         let source = try RecipeUsageSource(
             importJobID: jobIDText, candidateIDs: [candidate.candidateID])
         let inputHash = RecipeUsageHash.importInputHash(
             jobID: jobIDText, candidateID: candidate.candidateID)
-        let operationID = UUID().uuidString
+        let operationID = UUID().uuidString.lowercased()
 
         _ = try await usage.reserve(
             try RecipeReservationRequest(
@@ -311,6 +311,11 @@ struct RecipeDocumentBatchUsageSaveBoundary: RecipeDocumentBatchSaveBoundary {
         recipeID: String
     ) throws {
         guard let targetID = UUID(uuidString: recipeID) else { return }
+        // A retry after the user deleted the recipe must not resurrect it.
+        guard !store.hasRecipeDeletionTombstone(id: targetID) else { return }
+        // A replay (idempotent finalize returns the same recipe id) or a locally
+        // edited recipe must never be overwritten.
+        guard store.recipe(id: targetID) == nil else { return }
         let title = candidate.title ?? "Untitled Recipe"
         let content =
             title
