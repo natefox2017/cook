@@ -1,5 +1,7 @@
 // Developer: gengyun
-// Purpose: Bounded, owner-scoped recipe Q&A orchestration over typed provider and metering ports.
+// Purpose: Bounded, owner-scoped recipe Q&A orchestration over typed provider, metering and answer-store
+// ports. It settles one successful-answer unit per operation through the phase-II ledger, replays a
+// persisted answer instead of re-dispatching the provider, and never writes the recipe/grocery/plan.
 
 import { AppError } from "../_shared/errors.ts";
 import { canonicalHash } from "../recipe-draft-sessions/canonicalJSON.ts";
@@ -62,17 +64,48 @@ export interface QuestionProviderPort {
   ): Promise<QuestionProviderResult>;
 }
 
+/** One phase-II usage operation. The metering port derives the ledger input hash from the source. */
 export interface QuestionOperation {
   operation_id: string;
   owner_id: string;
+  recipe_id: string;
   capability: "recipe_question";
-  input_hash: string;
 }
 
 export interface QuestionMeteringPort {
-  reserve(operation: QuestionOperation): Promise<void>;
-  settle(operation: QuestionOperation): Promise<void>;
+  /** Reserve one unit; "replay" means the operation was already reserved (never re-dispatch). */
+  reserve(operation: QuestionOperation): Promise<"reserved" | "replay">;
+  /** Durable dispatch fence before the provider side effect. */
+  markDispatched(operation: QuestionOperation): Promise<void>;
+  /** Settle once and bind the durable outcome to the persisted answer row. */
+  finalize(
+    operation: QuestionOperation,
+    payloadHash: string,
+    payload: Record<string, unknown>,
+    resultId: string,
+  ): Promise<void>;
   release(operation: QuestionOperation): Promise<void>;
+}
+
+export interface StoredAnswer {
+  id: string;
+  input_hash: string;
+  answer: { answer: string; statements: QuestionStatement[] };
+}
+
+export interface QuestionAnswerStore {
+  /** Load a previously persisted answer for this operation (owned recovery read). */
+  load(ownerId: string, operationId: string): Promise<StoredAnswer | null>;
+  /** Persist the validated answer and return its durable row id. */
+  persist(
+    ownerId: string,
+    recipeId: string,
+    operationId: string,
+    inputHash: string,
+    question: string,
+    answer: Record<string, unknown>,
+    payloadHash: string,
+  ): Promise<string>;
 }
 
 export interface QuestionResponse {
@@ -85,6 +118,7 @@ export interface QuestionResponse {
 export interface QuestionHandlerDependencies {
   provider: QuestionProviderPort;
   metering: QuestionMeteringPort;
+  answers: QuestionAnswerStore;
   deadline_ms?: number;
 }
 
@@ -145,8 +179,9 @@ function turn(value: unknown): QuestionTurn | null {
 
 /**
  * Validates the wire request into a typed, bounded QuestionRequest. Unknown keys are
- * tolerated here because the HTTP body is JSON decoded upstream; every used field is
- * strictly bounded so the provider and metering never see unbounded user data.
+ * tolerated because the HTTP body is JSON decoded upstream; every used field is strictly
+ * bounded so the provider and metering never see unbounded user data. The snapshot is
+ * replaced by the canonical owner snapshot before the provider sees it (see index.ts).
  */
 export function validateQuestionRequest(value: unknown): QuestionRequest {
   const record = asRecord(value);
@@ -253,9 +288,11 @@ export function boundAnswer(value: unknown): {
 }
 
 /**
- * Bounded Q&A orchestration. The handler is network-free: the provider calls the model,
- * the metering port records the commercial operation, and every failure path releases the
- * reservation so a failed, unsafe or timed-out answer never settles as a successful unit.
+ * Bounded Q&A orchestration. The handler is network-free: the provider calls the model, the
+ * metering port records the commercial operation, the answer store makes recovery replay-safe,
+ * and every failure path releases the reservation so a failed, unsafe or timed-out answer never
+ * settles as a successful unit. A retry of a dispatched-but-unknown operation never re-dispatches
+ * the provider: it replays a persisted answer or surfaces the still-in-flight error.
  */
 export function createQuestionHandler(dependencies: QuestionHandlerDependencies) {
   const deadlineMs = dependencies.deadline_ms ?? DEFAULT_DEADLINE_MS;
@@ -267,10 +304,41 @@ export function createQuestionHandler(dependencies: QuestionHandlerDependencies)
     const operation: QuestionOperation = {
       operation_id: request.operation_id,
       owner_id: ownerID,
+      recipe_id: request.recipe_id,
       capability: "recipe_question",
-      input_hash: inputHash,
     };
-    await dependencies.metering.reserve(operation);
+
+    // Idempotent replay short-circuits before any reserve/provider so retries stay cheap.
+    const existing = await dependencies.answers.load(ownerID, request.operation_id);
+    if (existing) {
+      if (existing.input_hash !== inputHash) {
+        throw new AppError(
+          "conflict",
+          "Operation id reused with a different question",
+          409,
+        );
+      }
+      return {
+        operation_id: request.operation_id,
+        answer: existing.answer.answer,
+        statements: existing.answer.statements,
+        revision: request.revision,
+      };
+    }
+
+    const reservation = await dependencies.metering.reserve(operation);
+    if (reservation === "replay") {
+      // A prior attempt fenced this operation (dispatched_unknown) but never persisted an answer.
+      // Re-dispatching the provider here could double-charge; surface the in-flight state instead.
+      throw new AppError(
+        "internal_error",
+        "The previous attempt is still in flight; retry after it settles.",
+        503,
+      );
+    }
+
+    await dependencies.metering.markDispatched(operation);
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), deadlineMs);
     try {
@@ -283,7 +351,21 @@ export function createQuestionHandler(dependencies: QuestionHandlerDependencies)
         controller.signal,
       );
       const bounded = boundAnswer(result);
-      await dependencies.metering.settle(operation);
+      const payload = {
+        answer: bounded.answer,
+        statements: bounded.statements,
+      };
+      const payloadHash = await canonicalHash(payload);
+      const answerId = await dependencies.answers.persist(
+        ownerID,
+        request.recipe_id,
+        request.operation_id,
+        inputHash,
+        request.question,
+        payload,
+        payloadHash,
+      );
+      await dependencies.metering.finalize(operation, payloadHash, payload, answerId);
       return {
         operation_id: request.operation_id,
         answer: bounded.answer,
