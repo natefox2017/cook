@@ -76,4 +76,6 @@ verify_jwt = true
 # DEV-428: owner-authenticated draft session API; provider dispatch and ai_edit usage
 # hooks run behind the service role inside the function, never on the client.
 [functions.recipe-draft-sessions]
+# DEV-443: private recipe document batch scanning always requires a verified owner JWT.
+[functions.recipe-document-batch]
 verify_jwt = true
