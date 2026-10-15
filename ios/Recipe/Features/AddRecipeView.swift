@@ -2,6 +2,7 @@
 // Purpose: Implements recipe intake from links, text, documents, photos, and manual entry.
 
 import AVFoundation
+import PDFKit
 import PhotosUI
 import RecipeCore
 import SwiftUI
@@ -26,6 +27,18 @@ struct AddRecipeView: View {
     @State private var detailID: UUID?
     @State private var failedURL: URL?
     @State private var operation: Task<Void, Never>?
+    @State private var showDocumentBatchMenu = false
+    @State private var documentBatchPhotos: [PhotosPickerItem] = []
+    @State private var showDocumentBatchPhotos = false
+    @State private var showDocumentBatchFile = false
+    @State private var documentBatchOutcome: RecipeDocumentBatchOutcome?
+    @State private var documentBatchProgress: RecipeDocumentBatchProgress?
+    @State private var documentBatchBatchID = UUID()
+    @State private var showDocumentBatchSheet = false
+
+    private let documentBatchService = RecipeDocumentBatchService()
+    private let documentBatchSaveBoundary: any RecipeDocumentBatchSaveBoundary =
+        RecipeDocumentBatchUnavailableSaveBoundary()
 
     var body: some View {
         NavigationStack {
@@ -50,6 +63,9 @@ struct AddRecipeView: View {
                         }
                         importOption("Import a document", icon: "doc") {
                             showFile = true
+                        }
+                        importOption("Scan documents", icon: "doc.viewfinder") {
+                            showDocumentBatchMenu = true
                         }
                         importOption("Create manually", icon: "square.and.pencil") {
                             let recipe = Recipe(title: "")
@@ -116,6 +132,59 @@ struct AddRecipeView: View {
                     {
                         errorMessage = error.localizedDescription
                     }
+                }
+            }
+            .confirmationDialog("Scan documents", isPresented: $showDocumentBatchMenu) {
+                Button("Choose screenshots") {
+                    documentBatchPhotos = []
+                    showDocumentBatchPhotos = true
+                }
+                Button("Choose a PDF") {
+                    showDocumentBatchFile = true
+                }
+                Button("Cancel", role: .cancel) {}
+            }
+            .photosPicker(
+                isPresented: $showDocumentBatchPhotos,
+                selection: $documentBatchPhotos,
+                maxSelectionCount: RecipeDocumentBatchLimits.maxImages,
+                matching: .images
+            )
+            .onChange(of: documentBatchPhotos) { _, items in
+                guard !items.isEmpty else { return }
+                scanDocumentImages(items)
+            }
+            .fileImporter(
+                isPresented: $showDocumentBatchFile,
+                allowedContentTypes: [.pdf]
+            ) { result in
+                switch result {
+                case .success(let url):
+                    scanDocumentPDF(url)
+                case .failure(let error):
+                    let cocoaError = error as NSError
+                    if cocoaError.domain != NSCocoaErrorDomain
+                        || cocoaError.code != NSUserCancelledError
+                    {
+                        errorMessage = error.localizedDescription
+                    }
+                }
+            }
+            .sheet(
+                isPresented: $showDocumentBatchSheet,
+                onDismiss: {
+                    documentBatchOutcome = nil
+                    documentBatchProgress = nil
+                }
+            ) {
+                if let outcome = documentBatchOutcome, let progress = documentBatchProgress {
+                    RecipeDocumentBatchSheet(
+                        outcome: outcome,
+                        progress: progress,
+                        onSave: { saveDocumentBatchCandidates($0) },
+                        onCancel: { showDocumentBatchSheet = false },
+                        onContinue: { showDocumentBatchSheet = false }
+                    )
                 }
             }
             .alert(
@@ -310,6 +379,121 @@ struct AddRecipeView: View {
         recipe.coverData = normalized
         recipe.sourceName = "Photo import"
         try saveImported(recipe)
+    }
+
+    private func currentOwnerID() throws -> UUID {
+        guard case .signedIn(let ownerID, _) = RecipeAuthService.shared.state else {
+            throw RecipeRemoteImportError.notSignedIn
+        }
+        return ownerID
+    }
+
+    private func scanDocumentImages(_ items: [PhotosPickerItem]) {
+        perform("Scanning your screenshots…") {
+            let ownerID = try currentOwnerID()
+            var batch: [RecipeDocumentBatchItem] = []
+            for item in items {
+                guard let data = try await item.loadTransferable(type: Data.self) else {
+                    throw RecipeDocumentBatchError.unsupportedType
+                }
+                let mime =
+                    item.supportedContentTypes.first?.preferredMIMEType ?? "image/jpeg"
+                let artifactID = try await documentBatchService.upload(
+                    data: data,
+                    inputType: .image,
+                    mimeType: mime,
+                    ownerID: ownerID
+                )
+                batch.append(
+                    RecipeDocumentBatchItem(
+                        id: artifactID.uuidString.lowercased(),
+                        inputType: .image,
+                        mimeType: mime,
+                        sizeBytes: data.count,
+                        pageCount: 1,
+                        ownerID: ownerID
+                    )
+                )
+            }
+            try await presentDocumentBatch(batch, ownerID: ownerID)
+        }
+    }
+
+    private func scanDocumentPDF(_ url: URL) {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer {
+            if scoped {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        perform("Scanning your document…") {
+            let data = try Data(contentsOf: url)
+            guard let document = PDFDocument(data: data) else {
+                throw RecipeDocumentBatchError.unsupportedType
+            }
+            if document.isEncrypted || document.isLocked {
+                throw RecipeDocumentBatchError.unsupportedType
+            }
+            let ownerID = try currentOwnerID()
+            let artifactID = try await documentBatchService.upload(
+                data: data,
+                inputType: .file,
+                mimeType: "application/pdf",
+                ownerID: ownerID
+            )
+            let item = RecipeDocumentBatchItem(
+                id: artifactID.uuidString.lowercased(),
+                inputType: .file,
+                mimeType: "application/pdf",
+                sizeBytes: data.count,
+                pageCount: document.pageCount,
+                ownerID: ownerID
+            )
+            try await presentDocumentBatch([item], ownerID: ownerID)
+        }
+    }
+
+    private func presentDocumentBatch(
+        _ items: [RecipeDocumentBatchItem],
+        ownerID: UUID
+    ) async throws {
+        let spec = try RecipeDocumentBatch.validate(items)
+        let units = RecipeDocumentBatch.pageUnits(for: spec)
+        let batchID = UUID()
+        let outcome = try await documentBatchService.scan(items: items, ownerID: ownerID)
+        documentBatchOutcome = outcome
+        documentBatchProgress = RecipeDocumentBatch.initialProgress(
+            batchID: batchID, units: units)
+        documentBatchBatchID = batchID
+        showDocumentBatchSheet = true
+    }
+
+    private func saveDocumentBatchCandidates(_ selectedIDs: Set<String>) {
+        guard let outcome = documentBatchOutcome else { return }
+        let candidates = outcome.candidates
+            .filter { selectedIDs.contains($0.candidateID) }
+            .map {
+                RecipeDocumentBatchSaveCandidate(
+                    candidateID: $0.candidateID,
+                    title: $0.title,
+                    ingredients: $0.ingredients,
+                    steps: $0.steps
+                )
+            }
+        Task { @MainActor in
+            do {
+                let ownerID = try currentOwnerID()
+                try await documentBatchSaveBoundary.save(
+                    candidates,
+                    batchID: documentBatchBatchID,
+                    ownerID: ownerID
+                )
+                showDocumentBatchSheet = false
+            } catch is CancellationError {
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
     }
 
     private func perform(_ message: String, action: @escaping @MainActor () async throws -> Void) {

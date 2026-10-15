@@ -14,6 +14,11 @@ import {
   type DocumentBatchArtifact,
 } from "../recipe-import-worker/documentBatch.ts";
 import { createDocumentBatchExtractor } from "./extractor.ts";
+import {
+  completeUpload,
+  createUploadIntent,
+  type UploadIntentBody,
+} from "./upload.ts";
 
 const BUCKET = "recipe-import-artifacts";
 const MAX_BATCH_ITEMS = 10;
@@ -168,45 +173,83 @@ Deno.serve(async (request: Request): Promise<Response> => {
       throw new AppError("unauthorized", "A signed-in account is required.", 401);
     }
 
-    const body = await readBoundedJSONBody(request);
-    if (!body || !Array.isArray(body.items)) {
-      throw new AppError("validation_error", "Batch items are required.", 400);
-    }
-    const items = body.items as BatchItemRequest[];
-    if (items.length < 1 || items.length > MAX_BATCH_ITEMS) {
-      throw new AppError("validation_error", "A batch must contain 1 to 10 items.", 400);
-    }
+    const segments = new URL(request.url).pathname.split("/").filter(Boolean);
+    const baseIndex = segments.lastIndexOf("recipe-document-batch");
+    const tail = baseIndex >= 0 ? segments.slice(baseIndex + 1) : [];
 
     const admin = createServiceClient();
-    const artifacts: DocumentBatchArtifact[] = [];
-    for (const item of items) {
-      artifacts.push(await resolveArtifact(admin, user.id, item));
+
+    // POST /upload — create an idempotent 20 MiB upload intent and signed URL.
+    if (tail.length === 1 && tail[0] === "upload") {
+      const body = await readBoundedJSONBody(request);
+      if (!body) {
+        throw new AppError("validation_error", "Upload request is invalid or too large.", 413);
+      }
+      const intent = await createUploadIntent(admin, user.id, body as UploadIntentBody);
+      return json(
+        {
+          artifact: intent.artifact,
+          upload_path: intent.uploadPath,
+          upload_token: intent.uploadToken,
+        },
+        200,
+        headers,
+      );
     }
 
-    const spec = validateDocumentBatch(artifacts);
-    const units = buildDocumentBatchPageUnits(spec);
-    const provider = configuredOCRProvider();
-    const extractor = createDocumentBatchExtractor(
-      new Map(artifacts.map((artifact) => [artifact.artifactID, artifact])),
-      provider,
-    );
-    const { candidates, hasMore, unprocessed } = await buildDocumentBatchCandidates(
-      units,
-      extractor,
-    );
+    // POST /upload/:artifactID/complete — confirm bytes and mark available.
+    if (tail.length === 3 && tail[0] === "upload" && tail[2] === "complete") {
+      const artifactID = tail[1];
+      if (!UUID.test(artifactID)) {
+        throw new AppError("not_found", "Artifact not found.", 404);
+      }
+      const completed = await completeUpload(admin, user.id, artifactID);
+      return json({ artifact: { artifact_id: completed.artifactID } }, 200, headers);
+    }
 
-    return json(
-      {
-        kind: spec.kind,
-        page_count: spec.pageCount,
-        total_bytes: spec.totalBytes,
-        candidates,
-        has_more: hasMore,
-        unprocessed,
-      },
-      200,
-      headers,
-    );
+    // POST / — resolve, validate and scan the referenced owner-scoped batch.
+    if (tail.length === 0) {
+      const body = await readBoundedJSONBody(request);
+      if (!body || !Array.isArray(body.items)) {
+        throw new AppError("validation_error", "Batch items are required.", 400);
+      }
+      const items = body.items as BatchItemRequest[];
+      if (items.length < 1 || items.length > MAX_BATCH_ITEMS) {
+        throw new AppError("validation_error", "A batch must contain 1 to 10 items.", 400);
+      }
+
+      const artifacts: DocumentBatchArtifact[] = [];
+      for (const item of items) {
+        artifacts.push(await resolveArtifact(admin, user.id, item));
+      }
+
+      const spec = validateDocumentBatch(artifacts);
+      const units = buildDocumentBatchPageUnits(spec);
+      const provider = configuredOCRProvider();
+      const extractor = createDocumentBatchExtractor(
+        new Map(artifacts.map((artifact) => [artifact.artifactID, artifact])),
+        provider,
+      );
+      const { candidates, hasMore, unprocessed } = await buildDocumentBatchCandidates(
+        units,
+        extractor,
+      );
+
+      return json(
+        {
+          kind: spec.kind,
+          page_count: spec.pageCount,
+          total_bytes: spec.totalBytes,
+          candidates,
+          has_more: hasMore,
+          unprocessed,
+        },
+        200,
+        headers,
+      );
+    }
+
+    throw new AppError("not_found", "Route not found.", 404);
   } catch (error) {
     if (error instanceof DocumentBatchError) {
       return json(
