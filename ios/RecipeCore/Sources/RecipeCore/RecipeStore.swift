@@ -211,6 +211,19 @@ public final class RecipeStore {
         recipes.first { $0.id == id }
     }
 
+    /// Read-only view of this device's recipe deletion tombstone.
+    ///
+    /// `deleteRecipe(id:)` records a tombstone so a later snapshot merge keeps the
+    /// local deletion, while `upsert(_:)` deliberately clears the tombstone for the
+    /// id it writes. As a result `recipe(id:)` alone cannot tell "never stored"
+    /// apart from "the user deleted this recipe"; a delayed server finalize or
+    /// ACK recovery that calls `upsert(_:)` would resurrect the deletion.
+    /// Callers that must not restore a user-deleted recipe consult this predicate
+    /// first and reuse the existing server receipt instead.
+    public func hasRecipeDeletionTombstone(id: UUID) -> Bool {
+        deletedEntities.contains(Self.deletionKey(.recipe, id))
+    }
+
     public func collection(id: UUID) -> RecipeCollection? {
         collections.first { $0.id == id }
     }
