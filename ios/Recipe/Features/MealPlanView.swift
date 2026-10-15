@@ -20,6 +20,7 @@ struct MealPlanView: View {
     @State private var mealToDelete: MealPlanEntry?
     @State private var errorMessage: String?
     @State private var showGenerator = false
+    @State private var showTemplates = false
 
     // Use the same configured calendar for date order, counts, and navigation.
     private var calendar: Calendar {
@@ -137,6 +138,14 @@ struct MealPlanView: View {
                 .accessibilityIdentifier("mealplan.autoplan")
             }
             ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showTemplates = true
+                } label: {
+                    Label("Templates", systemImage: "square.grid.2x2")
+                }
+                .accessibilityIdentifier("mealplan.templates")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Button("Today") { selectedDate = Date() }
             }
         }
@@ -145,6 +154,9 @@ struct MealPlanView: View {
         }
         .sheet(isPresented: $showGenerator) {
             MealPlanGeneratorSheet()
+        }
+        .sheet(isPresented: $showTemplates) {
+            MealPlanTemplateSheet(weekStart: currentWeekStart, calendar: calendar)
         }
         .confirmationDialog(
             "Remove planned meal?",
@@ -293,6 +305,10 @@ struct MealPlanView: View {
         if let date = calendar.date(byAdding: .weekOfYear, value: count, to: selectedDate) {
             selectedDate = date
         }
+    }
+
+    private var currentWeekStart: Date {
+        weekDates.first ?? calendar.startOfDay(for: selectedDate)
     }
 }
 
