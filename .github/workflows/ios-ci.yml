@@ -151,13 +151,25 @@ jobs:
               "case 1": ('imageName: "OnboardingShrimpPasta"', 'title: "Save recipe links"'),
               "case 2": ('imageName: "OnboardingSocial"', 'title: "Import social recipes"'),
           }
+          # DEV-420: the owner approved a non-AI first submission. Keep the
+          # historical contract during the trusted-base/UI two-step rollout.
+          phase_one_cases = {
+              "case 0": ('imageName: "OnboardingAI"', 'title: "Create a recipe"',
+                         'Add your own ingredients and steps'),
+              "case 1": cases["case 1"],
+              "case 2": ('imageName: "OnboardingSocial"', 'title: "Save recipe links"',
+                         'Share a recipe link to Recipe Pals'),
+          }
           for index, (name, expected) in enumerate(cases.items()):
               following = f"case {index + 1}:" if index < 2 else "default:"
               segment = re.search(
                   r"\b" + re.escape(name) + r":(.*?)\b" + re.escape(following),
                   first, flags=re.DOTALL,
               )
-              if not segment or not all(phrase in segment.group(1) for phrase in expected):
+              if not segment or not any(
+                  all(phrase in segment.group(1) for phrase in variant)
+                  for variant in (expected, phase_one_cases[name])
+              ):
                   errors.append(f"Approved first-launch story changed: {name}")
           if 'Save recipes your way' in first:
               errors.append("Superseded onboarding copy reintroduced.")
@@ -167,13 +179,17 @@ jobs:
           if 'Text("Recipe Pals Premium")' in premium:
               errors.append("Superseded Premium brand suffix reintroduced.")
           for phrase in (
-              'premiumFeature("sparkles", title: "Create with AI")',
               'paidPlanChoice(for: .monthly)',
               'paidPlanChoice(for: .yearly)',
               'selectedPeriod: SubscriptionBillingPeriod? = .yearly',
           ):
               if phrase not in premium:
                   errors.append(f"Approved Premium contract changed: {phrase}")
+          if not any(phrase in premium for phrase in (
+              'premiumFeature("sparkles", title: "Create with AI")',
+              'premiumFeature("book.closed", title: "Private recipe collection")',
+          )):
+              errors.append("Approved Premium collection feature missing.")
 
           patch_file = root / "changed.jsonl"
           for line in patch_file.read_text().splitlines():
