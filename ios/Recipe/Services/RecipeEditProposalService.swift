@@ -45,7 +45,7 @@ enum RecipeEditProposalServiceError: LocalizedError {
 
 /// Wire edit change: the three value-replacement paths only. `reason` and
 /// `warnings` are per-change and are replayed verbatim on approval.
-struct RecipeEditWireChange: Decodable, Sendable {
+struct RecipeEditWireChange: Codable, Sendable {
     let path: String
     let original: String
     let proposed: String
@@ -93,14 +93,14 @@ struct RecipeEditApproveResponse: Decodable, Sendable {
     let proposalID: String
     let status: String
     let operationID: String
-    let recipeID: String
+    let targetID: String
     let payloadHash: String
 
     enum CodingKeys: String, CodingKey {
         case proposalID = "proposal_id"
         case status
         case operationID = "operation_id"
-        case recipeID = "recipe_id"
+        case targetID = "target_id"
         case payloadHash = "payload_hash"
     }
 }
@@ -116,6 +116,68 @@ struct RecipeEditProposalRequestResult: Sendable {
     let needsManualEdit: Bool
     let reasons: [String]
     let warnings: [String]
+}
+
+/// Explicit approval target: "apply" keeps the current recipe id, "variant" writes
+/// a new private recipe under a client-stable variant id.
+enum RecipeEditApplyMode: String, Codable, Sendable {
+    case apply
+    case variant
+}
+
+struct RecipeEditAckResponse: Decodable, Sendable {
+    let operationID: String
+    let status: String
+
+    enum CodingKeys: String, CodingKey {
+        case operationID = "operation_id"
+        case status
+    }
+}
+
+/// Locally persisted recovery intent for the approve → write → ACK window. It
+/// survives a crash between the server approval (usage finalize) and the local
+/// durable write so the exact reviewed changes can be re-applied to the correct
+/// target without re-invoking the provider. Cleared only after the local write
+/// succeeds and the server acknowledges.
+struct RecipeEditPendingCommit: Codable, Sendable {
+    let operationID: String
+    let proposalID: String
+    let mode: RecipeEditApplyMode
+    let variantID: String?
+    let sourceRecipeID: String
+    let basedOnUpdate: Date
+    let changes: [RecipeEditWireChange]
+    let reasons: [String]
+    let warnings: [String]
+}
+
+/// Single in-flight pending commit per owner. The edit review sheet is modal, so
+/// only one approval can be in the approve → write → ACK window at a time.
+struct RecipeEditPendingCommitStore {
+    private let key: String
+    private let defaults: UserDefaults
+
+    init(ownerID: String, defaults: UserDefaults = .standard) {
+        self.key = "recipe.edit.pending.commit.\(ownerID)"
+        self.defaults = defaults
+    }
+
+    func save(_ commit: RecipeEditPendingCommit) throws {
+        let data = try JSONEncoder().encode(commit)
+        defaults.set(data, forKey: key)
+    }
+
+    func load() -> RecipeEditPendingCommit? {
+        guard let data = defaults.data(forKey: key) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(RecipeEditPendingCommit.self, from: data)
+    }
+
+    func clear() {
+        defaults.removeObject(forKey: key)
+    }
 }
 
 /// Smallest bounded transport adapter for the recipe-edit-proposals endpoint.
@@ -175,7 +237,8 @@ final class RecipeEditProposalService {
     func createProposal(
         recipe: Recipe,
         intent: RecipeEditIntent,
-        supplement: String?
+        supplement: String?,
+        operationID: UUID = UUID()
     ) async throws -> RecipeEditProposalRequestResult {
         if let supplement {
             guard supplement.unicodeScalars.count <= Self.maximumSupplementCharacters else {
@@ -188,7 +251,6 @@ final class RecipeEditProposalService {
         } catch {
             throw RecipeEditProposalServiceError.notSignedIn
         }
-        let operationID = UUID()
         let sourceRevision = Self.revision(for: recipe)
         let snapshot = Self.snapshot(for: recipe, sourceRevision: sourceRevision)
         let snapshotHash = try Self.snapshotHash(for: snapshot)
@@ -244,7 +306,9 @@ final class RecipeEditProposalService {
         proposalID: String,
         reviewed: RecipeEditProposal,
         wireChanges: [RecipeEditWireChange],
-        recipe: Recipe
+        recipe: Recipe,
+        mode: RecipeEditApplyMode,
+        variantID: UUID?
     ) async throws -> RecipeEditApproveResponse {
         let session: (accessToken: String, userID: UUID)
         do {
@@ -252,8 +316,61 @@ final class RecipeEditProposalService {
         } catch {
             throw RecipeEditProposalServiceError.notSignedIn
         }
+        let reviewedChanges = try Self.reviewedWireChanges(
+            reviewed: reviewed, wireChanges: wireChanges
+        )
+        let sourceRevision = Self.revision(for: recipe)
+        let snapshot = Self.snapshot(for: recipe, sourceRevision: sourceRevision)
+        let expectedSnapshotHash = try Self.snapshotHash(for: snapshot)
+        var body: [String: Any] = [
+            "changes": reviewedChanges.map {
+                [
+                    "path": $0.path,
+                    "original": $0.original,
+                    "proposed": $0.proposed,
+                    "reason": $0.reason,
+                    "warnings": $0.warnings,
+                ]
+            },
+            "expected_snapshot_hash": expectedSnapshotHash,
+            "mode": mode.rawValue,
+        ]
+        if mode == .variant {
+            body["variant_id"] = variantID?.uuidString.lowercased()
+        }
+        return try await perform(
+            path: [proposalID, "approve"],
+            body: body,
+            accessToken: session.accessToken,
+            statuses: [200]
+        )
+    }
+
+    /// Confirms the local durable write to the server. Must be called only after the
+    /// approved receipt has been applied to the correct local target.
+    func ack(proposalID: String, operationID: String) async throws -> RecipeEditAckResponse {
+        let session: (accessToken: String, userID: UUID)
+        do {
+            session = try await sessionProvider()
+        } catch {
+            throw RecipeEditProposalServiceError.notSignedIn
+        }
+        return try await perform(
+            path: [proposalID, "ack"],
+            body: ["operation_id": operationID],
+            accessToken: session.accessToken,
+            statuses: [200]
+        )
+    }
+
+    /// Replays the reviewed (possibly user-edited) changes with their original
+    /// per-change reason/warnings, matching the server's approval payload.
+    static func reviewedWireChanges(
+        reviewed: RecipeEditProposal,
+        wireChanges: [RecipeEditWireChange]
+    ) throws -> [RecipeEditWireChange] {
         let byPath = Dictionary(uniqueKeysWithValues: wireChanges.map { ($0.path, $0) })
-        let reviewedChanges = try reviewed.changes.map { change -> RecipeEditWireChange in
+        return try reviewed.changes.map { change -> RecipeEditWireChange in
             let path = change.wirePath
             guard let original = byPath[path] else {
                 throw RecipeEditProposalServiceError.invalidResponse
@@ -266,27 +383,19 @@ final class RecipeEditProposalService {
                 warnings: original.warnings
             )
         }
-        let sourceRevision = Self.revision(for: recipe)
-        let snapshot = Self.snapshot(for: recipe, sourceRevision: sourceRevision)
-        let expectedSnapshotHash = try Self.snapshotHash(for: snapshot)
-        let body: [String: Any] = [
-            "changes": reviewedChanges.map {
-                [
-                    "path": $0.path,
-                    "original": $0.original,
-                    "proposed": $0.proposed,
-                    "reason": $0.reason,
-                    "warnings": $0.warnings,
-                ]
-            },
-            "expected_snapshot_hash": expectedSnapshotHash,
-        ]
-        return try await perform(
-            path: [proposalID, "approve"],
-            body: body,
-            accessToken: session.accessToken,
-            statuses: [200]
-        )
+    }
+
+    /// Deterministic variant id so a crash-and-replay of the same operation always
+    /// writes the same private recipe instead of a duplicate.
+    static func stableVariantID(operationID: String) -> UUID {
+        let digest = SHA256.hash(data: Data("recipe-edit-variant:\(operationID)".utf8))
+        let bytes = digest.withUnsafeBytes { Array($0.prefix(16)) }
+        return UUID(uuid: (
+            bytes[0], bytes[1], bytes[2], bytes[3],
+            bytes[4], bytes[5], bytes[6], bytes[7],
+            bytes[8], bytes[9], bytes[10], bytes[11],
+            bytes[12], bytes[13], bytes[14], bytes[15]
+        ))
     }
 
     // MARK: - Transport

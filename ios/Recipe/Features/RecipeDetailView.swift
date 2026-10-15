@@ -42,6 +42,7 @@ struct RecipeDetailView: View {
         let id = UUID()
         let proposal: RecipeEditProposal
         let proposalID: String
+        let operationID: String
         let wireChanges: [RecipeEditWireChange]
     }
 
@@ -975,6 +976,7 @@ struct RecipeDetailView: View {
             proposalToReview = RecipeEditReviewContext(
                 proposal: proposal,
                 proposalID: result.proposalID,
+                operationID: result.operationID,
                 wireChanges: result.wireChanges
             )
         } else {
@@ -983,8 +985,9 @@ struct RecipeDetailView: View {
         }
     }
 
-    /// Confirms the explicit approval on the server (which finalizes usage), then
-    /// applies the approved edit to the current stored revision atomically.
+    /// Persists a recovery intent, approves on the server (usage finalize), applies
+    /// the validated receipt to the correct local target, then ACKs only after the
+    /// local durable write succeeds. The provider is never re-invoked on replay.
     private func applyEdit(
         _ reviewed: RecipeEditProposal,
         context: RecipeEditReviewContext,
@@ -996,23 +999,87 @@ struct RecipeDetailView: View {
         guard let current = store.recipe(id: recipeID) else {
             throw RecipeEditProposalServiceError.invalidResponse
         }
-        _ = try await service.approve(
+        guard let ownerID = currentOwnerID() else {
+            throw RecipeEditProposalServiceError.notSignedIn
+        }
+
+        let mode: RecipeEditApplyMode = asVariant ? .variant : .apply
+        let variantID = asVariant
+            ? RecipeEditProposalService.stableVariantID(operationID: context.operationID)
+            : nil
+        let reviewedChanges = try RecipeEditProposalService.reviewedWireChanges(
+            reviewed: reviewed, wireChanges: context.wireChanges
+        )
+
+        // Persist the recovery intent before the server approves/finalizes so a crash
+        // between approval and the local write can be resumed without re-invoking the
+        // provider.
+        let pendingStore = RecipeEditPendingCommitStore(
+            ownerID: ownerID.uuidString.lowercased()
+        )
+        try pendingStore.save(
+            RecipeEditPendingCommit(
+                operationID: context.operationID,
+                proposalID: context.proposalID,
+                mode: mode,
+                variantID: variantID?.uuidString.lowercased(),
+                sourceRecipeID: recipeID.uuidString.lowercased(),
+                basedOnUpdate: reviewed.basedOnUpdate,
+                changes: reviewedChanges,
+                reasons: reviewed.reasons,
+                warnings: reviewed.warnings
+            )
+        )
+
+        // Server approval (usage finalize) with an explicit apply/variant target.
+        let receipt = try await service.approve(
             proposalID: context.proposalID,
             reviewed: reviewed,
             wireChanges: context.wireChanges,
-            recipe: current
+            recipe: current,
+            mode: mode,
+            variantID: variantID
         )
-        let saved = try store.applyApprovedRecipeEdit(reviewed, asVariant: asVariant)
+
+        // Apply the validated receipt to the correct local target.
+        let saved: Recipe
         if asVariant {
+            guard let targetID = UUID(uuidString: receipt.targetID) else {
+                throw RecipeEditProposalServiceError.invalidResponse
+            }
+            var variant = try reviewed.approvedRecipe(from: current, at: .now, asVariant: true)
+            variant.id = targetID
+            try store.upsert(variant)
+            saved = variant
             feedbackMessage = String(
                 localized: LocalizedStringResource(
                     "Saved a new private recipe.", locale: RecipeLanguage.active
                 )
             )
         } else {
+            saved = try store.applyApprovedRecipeEdit(reviewed, asVariant: false)
             undoState = RecipeEditUndoState(before: current, appliedRevision: saved.updatedAt)
         }
+
+        // ACK only after the local durable write succeeded. A failed ACK keeps the
+        // pending intent so a later recovery can re-ack idempotently.
+        do {
+            _ = try await service.ack(
+                proposalID: context.proposalID, operationID: context.operationID
+            )
+            pendingStore.clear()
+        } catch {
+            // The local write is durable; leave the pending intent for recovery.
+        }
+
         return saved
+    }
+
+    private func currentOwnerID() -> UUID? {
+        if case .signedIn(let userID, _) = RecipeAuthService.shared.state {
+            return userID
+        }
+        return nil
     }
 
     /// One-session undo only when the stored recipe is still the revision this view
