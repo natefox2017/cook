@@ -19,6 +19,7 @@ struct ProfileView: View {
     @State private var isDeletingLocalData = false
     @State private var exportsData = false
     @State private var choosesExportFormat = false
+    @State private var presentsPDFExport = false
     @State private var exportDocument = RecipeExportDocument(data: Data())
     @State private var errorMessage: String?
 
@@ -221,6 +222,11 @@ struct ProfileView: View {
                     Button("Recipes (HTML)") {
                         prepareExport(.recipesHTML)
                     }
+                    if RecipePDFExportEntitlement.isEntitled {
+                        Button("Recipes (PDF)") {
+                            presentsPDFExport = true
+                        }
+                    }
                     Button("All Local Library Data (JSON)") {
                         prepareExport(.allLibraryJSON)
                     }
@@ -287,6 +293,9 @@ struct ProfileView: View {
         .tint(RecipeTheme.accent)
         .sheet(isPresented: $editsProfile) {
             LocalProfileEditorView()
+        }
+        .sheet(isPresented: $presentsPDFExport) {
+            RecipePDFExportSheet()
         }
         .fileExporter(
             isPresented: $exportsData,
