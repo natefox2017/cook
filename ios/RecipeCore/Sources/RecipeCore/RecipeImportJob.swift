@@ -378,6 +378,10 @@ public enum RecipeImportResultStatus: String, Codable, Sendable {
 
 public struct RecipeImportRecord: Codable, Hashable, Sendable {
     public let jobID: UUID
+    /// The share receipt's client request id, kept so the owner-scoped draft review can
+    /// resume the same draft session for this job. Optional so recipes persisted before
+    /// the draft flow shipped still decode without it.
+    public let clientRequestID: UUID?
     public let result: RecipeImportJobResponse.Result
     /// Records explicit local review without altering server fields or evidence.
     public var reviewedAt: Date?
@@ -391,13 +395,15 @@ public struct RecipeImportRecord: Codable, Hashable, Sendable {
         result: RecipeImportJobResponse.Result,
         reviewedAt: Date? = nil,
         sourceArtifactDeletedAt: Date? = nil,
-        selectedCandidateID: String? = nil
+        selectedCandidateID: String? = nil,
+        clientRequestID: UUID? = nil
     ) {
         self.jobID = jobID
         self.result = result
         self.reviewedAt = reviewedAt
         self.sourceArtifactDeletedAt = sourceArtifactDeletedAt
         self.selectedCandidateID = selectedCandidateID
+        self.clientRequestID = clientRequestID
     }
 }
 

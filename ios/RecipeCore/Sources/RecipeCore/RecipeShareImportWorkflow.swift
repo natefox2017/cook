@@ -414,7 +414,8 @@ public enum RecipeShareImportWorkflow {
             ?? defaultSourceName(for: receipt.inputType)
         recipe.importRecord = RecipeImportRecord(
             jobID: response.jobID,
-            result: result
+            result: result,
+            clientRequestID: response.clientRequestID
         )
         try store.upsert(recipe)
     }
@@ -559,7 +560,8 @@ public enum RecipeShareImportWorkflow {
         updated.importRecord = RecipeImportRecord(
             jobID: old.jobID,
             result: mergedResult,
-            reviewedAt: old.reviewedAt
+            reviewedAt: old.reviewedAt,
+            clientRequestID: old.clientRequestID
         )
         try store.upsert(updated)
     }

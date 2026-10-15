@@ -50,4 +50,15 @@ public enum RecipeUsageHash {
         let digest = SHA256.hash(data: Data(canonical.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
     }
+
+    /// Canonical ai_edit usage hashing mirroring the server's
+    /// `computeInputHash({ capability: "ai_edit", source })` for a draft-approval source
+    /// (null job/candidate members, session and turn request set), so a client and the
+    /// ledger never disagree on the immutable operation key. UUIDs must be lowercase.
+    public static func aiEditInputHash(sessionID: String, turnRequestID: String) -> String {
+        let canonical =
+            #"{"capability":"ai_edit","source":{"candidate_ids":null,"job_id":null,"origin":"draft_approval","session_id":"\#(sessionID)","turn_request_id":"\#(turnRequestID)"}}"#
+        let digest = SHA256.hash(data: Data(canonical.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
 }

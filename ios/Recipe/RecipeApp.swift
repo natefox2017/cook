@@ -626,8 +626,9 @@ private struct RecipeRootView: View {
     @State private var selectedTab: RecipeTab = .recipes
     @State private var shareInbox = RecipeShareInboxCoordinator()
     @State private var isAccountPresented = false
-    @State private var isDraftReviewPresented = false
     @State private var accountDetent: PresentationDetent = .large
+    @State private var isDraftReviewPresented = false
+    @State private var draftReviewTestService: RecipeDraftService?
 
     let isUITesting: Bool
     let bypassOnboarding: Bool
@@ -717,8 +718,12 @@ private struct RecipeRootView: View {
             .presentationBackground(RecipeTheme.canvas)
         }
         .sheet(isPresented: $isDraftReviewPresented) {
-            NavigationStack {
-                RecipeDraftReviewView(jobID: UUID())
+            if let service = draftReviewTestService {
+                RecipeDraftReviewView(
+                    service: service,
+                    jobID: UUID(),
+                    clientRequestID: UUID()
+                )
             }
         }
         .task {
@@ -729,12 +734,15 @@ private struct RecipeRootView: View {
             }
         }
         .task {
-            // Test-only presentation of the draft review flow; normal launches
-            // reach it from a completed import that needs review.
+            // Test-only presentation of the draft review flow; normal launches reach
+            // it from a completed import that needs review.
             if isUITesting
                 && ProcessInfo.processInfo.arguments.contains(
                     RecipeUITestNamespace.draftReviewArgument)
             {
+                if draftReviewTestService == nil {
+                    draftReviewTestService = makeDraftReviewTestService()
+                }
                 isDraftReviewPresented = true
             }
         }
@@ -821,6 +829,37 @@ private struct RecipeRootView: View {
                 }
             }
         }
+    }
+
+    private func makeDraftReviewTestService() -> RecipeDraftService? {
+        // Test-only service for the deterministic draft review route. There is no
+        // signed-in owner, so the flow reaches an explicit auth-required manual-exit
+        // state instead of making a network call.
+        guard let functionBaseURL = URL(string: "https://example.test/functions/v1") else {
+            return nil
+        }
+        return try? RecipeDraftService(
+            functionBaseURL: functionBaseURL,
+            enabled: true,
+            authenticate: { _ in
+                throw RecipeDraftClientError.ownerChanged
+            },
+            isOwnerCurrent: { _ in
+                false
+            },
+            currentOwnerID: {
+                nil
+            },
+            computeInputHash: { _, _ in
+                throw RecipeDraftClientError.invalidInput
+            },
+            compose: { _ in
+                nil
+            },
+            writeRecipe: { _ in
+                // Intentionally empty: the auth-required test route never writes a recipe.
+            }
+        )
     }
 
     private func presentAccount() {

@@ -1,6 +1,7 @@
 // Developer: gengyun
 // Purpose: Implements recipe editing for metadata, ingredients, steps, temperatures, and timers.
 
+import Foundation
 import PhotosUI
 import RecipeCore
 import SwiftUI
@@ -20,8 +21,16 @@ struct RecipeEditorView: View {
     @State private var isLoadingPhoto = false
     @State private var pendingStepPhotos: [UUID: Data] = [:]
     @State private var loadingStepPhotos = 0
+    @State private var draftReviewService: RecipeDraftService?
+    @State private var isPresentingDraftReview = false
     private var isExisting: Bool {
         store.recipe(id: draft.id) != nil
+    }
+
+    /// Only imports that still carry their share receipt's client request id can resume the
+    /// same owner-scoped draft session; manual recipes keep the ordinary save path.
+    private var canStartDraftReview: Bool {
+        draft.importRecord?.clientRequestID != nil
     }
 
     init(recipe: Recipe? = nil) {
@@ -224,6 +233,16 @@ struct RecipeEditorView: View {
                         }
                     }
                 }
+                if canStartDraftReview {
+                    Section {
+                        Button {
+                            presentDraftReview()
+                        } label: {
+                            Label("Review with AI", systemImage: "sparkles")
+                        }
+                        .accessibilityIdentifier("draftReviewEntry")
+                    }
+                }
             }
             .listSectionSpacing(RecipeSpacing.medium)
             .contentMargins(.top, RecipeSpacing.pageTop, for: .scrollContent)
@@ -298,6 +317,18 @@ struct RecipeEditorView: View {
                     errorMessage = error.localizedDescription
                 }
             }
+            .sheet(isPresented: $isPresentingDraftReview) {
+                if let service = draftReviewService,
+                    let record = draft.importRecord,
+                    let clientRequestID = record.clientRequestID
+                {
+                    RecipeDraftReviewView(
+                        service: service,
+                        jobID: record.jobID,
+                        clientRequestID: clientRequestID
+                    )
+                }
+            }
         }
     }
 
@@ -341,6 +372,115 @@ struct RecipeEditorView: View {
                 .multilineTextAlignment(.trailing).frame(maxWidth: 100)
                 .accessibilityLabel(Text(LocalizedStringKey(title)))
         }
+    }
+
+    /// The trusted functions base URL read from the same configuration the existing AI
+    /// services use. `nil` is fail-closed: no URL, no draft flow.
+    private static var draftFunctionBaseURL: URL? {
+        guard
+            let origin = Bundle.main.object(forInfoDictionaryKey: "RecipeSupabaseURL")
+                as? String,
+            let url = URL(string: origin), url.scheme == "https", url.host != nil
+        else {
+            return nil
+        }
+        return url.appendingPathComponent("functions/v1")
+    }
+
+    /// Builds the owner-scoped draft service for this editor session. The route is disabled in
+    /// the current free release (`enabled: RecipeMonetization.isEnabled`), so no provider or
+    /// usage call is made; the injected ports are wired so a future commercial build lights up.
+    private func makeDraftReviewService() -> RecipeDraftService? {
+        guard let functionBaseURL = Self.draftFunctionBaseURL else {
+            return nil
+        }
+        let store = store
+        return try? RecipeDraftService(
+            functionBaseURL: functionBaseURL,
+            enabled: RecipeMonetization.isEnabled,
+            authenticate: { ownerID in
+                let credential: RecipeDraftCredential? = await MainActor.run {
+                    let auth = RecipeAuthService.shared
+                    guard case .signedIn(let current, _) = auth.state, current == ownerID else {
+                        return nil
+                    }
+                    guard let session = RecipeSupabase.client.auth.currentSession,
+                        session.user.id == ownerID, !session.isExpired
+                    else {
+                        return nil
+                    }
+                    return RecipeDraftCredential(
+                        ownerID: ownerID,
+                        generation: RecipeDraftEditorBridge.generationUUID(
+                            auth.sharingSessionGeneration),
+                        bearerToken: session.accessToken
+                    )
+                }
+                guard let credential else {
+                    throw RecipeDraftClientError.ownerChanged
+                }
+                return credential
+            },
+            isOwnerCurrent: { credential in
+                await MainActor.run {
+                    let auth = RecipeAuthService.shared
+                    guard case .signedIn(let current, _) = auth.state,
+                        current == credential.ownerID
+                    else {
+                        return false
+                    }
+                    return RecipeDraftEditorBridge.generationUUID(auth.sharingSessionGeneration)
+                        == credential.generation
+                }
+            },
+            currentOwnerID: {
+                await MainActor.run {
+                    let auth = RecipeAuthService.shared
+                    guard case .signedIn(let ownerID, _) = auth.state else {
+                        return nil
+                    }
+                    guard let session = RecipeSupabase.client.auth.currentSession,
+                        session.user.id == ownerID, !session.isExpired
+                    else {
+                        return nil
+                    }
+                    return ownerID
+                }
+            },
+            computeInputHash: { capability, source in
+                guard capability == .aiEdit, source.origin == .draftApproval,
+                    let sessionID = source.sessionID, let turnRequestID = source.turnRequestID
+                else {
+                    throw RecipeDraftClientError.invalidInput
+                }
+                return RecipeUsageHash.aiEditInputHash(
+                    sessionID: sessionID, turnRequestID: turnRequestID)
+            },
+            compose: { snapshot in
+                try? RecipeDraftRecipeComposerAdapter.compose(snapshot: snapshot)
+            },
+            writeRecipe: { recipe in
+                // A retry after the user deleted the recipe must not resurrect it.
+                guard !store.hasRecipeDeletionTombstone(id: recipe.id) else { return }
+                // A replay (idempotent finalize returns the same recipe id) or a locally
+                // edited recipe must never be overwritten.
+                guard store.recipe(id: recipe.id) == nil else { return }
+                try store.upsert(recipe)
+            }
+        )
+    }
+
+    private func presentDraftReview() {
+        guard canStartDraftReview else {
+            return
+        }
+        if draftReviewService == nil {
+            draftReviewService = makeDraftReviewService()
+        }
+        guard draftReviewService != nil else {
+            return
+        }
+        isPresentingDraftReview = true
     }
 
     private func save() {
@@ -651,6 +791,17 @@ private enum EditorError: LocalizedError {
         } else {
             nil
         }
+    }
+}
+
+/// Small deterministic bridge so the draft service's account-switch credential can be minted and
+/// re-checked without new global state. The generation counter is `RecipeAuthService`'s monotonic
+/// owner/session generation; mapping it to a UUID keeps `RecipeDraftCredential`'s frozen shape.
+private enum RecipeDraftEditorBridge {
+    static func generationUUID(_ generation: Int) -> UUID {
+        // A 64-bit counter always renders 16 hex digits; zero-padding keeps a valid UUID string.
+        let text = String(format: "%032llx", UInt64(bitPattern: Int64(generation)))
+        return UUID(uuidString: text) ?? UUID()
     }
 }
 

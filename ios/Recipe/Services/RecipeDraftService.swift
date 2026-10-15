@@ -323,7 +323,9 @@ final class RecipeDraftService {
     /// saveable recipe, or `nil` (fail-closed) when the approval leaves review fields open.
     typealias Compose = @Sendable (RecipeDraftApprovedSnapshot) throws -> Recipe?
 
-    typealias RecipeWrite = @Sendable (Recipe) throws -> Void
+    /// The local write is `RecipeStore.upsert`, which is `@MainActor`; the port mirrors that
+    /// isolation so the injected closure can call it synchronously from the service's MainActor flow.
+    typealias RecipeWrite = @MainActor @Sendable (Recipe) throws -> Void
 
     private let client: RecipeDraftClient
     private let compose: Compose
