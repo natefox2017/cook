@@ -165,11 +165,15 @@ struct RecipeDraftSessionRecord: Codable, Hashable, Sendable {
 }
 
 /// The server finalize receipt persisted so a crash after finalize never re-settles.
+/// `operationID` is the canonical committed operation_id the finalize replay returns; the
+/// client ACK must resolve against it, not against the operation_id it originally reserved.
 struct RecipeDraftFinalizedReceipt: Codable, Hashable, Sendable {
+    let operationID: UUID
     let recipeID: UUID
     let payloadHash: String
 
-    init(recipeID: UUID, payloadHash: String) {
+    init(operationID: UUID, recipeID: UUID, payloadHash: String) {
+        self.operationID = operationID
         self.recipeID = recipeID
         self.payloadHash = payloadHash
     }
@@ -547,8 +551,8 @@ final class RecipeDraftService {
     }
 
     /// Replays the current owner's durable settlement intents. A finalized intent only re-runs
-    /// local write + ACK; a pre-finalize intent re-runs finalize (idempotent by operation_id).
-    /// Never re-reserves or re-dispatches: recovery reuses the persisted operation_id unchanged.
+    /// local write + ACK (against the canonical committed operation_id); a pre-finalize intent
+    /// re-runs finalize (idempotent by operation_id). Never re-reserves or re-dispatches.
     func recoverPendingSettlement() async {
         guard let owner = await currentOwnerID() else { return }
         self.ownerID = owner
@@ -562,7 +566,7 @@ final class RecipeDraftService {
                     var recipe = intent.recipe
                     recipe.id = finalized.recipeID
                     try writeRecipe(recipe)
-                    _ = try await ack(operationID: intent.operationID, ownerID: owner)
+                    _ = try await ack(operationID: finalized.operationID, ownerID: owner)
                 } else {
                     try await finishUnfinalized(intent, ownerID: owner)
                 }
@@ -733,12 +737,17 @@ final class RecipeDraftService {
             turnRequestID: identity.turnRequestID.uuidString.lowercased(),
             ownerID: ownerID
         )
-        guard let recipeID = UUID(uuidString: response.recipeID) else {
+        guard
+            let recipeID = UUID(uuidString: response.recipeID),
+            let canonicalOperationID = UUID(uuidString: response.operationID)
+        else {
             throw RecipeDraftClientError.invalidResponse
         }
         var finalizedIntent = intent
         finalizedIntent.finalized = RecipeDraftFinalizedReceipt(
-            recipeID: recipeID, payloadHash: response.payloadHash
+            operationID: canonicalOperationID,
+            recipeID: recipeID,
+            payloadHash: response.payloadHash
         )
         try durableStore.upsertIntent(finalizedIntent)
 
@@ -746,8 +755,8 @@ final class RecipeDraftService {
         recipe.id = recipeID
         try writeRecipe(recipe)
 
-        _ = try await ack(operationID: identity.operationID, ownerID: ownerID)
-        try durableStore.removeIntent(ownerID: ownerID, operationID: identity.operationID)
+        _ = try await ack(operationID: canonicalOperationID, ownerID: ownerID)
+        try durableStore.removeIntent(ownerID: ownerID, operationID: intent.operationID)
         return recipeID
     }
 
@@ -761,19 +770,24 @@ final class RecipeDraftService {
             turnRequestID: intent.turnRequestID,
             ownerID: ownerID
         )
-        guard let recipeID = UUID(uuidString: response.recipeID) else {
+        guard
+            let recipeID = UUID(uuidString: response.recipeID),
+            let canonicalOperationID = UUID(uuidString: response.operationID)
+        else {
             throw RecipeDraftClientError.invalidResponse
         }
         var finalizedIntent = intent
         finalizedIntent.finalized = RecipeDraftFinalizedReceipt(
-            recipeID: recipeID, payloadHash: response.payloadHash
+            operationID: canonicalOperationID,
+            recipeID: recipeID,
+            payloadHash: response.payloadHash
         )
         try durableStore.upsertIntent(finalizedIntent)
 
         var recipe = intent.recipe
         recipe.id = recipeID
         try writeRecipe(recipe)
-        _ = try await ack(operationID: intent.operationID, ownerID: ownerID)
+        _ = try await ack(operationID: canonicalOperationID, ownerID: ownerID)
     }
 
     private func finalize(
