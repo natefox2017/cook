@@ -1660,17 +1660,17 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
-    func testOnboardingPreservesApprovedAIStoryAndPaywall() {
+    func testOnboardingPreservesNonAILaunchStoryAndPaywall() {
         let app = launchOnboardingApp(productIDs: "")
         defer {
             app.terminate()
         }
 
-        // Keep the approved story order and AI-first messaging through future merges.
-        XCTAssertTrue(app.staticTexts["Create with AI"].waitForExistence(timeout: 8))
+        // The first submission must describe available non-AI functionality.
+        XCTAssertTrue(app.staticTexts["Create a recipe"].waitForExistence(timeout: 8))
         XCTAssertTrue(
             app.staticTexts[
-                "Tell AI what you’re craving or list the ingredients you have. Start with a recipe idea."
+                "Add your own ingredients and steps. Keep your recipes together and ready to cook."
             ].exists
         )
         let next = app.buttons["onboarding.primary"]
@@ -1681,20 +1681,21 @@ final class RecipeUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Save recipe links"].waitForExistence(timeout: 8))
         waitUntilReady(next)
         next.tap()
-        XCTAssertTrue(app.staticTexts["Import social recipes"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Save recipe links"].waitForExistence(timeout: 8))
         waitUntilReady(next)
         XCTAssertEqual(next.label, "See Plans")
 
         next.tap()
         XCTAssertTrue(app.staticTexts["Premium"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["Create with AI"].exists)
+        XCTAssertTrue(app.staticTexts["Private recipe collection"].exists)
+        XCTAssertFalse(app.staticTexts["Create with AI"].exists)
         let annual = app.buttons["subscription.plan.annual.unavailable"]
         let monthly = app.buttons["subscription.plan.monthly.unavailable"]
         XCTAssertTrue(annual.isSelected)
         XCTAssertGreaterThan(annual.frame.minY, monthly.frame.minY)
         XCTAssertTrue(app.buttons["onboarding.plan.free"].exists)
         XCTAssertTrue(app.buttons["subscription.restore"].exists)
-        attachScreenshot("Approved AI-first onboarding and Premium", app: app)
+        attachScreenshot("Non-AI first submission onboarding and Premium", app: app)
     }
 
     @MainActor
