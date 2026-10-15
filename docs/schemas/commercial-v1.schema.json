@@ -1,0 +1,685 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://recipepals.example/contracts/commercial-v1.schema.json",
+  "title": "DEV-425 Commercial Access and Usage V1",
+  "description": "Frozen commercial capability/entitlement/usage wire contract. Specification only; no billing, SDK, quota persistence or endpoint implementation/deployment is implied.",
+  "$defs": {
+    "UUID": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "Hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+    },
+    "Capability": {
+      "type": "string",
+      "enum": [
+        "smart_import",
+        "ai_edit",
+        "hands_free_cooking",
+        "weekly_templates",
+        "weekly_groceries",
+        "auto_plan",
+        "recipe_question",
+        "recipe_translation",
+        "media_import",
+        "pdf_export"
+      ]
+    },
+    "ReleaseStage": {
+      "type": "string",
+      "enum": [
+        "freeTest",
+        "commercial"
+      ]
+    },
+    "EntitlementStatus": {
+      "type": "string",
+      "enum": [
+        "free",
+        "premium",
+        "expired"
+      ]
+    },
+    "PeriodType": {
+      "type": "string",
+      "enum": [
+        "iso_week",
+        "utc_month",
+        "lifetime"
+      ]
+    },
+    "Units": {
+      "type": "string",
+      "enum": [
+        "successful_imports",
+        "successful_edits",
+        "successful_answers",
+        "successful_translations",
+        "media_tasks"
+      ]
+    },
+    "Tier": {
+      "type": "string",
+      "enum": [
+        "free",
+        "premium"
+      ]
+    },
+    "ReservationStatus": {
+      "type": "string",
+      "enum": [
+        "reserved",
+        "dispatched_unknown",
+        "committed",
+        "released",
+        "expired"
+      ]
+    },
+    "Origin": {
+      "type": "string",
+      "enum": [
+        "import_job",
+        "draft_approval"
+      ]
+    },
+    "Source": {
+      "type": "object",
+      "properties": {
+        "origin": {
+          "$ref": "#/$defs/Origin"
+        },
+        "job_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UUID"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "candidate_ids": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/UUID"
+              },
+              "minItems": 1,
+              "maxItems": 60,
+              "uniqueItems": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "session_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UUID"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "turn_request_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UUID"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "origin",
+        "job_id",
+        "candidate_ids",
+        "session_id",
+        "turn_request_id"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "origin": {
+                "const": "import_job"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "job_id": {
+                "$ref": "#/$defs/UUID"
+              },
+              "candidate_ids": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/UUID"
+                },
+                "minItems": 1,
+                "maxItems": 60,
+                "uniqueItems": true
+              },
+              "session_id": {
+                "type": "null"
+              },
+              "turn_request_id": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "job_id": {
+                "type": "null"
+              },
+              "candidate_ids": {
+                "type": "null"
+              },
+              "session_id": {
+                "$ref": "#/$defs/UUID"
+              },
+              "turn_request_id": {
+                "$ref": "#/$defs/UUID"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Quota": {
+      "type": "object",
+      "properties": {
+        "units": {
+          "$ref": "#/$defs/Units"
+        },
+        "period_type": {
+          "$ref": "#/$defs/PeriodType"
+        },
+        "period_start": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reset_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "used": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reserved": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "remaining": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "units",
+        "period_type",
+        "period_start",
+        "reset_at",
+        "limit",
+        "used",
+        "reserved",
+        "remaining"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "period_type": {
+                "const": "lifetime"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "period_start": {
+                "type": "null"
+              },
+              "reset_at": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "period_start": {
+                "$ref": "#/$defs/Timestamp"
+              },
+              "reset_at": {
+                "$ref": "#/$defs/Timestamp"
+              }
+            }
+          }
+        }
+      ],
+      "description": "remaining must equal max(0, limit - used - reserved); a downgraded owner may carry used > limit with remaining clamped to zero. reset_at must be strictly after period_start for non-lifetime periods. These arithmetic invariants are enforced by the Swift and TypeScript DTO validators."
+    },
+    "CapabilityAccess": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Capability"
+        },
+        "entitled": {
+          "type": "boolean"
+        },
+        "quota": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quota"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "entitled",
+        "quota"
+      ],
+      "additionalProperties": false
+    },
+    "Entitlement": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/EntitlementStatus"
+        },
+        "valid_until": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "valid_until"
+      ],
+      "additionalProperties": false
+    },
+    "AccessResponse": {
+      "type": "object",
+      "properties": {
+        "owner_id": {
+          "$ref": "#/$defs/UUID"
+        },
+        "server_time": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "policy_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "stage": {
+          "$ref": "#/$defs/ReleaseStage"
+        },
+        "entitlement": {
+          "$ref": "#/$defs/Entitlement"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CapabilityAccess"
+          },
+          "minItems": 1,
+          "maxItems": 10,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "owner_id",
+        "server_time",
+        "policy_version",
+        "stage",
+        "entitlement",
+        "capabilities"
+      ],
+      "additionalProperties": false
+    },
+    "ReservationRequest": {
+      "type": "object",
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/UUID"
+        },
+        "capability": {
+          "$ref": "#/$defs/Capability"
+        },
+        "input_hash": {
+          "$ref": "#/$defs/Hash"
+        },
+        "estimated_units": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source": {
+          "$ref": "#/$defs/Source"
+        }
+      },
+      "required": [
+        "operation_id",
+        "capability",
+        "input_hash",
+        "estimated_units",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "Reservation": {
+      "type": "object",
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/UUID"
+        },
+        "owner_id": {
+          "$ref": "#/$defs/UUID"
+        },
+        "capability": {
+          "$ref": "#/$defs/Capability"
+        },
+        "period_start": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "policy_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tier_at_reserve": {
+          "$ref": "#/$defs/Tier"
+        },
+        "reserved_units": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "$ref": "#/$defs/ReservationStatus"
+        },
+        "reserved_until": {
+          "$ref": "#/$defs/Timestamp"
+        }
+      },
+      "required": [
+        "operation_id",
+        "owner_id",
+        "capability",
+        "period_start",
+        "policy_version",
+        "tier_at_reserve",
+        "reserved_units",
+        "status",
+        "reserved_until"
+      ],
+      "additionalProperties": false
+    },
+    "CommitRequest": {
+      "type": "object",
+      "properties": {
+        "capability": {
+          "$ref": "#/$defs/Capability"
+        },
+        "input_hash": {
+          "$ref": "#/$defs/Hash"
+        },
+        "source": {
+          "$ref": "#/$defs/Source"
+        }
+      },
+      "required": [
+        "capability",
+        "input_hash",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "CommitResponse": {
+      "type": "object",
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/UUID"
+        },
+        "status": {
+          "const": "committed"
+        },
+        "committed_units": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "period_start": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "operation_id",
+        "status",
+        "committed_units",
+        "period_start"
+      ],
+      "additionalProperties": false
+    },
+    "FinalizeRequest": {
+      "$ref": "#/$defs/CommitRequest"
+    },
+    "FinalizeResponse": {
+      "type": "object",
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/UUID"
+        },
+        "status": {
+          "const": "finalized"
+        },
+        "recipe_id": {
+          "$ref": "#/$defs/UUID"
+        },
+        "payload_hash": {
+          "$ref": "#/$defs/Hash"
+        },
+        "committed_units": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "period_start": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "operation_id",
+        "status",
+        "recipe_id",
+        "payload_hash",
+        "committed_units",
+        "period_start"
+      ],
+      "additionalProperties": false
+    },
+    "AckResponse": {
+      "type": "object",
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/UUID"
+        },
+        "status": {
+          "const": "acked"
+        }
+      },
+      "required": [
+        "operation_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "APIError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "AUTH_REQUIRED",
+            "OWNER_MISMATCH",
+            "NOT_FOUND",
+            "IDEMPOTENCY_CONFLICT",
+            "RESERVATION_EXPIRED",
+            "INVALID_INPUT",
+            "QUOTA_EXCEEDED",
+            "UPGRADE_REQUIRED",
+            "CONFIGURATION_UNAVAILABLE",
+            "SERVICE_UNAVAILABLE",
+            "INTERNAL_ERROR"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "recoverable": {
+          "type": "boolean"
+        },
+        "request_id": {
+          "$ref": "#/$defs/UUID"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "recoverable",
+        "request_id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-commercial-policy": {
+    "schema_version": 1,
+    "server_owned": true,
+    "client_never_authors_remaining": true,
+    "reservation_ttl_seconds": 600,
+    "proposal_hold_seconds": 86400,
+    "release_stage_default": "freeTest",
+    "quotas": {
+      "smart_import": {
+        "units": "successful_imports",
+        "free": {
+          "limit": 5,
+          "period": "iso_week"
+        },
+        "premium": {
+          "limit": 100,
+          "period": "utc_month"
+        }
+      },
+      "ai_edit": {
+        "units": "successful_edits",
+        "free": {
+          "limit": 3,
+          "period": "lifetime"
+        },
+        "premium": {
+          "limit": 30,
+          "period": "utc_month"
+        }
+      },
+      "recipe_question": {
+        "units": "successful_answers",
+        "premium": {
+          "limit": 100,
+          "period": "utc_month"
+        }
+      },
+      "recipe_translation": {
+        "units": "successful_translations",
+        "premium": {
+          "limit": 20,
+          "period": "utc_month"
+        }
+      },
+      "media_import": {
+        "units": "media_tasks",
+        "premium": {
+          "limit": 20,
+          "period": "utc_month"
+        },
+        "consumes_smart_import_quota": true
+      },
+      "hands_free_cooking": {
+        "unmetered_entitlement_only": true
+      },
+      "weekly_templates": {
+        "unmetered_entitlement_only": true
+      },
+      "weekly_groceries": {
+        "unmetered_entitlement_only": true
+      },
+      "auto_plan": {
+        "unmetered_entitlement_only": true
+      },
+      "pdf_export": {
+        "unmetered_entitlement_only": true
+      }
+    }
+  }
+}

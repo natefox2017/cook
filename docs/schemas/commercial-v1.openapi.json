@@ -1,0 +1,445 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Recipe Pals Commercial Access and Usage Contract",
+    "version": "1.0.0",
+    "description": "DEV-425 specification only. No billing, SDK, quota persistence or endpoint implementation/deployment is implied. Owner identity always comes from the verified JWT."
+  },
+  "x-commercial-policy": {
+    "schema_version": 1,
+    "server_owned": true,
+    "release_stage_default": "freeTest",
+    "reservation_ttl_seconds": 600
+  },
+  "servers": [
+    {
+      "url": "https://{project-ref}.supabase.co/functions/v1",
+      "variables": {
+        "project-ref": {
+          "default": "placeholder"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/recipe-access": {
+      "get": {
+        "operationId": "getRecipeAccess",
+        "summary": "Server-owned entitlement, stage and quota snapshot for the authenticated owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Access snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./commercial-v1.schema.json#/$defs/AccessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "AUTH_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./commercial-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CONFIGURATION_UNAVAILABLE or SERVICE_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./commercial-v1.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipe-usage/reservations": {
+      "post": {
+        "operationId": "createReservation",
+        "summary": "Reserve estimated units against an owner capability quota before provider work.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./commercial-v1.schema.json#/$defs/ReservationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Durable reservation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./commercial-v1.schema.json#/$defs/Reservation"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Idempotent replay of the identical reservation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./commercial-v1.schema.json#/$defs/Reservation"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/OwnerMismatch"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/InvalidInput"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/recipe-usage/{operation_id}/commit": {
+      "post": {
+        "operationId": "commitReservation",
+        "summary": "Settle a dispatched reservation. The server decides units from the real operation result; never a client success flag.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./commercial-v1.schema.json#/$defs/CommitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Committed reservation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./commercial-v1.schema.json#/$defs/CommitResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/OwnerMismatch"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/InvalidInput"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/recipe-usage/{operation_id}/release": {
+      "post": {
+        "operationId": "releaseReservation",
+        "summary": "Release a reservation that was confirmed not dispatched or not committed.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Released reservation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./commercial-v1.schema.json#/$defs/Reservation"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/OwnerMismatch"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/InvalidInput"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/recipe-usage/{operation_id}/finalize": {
+      "post": {
+        "operationId": "finalizeReservation",
+        "summary": "Authorized result + stable recipe ID + approved payload hash + usage commit, atomically persisted.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./commercial-v1.schema.json#/$defs/FinalizeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Finalized save with stable recipe ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./commercial-v1.schema.json#/$defs/FinalizeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/OwnerMismatch"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/InvalidInput"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/recipe-usage/{operation_id}/ack": {
+      "post": {
+        "operationId": "acknowledgeReservation",
+        "summary": "Confirm the device durably persisted the finalized save; recovery reuses the same operation.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Acknowledged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./commercial-v1.schema.json#/$defs/AckResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/OwnerMismatch"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/InvalidInput"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "AuthRequired": {
+        "description": "AUTH_REQUIRED",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./commercial-v1.schema.json#/$defs/APIError"
+            }
+          }
+        }
+      },
+      "PaymentRequired": {
+        "description": "QUOTA_EXCEEDED or UPGRADE_REQUIRED",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./commercial-v1.schema.json#/$defs/APIError"
+            }
+          }
+        }
+      },
+      "OwnerMismatch": {
+        "description": "OWNER_MISMATCH",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./commercial-v1.schema.json#/$defs/APIError"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "NOT_FOUND (masks foreign ownership)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./commercial-v1.schema.json#/$defs/APIError"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "IDEMPOTENCY_CONFLICT or RESERVATION_EXPIRED",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./commercial-v1.schema.json#/$defs/APIError"
+            }
+          }
+        }
+      },
+      "InvalidInput": {
+        "description": "INVALID_INPUT",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./commercial-v1.schema.json#/$defs/APIError"
+            }
+          }
+        }
+      },
+      "Unavailable": {
+        "description": "CONFIGURATION_UNAVAILABLE or SERVICE_UNAVAILABLE",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./commercial-v1.schema.json#/$defs/APIError"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,356 @@
+{
+  "description": "Original synthetic static DEV-425 commercial examples; not runtime evidence. Shared by the Swift and TypeScript DTO validators.",
+  "schema_version": 1,
+  "examples": {
+    "free_access": {
+      "operation": "GET /recipe-access",
+      "schema": "AccessResponse",
+      "data": {
+        "owner_id": "a0000000-0000-4000-8000-000000000001",
+        "server_time": "2026-10-15T12:00:00.000Z",
+        "policy_version": 1,
+        "stage": "freeTest",
+        "entitlement": {
+          "status": "free",
+          "valid_until": null
+        },
+        "capabilities": [
+          {
+            "id": "smart_import",
+            "entitled": true,
+            "quota": {
+              "units": "successful_imports",
+              "period_type": "iso_week",
+              "period_start": "2026-10-12T00:00:00.000Z",
+              "reset_at": "2026-10-19T00:00:00.000Z",
+              "limit": 5,
+              "used": 2,
+              "reserved": 1,
+              "remaining": 2
+            }
+          },
+          {
+            "id": "ai_edit",
+            "entitled": true,
+            "quota": {
+              "units": "successful_edits",
+              "period_type": "lifetime",
+              "period_start": null,
+              "reset_at": null,
+              "limit": 3,
+              "used": 1,
+              "reserved": 0,
+              "remaining": 2
+            }
+          },
+          { "id": "hands_free_cooking", "entitled": false, "quota": null },
+          { "id": "weekly_templates", "entitled": false, "quota": null },
+          { "id": "weekly_groceries", "entitled": false, "quota": null },
+          { "id": "auto_plan", "entitled": false, "quota": null },
+          { "id": "recipe_question", "entitled": false, "quota": null },
+          { "id": "recipe_translation", "entitled": false, "quota": null },
+          { "id": "media_import", "entitled": false, "quota": null },
+          { "id": "pdf_export", "entitled": false, "quota": null }
+        ]
+      }
+    },
+    "premium_access": {
+      "operation": "GET /recipe-access",
+      "schema": "AccessResponse",
+      "data": {
+        "owner_id": "a0000000-0000-4000-8000-000000000001",
+        "server_time": "2026-10-15T12:00:00.000Z",
+        "policy_version": 1,
+        "stage": "commercial",
+        "entitlement": {
+          "status": "premium",
+          "valid_until": "2026-11-01T00:00:00.000Z"
+        },
+        "capabilities": [
+          {
+            "id": "smart_import",
+            "entitled": true,
+            "quota": {
+              "units": "successful_imports",
+              "period_type": "utc_month",
+              "period_start": "2026-10-01T00:00:00.000Z",
+              "reset_at": "2026-11-01T00:00:00.000Z",
+              "limit": 100,
+              "used": 99,
+              "reserved": 0,
+              "remaining": 1
+            }
+          },
+          {
+            "id": "ai_edit",
+            "entitled": true,
+            "quota": {
+              "units": "successful_edits",
+              "period_type": "utc_month",
+              "period_start": "2026-10-01T00:00:00.000Z",
+              "reset_at": "2026-11-01T00:00:00.000Z",
+              "limit": 30,
+              "used": 5,
+              "reserved": 1,
+              "remaining": 24
+            }
+          },
+          { "id": "hands_free_cooking", "entitled": true, "quota": null },
+          { "id": "weekly_templates", "entitled": true, "quota": null },
+          { "id": "weekly_groceries", "entitled": true, "quota": null },
+          { "id": "auto_plan", "entitled": true, "quota": null },
+          {
+            "id": "recipe_question",
+            "entitled": true,
+            "quota": {
+              "units": "successful_answers",
+              "period_type": "utc_month",
+              "period_start": "2026-10-01T00:00:00.000Z",
+              "reset_at": "2026-11-01T00:00:00.000Z",
+              "limit": 100,
+              "used": 0,
+              "reserved": 0,
+              "remaining": 100
+            }
+          },
+          {
+            "id": "recipe_translation",
+            "entitled": true,
+            "quota": {
+              "units": "successful_translations",
+              "period_type": "utc_month",
+              "period_start": "2026-10-01T00:00:00.000Z",
+              "reset_at": "2026-11-01T00:00:00.000Z",
+              "limit": 20,
+              "used": 0,
+              "reserved": 0,
+              "remaining": 20
+            }
+          },
+          {
+            "id": "media_import",
+            "entitled": true,
+            "quota": {
+              "units": "media_tasks",
+              "period_type": "utc_month",
+              "period_start": "2026-10-01T00:00:00.000Z",
+              "reset_at": "2026-11-01T00:00:00.000Z",
+              "limit": 20,
+              "used": 0,
+              "reserved": 0,
+              "remaining": 20
+            }
+          },
+          { "id": "pdf_export", "entitled": true, "quota": null }
+        ]
+      }
+    },
+    "expired_access": {
+      "operation": "GET /recipe-access",
+      "schema": "AccessResponse",
+      "data": {
+        "owner_id": "a0000000-0000-4000-8000-000000000001",
+        "server_time": "2026-10-15T12:00:00.000Z",
+        "policy_version": 1,
+        "stage": "commercial",
+        "entitlement": {
+          "status": "expired",
+          "valid_until": "2026-10-01T00:00:00.000Z"
+        },
+        "capabilities": [
+          {
+            "id": "smart_import",
+            "entitled": true,
+            "quota": {
+              "units": "successful_imports",
+              "period_type": "iso_week",
+              "period_start": "2026-10-12T00:00:00.000Z",
+              "reset_at": "2026-10-19T00:00:00.000Z",
+              "limit": 5,
+              "used": 3,
+              "reserved": 0,
+              "remaining": 2
+            }
+          },
+          {
+            "id": "ai_edit",
+            "entitled": true,
+            "quota": {
+              "units": "successful_edits",
+              "period_type": "lifetime",
+              "period_start": null,
+              "reset_at": null,
+              "limit": 3,
+              "used": 3,
+              "reserved": 0,
+              "remaining": 0
+            }
+          },
+          { "id": "hands_free_cooking", "entitled": false, "quota": null },
+          { "id": "weekly_templates", "entitled": false, "quota": null },
+          { "id": "weekly_groceries", "entitled": false, "quota": null },
+          { "id": "auto_plan", "entitled": false, "quota": null },
+          { "id": "recipe_question", "entitled": false, "quota": null },
+          { "id": "recipe_translation", "entitled": false, "quota": null },
+          { "id": "media_import", "entitled": false, "quota": null },
+          { "id": "pdf_export", "entitled": false, "quota": null }
+        ]
+      }
+    },
+    "reservation_request_multi_candidate": {
+      "operation": "POST /recipe-usage/reservations",
+      "schema": "ReservationRequest",
+      "data": {
+        "operation_id": "b0000000-0000-4000-8000-000000000002",
+        "capability": "smart_import",
+        "input_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "estimated_units": 3,
+        "source": {
+          "origin": "import_job",
+          "job_id": "e0000000-0000-4000-8000-000000000005",
+          "candidate_ids": [
+            "f0000000-0000-4000-8000-000000000001",
+            "f0000000-0000-4000-8000-000000000002",
+            "f0000000-0000-4000-8000-000000000003"
+          ],
+          "session_id": null,
+          "turn_request_id": null
+        }
+      }
+    },
+    "reservation_response": {
+      "operation": "POST /recipe-usage/reservations",
+      "schema": "Reservation",
+      "data": {
+        "operation_id": "b0000000-0000-4000-8000-000000000002",
+        "owner_id": "a0000000-0000-4000-8000-000000000001",
+        "capability": "smart_import",
+        "period_start": "2026-10-12T00:00:00.000Z",
+        "policy_version": 1,
+        "tier_at_reserve": "free",
+        "reserved_units": 3,
+        "status": "reserved",
+        "reserved_until": "2026-10-15T12:10:00.000Z"
+      }
+    },
+    "commit_request": {
+      "operation": "POST /recipe-usage/{operation_id}/commit",
+      "schema": "CommitRequest",
+      "data": {
+        "capability": "smart_import",
+        "input_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source": {
+          "origin": "import_job",
+          "job_id": "e0000000-0000-4000-8000-000000000005",
+          "candidate_ids": [
+            "f0000000-0000-4000-8000-000000000001"
+          ],
+          "session_id": null,
+          "turn_request_id": null
+        }
+      }
+    },
+    "commit_response": {
+      "operation": "POST /recipe-usage/{operation_id}/commit",
+      "schema": "CommitResponse",
+      "data": {
+        "operation_id": "b0000000-0000-4000-8000-000000000002",
+        "status": "committed",
+        "committed_units": 1,
+        "period_start": "2026-10-12T00:00:00.000Z"
+      }
+    },
+    "finalize_request": {
+      "operation": "POST /recipe-usage/{operation_id}/finalize",
+      "schema": "FinalizeRequest",
+      "data": {
+        "capability": "smart_import",
+        "input_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source": {
+          "origin": "import_job",
+          "job_id": "e0000000-0000-4000-8000-000000000005",
+          "candidate_ids": [
+            "f0000000-0000-4000-8000-000000000001"
+          ],
+          "session_id": null,
+          "turn_request_id": null
+        }
+      }
+    },
+    "finalize_request_ai_edit": {
+      "operation": "POST /recipe-usage/{operation_id}/finalize",
+      "schema": "FinalizeRequest",
+      "data": {
+        "capability": "ai_edit",
+        "input_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source": {
+          "origin": "draft_approval",
+          "job_id": null,
+          "candidate_ids": null,
+          "session_id": "f0000000-0000-4000-8000-000000000004",
+          "turn_request_id": "f0000000-0000-4000-8000-000000000005"
+        }
+      }
+    },
+    "finalize_response": {
+      "operation": "POST /recipe-usage/{operation_id}/finalize",
+      "schema": "FinalizeResponse",
+      "data": {
+        "operation_id": "b0000000-0000-4000-8000-000000000002",
+        "status": "finalized",
+        "recipe_id": "c0000000-0000-4000-8000-000000000003",
+        "payload_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "committed_units": 1,
+        "period_start": "2026-10-12T00:00:00.000Z"
+      }
+    },
+    "ack_response": {
+      "operation": "POST /recipe-usage/{operation_id}/ack",
+      "schema": "AckResponse",
+      "data": {
+        "operation_id": "b0000000-0000-4000-8000-000000000002",
+        "status": "acked"
+      }
+    },
+    "quota_error": {
+      "operation": "any commercial route",
+      "schema": "APIError",
+      "data": {
+        "code": "QUOTA_EXCEEDED",
+        "message": "Weekly import quota reached.",
+        "recoverable": true,
+        "request_id": "d0000000-0000-4000-8000-000000000004"
+      }
+    },
+    "upgrade_required_error": {
+      "operation": "any commercial route",
+      "schema": "APIError",
+      "data": {
+        "code": "UPGRADE_REQUIRED",
+        "message": "Premium is required for this capability.",
+        "recoverable": true,
+        "request_id": "d0000000-0000-4000-8000-000000000004"
+      }
+    },
+    "owner_mismatch_error": {
+      "operation": "POST /recipe-usage/{operation_id}/finalize",
+      "schema": "APIError",
+      "data": {
+        "code": "OWNER_MISMATCH",
+        "message": "The operation belongs to a different account.",
+        "recoverable": false,
+        "request_id": "d0000000-0000-4000-8000-000000000004"
+      }
+    },
+    "configuration_unavailable_error": {
+      "operation": "GET /recipe-access",
+      "schema": "APIError",
+      "data": {
+        "code": "CONFIGURATION_UNAVAILABLE",
+        "message": "Client and server stage configuration disagree.",
+        "recoverable": true,
+        "request_id": "d0000000-0000-4000-8000-000000000004"
+      }
+    }
+  }
+}
