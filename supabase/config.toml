@@ -62,3 +62,11 @@ verify_jwt = false
 # DEV-431: AI recipe edit proposals always require a verified Supabase Auth owner JWT.
 [functions.recipe-edit-proposals]
 verify_jwt = true
+
+# DEV-427: server-owned commercial access snapshot; only a verified owner may read it.
+[functions.recipe-access]
+verify_jwt = true
+
+# DEV-427: server-owned commercial usage ledger; settlement is re-adjudicated per verified owner.
+[functions.recipe-usage]
+verify_jwt = true
