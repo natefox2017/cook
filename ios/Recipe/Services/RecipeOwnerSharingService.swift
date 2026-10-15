@@ -7,7 +7,9 @@ import Supabase
 
 @MainActor
 final class RecipeOwnerSharingService {
-    static let shared = RecipeOwnerSharingService()
+    static let shared = RecipeOwnerSharingService(
+        verifiedManagementEndpoint: RecipeSupabase.shareManagementEndpoint
+    )
 
     private let auth: RecipeAuthService
     private let client: SupabaseClient
