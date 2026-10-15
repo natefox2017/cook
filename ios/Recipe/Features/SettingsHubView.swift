@@ -16,10 +16,12 @@ struct SettingsHubView: View {
                     SettingsRow("Account", "person.crop.circle")
                 }
 
-                NavigationLink {
-                    SubscriptionView()
-                } label: {
-                    SettingsRow("Subscription", "sparkles")
+                if RecipeMonetization.isEnabled {
+                    NavigationLink {
+                        SubscriptionView()
+                    } label: {
+                        SettingsRow("Subscription", "sparkles")
+                    }
                 }
 
                 NavigationLink {
@@ -555,7 +557,6 @@ struct MealPlanSettingsView: View {
         .navigationBarTitleDisplayMode(RecipeNavigation.detailTitleMode)
     }
 }
-
 
 struct LocalePreferencesView: View {
     @Environment(\.locale) private var locale

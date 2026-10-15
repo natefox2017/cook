@@ -102,6 +102,7 @@ Recipe is the native iOS codebase for Recipe Pals, a private recipe collection a
 - Keep UI changes consistent with `docs/DESIGN_SYSTEM.md` and the existing app.
 - Use short, localized screen titles and menu labels (`About`, `Help & Support`, `Premium`), without appending `Recipe Pals` to navigation titles. Keep the brand where identification matters, such as bundle names, sharing instructions, and About app identity.
 - Groceries is a private shopping checklist, **not** a storefront, marketplace, or checkout experience; do not advertise or add commerce functionality.
+- The first release is fully free ([DEV-422](https://linear.app/gengyun/issue/DEV-422)): keep `RecipeMonetization.isEnabled` false, hide subscription routes and onboarding paywalls, and do not impose recipe-count or feature payment gates. Retain the paid screens and StoreKit implementation for a separately approved future release; do not delete them or advertise future AI monetization as currently available.
 - User-facing copy follows product language/localization rules. Source identifiers and technical documentation use consistent Recipe naming.
 
 ## Language During Development

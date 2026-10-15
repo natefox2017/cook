@@ -6,6 +6,11 @@ import Observation
 import RecipeCore
 import StoreKit
 
+enum RecipeMonetization {
+    // The first release is fully free. Retain paid UI and StoreKit code for a later approved release.
+    static let isEnabled = false
+}
+
 enum SubscriptionState: Equatable {
     case loading
     case free
@@ -30,7 +35,8 @@ enum SubscriptionState: Equatable {
 @MainActor @Observable
 final class SubscriptionStore {
     private static let unconfiguredProductsMessage =
-        RecipeLanguage.localized("Subscription products have not been configured in App Store Connect.")
+        RecipeLanguage.localized(
+            "Subscription products have not been configured in App Store Connect.")
 
     private(set) var products: [Product] = []
     private(set) var trialEligibleProductIDs = Set<String>()
@@ -42,6 +48,9 @@ final class SubscriptionStore {
     @ObservationIgnored nonisolated(unsafe) private var updatesTask: Task<Void, Never>?
 
     init() {
+        guard RecipeMonetization.isEnabled else {
+            return
+        }
         updatesTask = Task { [weak self] in
             for await update in Transaction.updates {
                 guard let self else {
@@ -98,7 +107,9 @@ final class SubscriptionStore {
                 await refreshEntitlements()
                 if !state.hasEntitlement {
                     state = .unavailable(
-                        RecipeLanguage.localized("No App Store subscription products are available for this storefront right now.")
+                        RecipeLanguage.localized(
+                            "No App Store subscription products are available for this storefront right now."
+                        )
                     )
                 }
                 // Product availability can be transient; keep load retryable.
@@ -131,7 +142,8 @@ final class SubscriptionStore {
             switch try await product.purchase() {
             case .success(let result):
                 guard case .verified(let transaction) = result else {
-                    message = RecipeLanguage.localized("The App Store transaction could not be verified.")
+                    message = RecipeLanguage.localized(
+                        "The App Store transaction could not be verified.")
                     return
                 }
                 await finishAfterEntitlementDelivery(
@@ -146,7 +158,8 @@ final class SubscriptionStore {
                 break
 
             @unknown default:
-                message = RecipeLanguage.localized("The App Store returned an unknown purchase result.")
+                message = RecipeLanguage.localized(
+                    "The App Store returned an unknown purchase result.")
             }
         } catch {
             message = error.localizedDescription
@@ -172,11 +185,13 @@ final class SubscriptionStore {
             try await AppStore.sync()
             await refreshEntitlements()
             if state.hasEntitlement {
-                message = RecipeLanguage.localized("Your active Recipe Pals subscription has been restored.")
+                message = RecipeLanguage.localized(
+                    "Your active Recipe Pals subscription has been restored.")
             } else if case .unavailable(let reason) = state {
                 message = reason
             } else {
-                message = RecipeLanguage.localized("No active Recipe Pals subscription was found for this App Store account.")
+                message = RecipeLanguage.localized(
+                    "No active Recipe Pals subscription was found for this App Store account.")
             }
         } catch {
             message = error.localizedDescription
@@ -202,7 +217,9 @@ final class SubscriptionStore {
         guard entitledIDs.contains(transaction.productID) else {
             if reportUnavailable {
                 message =
-                    RecipeLanguage.localized("The App Store verified your purchase, but the entitlement is not yet available. Check your subscription status or try Restore Purchases.")
+                    RecipeLanguage.localized(
+                        "The App Store verified your purchase, but the entitlement is not yet available. Check your subscription status or try Restore Purchases."
+                    )
             }
             return
         }
@@ -268,7 +285,9 @@ final class SubscriptionStore {
             }
         } else if statusLookupFailed || groupIDs.isEmpty {
             state = .unavailable(
-                RecipeLanguage.localized("The App Store subscription status could not be checked. Try again when you are online.")
+                RecipeLanguage.localized(
+                    "The App Store subscription status could not be checked. Try again when you are online."
+                )
             )
         } else if renewalStates.contains(.revoked) {
             state = .revoked
