@@ -1005,6 +1005,11 @@ struct RecipeDetailView: View {
         context: RecipeEditReviewContext,
         asVariant: Bool
     ) async throws -> Recipe {
+        #if DEBUG
+        if context.proposalID == Self.qaEditProposalID {
+            return try applyQAFixtureEdit(reviewed, asVariant: asVariant)
+        }
+        #endif
         guard let service = editService else {
             throw RecipeEditProposalServiceError.invalidConfiguration
         }
@@ -2465,6 +2470,29 @@ extension RecipeDetailView {
             operationID: Self.qaEditOperationID,
             wireChanges: Self.qaEditWireChanges(for: recipe)
         )
+    }
+
+    /// Local-only apply/variant for the synthetic review fixture. Reuses the same
+    /// `RecipeStore.applyApprovedRecipeEdit` validation and write path as the
+    /// production approval, with no network, provider, or usage-ledger calls.
+    private func applyQAFixtureEdit(
+        _ reviewed: RecipeEditProposal,
+        asVariant: Bool
+    ) throws -> Recipe {
+        guard let current = store.recipe(id: recipeID) else {
+            throw RecipeEditProposalServiceError.invalidResponse
+        }
+        let saved = try store.applyApprovedRecipeEdit(reviewed, asVariant: asVariant)
+        if asVariant {
+            feedbackMessage = String(
+                localized: LocalizedStringResource(
+                    "Saved a new private recipe.", locale: RecipeLanguage.active
+                )
+            )
+        } else {
+            undoState = RecipeEditUndoState(before: current, appliedRevision: saved.updatedAt)
+        }
+        return saved
     }
 
     private static func qaEditProposal(for recipe: Recipe) -> RecipeEditProposal {
