@@ -18,7 +18,8 @@
     {
       "parallelizable": false,
       "selectedTests": [
-        "RecipeSubscriptionStoreTests"
+        "RecipeSubscriptionStoreTests",
+        "RecipePurchaseAccountBridgeTests"
       ],
       "target": {
         "containerPath": "container:Recipe.xcodeproj",
