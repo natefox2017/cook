@@ -275,6 +275,29 @@ export function createRecipeTranslationDependencies(
       }
       return null;
     },
+    loadFinalizedResult: async (owner, capability, inputHash) => {
+      // Recover the durable proposal for a committed reservation replay. The finalization row is
+      // unique on (owner, capability, input_hash), so a committed reservation has exactly one.
+      const { data, error } = await admin
+        .from("recipe_usage_finalizations")
+        .select("payload")
+        .eq("owner_id", owner)
+        .eq("capability", capability)
+        .eq("input_hash", inputHash)
+        .maybeSingle();
+      if (error) {
+        console.error("recipe_translation_finalized_read_failed", {
+          code: error.code,
+        });
+        throw new Error("recipe_translation_finalized_read_failed");
+      }
+      if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+      const payload = (data as Row).payload;
+      if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+        return null;
+      }
+      return payload as Row;
+    },
     translate,
     reserve: (
       owner,

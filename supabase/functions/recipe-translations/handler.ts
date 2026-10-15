@@ -38,6 +38,12 @@ export interface Dependencies {
   stage: "freeTest" | "commercial";
   /** Loads the owner's canonical recipe id + per-recipe updatedAt from the user_snapshots payload. */
   loadOwnedRecipe(owner: string, recipeID: string): Promise<Row | null>;
+  /** Loads the persisted finalized translation proposal for a committed reservation (idempotent replay). */
+  loadFinalizedResult(
+    owner: string,
+    capability: InternalCapability,
+    inputHash: string,
+  ): Promise<Row | null>;
   /** The independent bounded provider (throws a distinct error per failure mode). */
   translate(prompt: string, signal: AbortSignal): Promise<unknown>;
   reserve(
@@ -233,8 +239,9 @@ export async function handleRequest(
     );
 
     // Dispatch fence: a prior dispatched attempt left the unit dispatched_unknown, so re-call the
-    // provider directly instead of re-marking. A committed/released/expired reservation without a
-    // re-servable proposal is inconsistent.
+    // provider directly instead of re-marking. A committed reservation replays the stored durable
+    // outcome without a second charge; released/expired reservations without a re-servable proposal
+    // fail closed.
     const nested = reservation.reservation;
     const reservationStatus =
       nested !== null && typeof nested === "object" && !Array.isArray(nested)
@@ -255,6 +262,13 @@ export async function handleRequest(
       if (dispatched.code === "RESERVATION_EXPIRED") {
         return error("PROVIDER_UNAVAILABLE", requestID);
       }
+    } else if (reservationStatus === "committed") {
+      // Recover the already-finalized proposal and return it verbatim without a second charge or
+      // a provider side effect. Committed is set atomically with the finalization insert, so the
+      // durable payload must exist; a missing row is an internal inconsistency.
+      const stored = await deps.loadFinalizedResult(owner, CAPABILITY, inputHash);
+      requireThat(stored !== null, "INTERNAL_ERROR");
+      return json(stored);
     } else {
       return error("PROVIDER_UNAVAILABLE", requestID);
     }

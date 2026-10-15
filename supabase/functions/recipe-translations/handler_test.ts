@@ -18,6 +18,7 @@ function dependencies(overrides: Partial<Dependencies> = {}): Dependencies {
     isEnabled: async () => true,
     stage: "commercial",
     loadOwnedRecipe: async () => ({ id: RECIPE, updatedAt: REVISION }),
+    loadFinalizedResult: async () => null,
     translate: async () => ({
       title: "番茄汤",
       summary: "一碗温暖的汤。",
@@ -52,7 +53,10 @@ function request(overrides: Record<string, unknown> = {}): Request {
   };
   return new Request("https://example.com/recipe-translations", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      authorization: "Bearer test-token",
+    },
     body: JSON.stringify(body),
   });
 }
@@ -127,4 +131,69 @@ Deno.test("returns QUOTA_EXCEEDED when the monthly quota is exhausted", async ()
   });
   const response = await handleRequest(request(), deps);
   assertEquals(response.status, 429);
+});
+
+Deno.test("returns the persisted proposal on a committed reservation replay without re-dispatching", async () => {
+  const persisted = {
+    target_locale: "zh-Hans",
+    title: "番茄汤",
+    summary: "一碗温暖的汤。",
+    ingredient_names: [{ id: INGREDIENT, original: "Tomato", translated: "番茄" }],
+    ingredient_amounts: [{ id: INGREDIENT, original: "to taste", translated: "适量" }],
+    step_instructions: [{ id: STEP, original: "Heat for 30 minutes.", translated: "加热30分钟。" }],
+    step_titles: [{ id: STEP, original: "Cook", translated: "烹饪" }],
+    source_url: null,
+    source_name: null,
+  };
+  let markDispatchedCalled = false;
+  let translateCalled = false;
+  const deps = dependencies({
+    reserve: async () => ({ code: "REPLAY", reservation: { status: "committed" } }),
+    loadFinalizedResult: async () => persisted,
+    markDispatched: async () => {
+      markDispatchedCalled = true;
+      return { code: "DISPATCHED" };
+    },
+    translate: async () => {
+      translateCalled = true;
+      return persisted;
+    },
+  });
+  const response = await handleRequest(request(), deps);
+  assertEquals(response.status, 200);
+  const body = await response.json();
+  assertEquals(body.title, "番茄汤");
+  assertEquals(body.ingredient_names[0].translated, "番茄");
+  assertEquals(markDispatchedCalled, false);
+  assertEquals(translateCalled, false);
+});
+
+Deno.test("rejects provider output that drops ingredient names for a non-empty recipe", async () => {
+  const deps = dependencies({
+    translate: async () => ({
+      title: "番茄汤",
+      summary: "一碗温暖的汤。",
+      ingredient_names: [],
+      ingredient_amounts: [{ id: INGREDIENT, translated: "适量" }],
+      step_instructions: [{ id: STEP, translated: "加热30分钟。" }],
+      step_titles: [{ id: STEP, translated: "烹饪" }],
+    }),
+  });
+  const response = await handleRequest(request(), deps);
+  assertEquals(response.status, 503);
+});
+
+Deno.test("rejects provider output that drops step instructions for a non-empty recipe", async () => {
+  const deps = dependencies({
+    translate: async () => ({
+      title: "番茄汤",
+      summary: "一碗温暖的汤。",
+      ingredient_names: [{ id: INGREDIENT, translated: "番茄" }],
+      ingredient_amounts: [{ id: INGREDIENT, translated: "适量" }],
+      step_instructions: [],
+      step_titles: [{ id: STEP, translated: "烹饪" }],
+    }),
+  });
+  const response = await handleRequest(request(), deps);
+  assertEquals(response.status, 503);
 });

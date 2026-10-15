@@ -240,7 +240,7 @@ export function validateProviderOutput(
     ? []
     : requireFieldList(output.ingredient_names, 200);
   const names: TranslationField[] = [];
-  if (ingredientNames.length > 0) {
+  if (request.recipe.ingredients.length > 0) {
     if (ingredientNames.length !== request.recipe.ingredients.length) {
       throw new TranslationContractError("invalid_provider_output", "Ingredient count changed.");
     }
@@ -271,7 +271,7 @@ export function validateProviderOutput(
     ? []
     : requireFieldList(output.step_instructions, 200);
   const instructions: TranslationField[] = [];
-  if (stepInstructions.length > 0) {
+  if (request.recipe.steps.length > 0) {
     if (stepInstructions.length !== request.recipe.steps.length) {
       throw new TranslationContractError("invalid_provider_output", "Step count changed.");
     }
