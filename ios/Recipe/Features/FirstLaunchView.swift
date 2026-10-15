@@ -20,9 +20,9 @@ struct FirstLaunchFlowView: View {
                             imageName: "OnboardingAI",
                             imageAccessibilityLabel:
                                 "A finished lemon and herb roast chicken recipe.",
-                            title: "Create with AI",
+                            title: "Create a recipe",
                             subtitle:
-                                "Tell AI what you’re craving or list the ingredients you have. Start with a recipe idea.",
+                                "Add your own ingredients and steps. Keep your recipes together and ready to cook.",
                             actionTitle: "Next",
                             page: 0,
                             onNext: advance,
@@ -44,9 +44,9 @@ struct FirstLaunchFlowView: View {
                         FirstLaunchStoryPage(
                             imageName: "OnboardingSocial",
                             imageAccessibilityLabel: "A cook sharing a recipe video from a phone.",
-                            title: "Import social recipes",
+                            title: "Save recipe links",
                             subtitle:
-                                "Share a recipe from Instagram, TikTok, or YouTube to save it.",
+                                "Share a recipe link to Recipe Pals. Review and complete the details when you’re ready.",
                             actionTitle: "See Plans",
                             page: 2,
                             onNext: advance,
