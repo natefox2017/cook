@@ -125,3 +125,13 @@ Response：
 - The only change kinds are value replacements keyed by a stable lowercase UUID id: `ingredient:<id>:name`, `ingredient:<id>:amount`, `step:<id>:instruction`. Each carries `original`, `proposed`, `reason` and `warnings`. There is no `title`/`summary`/`servings`/`timer`/`temperature` patch, no ingredient/step addition, deletion, or reordering. An edit that cannot be expressed in these kinds returns `needs_manual_edit: true` with an empty change set instead of a fabricated patch.
 - `GET /recipe-edit-proposals/{id}` returns the persisted proposal, owner-scoped. `POST /recipe-edit-proposals/{id}/approve` accepts a possibly human-revised change set plus `expected_snapshot_hash`; the server verifies only the three whitelisted kinds and returns `409` when the snapshot changed or the revision is stale. A confirmed proposal commits exactly once.
 - Replay is keyed by `(owner_id, operation_id)`; a different body under the same key returns `409`. On timeout or security rejection the original recipe is preserved and any determinable uncommitted reservation is released. Dietary suggestions are advisory only and never promise allergy or medical safety.
+
+## Bounded recipe Q&A contract (recipe-question)
+
+[DEV-438](https://linear.app/gengyun/issue/DEV-438) adds an owner-authenticated recipe Q&A service whose machine-readable source of truth is [JSON Schema](schemas/recipe-question-v1.schema.json). It reuses the frozen phase-II metering capability `recipe_question`.
+
+- `POST /recipe-questions` answers a bounded question about one owned recipe, returning a validated `answer` plus `statements` (`recipe` or `ai`). The request carries `recipe_id`, `revision`, a client `snapshot`, the `question`, up to five local `history` turns, and a per-turn `operation_id`.
+- The client `snapshot` is context only and is never trusted for authorization: the server loads the canonical owned snapshot from `user_snapshots` and uses that for the provider. A recipe id absent from the owner's snapshot returns `404`, so an arbitrary client snapshot cannot fake ownership.
+- Settlement is one `recipe_question` unit per operation through the service-role-only phase-II ledger (`recipe_usage_reserve_internal` -> `recipe_usage_mark_dispatched` -> `recipe_usage_finalize_internal`). The source is `{origin:"recipe_question", recipe_id, turn_request_id}` and `input_hash = SHA-256(canonicalJSON({capability:"recipe_question", source}))`.
+- A validated answer is persisted per operation and a replay returns the stored answer without re-dispatching the provider. A retry of a dispatched-but-unknown operation never re-dispatches; it replays the stored answer or surfaces the in-flight state. The premium quota is `successful_answers` 100/UTC-month.
+
