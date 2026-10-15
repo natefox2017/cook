@@ -26,32 +26,30 @@ private struct EffectiveField {
 /// and maps the resulting ready fields through the existing text import mapping, so vague
 /// amounts, units and step text stay original instead of being guessed.
 enum RecipeDraftRecipeComposerAdapter {
-    static func compose(
-        session: RecipeDraftSession,
-        suggestions: [RecipeDraftSuggestion],
-        receipt: RecipeDraftApprovalReceipt,
-        ownerID: UUID
-    ) throws -> Recipe {
-        // The owner is already verified by the draft API; the UUID is retained only to
-        // match the Core handoff seam, and the writer applies the server recipe ID later.
-        _ = ownerID
-
-        guard receipt.action == "accept", !receipt.selectedPaths.isEmpty else {
+    /// Fills `RecipeDraftService`'s `Compose` port directly: the approved snapshot is the
+    /// same shape the backend `composeApprovedDraftFields` consumes. `approve()` only ever
+    /// reaches this after an accepted approval, so the selected paths are the accepted paths.
+    static func compose(snapshot: RecipeDraftApprovedSnapshot) throws -> Recipe {
+        guard case .proposal(_, let suggestions) = snapshot.result else {
+            throw RecipeDraftComposerError.invalidApproval
+        }
+        guard !snapshot.selectedPaths.isEmpty else {
             throw RecipeDraftComposerError.invalidApproval
         }
 
         // Start from the immutable session context, then apply each accepted suggestion,
         // mirroring the backend's composeApprovedDraftFields validation order exactly.
-        let flags = session.context.reviewFields
-        var fields: [String: EffectiveField] = session.context.fields.mapValues {
+        let context = snapshot.context
+        let flags = context.reviewFields
+        var fields: [String: EffectiveField] = context.fields.mapValues {
             EffectiveField(rawValue: $0.rawValue, userConfirmed: $0.userConfirmed, origin: $0.origin)
         }
-        for path in receipt.selectedPaths {
+        for path in snapshot.selectedPaths {
             let matches = suggestions.filter { $0.path == path }
             guard matches.count == 1, let suggestion = matches.first else {
                 throw RecipeDraftComposerError.missingSuggestion(path: path)
             }
-            let existing = session.context.fields[path]
+            let existing = context.fields[path]
             guard existing?.userConfirmed != true else {
                 throw RecipeDraftComposerError.alreadyConfirmed(path: path)
             }
@@ -69,16 +67,16 @@ enum RecipeDraftRecipeComposerAdapter {
         }
 
         // Recompute the remaining review flags exactly like the server approval RPC.
-        let selected = Set(receipt.selectedPaths)
-        let remaining = session.context.reviewFields.filter { flag in
+        let selected = Set(snapshot.selectedPaths)
+        let remaining = context.reviewFields.filter { flag in
             if selected.contains(flag) { return false }
             guard Self.isGroup(flag) else { return true }
             let keys = fields.keys.filter { $0.hasPrefix("\(flag)[") }
-            let exactFlags = session.context.reviewFields.filter { $0.hasPrefix("\(flag)[") }
+            let exactFlags = context.reviewFields.filter { $0.hasPrefix("\(flag)[") }
             let resolved = keys.count > 0
                 && keys.allSatisfy { fields[$0]?.userConfirmed == true }
                 && exactFlags.allSatisfy { fields[$0]?.userConfirmed == true }
-                && receipt.selectedPaths.contains { $0.hasPrefix("\(flag)[") }
+                && snapshot.selectedPaths.contains { $0.hasPrefix("\(flag)[") }
             return !resolved
         }
         guard remaining.isEmpty else {
