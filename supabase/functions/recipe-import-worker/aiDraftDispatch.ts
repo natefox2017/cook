@@ -64,6 +64,24 @@ interface Options {
   resolveSecret: (reference: string, signal: AbortSignal) => Promise<string>;
   safeTransport: ProviderOptions["transport"];
   outerTimeoutMs?: number;
+  // DEV-428 commercial settlement hooks. Absent => the worker stays pure and
+  // never reserves or fences a unit. Each hook receives the stable ai_edit
+  // identity (operation_id = request_id) shared with DEV-429.
+  reserveUnit?: (
+    ownerID: string,
+    sessionID: string,
+    requestID: string,
+  ) => Promise<void>;
+  fenceUnitDispatched?: (
+    ownerID: string,
+    sessionID: string,
+    requestID: string,
+  ) => Promise<void>;
+  markUnitGenerated?: (
+    ownerID: string,
+    sessionID: string,
+    requestID: string,
+  ) => Promise<void>;
 }
 interface Turn extends Record<string, unknown> {
   owner_id: string;
@@ -340,6 +358,27 @@ export function createAIDraftDispatchWorker(options: Options) {
         if (initial.dispatch_state === "dispatched_unknown") {
           return pending(false);
         }
+        // DEV-428: ensure the ai_edit unit is reserved before any provider side
+        // effect. The reserve is idempotent on operation_id = request_id, so a
+        // client pre-reserve or a retry replays instead of double-charging.
+        if (options.reserveUnit) {
+          try {
+            await within(
+              Promise.resolve().then(() => {
+                check();
+                return options.reserveUnit!(
+                  ids.ownerID,
+                  ids.sessionID,
+                  ids.requestID,
+                );
+              }),
+              signal,
+            );
+          } catch {
+            return pending();
+          }
+          check();
+        }
         const fenceArgs = {
           ...ownerArgs,
           p_fencing_token: initial.fencing_token,
@@ -429,6 +468,23 @@ export function createAIDraftDispatchWorker(options: Options) {
                   throw new Error("DISPATCH_INVALID_MARKER");
                 }
                 markerWon = true;
+                // DEV-428: durable dispatch fence. Only the draft mark winner
+                // fences the unit, so a losing worker never corrupts the hold.
+                if (options.fenceUnitDispatched) {
+                  await within(
+                    Promise.resolve().then(() => {
+                      check();
+                      aborted(policy.signal);
+                      return options.fenceUnitDispatched!(
+                        ids.ownerID,
+                        ids.sessionID,
+                        ids.requestID,
+                      );
+                    }),
+                    signal,
+                  );
+                  check();
+                }
                 check();
                 aborted(policy.signal);
                 sent = true;
@@ -521,6 +577,26 @@ export function createAIDraftDispatchWorker(options: Options) {
           settled.based_revision !== initial.based_revision ||
           settled.state !== "terminal"
         ) return { state: "rejected", code: "INVALID_STORAGE_RESPONSE" };
+        // DEV-428: once a proposal is durably persisted, switch the reservation
+        // hold from the permanent unknown-outcome fence to the 24h release hold.
+        if (
+          options.markUnitGenerated && object(settled.result) &&
+          settled.result.status === "proposal"
+        ) {
+          try {
+            await within(
+              Promise.resolve().then(() => {
+                check();
+                return options.markUnitGenerated!(
+                  ids.ownerID,
+                  ids.sessionID,
+                  ids.requestID,
+                );
+              }),
+              signal,
+            );
+          } catch { /* Best-effort: finalize/ack still settles the unit. */ }
+        }
         return terminal(settled);
       } catch {
         return pending();
