@@ -18,6 +18,7 @@ enum RecipeDraftComposerError: Error, Equatable {
 private struct EffectiveField {
     var rawValue: String?
     var userConfirmed: Bool
+    var origin: String
 }
 
 /// DEV-428 draft-recipe composer. It applies the accepted terminal suggestions onto the
@@ -43,7 +44,7 @@ enum RecipeDraftRecipeComposerAdapter {
         // mirroring the backend's composeApprovedDraftFields validation order exactly.
         let flags = session.context.reviewFields
         var fields: [String: EffectiveField] = session.context.fields.mapValues {
-            EffectiveField(rawValue: $0.rawValue, userConfirmed: $0.userConfirmed)
+            EffectiveField(rawValue: $0.rawValue, userConfirmed: $0.userConfirmed, origin: $0.origin)
         }
         for path in receipt.selectedPaths {
             let matches = suggestions.filter { $0.path == path }
@@ -63,7 +64,8 @@ enum RecipeDraftRecipeComposerAdapter {
             guard reviewRelevant else {
                 throw RecipeDraftComposerError.notReviewRelevant(path: path)
             }
-            fields[path] = EffectiveField(rawValue: suggestion.rawValue, userConfirmed: true)
+            fields[path] = EffectiveField(
+                rawValue: suggestion.rawValue, userConfirmed: true, origin: "AI_suggested")
         }
 
         // Recompute the remaining review flags exactly like the server approval RPC.
@@ -90,27 +92,84 @@ enum RecipeDraftRecipeComposerAdapter {
         flag == "ingredients" || flag == "steps"
     }
 
-    /// Reuses RecipeDocumentParser.recipe(fromText:title:) so ingredient/step text keeps the
-    /// original evidence and only explicit amounts are parsed; a vague serving count is never
-    /// turned into an exact number.
+    /// Reuses RecipeDocumentParser.recipe(fromText:title:) for the step text (timers/linking stay
+    /// parsed), then maps each server-approved name/amount back onto the matching ingredient so a
+    /// reviewed name-only or amount-only value is never dropped in favor of the raw line.
     private static func makeRecipe(fields: [String: EffectiveField]) -> Recipe {
         let title = Self.nonempty(fields["title"]?.rawValue) ?? "Imported recipe"
-        let rawIngredients = Self.indexed(fields, pattern: #"^ingredients\[(\d+)\]\.raw_text$"#)
-        let ingredients = rawIngredients.isEmpty
-            ? Self.indexed(fields, pattern: #"^ingredients\[(\d+)\]\.amount$"#)
-            : rawIngredients
+        // Per-ingredient lines: prefer raw_text, then amount, then name, so a row that only
+        // reviewed name/amount still lands in the recipe instead of being dropped wholesale.
+        let rows = Self.ingredientRows(fields: fields)
         let steps = Self.indexed(fields, pattern: #"^steps\[(\d+)\]\.instruction$"#)
 
         var text = title
-        if !ingredients.isEmpty {
-            text += "\n\nIngredients\n" + ingredients.joined(separator: "\n")
+        if !rows.isEmpty {
+            text += "\n\nIngredients\n" + rows.map(\.line).joined(separator: "\n")
         }
         if !steps.isEmpty {
             text += "\n\nInstructions\n" + steps.joined(separator: "\n")
         }
         var recipe = RecipeDocumentParser.recipe(fromText: text, title: title)
         recipe.servings = nil
+        Self.applyReviewedIngredientFields(fields: fields, rows: rows, recipe: &recipe)
         return recipe
+    }
+
+    /// Builds the ordered ingredient lines used as parser input. Each index is represented once:
+    /// the full raw_text when present, otherwise the amount, otherwise the name.
+    private static func ingredientRows(
+        fields: [String: EffectiveField]
+    ) -> [(index: Int, line: String)] {
+        let indices = Set(fields.keys.compactMap(Self.ingredientIndex)).sorted()
+        return indices.compactMap { index in
+            let rawText = Self.nonempty(fields["ingredients[\(index)].raw_text"]?.rawValue)
+            let amount = Self.nonempty(fields["ingredients[\(index)].amount"]?.rawValue)
+            let name = Self.nonempty(fields["ingredients[\(index)].name"]?.rawValue)
+            let line = rawText ?? amount ?? name
+            return line.map { (index, $0) }
+        }
+    }
+
+    /// Maps a server-approved (AI_suggested) name/amount back onto the corresponding parsed
+    /// ingredient so the local write matches the finalized server fields. Extracted (import)
+    /// amount fields are a verbatim full line, never a fabricated amount, so they are skipped.
+    private static func applyReviewedIngredientFields(
+        fields: [String: EffectiveField],
+        rows: [(index: Int, line: String)],
+        recipe: inout Recipe
+    ) {
+        for (position, row) in rows.enumerated() {
+            guard position < recipe.ingredients.count else { continue }
+            var name = recipe.ingredients[position].name
+            var amount = recipe.ingredients[position].amountText
+            if let field = fields["ingredients[\(row.index)].name"],
+                field.origin == "AI_suggested",
+                let value = Self.nonempty(field.rawValue) {
+                name = value
+            }
+            if let field = fields["ingredients[\(row.index)].amount"],
+                field.origin == "AI_suggested",
+                let value = Self.nonempty(field.rawValue) {
+                amount = value
+            }
+            guard name != recipe.ingredients[position].name
+                || amount != recipe.ingredients[position].amountText
+            else { continue }
+            let reviewed = RecipeIngredient.from(name: name, amountText: amount)
+            recipe.ingredients[position].name = reviewed.name
+            recipe.ingredients[position].amountText = reviewed.amountText
+            recipe.ingredients[position].quantity = reviewed.quantity
+            recipe.ingredients[position].unit = reviewed.unit
+        }
+    }
+
+    /// Extracts the integer index from an `ingredients[i].<field>` path.
+    private static func ingredientIndex(_ path: String) -> Int? {
+        guard path.hasPrefix("ingredients["),
+            let close = path.firstIndex(of: "]")
+        else { return nil }
+        let start = path.index(path.startIndex, offsetBy: "ingredients[".count)
+        return Int(path[start..<close])
     }
 
     private static func indexed(
