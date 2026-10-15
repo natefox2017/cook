@@ -17,6 +17,7 @@ export function Footer() {
     <p>Your recipes. Your kitchen.</p>
     <nav aria-label="Footer navigation">
       <a href="/download">Download</a>
+      <a href="/support">Support</a>
       <a href="/privacy">Privacy policy</a>
       <a href="/terms">Terms of use</a>
     </nav>
@@ -27,10 +28,6 @@ export function LegalPage({ title, children }) {
   return <main id="main" className="reading-page">
     <a className="back-link" href="/">Back to home</a>
     <h1>{title}</h1>
-    <div className="notice"><strong>Pre-release draft</strong>
-      <p>This document is a draft for review. The operator’s details, contact address,
-        effective date and final legal terms must be completed before release.</p>
-    </div>
     {children}
     <a className="back-link" href="/download">Download information</a>
   </main>;
