@@ -22,6 +22,14 @@ export interface Dependencies {
     turn: string,
   ): Promise<unknown>;
   rpc(name: string, args: Row): Promise<unknown>;
+  // DEV-428: run one durable provider dispatch attempt for a pending turn and
+  // return the persisted turn row. Optional so the pure handler and its tests
+  // remain independent of the commercial/production wiring.
+  dispatchTurn?(
+    owner: string,
+    session: string,
+    turn: string,
+  ): Promise<unknown>;
 }
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const PATH =
@@ -685,13 +693,27 @@ export async function handleRequest(
         }),
       );
       requireThat(result.outcome === "accepted" || result.outcome === "replay");
-      const output = await turn(
+      let output = await turn(
         object(result.turn),
         owner,
         sessionID,
         body.request_id as string,
         deps,
       );
+      if (output.state === "pending" && deps.dispatchTurn) {
+        const dispatched = await deps.dispatchTurn(
+          owner,
+          sessionID,
+          body.request_id as string,
+        );
+        output = await turn(
+          object(dispatched),
+          owner,
+          sessionID,
+          body.request_id as string,
+          deps,
+        );
+      }
       return json(output, output.state === "pending" ? 202 : 200);
     }
     const turnID = parts[3];

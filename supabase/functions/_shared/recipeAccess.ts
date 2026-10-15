@@ -4,6 +4,7 @@
 // the approved payload that finalize persists. It never trusts a client success flag or quota field.
 
 import { canonicalHash } from "../recipe-draft-sessions/canonicalJSON.ts";
+import { composeApprovedDraftFields } from "../recipe-draft-sessions/draftComposition.ts";
 
 /** A minimally-decoded subscriptions row: status + expires_at decide entitlement. */
 export interface SubscriptionRow {
@@ -93,11 +94,12 @@ export function extractImportPayload(
 }
 
 /**
- * ai_edit approved payload: an immutable snapshot derived from the persisted turn (context_snapshot +
- * result) and the accepted approval (selected_paths + applied_revision). The draft approval `receipt`
- * is coordination metadata (request/turn/action/session ids), not the recipe; it is never persisted as
- * the recoverable recipe. Final apply of selected_paths to produce the saveable recipe fields is the
- * DEV-428 draft-composition contract; until it freezes, this immutable snapshot is the durable payload.
+ * ai_edit approved payload: the saveable ready recipe composed from the immutable snapshot
+ * (turn.context_snapshot + turn.result) and the accepted approval (selected_paths + applied_revision).
+ * The draft approval `receipt` is coordination metadata (request/turn/action/session ids), not the
+ * recipe; it is never persisted as the recoverable recipe. DEV-428 `composeApprovedDraftFields` applies
+ * the accepted suggestion paths onto the immutable context and returns null (fail-closed) when the
+ * approval leaves review fields open.
  */
 export function extractEditPayload(
   approval: Record<string, unknown> | null,
@@ -114,12 +116,12 @@ export function extractEditPayload(
   if (!Array.isArray(approval.selected_paths)) return null;
   const appliedRevision = approval.applied_revision;
   if (appliedRevision === null || appliedRevision === undefined) return null;
-  return {
+  return composeApprovedDraftFields({
     context_snapshot: contextSnapshot as Record<string, unknown>,
     result: result as Record<string, unknown>,
     selected_paths: approval.selected_paths as string[],
     applied_revision: appliedRevision,
-  };
+  }) as Record<string, unknown> | null;
 }
 
 /** Release stage from server configuration; freeTest is the dormant default. */
