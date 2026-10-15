@@ -8,6 +8,7 @@ import SwiftUI
 
 enum RecipeUITestNamespace {
     static let resetCookingSessionsArgument = "--uitesting-reset-cooking-sessions"
+    static let draftReviewArgument = "--uitesting-draft-review"
     static let exportQAArgument = "--uitesting-export-qa"
     static let resetExportQAArgument = "--uitesting-export-qa-reset"
     static let exportQAPermissionFailureArgument =
@@ -613,6 +614,7 @@ private struct RecipeRootView: View {
     @State private var selectedTab: RecipeTab = .recipes
     @State private var shareInbox = RecipeShareInboxCoordinator()
     @State private var isAccountPresented = false
+    @State private var isDraftReviewPresented = false
     @State private var accountDetent: PresentationDetent = .large
 
     let isUITesting: Bool
@@ -702,11 +704,26 @@ private struct RecipeRootView: View {
             .presentationCornerRadius(28)
             .presentationBackground(RecipeTheme.canvas)
         }
+        .sheet(isPresented: $isDraftReviewPresented) {
+            NavigationStack {
+                RecipeDraftReviewView(jobID: UUID())
+            }
+        }
         .task {
             // In UI-test mode App Group provisioning may not be installed.
             // Normal installs read durable receipts from the shared container.
             if !isUITesting {
                 await shareInbox.synchronize(store: store)
+            }
+        }
+        .task {
+            // Test-only presentation of the draft review flow; normal launches
+            // reach it from a completed import that needs review.
+            if isUITesting
+                && ProcessInfo.processInfo.arguments.contains(
+                    RecipeUITestNamespace.draftReviewArgument)
+            {
+                isDraftReviewPresented = true
             }
         }
         .task {
@@ -726,7 +743,17 @@ private struct RecipeRootView: View {
             // even when the user never opens the subscription screen.
             await subscriptions.load()
         }
+        .task {
+            // Bind the purchase identity bridge to the current verified owner once auth settles.
+            subscriptions.purchaseAccountBridge.ownerDidChange(
+                to: Self.verifiedOwnerID(in: auth.state)
+            )
+        }
         .onChange(of: auth.state) { _, state in
+            // Re-bind the purchase identity bridge across sign-in, sign-out, and account switch.
+            subscriptions.purchaseAccountBridge.ownerDidChange(
+                to: Self.verifiedOwnerID(in: state)
+            )
             // An ACK from the previous account must not hide a receipt from
             // the newly signed-in account after an authentication transition.
             if !isUITesting {
@@ -793,6 +820,13 @@ private struct RecipeRootView: View {
         // Keep the current tab and reveal the recovery/account callback as a sheet.
         accountDetent = .large
         isAccountPresented = true
+    }
+
+    private static func verifiedOwnerID(in state: RecipeAuthState) -> UUID? {
+        if case .signedIn(let userID, _) = state {
+            return userID
+        }
+        return nil
     }
 }
 

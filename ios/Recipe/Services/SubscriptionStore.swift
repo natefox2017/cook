@@ -9,6 +9,10 @@ import StoreKit
 enum RecipeMonetization {
     // The first release is fully free. Retain paid UI and StoreKit code for a later approved release.
     static let isEnabled = false
+
+    // Commercial build switch (DEV-432 owns future routes). freeTest keeps the RevenueCat SDK,
+    // StoreKit networking, and every purchase entry point dormant.
+    static var stage: RecipeReleaseStage { .freeTest }
 }
 
 enum SubscriptionState: Equatable {
@@ -47,7 +51,12 @@ final class SubscriptionStore {
 
     @ObservationIgnored nonisolated(unsafe) private var updatesTask: Task<Void, Never>?
 
-    init() {
+    /// Identity bridge binding verified purchases to the Supabase owner (DEV-426).
+    let purchaseAccountBridge: RecipePurchaseAccountBridge
+
+    init(purchaseAccountBridge: RecipePurchaseAccountBridge? = nil) {
+        self.purchaseAccountBridge =
+            purchaseAccountBridge ?? RecipePurchaseAccountBridge.makeProduction()
         guard RecipeMonetization.isEnabled else {
             return
         }
@@ -138,31 +147,63 @@ final class SubscriptionStore {
             isWorking = false
         }
 
-        do {
-            switch try await product.purchase() {
-            case .success(let result):
-                guard case .verified(let transaction) = result else {
-                    message = RecipeLanguage.localized(
-                        "The App Store transaction could not be verified.")
-                    return
-                }
-                await finishAfterEntitlementDelivery(
-                    transaction,
-                    reportUnavailable: true
-                )
-
-            case .pending:
-                message = RecipeLanguage.localized("Your purchase is pending approval.")
-
-            case .userCancelled:
-                break
-
-            @unknown default:
+        // Login-first: a commercial purchase must be bound to a verified owner. Without one,
+        // preserve the intent and prompt login instead of buying anonymously.
+        var options: Set<Product.PurchaseOption> = []
+        if RecipeMonetization.stage == .commercial {
+            guard let ownerID = purchaseAccountBridge.boundOwnerID else {
+                purchaseAccountBridge.preservePendingPurchase(productID: product.id)
                 message = RecipeLanguage.localized(
-                    "The App Store returned an unknown purchase result.")
+                    "Sign in to purchase a subscription.")
+                return
             }
+            options = [.appAccountToken(ownerID)]
+        }
+
+        // Capture the initiating owner and generation before the native sheet. A sign-out or
+        // account switch while the App Store prompt is open must never bind the result to a
+        // different owner after the await.
+        let initiatingOwnerID = purchaseAccountBridge.boundOwnerID
+        let initiatingGeneration = purchaseAccountBridge.ownerGeneration
+
+        let purchaseResult: Product.PurchaseResult
+        do {
+            purchaseResult = try await product.purchase(options: options)
         } catch {
             message = error.localizedDescription
+            return
+        }
+
+        switch purchaseResult {
+        case .success(let result):
+            guard case .verified(let transaction) = result else {
+                message = RecipeLanguage.localized(
+                    "The App Store transaction could not be verified.")
+                return
+            }
+            // Associate the verified transaction with the initiating owner before finishing it;
+            // a later sync backfills any transaction a failed record could not reach RevenueCat.
+            if let initiatingOwnerID {
+                await purchaseAccountBridge.recordVerifiedPurchase(
+                    purchaseResult,
+                    ownerID: initiatingOwnerID,
+                    generation: initiatingGeneration
+                )
+            }
+            await finishAfterEntitlementDelivery(
+                transaction,
+                reportUnavailable: true
+            )
+
+        case .pending:
+            message = RecipeLanguage.localized("Your purchase is pending approval.")
+
+        case .userCancelled:
+            break
+
+        @unknown default:
+            message = RecipeLanguage.localized(
+                "The App Store returned an unknown purchase result.")
         }
     }
 
@@ -181,8 +222,21 @@ final class SubscriptionStore {
             isWorking = false
         }
 
+        // Capture the bound owner and generation before the native sync so a sign-out/switch
+        // during AppStore.sync never pushes the previous owner's receipt to a different owner.
+        let ownerID = purchaseAccountBridge.boundOwnerID
+        let generation = purchaseAccountBridge.ownerGeneration
+
         do {
             try await AppStore.sync()
+            // Push historical/unfinished transactions to RevenueCat for the initiating owner; the
+            // bridge no-ops in freeTest and surfaces owner conflicts without silent transfer.
+            if let ownerID {
+                await purchaseAccountBridge.restore(
+                    ownerID: ownerID,
+                    generation: generation
+                )
+            }
             await refreshEntitlements()
             if state.hasEntitlement {
                 message = RecipeLanguage.localized(
@@ -298,7 +352,25 @@ final class SubscriptionStore {
         } else {
             state = .free
         }
+        reconcileAccountLinkState(entitledProductIDs: entitledProductIDs)
         return entitledProductIDs
+    }
+
+    /// A local-only legacy entitlement never self-grants server quota. List it for account
+    /// linking only when the server explicitly reports no premium (not when it is simply
+    /// unreachable), so a pending webhook sync is not mislabeled.
+    private func reconcileAccountLinkState(entitledProductIDs: Set<String>) {
+        guard !entitledProductIDs.isEmpty,
+            entitledProductIDs.isSubset(of: Self.legacyProductIDs)
+        else {
+            return
+        }
+        guard let serverEntitlement = purchaseAccountBridge.serverEntitlement else {
+            return
+        }
+        if serverEntitlement.status != .premium {
+            purchaseAccountBridge.markNeedsAccountLink()
+        }
     }
 
     func isTrialEligible(for product: Product) -> Bool {
@@ -364,8 +436,8 @@ final class SubscriptionStore {
         return []
     }
 
-    /// Recognize verified legacy purchases without offering their products to new customers.
-    static var entitlementProductIDs: Set<String> {
+    /// Legacy purchase identifiers recognized for existing customers but never offered to new ones.
+    static var legacyProductIDs: Set<String> {
         let legacyIDs = [
             "com.natefox.cookapp.pro.monthly",
             "com.natefox.cookapp.pro.yearly",
@@ -374,7 +446,12 @@ final class SubscriptionStore {
         let configuredLegacyIDs =
             (Bundle.main.object(forInfoDictionaryKey: "LegacyCookSubscriptionProductIDs") as? String)
             .map(parseProductIDs) ?? []
-        return Set(productIDs + legacyIDs + configuredLegacyIDs)
+        return Set(legacyIDs + configuredLegacyIDs)
+    }
+
+    /// Recognize verified legacy purchases without offering their products to new customers.
+    static var entitlementProductIDs: Set<String> {
+        Set(productIDs).union(legacyProductIDs)
     }
 
     private static func parseProductIDs(_ raw: String) -> [String] {

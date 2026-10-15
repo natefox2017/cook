@@ -39,6 +39,28 @@ enum RecipeSupabase {
         )
     }()
 
+    /// Optional owner-sharing management endpoint. Absent or invalid configuration keeps
+    /// sharing unavailable (`nil`), so a build never fakes publication without a verified
+    /// deployed host. `RecipeSharePublishingService` re-validates the same shape before use.
+    static let shareManagementEndpoint: URL? = {
+        guard
+            let string = Bundle.main.object(forInfoDictionaryKey: "RecipeShareManagementEndpointURL")
+                as? String,
+            !string.isEmpty,
+            let url = URL(string: string),
+            url.scheme == "https",
+            url.host != nil,
+            url.user == nil,
+            url.password == nil,
+            url.query == nil,
+            url.fragment == nil,
+            url.path == "/functions/v1/recipe-share-manage"
+        else {
+            return nil
+        }
+        return url
+    }()
+
     #if DEBUG
         private static func makeUITestNetworkSession() -> URLSession {
             let configuration = URLSessionConfiguration.ephemeral

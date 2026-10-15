@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://recipepals.example/contracts/recipe-edit-v1.schema.json",
+  "title": "DEV-431 AI Recipe Edit Proposal V1",
+  "$defs": {
+    "UUID": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "Hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "Intent": {
+      "type": "string",
+      "enum": ["substitute", "simplify", "dietary"]
+    },
+    "EditChangePath": {
+      "type": "string",
+      "pattern": "^(ingredient:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(name|amount)|step:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:instruction)$"
+    },
+    "Change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "original", "proposed", "reason", "warnings"],
+      "properties": {
+        "path": { "$ref": "#/$defs/EditChangePath" },
+        "original": { "type": "string", "minLength": 1, "maxLength": 8000 },
+        "proposed": { "type": "string", "minLength": 1, "maxLength": 8000 },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "warnings": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "type": "string", "minLength": 1, "maxLength": 300 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "Ingredient": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "amount"],
+      "properties": {
+        "id": { "$ref": "#/$defs/UUID" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "amount": { "type": "string", "minLength": 1, "maxLength": 240 }
+      }
+    },
+    "Step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "instruction"],
+      "properties": {
+        "id": { "$ref": "#/$defs/UUID" },
+        "instruction": { "type": "string", "minLength": 1, "maxLength": 8000 }
+      }
+    },
+    "Snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "updated_at", "snapshot_hash", "ingredients", "steps"],
+      "properties": {
+        "id": { "$ref": "#/$defs/UUID" },
+        "updated_at": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "snapshot_hash": { "$ref": "#/$defs/Hash" },
+        "ingredients": {
+          "type": "array",
+          "maxItems": 200,
+          "items": { "$ref": "#/$defs/Ingredient" }
+        },
+        "steps": {
+          "type": "array",
+          "maxItems": 200,
+          "items": { "$ref": "#/$defs/Step" }
+        }
+      }
+    },
+    "CreateProposalRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_id", "intent", "recipe"],
+      "properties": {
+        "operation_id": { "$ref": "#/$defs/UUID" },
+        "intent": { "$ref": "#/$defs/Intent" },
+        "recipe": { "$ref": "#/$defs/Snapshot" },
+        "supplement": { "type": ["string", "null"], "maxLength": 500 }
+      }
+    },
+    "Proposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal_id",
+        "status",
+        "generated",
+        "intent",
+        "source",
+        "changes",
+        "reasons",
+        "warnings",
+        "input_hash",
+        "needs_manual_edit"
+      ],
+      "properties": {
+        "proposal_id": { "$ref": "#/$defs/UUID" },
+        "status": { "type": "string", "enum": ["generated", "approved", "rejected"] },
+        "generated": { "const": true },
+        "intent": { "$ref": "#/$defs/Intent" },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["recipe_id", "source_revision", "snapshot_hash"],
+          "properties": {
+            "recipe_id": { "$ref": "#/$defs/UUID" },
+            "source_revision": { "type": "string" },
+            "snapshot_hash": { "$ref": "#/$defs/Hash" }
+          }
+        },
+        "changes": {
+          "type": "array",
+          "maxItems": 30,
+          "items": { "$ref": "#/$defs/Change" },
+          "uniqueItems": true
+        },
+        "reasons": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "type": "string", "maxLength": 300 }
+        },
+        "warnings": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "type": "string", "maxLength": 300 }
+        },
+        "input_hash": { "$ref": "#/$defs/Hash" },
+        "needs_manual_edit": { "type": "boolean" }
+      }
+    },
+    "ApproveRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["changes", "expected_snapshot_hash"],
+      "properties": {
+        "changes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 30,
+          "items": { "$ref": "#/$defs/Change" },
+          "uniqueItems": true
+        },
+        "expected_snapshot_hash": { "$ref": "#/$defs/Hash" }
+      }
+    },
+    "ApprovalReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proposal_id", "status", "operation_id", "recipe_id", "payload_hash"],
+      "properties": {
+        "proposal_id": { "$ref": "#/$defs/UUID" },
+        "status": { "const": "approved" },
+        "operation_id": { "$ref": "#/$defs/UUID" },
+        "recipe_id": { "$ref": "#/$defs/UUID" },
+        "payload_hash": { "$ref": "#/$defs/Hash" }
+      }
+    },
+    "APIError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "details"],
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "details": { "type": ["object", "null"] }
+      }
+    }
+  },
+  "$ref": "#/$defs/CreateProposalRequest"
+}

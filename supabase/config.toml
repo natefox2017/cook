@@ -58,3 +58,7 @@ verify_jwt = true
 # The handler validates the slug and enforces GET/HEAD only.
 [functions.recipe-share-public]
 verify_jwt = false
+
+# DEV-431: AI recipe edit proposals always require a verified Supabase Auth owner JWT.
+[functions.recipe-edit-proposals]
+verify_jwt = true
