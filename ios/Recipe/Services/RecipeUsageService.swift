@@ -7,7 +7,7 @@ import Supabase
 
 /// Concrete `RecipeUsageClient` backed by the authenticated `recipe-access` and `recipe-usage`
 /// Edge Functions. It only ever forwards server-owned values; quota and entitlement are never authored here.
-struct RecipeUsageService: RecipeUsageClient {
+struct RecipeImportUsageService: RecipeUsageClient {
     private static var clientStage: String {
         RecipeMonetization.isEnabled
             ? RecipeReleaseStage.commercial.rawValue
