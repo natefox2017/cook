@@ -2,6 +2,7 @@
 // Purpose: Implements RecipeDetailView for the Recipe iOS app.
 
 import CryptoKit
+import Foundation
 import RecipeCore
 import SwiftUI
 
@@ -910,6 +911,14 @@ struct RecipeDetailView: View {
                 }
                 .accessibilityIdentifier("recipeEdit")
                 Menu {
+                    #if DEBUG
+                    if Self.qaRecipeProposalReviewEnabled {
+                        Button("QA Review Proposal", systemImage: "wand.and.stars") {
+                            presentQARecipeProposal()
+                        }
+                        .accessibilityIdentifier("qaReviewRecipeProposal")
+                    }
+                    #endif
                     if canAdjustRecipe {
                         Button("Adjust Recipe", systemImage: "wand.and.stars") {
                             presentAdjustRecipe()
@@ -2416,3 +2425,106 @@ private struct RecipeEditReviewRow: Identifiable {
     let before: String
     let proposed: String
 }
+
+#if DEBUG
+extension RecipeDetailView {
+    // DEV-76 review-sheet UI test fixture. Synthetic proposal previews are reachable
+    // only under `--uitesting-ai-edit-preview` and are compiled out of release builds;
+    // the real Adjust Recipe capability gate and dormant paid UI are unchanged.
+    private static let qaEditPreviewArgument = "--uitesting-ai-edit-preview"
+    private static let qaEditStaleArgument = "--uitesting-ai-edit-stale"
+    private static let qaEditOversizedChangesArgument = "--uitesting-ai-edit-oversized-changes"
+    private static let qaEditOversizedExplanationArgument = "--uitesting-ai-edit-oversized-explanation"
+    private static let qaEditProposalID = "qa-review-recipe-proposal"
+    private static let qaEditOperationID = "qa-review-recipe-proposal-operation"
+
+    private static var qaRecipeProposalReviewEnabled: Bool {
+        RecipeUITestNamespace.isUITesting
+            && ProcessInfo.processInfo.arguments.contains(qaEditPreviewArgument)
+    }
+
+    private static var qaEditStaleRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(qaEditStaleArgument)
+    }
+
+    private static var qaEditOversizedChangesRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(qaEditOversizedChangesArgument)
+    }
+
+    private static var qaEditOversizedExplanationRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(qaEditOversizedExplanationArgument)
+    }
+
+    private func presentQARecipeProposal() {
+        guard let recipe = store.recipe(id: recipeID) else {
+            return
+        }
+        proposalToReview = RecipeEditReviewContext(
+            proposal: Self.qaEditProposal(for: recipe),
+            proposalID: Self.qaEditProposalID,
+            operationID: Self.qaEditOperationID,
+            wireChanges: Self.qaEditWireChanges(for: recipe)
+        )
+    }
+
+    private static func qaEditProposal(for recipe: Recipe) -> RecipeEditProposal {
+        let change = qaEditChange(for: recipe)
+        if qaEditOversizedChangesRequested {
+            // 31 value changes exceed the review budget and render as invalid.
+            return RecipeEditProposal(
+                recipeID: recipe.id,
+                basedOnUpdate: recipe.updatedAt,
+                changes: Array(repeating: change, count: 31),
+                reasons: [],
+                warnings: []
+            )
+        }
+        if qaEditOversizedExplanationRequested {
+            // Nine explanations exceed the review budget and render as invalid.
+            return RecipeEditProposal(
+                recipeID: recipe.id,
+                basedOnUpdate: recipe.updatedAt,
+                changes: [change],
+                reasons: Array(repeating: "QA explanation", count: 9),
+                warnings: []
+            )
+        }
+        // A stale proposal is based on an older revision than the stored recipe.
+        let basedOnUpdate = qaEditStaleRequested
+            ? recipe.updatedAt.addingTimeInterval(-1)
+            : recipe.updatedAt
+        return RecipeEditProposal(
+            recipeID: recipe.id,
+            basedOnUpdate: basedOnUpdate,
+            changes: [change],
+            reasons: [],
+            warnings: []
+        )
+    }
+
+    private static func qaEditChange(for recipe: Recipe) -> RecipeEditChange {
+        let ingredient = recipe.ingredients.first
+            ?? RecipeIngredient(name: "QA Ingredient", amountText: "1")
+        return .ingredientName(
+            id: ingredient.id,
+            original: ingredient.name,
+            proposed: "QA Changed \(ingredient.name)"
+        )
+    }
+
+    private static func qaEditWireChanges(for recipe: Recipe) -> [RecipeEditWireChange] {
+        guard let ingredient = recipe.ingredients.first else {
+            return []
+        }
+        return [
+            RecipeEditWireChange(
+                path: "ingredient:\(ingredient.id.uuidString.lowercased()):name",
+                original: ingredient.name,
+                proposed: "QA Changed \(ingredient.name)",
+                reason: "QA reason",
+                warnings: []
+            )
+        ]
+    }
+}
+#endif
