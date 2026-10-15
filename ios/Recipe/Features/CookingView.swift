@@ -267,6 +267,8 @@ struct CookingView: View {
                 )
                 .accessibilityIdentifier("cookingStepSwipeSurface")
 
+                stepSpeechControls(step)
+
                 if let temperature = step.temperature, !temperature.text.isEmpty {
                     Button {
                         parameterInfo = .temperature(temperature)
@@ -460,6 +462,35 @@ struct CookingView: View {
         .padding(.horizontal, RecipeSpacing.pageInset)
         .padding(.vertical, 12)
         .background(.regularMaterial)
+    }
+
+    // Explicit touch controls read the current step aloud with no microphone or
+    // recognizer. Stop halts the active reading immediately; timers are untouched.
+    @ViewBuilder
+    private func stepSpeechControls(_ step: RecipeStep) -> some View {
+        HStack(spacing: RecipeSpacing.small) {
+            Button {
+                voice.readCurrentStep(step.instruction)
+            } label: {
+                Label("Read Step", systemImage: "speaker.wave.2")
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.bordered)
+            .disabled(
+                step.instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            )
+            .accessibilityIdentifier("cookingStepRead")
+
+            Button {
+                voice.stopReading()
+            } label: {
+                Label("Stop", systemImage: "stop.fill")
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.bordered)
+            .disabled(!voice.isReading)
+            .accessibilityIdentifier("cookingStepStop")
+        }
     }
 
     @ViewBuilder
@@ -994,6 +1025,8 @@ struct CookingView: View {
     }
 
     private func selectStep(_ id: UUID) {
+        // Changing steps stops the in-flight touch reading; timers are untouched.
+        voice.stopReading()
         session.stepID = id
         persistSession()
     }
@@ -1629,6 +1662,7 @@ private enum CookingClockFormatter {
 @MainActor
 private final class CookingVoiceController: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     @Published private(set) var isListening = false
+    @Published private(set) var isReading = false
     @Published private(set) var status = ""
     @Published private(set) var commandRevision = 0
     private(set) var lastCommand: CookingVoiceCommand?
@@ -1644,6 +1678,7 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
     private var startGate = CookingVoiceStartGate()
     private var pendingStartAttempt: UUID?
     private let speaker = AVSpeechSynthesizer()
+    private var readingID: ObjectIdentifier?
 
     override init() {
         super.init()
@@ -1829,29 +1864,82 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
         endCycle()
         isListening = true
         status = ""
+        speaker.speak(makeUtterance(text))
+    }
+
+    // Touch reading is independent of hands-free listening: it needs no
+    // microphone or recognizer, never stacks repeated reads, and never resumes.
+    func readCurrentStep(_ text: String) {
+        guard !text.isEmpty else { return }
+        if speaker.isSpeaking {
+            speaker.stopSpeaking(at: .immediate)
+        }
+        // Avoid the microphone capturing the spoken step while hands-free is on.
+        if wantsListening {
+            endCycle()
+        }
+        let utterance = makeUtterance(text)
+        readingID = ObjectIdentifier(utterance)
+        isReading = true
+        status = ""
+        speaker.speak(utterance)
+    }
+
+    func stopReading() {
+        guard isReading else { return }
+        readingID = nil
+        isReading = false
+        if speaker.isSpeaking {
+            speaker.stopSpeaking(at: .immediate)
+        }
+    }
+
+    private func makeUtterance(_ text: String) -> AVSpeechUtterance {
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-        speaker.speak(utterance)
+        return utterance
     }
 
     nonisolated func speechSynthesizer(
         _ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance
     ) {
+        let utteranceID = ObjectIdentifier(utterance)
         Task { @MainActor in
+            if readingID == utteranceID {
+                readingID = nil
+                isReading = false
+            }
             if wantsListening { resumeAfterShortPause() }
+        }
+    }
+
+    nonisolated func speechSynthesizer(
+        _ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance
+    ) {
+        let utteranceID = ObjectIdentifier(utterance)
+        Task { @MainActor in
+            if readingID == utteranceID {
+                readingID = nil
+                isReading = false
+            }
         }
     }
 
     func stopForAudioInterruption() {
         // Audio interruption may arrive while the system's permission sheet is open.
-        guard isListening || pendingStartAttempt != nil else { return }
+        let wasListening = isListening || pendingStartAttempt != nil
+        guard wasListening || isReading else { return }
         if isListening {
             stop()
+        } else if isReading {
+            stopReading()
         } else {
             startGate.cancel()
             pendingStartAttempt = nil
         }
-        status = "Voice control interrupted. Use the step buttons."
+        if wasListening {
+            status = "Voice control interrupted. Use the step buttons."
+        }
     }
 
     func stop() {
@@ -1861,6 +1949,8 @@ private final class CookingVoiceController: NSObject, ObservableObject, AVSpeech
         wantsListening = false
         isListening = false
         endCycle()
+        readingID = nil
+        isReading = false
         if speaker.isSpeaking { speaker.stopSpeaking(at: .immediate) }
         recognition = nil
         try? AVAudioSession.sharedInstance().setActive(
