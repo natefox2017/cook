@@ -143,7 +143,7 @@ final class RecipeQuestionService {
         let revision = Self.revision(for: recipe)
 
         let body: [String: Any] = [
-            "recipe_id": recipe.id.uuidString,
+            "recipe_id": recipe.id.uuidString.lowercased(),
             "revision": revision,
             "snapshot": [
                 "title": snapshot.title,
@@ -153,7 +153,7 @@ final class RecipeQuestionService {
             ],
             "question": question,
             "history": history.map { ["question": $0.question, "answer": $0.answer] },
-            "operation_id": operationID.uuidString,
+            "operation_id": operationID.uuidString.lowercased(),
         ]
         let data = try JSONSerialization.data(withJSONObject: body)
 
