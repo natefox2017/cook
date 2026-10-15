@@ -493,11 +493,7 @@ struct RecipeApp: App {
         _store = State(initialValue: localStore)
         _templateStore = State(
             initialValue: Self.makeTemplateStore(isUITesting: isUITesting))
-        _commerce = State(
-            initialValue: RecipeCommerceComposition(
-                writer: localStore.finalizedRecipeWriter
-            )
-        )
+        _commerce = State(initialValue: RecipeCommerceComposition())
     }
 
     private static func makeTemplateStore(isUITesting: Bool) -> RecipeMealPlanTemplateStore {
@@ -774,7 +770,6 @@ private struct RecipeRootView: View {
             commerce.ownerDidChange(to: ownerID)
             if let ownerID {
                 await commerce.recoverPendingImportUsage(ownerID: ownerID)
-                await commerce.recoverPendingDraftSettlements(ownerID: ownerID)
             }
         }
         .onChange(of: auth.state) { _, state in
@@ -789,7 +784,6 @@ private struct RecipeRootView: View {
             if let ownerID, !isUITesting {
                 Task {
                     await commerce.recoverPendingImportUsage(ownerID: ownerID)
-                    await commerce.recoverPendingDraftSettlements(ownerID: ownerID)
                 }
             }
             // An ACK from the previous account must not hide a receipt from

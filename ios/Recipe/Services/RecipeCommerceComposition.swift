@@ -1,5 +1,5 @@
 // Developer: gengyun
-// Purpose: Composes the unified commercial services (access, upgrade, usage, draft commit) and binds them to the verified owner.
+// Purpose: Composes the unified commercial services (access, upgrade, import usage) and binds them to the verified owner.
 
 import Foundation
 import Observation
@@ -7,9 +7,9 @@ import RecipeCore
 
 /// Single composition point that instantiates the unified commercial services and keeps them bound
 /// to the verified Supabase owner. Features consume capability gating through `RecipeAccessStore`
-/// and upgrades through `UpgradeRouter`; import quota flows go through `RecipeImportUsageBridge`;
-/// the draft save/recovery goes through `RecipeDraftCommitCoordinator`. In the freeTest build
-/// everything stays dormant and no StoreKit/usage network call is made.
+/// and upgrades through `UpgradeRouter`; import quota flows go through `RecipeImportUsageBridge`.
+/// The draft review-to-save flow is owned by the self-contained `RecipeDraftService`, not here. In
+/// the freeTest build everything stays dormant and no StoreKit/usage network call is made.
 @MainActor
 @Observable
 final class RecipeCommerceComposition {
@@ -20,25 +20,7 @@ final class RecipeCommerceComposition {
     /// directory could not be created (disk failure); import quota then remains unavailable.
     let importUsage: RecipeImportUsageBridge?
 
-    /// Draft commit handoff. `nil` only when the store writer is not yet bound; the draft service
-    /// then falls back to persisting a pending commit instead of settling inline.
-    let draftCommitCoordinator: RecipeDraftCommitCoordinator?
-
-    /// The app-level composer adapter (DEV-428): composes the accepted terminal `.proposal`
-    /// suggestions onto the immutable session context and fails closed on unresolved fields.
-    static let draftComposer: RecipeDraftRecipeComposer = { session, suggestions, receipt, ownerID in
-        try RecipeDraftRecipeComposerAdapter.compose(
-            session: session,
-            suggestions: suggestions,
-            receipt: receipt,
-            ownerID: ownerID
-        )
-    }
-
-    init(
-        writer: RecipeFinalizedRecipeWriter? = nil,
-        sessionLoader: RecipeDraftSessionLoader? = nil
-    ) {
+    init() {
         let access = RecipeAccessStore()
         self.accessStore = access
         self.upgradeRouter = UpgradeRouter(access: access)
@@ -48,17 +30,6 @@ final class RecipeCommerceComposition {
             self.importUsage = RecipeImportUsageBridge(client: usageClient, store: store)
         } else {
             self.importUsage = nil
-        }
-
-        if let writer {
-            self.draftCommitCoordinator = RecipeDraftCommitCoordinator(
-                usage: usageClient,
-                composer: Self.draftComposer,
-                writer: writer,
-                sessionLoader: sessionLoader
-            )
-        } else {
-            self.draftCommitCoordinator = nil
         }
     }
 
@@ -81,12 +52,6 @@ final class RecipeCommerceComposition {
             return
         }
         _ = try? await importUsage.recover(ownerID: ownerID)
-    }
-
-    /// Re-runs the still-owed part of a pending draft commit (finalize/write/ack) for the owner.
-    /// No-op until the draft commit coordinator and its session loader are wired.
-    func recoverPendingDraftSettlements(ownerID: UUID) async {
-        await draftCommitCoordinator?.recoverPendingSettlements(ownerID: ownerID)
     }
 
     /// Minimal PDF export capability entry for DEV-440's Profile. Returns `true` when the export
