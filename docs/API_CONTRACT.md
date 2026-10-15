@@ -111,3 +111,7 @@ Response：
 ## Extractive owner draft contract (specification only)
 
 [DEV-291](https://linear.app/gengyun/issue/DEV-291) freezes the additive [owner draft/session/turn specification](AI/RECIPE_DRAFT_API_V1.md), [OpenAPI](schemas/recipe-draft-v1.openapi.json) and [JSON Schema](schemas/recipe-draft-v1.schema.json). It reuses DEV-283/285 and an owned completed import job. The API is default-disabled and not implemented or deployed; persistent revision/replay, confirmed overlay, approval CAS and token reservations are future implementation requirements. It does not change the frozen import API or implicitly save a private Recipe, and excludes inspiration or new source inference.
+
+## Commercial access and usage contract (specification only)
+
+[DEV-425](https://linear.app/gengyun/issue/DEV-425) freezes the additive [commercial access/usage specification](RECIPE_PALS_COMMERCIAL_CONTRACT.md), [OpenAPI](schemas/commercial-v1.openapi.json) and [JSON Schema](schemas/commercial-v1.schema.json). It defines `GET /recipe-access` and the `/recipe-usage` reservation/commit/release/finalize/ack routes with server-owned owner identity, entitlement stage and quota. It is not implemented or deployed; billing, quota persistence and save integration are separate downstream tasks.
