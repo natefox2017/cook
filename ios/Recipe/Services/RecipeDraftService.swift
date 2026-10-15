@@ -35,19 +35,19 @@ struct RecipeDraftApprovedSnapshot: Hashable, Sendable {
     }
 }
 
-/// Stable ai_edit settlement identity: reserved before generation and carried unchanged through
-/// approval, durable intent, finalize, local write, ACK and recovery. The same operation_id,
-/// source and input_hash are the idempotency key the server uses to never double-charge.
+/// Stable ai_edit settlement identity carried unchanged through approval, durable intent,
+/// finalize, local write, ACK and recovery. `operationID` is the single client-generated UUID X
+/// that is also the turn request id and `source.turn_request_id`; the backend reserves the unit
+/// during turn dispatch (it must never be reserved by the client, and `operation_id` equals the
+/// turn `request_id`). `inputHash` is the canonical hash of {capability: ai_edit, source}.
 struct RecipeDraftSettlementIdentity: Hashable, Sendable {
     let operationID: UUID
     let sessionID: String
-    let turnRequestID: UUID
     let inputHash: String
 
-    init(operationID: UUID, sessionID: String, turnRequestID: UUID, inputHash: String) {
+    init(operationID: UUID, sessionID: String, inputHash: String) {
         self.operationID = operationID
         self.sessionID = sessionID
-        self.turnRequestID = turnRequestID
         self.inputHash = inputHash
     }
 }
@@ -319,10 +319,6 @@ final class RecipeDraftService {
     /// injects it so the client never invents a hashing implementation.
     typealias ComputeInputHash = @Sendable (RecipeCapability, RecipeUsageSource) throws -> String
 
-    /// Releases a confirmed-not-dispatched or not-committed reservation (no frozen DEV-425 DTO;
-    /// DEV-427 provides the route). Takes the lowercase operation_id.
-    typealias Release = @Sendable (String) async throws -> Void
-
     /// Mirrors DEV-428 `composeApprovedDraftFields(snapshot)`: the approved snapshot becomes the
     /// saveable recipe, or `nil` (fail-closed) when the approval leaves review fields open.
     typealias Compose = @Sendable (RecipeDraftApprovedSnapshot) throws -> Recipe?
@@ -333,7 +329,6 @@ final class RecipeDraftService {
     private let compose: Compose
     private let writeRecipe: RecipeWrite
     private let computeInputHash: ComputeInputHash
-    private let release: Release
     private let currentOwnerID: @Sendable () async -> UUID?
     private let authenticate: RecipeDraftClient.Authenticate
     private let isOwnerCurrent: RecipeDraftClient.IsOwnerCurrent
@@ -362,7 +357,6 @@ final class RecipeDraftService {
             try await RecipeShareHTTPTransport.send($0)
         },
         computeInputHash: @escaping ComputeInputHash,
-        release: @escaping Release,
         compose: @escaping Compose,
         writeRecipe: @escaping RecipeWrite,
         durableStore: RecipeDraftDurableStore = .applicationSupport()
@@ -374,7 +368,6 @@ final class RecipeDraftService {
         self.currentOwnerID = currentOwnerID
         self.send = send
         self.computeInputHash = computeInputHash
-        self.release = release
         self.compose = compose
         self.writeRecipe = writeRecipe
         self.durableStore = durableStore
@@ -389,8 +382,9 @@ final class RecipeDraftService {
 
     // MARK: - Public flow
 
-    /// Creates or resumes the owner's session, reserves one ai_edit unit before generation, runs
-    /// one no-chat turn with the reserved turn_request_id, and polls to terminal.
+    /// Creates or resumes the owner's session, then runs one no-chat turn keyed by the single
+    /// generated UUID X (turn request_id == operation_id); the backend reserves the ai_edit unit
+    /// during dispatch. Polls to terminal.
     func start(jobID: UUID, clientRequestID: UUID) async {
         guard !inFlight else { return }
         guard isEnabled else {
@@ -408,23 +402,16 @@ final class RecipeDraftService {
                 jobID: jobID, clientRequestID: clientRequestID, ownerID: owner
             )
             self.session = session
-            let identity = try await reserveForTurn(session: session, ownerID: owner)
+            // The backend reserves the ai_edit unit during turn dispatch; the client only
+            // generates the single UUID X that is both the turn request_id and operation_id.
+            let identity = try identityForTurn(session: session)
             self.pendingIdentity = identity
-
-            // Dispatch is the only point where a reservation can be released as
-            // "known not dispatched"; every later failure is post-dispatch.
-            let dispatched: RecipeDraftTurn
-            do {
-                dispatched = try await dispatchTurn(
-                    session: session, requestID: identity.turnRequestID, ownerID: owner
-                )
-            } catch {
-                try? await release(identity.operationID.uuidString.lowercased())
-                throw error
-            }
+            let dispatched = try await dispatchTurn(
+                session: session, requestID: identity.operationID, ownerID: owner
+            )
             let turn = try await awaitTerminalTurn(
                 session: session,
-                requestID: identity.turnRequestID,
+                requestID: identity.operationID,
                 ownerID: owner,
                 initial: dispatched
             )
@@ -466,7 +453,7 @@ final class RecipeDraftService {
                 throw RecipeDraftClientError.invalidResponse
             }
             let sessionID = try uuid(session.sessionID)
-            let turnRequestID = identity.turnRequestID
+            let turnRequestID = identity.operationID
             phase = .approving
             let receipt = try await client.approveTurn(
                 sessionID: sessionID,
@@ -493,8 +480,7 @@ final class RecipeDraftService {
         }
     }
 
-    /// Rejects all AI suggestions, releases the not-committed reservation, and returns control
-    /// to the existing manual save flow.
+    /// Rejects all AI suggestions and returns control to the existing manual save flow.
     func rejectAI() async {
         guard case .reviewing = phase else { return }
         guard !inFlight else { return }
@@ -517,9 +503,6 @@ final class RecipeDraftService {
                 selectedPaths: [],
                 ownerID: owner
             )
-            if let identity = pendingIdentity {
-                try? await release(identity.operationID.uuidString.lowercased())
-            }
             pendingIdentity = nil
             phase = .manualFallback
         } catch {
@@ -578,44 +561,23 @@ final class RecipeDraftService {
         }
     }
 
-    // MARK: - Reservation
+    // MARK: - Identity
 
-    private func reserveForTurn(
-        session: RecipeDraftSession, ownerID: UUID
-    ) async throws -> RecipeDraftSettlementIdentity {
-        let operationID = UUID()
-        let turnRequestID = UUID()
+    private func identityForTurn(session: RecipeDraftSession) throws
+        -> RecipeDraftSettlementIdentity
+    {
+        // One UUID X is the turn request_id and the settlement operation_id. The backend reserves
+        // ai_edit during turn dispatch; the client must never reserve or reserve again.
+        let requestID = UUID()
         let source = try RecipeUsageSource(
             sessionID: session.sessionID,
-            turnRequestID: turnRequestID.uuidString.lowercased()
+            turnRequestID: requestID.uuidString.lowercased()
         )
         let inputHash = try computeInputHash(.aiEdit, source)
-        let request = try RecipeReservationRequest(
-            operationID: operationID.uuidString.lowercased(),
-            capability: .aiEdit,
-            inputHash: inputHash,
-            estimatedUnits: 1,
-            source: source
-        )
-        let reservation = try await reserve(request, ownerID: ownerID)
-        guard reservation.status == .reserved,
-            reservation.operationID == operationID.uuidString.lowercased()
-        else {
-            throw RecipeDraftClientError.invalidResponse
-        }
         return RecipeDraftSettlementIdentity(
-            operationID: operationID,
+            operationID: requestID,
             sessionID: session.sessionID,
-            turnRequestID: turnRequestID,
             inputHash: inputHash
-        )
-    }
-
-    private func reserve(
-        _ request: RecipeReservationRequest, ownerID: UUID
-    ) async throws -> RecipeReservation {
-        try await performSettlement(
-            path: ["reservations"], ownerID: ownerID, body: request, statuses: [200, 201]
         )
     }
 
@@ -724,7 +686,7 @@ final class RecipeDraftService {
             ownerID: ownerID,
             operationID: identity.operationID,
             sessionID: identity.sessionID,
-            turnRequestID: identity.turnRequestID.uuidString.lowercased(),
+            turnRequestID: identity.operationID.uuidString.lowercased(),
             inputHash: identity.inputHash,
             recipe: composed
         )
@@ -734,7 +696,7 @@ final class RecipeDraftService {
             operationID: identity.operationID,
             inputHash: identity.inputHash,
             sessionID: identity.sessionID,
-            turnRequestID: identity.turnRequestID.uuidString.lowercased(),
+            turnRequestID: identity.operationID.uuidString.lowercased(),
             ownerID: ownerID
         )
         guard
