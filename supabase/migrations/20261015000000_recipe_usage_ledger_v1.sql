@@ -30,7 +30,10 @@ create index if not exists recipe_usage_counters_owner_idx
 
 -- ---------------------------------------------------------------------------
 -- Reservations: one unit per operation, frozen tier/period/policy at reserve time. A dispatched_unknown
--- reservation is a durable dispatch fence and is never auto-released.
+-- reservation is a durable dispatch fence and is never auto-released or re-dispatched. generated_at is
+-- null while the provider outcome is unknown (crash-before-result); once the provider has returned a
+-- known proposal that is still unapproved, the internal mark_generated hook sets generated_at so the
+-- release hold becomes the 24-hour generated-but-unapproved window instead of a permanent fence.
 -- ---------------------------------------------------------------------------
 create table if not exists public.recipe_usage_reservations (
     operation_id uuid primary key,
@@ -48,6 +51,9 @@ create table if not exists public.recipe_usage_reservations (
     reserved_until timestamptz not null,
     reserved_at timestamptz not null default now(),
     dispatched_at timestamptz,
+    -- Internal "known generated, not yet approved" marker. Null while the dispatched outcome is unknown;
+    -- non-null once the provider returned a proposal awaiting approval (24h release hold).
+    generated_at timestamptz,
     committed_at timestamptz,
     released_at timestamptz,
     created_at timestamptz not null default now(),
@@ -437,6 +443,47 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
+-- Mark a dispatched reservation as known-generated (provider returned a proposal) but still unapproved.
+-- Internal entry for the draft composition (DEV-428); no client route exposes it. It switches the
+-- release hold from the permanent unknown-outcome fence to the 24-hour generated-but-unapproved window.
+-- ---------------------------------------------------------------------------
+create or replace function public.recipe_usage_mark_generated(p_owner_id uuid, p_operation_id uuid)
+returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare
+    v_res public.recipe_usage_reservations%rowtype;
+    v_capability text;
+begin
+    if p_owner_id is null or p_operation_id is null then
+        return jsonb_build_object('code', 'INVALID_INPUT');
+    end if;
+    select capability into v_capability from public.recipe_usage_reservations
+        where operation_id = p_operation_id;
+    if v_capability is null then
+        return jsonb_build_object('code', 'NOT_FOUND');
+    end if;
+    perform pg_catalog.pg_advisory_xact_lock(
+        pg_catalog.hashtextextended(p_owner_id::text || ':' || v_capability, 427)
+    );
+    select * into v_res from public.recipe_usage_reservations where operation_id = p_operation_id;
+    if not found or v_res.owner_id <> p_owner_id then
+        return jsonb_build_object('code', 'NOT_FOUND');
+    end if;
+    if v_res.status <> 'dispatched_unknown' then
+        return jsonb_build_object('code', 'RESERVATION_EXPIRED');
+    end if;
+    if v_res.generated_at is null then
+        update public.recipe_usage_reservations
+            set generated_at = now(), updated_at = now()
+            where operation_id = p_operation_id
+            returning * into v_res;
+    end if;
+    return jsonb_build_object('code', 'GENERATED', 'reservation', public.recipe_usage_reservation_json(v_res));
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Settle a dispatched reservation (commit). Same durable outcome replays; never double charges.
 -- ---------------------------------------------------------------------------
 create or replace function public.recipe_usage_commit(
@@ -482,8 +529,9 @@ $$;
 
 -- ---------------------------------------------------------------------------
 -- Release a reservation confirmed not dispatched or not committed. Units return to the original bucket.
--- A committed reservation cannot be released; a dispatched_unknown reservation is releasable only after
--- the 24-hour generated-proposal hold elapses (its uncommitted unit is then safe to reclaim).
+-- A committed reservation cannot be released. A dispatched_unknown reservation with a null generated_at
+-- is a durable unknown-outcome fence and is never releasable; once generated_at is set (known generated,
+-- still unapproved) the unit is releasable after the 24-hour hold.
 -- ---------------------------------------------------------------------------
 create or replace function public.recipe_usage_release(p_owner_id uuid, p_operation_id uuid)
 returns jsonb
@@ -520,8 +568,12 @@ begin
         return jsonb_build_object('code', 'RESERVATION_EXPIRED');
     end if;
     if v_res.status = 'dispatched_unknown' then
-        -- A generated-but-unapproved proposal is held 24h; only then is its uncommitted unit releasable.
-        if v_res.dispatched_at is null or v_res.dispatched_at + interval '24 hours' > now() then
+        -- Unknown provider outcome is a durable fence: never releasable, never re-dispatched.
+        if v_res.generated_at is null then
+            return jsonb_build_object('code', 'RESERVATION_EXPIRED');
+        end if;
+        -- Known generated but unapproved: held 24h, then the uncommitted unit is releasable.
+        if v_res.generated_at + interval '24 hours' > now() then
             return jsonb_build_object('code', 'RESERVATION_EXPIRED');
         end if;
     end if;
@@ -543,8 +595,9 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Finalize: atomically settle usage AND persist the server-produced stable recipe_id + payload_hash +
 -- recoverable approved payload. Idempotent by (owner, capability, source). The supplied operation is
--- validated first; if the source was already finalized, a still-held new reservation is released and the
--- canonical outcome is returned without a second charge. recipe_id is server-generated (never supplied).
+-- validated first; if the source was already finalized, any still-held new reservation (reserved or
+-- dispatched_unknown) is released and the canonical committed operation_id is returned so the client's
+-- ACK can complete without a second charge. recipe_id is server-generated (never supplied).
 -- ---------------------------------------------------------------------------
 create or replace function public.recipe_usage_finalize(
     p_owner_id uuid, p_operation_id uuid, p_capability text, p_input_hash text,
@@ -590,8 +643,10 @@ begin
     select * into v_final from public.recipe_usage_finalizations
         where owner_id = p_owner_id and capability = p_capability and input_hash = p_input_hash;
     if found then
-        -- A new operation for an already-finalized source must not leave a second reserved unit held.
-        if v_res.status = 'reserved' then
+        -- A new operation for an already-finalized source must not leave a second held unit behind,
+        -- whether it is still reserved or already mark_dispatched (dispatched_unknown) in the ai_edit
+        -- replay path. The source is finalized, so its unit is a duplicate hold, never an unknown fence.
+        if v_res.status in ('reserved', 'dispatched_unknown') then
             update public.recipe_usage_counters
                 set reserved = reserved - v_res.reserved_units
                 where owner_id = p_owner_id and capability = v_res.capability
@@ -604,7 +659,7 @@ begin
         select * into v_res from public.recipe_usage_reservations where operation_id = v_final.operation_id;
         return jsonb_build_object(
             'code', 'FINALIZED',
-            'operation_id', p_operation_id::text,
+            'operation_id', v_final.operation_id::text,
             'recipe_id', v_final.recipe_id::text,
             'payload_hash', v_final.payload_hash,
             'period_start',
@@ -756,12 +811,14 @@ do $$ declare fn record; begin
           and proname in (
               'recipe_usage_entitlement', 'recipe_usage_period', 'recipe_usage_reservation_json',
               'recipe_usage_expire_stale', 'recipe_usage_settle', 'recipe_usage_reserve',
-              'recipe_usage_mark_dispatched', 'recipe_usage_commit', 'recipe_usage_release',
+              'recipe_usage_mark_dispatched', 'recipe_usage_mark_generated',
+              'recipe_usage_commit', 'recipe_usage_release',
               'recipe_usage_finalize', 'recipe_usage_ack', 'recipe_access_snapshot'
           ) loop
         execute format('revoke all on function %s from public, anon, authenticated, service_role', fn.signature);
         if fn.signature::text like '%recipe_usage_reserve(%'
            or fn.signature::text like '%recipe_usage_mark_dispatched(%'
+           or fn.signature::text like '%recipe_usage_mark_generated(%'
            or fn.signature::text like '%recipe_usage_commit(%'
            or fn.signature::text like '%recipe_usage_release(%'
            or fn.signature::text like '%recipe_usage_finalize(%'
