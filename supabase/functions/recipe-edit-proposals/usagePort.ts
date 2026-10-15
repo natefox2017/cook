@@ -35,6 +35,8 @@ export interface UsagePort {
   markGenerated(input: UsageOperationInput): Promise<void>;
   release(input: UsageOperationInput): Promise<void>;
   finalize(input: UsageFinalizeInput): Promise<void>;
+  /** Confirm the client durably persisted the finalized save; requires a committed reservation. */
+  ack(input: UsageOperationInput): Promise<void>;
 }
 
 export type UsageRPC = (
@@ -122,6 +124,16 @@ export function createLedgerUsagePort(rpc: UsageRPC): UsagePort {
         fail(row.code as string | undefined);
       }
     },
+
+    async ack(input) {
+      const row = rpcRow(await rpc("recipe_usage_ack", {
+        p_owner_id: input.ownerId,
+        p_operation_id: input.operationId,
+      }));
+      if (row.code !== "ACKED") {
+        fail(row.code as string | undefined);
+      }
+    },
   };
 }
 
@@ -138,5 +150,6 @@ export function createUnavailableUsagePort(): UsagePort {
     markGenerated: unavailable,
     release: unavailable,
     finalize: unavailable,
+    ack: unavailable,
   };
 }

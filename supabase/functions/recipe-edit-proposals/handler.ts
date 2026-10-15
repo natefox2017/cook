@@ -299,13 +299,39 @@ function wireProposal(row: ProposalRow): Row {
 
 function parseApproveBody(
   body: Row,
-): { changes: EditChange[]; expectedSnapshotHash: string } {
+): {
+  changes: EditChange[];
+  expectedSnapshotHash: string;
+  mode: "apply" | "variant";
+  variantId: string | null;
+} {
   requireThat(Array.isArray(body.changes), "INVALID_INPUT");
   requireThat(validEditChanges(body.changes), "INVALID_INPUT");
+  const mode = body.mode;
+  requireThat(mode === "apply" || mode === "variant", "INVALID_INPUT");
+  let variantId: string | null = null;
+  if (mode === "variant") {
+    variantId = uuid(body.variant_id, "INVALID_INPUT");
+  } else {
+    requireThat(
+      body.variant_id === undefined || body.variant_id === null,
+      "INVALID_INPUT",
+    );
+  }
   return {
     changes: body.changes as EditChange[],
     expectedSnapshotHash: hash(body.expected_snapshot_hash),
+    mode,
+    variantId,
   };
+}
+
+function parseAckBody(body: Row): { operationId: string } {
+  requireThat(
+    Object.keys(body).length === 1 && Object.hasOwn(body, "operation_id"),
+    "INVALID_INPUT",
+  );
+  return { operationId: uuid(body.operation_id, "INVALID_INPUT") };
 }
 
 export async function handleRequest(
@@ -331,6 +357,10 @@ export async function handleRequest(
     );
     if (approveMatch && method === "POST") {
       return await approveProposal(approveMatch[1], request, deps);
+    }
+    const ackMatch = path.match(new RegExp(`^${prefix}/([0-9a-f-]{36})/ack$`));
+    if (ackMatch && method === "POST") {
+      return await ackProposal(ackMatch[1], request, deps);
     }
     return json({ error: { code: "NOT_FOUND", message: "Not found" } }, 404);
   } catch (error) {
@@ -492,7 +522,23 @@ async function approveProposal(
   requireThat(deps.enabled, "EDIT_DISABLED");
   const owner = await deps.authenticate(request);
   const body = parseApproveBody(await readJSONBody(request, MAX_BODY_BYTES));
-  const payloadHash = await canonicalHash({ changes: body.changes });
+
+  // The target recipe id is explicit: "apply" preserves the current recipe id, "variant" uses the
+  // client-provided stable new id. The ledger's internal recipe_id is never surfaced to the client.
+  const existing = await deps.backend.getProposal(owner.id, id);
+  if (!existing) {
+    return json({ error: { code: "NOT_FOUND", message: "Not found" } }, 404);
+  }
+  const targetId = body.mode === "variant"
+    ? (body.variantId as string)
+    : existing.recipe_id;
+  const payload = {
+    changes: body.changes,
+    mode: body.mode,
+    target_id: targetId,
+  };
+  const payloadHash = await canonicalHash(payload);
+
   const result = await deps.backend.approveProposal({
     ownerId: owner.id,
     proposalId: id,
@@ -513,8 +559,8 @@ async function approveProposal(
           source_revision: result.proposal.source_revision,
           intent: result.proposal.intent,
         },
-        payloadHash: result.proposal.payload_hash ?? payloadHash,
-        payload: { changes: body.changes },
+        payloadHash,
+        payload,
       });
     } catch (error) {
       console.error("usage_finalize_failed");
@@ -525,7 +571,35 @@ async function approveProposal(
     proposal_id: result.proposal.id,
     status: result.proposal.status,
     operation_id: result.proposal.operation_id,
-    recipe_id: result.proposal.recipe_id,
+    target_id: targetId,
     payload_hash: result.proposal.payload_hash,
   }, 200);
+}
+
+async function ackProposal(
+  id: string,
+  request: Request,
+  deps: Dependencies,
+): Promise<Response> {
+  requireThat(deps.enabled, "EDIT_DISABLED");
+  const owner = await deps.authenticate(request);
+  const body = parseAckBody(await readJSONBody(request, MAX_BODY_BYTES));
+  const existing = await deps.backend.getProposal(owner.id, id);
+  if (!existing) {
+    return json({ error: { code: "NOT_FOUND", message: "Not found" } }, 404);
+  }
+  requireThat(existing.status === "approved", "NOT_FOUND");
+  requireThat(existing.operation_id === body.operationId, "INVALID_INPUT");
+  try {
+    await deps.usage.ack({
+      ownerId: owner.id,
+      operationId: body.operationId,
+      capability: "ai_edit",
+      inputHash: existing.input_hash,
+    });
+  } catch (error) {
+    console.error("usage_ack_failed");
+    throw new Failure("USAGE_UNAVAILABLE");
+  }
+  return json({ operation_id: body.operationId, status: "acked" }, 200);
 }
