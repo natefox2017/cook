@@ -1,19 +1,21 @@
 // Developer: gengyun
-// Purpose: Bind the verified JWT owner, the owner-scoped persistence adapter, and fail-closed
-// provider/usage ports into the handler dependencies. Real provider config and the usage ledger
-// are owner handoff; until then they fail closed instead of faking success.
+// Purpose: Bind the verified JWT owner, the owner-scoped persistence adapter, and the injected
+// provider/usage ports into the handler dependencies. Real provider config and the usage ledger are
+// wired by the composition root; when absent they fail closed instead of faking success.
 
 import { requireUser } from "../_shared/auth.ts";
-import { type Dependencies, Failure } from "./handler.ts";
+import { type Dependencies, type EditProviderPort, Failure } from "./handler.ts";
 import {
   type BackendAdapterOptions,
   createRecipeEditBackendAdapter,
 } from "./backendAdapter.ts";
-import { createUnavailableUsagePort } from "./usagePort.ts";
+import { createUnavailableUsagePort, type UsagePort } from "./usagePort.ts";
 
 export interface RecipeEditBindingsOptions
   extends Partial<BackendAdapterOptions> {
   enabled?: boolean;
+  provider?: EditProviderPort;
+  usage?: UsagePort;
 }
 
 export function createRecipeEditBindings(
@@ -35,13 +37,12 @@ export function createRecipeEditBindings(
       }
     },
     backend,
-    // Provider configuration loading (route/model/provider rows + secret resolution through the
-    // bounded transport) is wired by the owner during handoff; before that, generation is refused.
-    provider: {
+    // When no provider is injected, generation is refused (503) instead of faking a result.
+    provider: options.provider ?? {
       generate: async () => {
         throw new Failure("PROVIDER_UNAVAILABLE");
       },
     },
-    usage: createUnavailableUsagePort(),
+    usage: options.usage ?? createUnavailableUsagePort(),
   };
 }

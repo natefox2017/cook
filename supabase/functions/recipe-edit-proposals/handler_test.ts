@@ -83,9 +83,23 @@ interface FakeOptions {
 
 function fakeDeps(options: FakeOptions = {}): {
   deps: Dependencies;
-  calls: { reserve: number; release: number; finalize: number };
+  calls: {
+    reserve: number;
+    markDispatched: number;
+    markGenerated: number;
+    release: number;
+    finalize: number;
+    ack: number;
+  };
 } {
-  const calls = { reserve: 0, release: 0, finalize: 0 };
+  const calls = {
+    reserve: 0,
+    markDispatched: 0,
+    markGenerated: 0,
+    release: 0,
+    finalize: 0,
+    ack: 0,
+  };
   const deps: Dependencies = {
     enabled: options.enabled ?? true,
     authenticate: async () => ({ id: owner }),
@@ -119,12 +133,22 @@ function fakeDeps(options: FakeOptions = {}): {
     usage: {
       reserve: async () => {
         calls.reserve++;
+        return "reserved";
+      },
+      markDispatched: async () => {
+        calls.markDispatched++;
+      },
+      markGenerated: async () => {
+        calls.markGenerated++;
       },
       release: async () => {
         calls.release++;
       },
       finalize: async () => {
         calls.finalize++;
+      },
+      ack: async () => {
+        calls.ack++;
       },
     },
   };
@@ -269,6 +293,7 @@ Deno.test("POST approve finalizes the usage settlement once", async () => {
     request("POST", `/recipe-edit-proposals/${proposalID}/approve`, {
       changes: [change()],
       expected_snapshot_hash: hash,
+      mode: "apply",
     }),
     deps,
   );
@@ -284,6 +309,7 @@ Deno.test("POST approve returns 409 when the snapshot changed", async () => {
     request("POST", `/recipe-edit-proposals/${proposalID}/approve`, {
       changes: [change()],
       expected_snapshot_hash: hash,
+      mode: "apply",
     }),
     deps,
   );
@@ -297,6 +323,7 @@ Deno.test("POST approve rejects a change path outside the three whitelist kinds"
     request("POST", `/recipe-edit-proposals/${proposalID}/approve`, {
       changes: [{ ...change(), path: "title" }],
       expected_snapshot_hash: hash,
+      mode: "apply",
     }),
     deps,
   );
