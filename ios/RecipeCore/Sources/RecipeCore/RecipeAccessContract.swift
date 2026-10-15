@@ -74,28 +74,29 @@ private func accessDaysInMonth(_ month: Int, _ year: Int) -> Int? {
 }
 
 /// ISO 8601 UTC with optional millisecond fraction, validated against a real calendar date without
-/// normalization. Mirrors the TypeScript round-trip check: invalid dates (e.g. 2026-02-30) reject.
-private let accessTimestampPattern =
-    #"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?Z$"#
+/// normalization. Mirrors the TypeScript round-trip check: invalid dates (e.g. 2026-02-30) reject,
+/// and the fractional second is preserved so reset_at/period_start comparisons match JS exactly.
+private let accessTimestampRegex = try! NSRegularExpression(
+    pattern: #"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$"#)
 
 private func accessTimestampDate(_ value: String) -> Date? {
+    let range = NSRange(value.startIndex..<value.endIndex, in: value)
     guard
-        value.range(of: accessTimestampPattern, options: .regularExpression)
-            == value.startIndex..<value.endIndex
+        let match = accessTimestampRegex.firstMatch(in: value, range: range),
+        match.range == range
     else {
         return nil
     }
-    func field(_ lower: Int, _ upper: Int) -> Int {
-        let start = value.index(value.startIndex, offsetBy: lower)
-        let end = value.index(value.startIndex, offsetBy: upper)
-        return Int(value[start..<end])!
+    func field(_ index: Int) -> Int {
+        let r = match.range(at: index)
+        return Int(value[Range(r, in: value)!])!
     }
-    let year = field(0, 4)
-    let month = field(5, 7)
-    let day = field(8, 10)
-    let hour = field(11, 13)
-    let minute = field(14, 16)
-    let second = field(17, 19)
+    let year = field(1)
+    let month = field(2)
+    let day = field(3)
+    let hour = field(4)
+    let minute = field(5)
+    let second = field(6)
     guard
         (1...12).contains(month), (0...23).contains(hour), (0...59).contains(minute),
         (0...59).contains(second), let days = accessDaysInMonth(month, year),
@@ -110,6 +111,13 @@ private func accessTimestampDate(_ value: String) -> Date? {
     components.hour = hour
     components.minute = minute
     components.second = second
+    let fraction = match.range(at: 7)
+    if fraction.location != NSNotFound {
+        let fractionRange = Range(fraction, in: value)!
+        let millis = Int(
+            value[fractionRange].padding(toLength: 3, withPad: "0", startingAt: 0))!
+        components.nanosecond = millis * 1_000_000
+    }
     var calendar = Calendar(identifier: .gregorian)
     calendar.timeZone = TimeZone(secondsFromGMT: 0)!
     return calendar.date(from: components)
@@ -130,9 +138,28 @@ private func accessPositive(_ value: Int) -> Bool {
     value >= 1 && value <= accessSafeIntegerMax
 }
 
-private func accessUUIDs(_ values: [String], minimum: Int) -> Bool {
-    values.count >= minimum && values.count <= 60 && Set(values).count == values.count
-        && values.allSatisfy(accessUUID)
+/// Candidate IDs are bounded opaque strings, not UUIDs: candidateIdentity.ts emits
+/// `candidate-v2-<32hex>[-n]` and legacy `candidate-<index>-<hash>` remains intact.
+private func accessCandidateID(_ value: String) -> Bool {
+    value.range(of: "^[A-Za-z0-9_-]{1,128}$", options: .regularExpression) == value
+        .startIndex..<value.endIndex
+}
+
+/// One candidate per usage operation; the server verifies membership of the owned job result.
+private func accessCandidateIDs(_ values: [String]) -> Bool {
+    values.count == 1 && values.allSatisfy(accessCandidateID)
+}
+
+/// V1 save routes accept only smart_import (import job source) or ai_edit (draft approval source).
+private func accessSaveRoute(_ capability: RecipeCapability, _ source: RecipeUsageSource) -> Bool {
+    switch capability {
+    case .smartImport:
+        return source.origin == .importJob && source.candidateIDs?.count == 1
+    case .aiEdit:
+        return source.origin == .draftApproval
+    default:
+        return false
+    }
 }
 
 /// Fixed commercial capability vocabulary. Unknown wire identifiers are rejected.
@@ -253,8 +280,8 @@ public enum RecipeUsageOrigin: String, Codable, Hashable, Sendable {
 }
 
 /// The persisted origin a usage operation settles against, so the server loads a trusted result
-/// instead of a client success flag. An import settle references one owned job plus its selected
-/// candidate IDs; an AI edit references the approved draft session and turn.
+/// instead of a client success flag. An import settle references one owned job plus exactly one
+/// candidate; an AI edit references the persisted pending draft session and turn.
 public struct RecipeUsageSource: Codable, Hashable, Sendable {
     public let origin: RecipeUsageOrigin
     public let jobID: String?
@@ -263,7 +290,7 @@ public struct RecipeUsageSource: Codable, Hashable, Sendable {
     public let turnRequestID: String?
 
     public init(importJobID: String, candidateIDs: [String]) throws {
-        guard accessUUID(importJobID) && accessUUIDs(candidateIDs, minimum: 1) else {
+        guard accessUUID(importJobID) && accessCandidateIDs(candidateIDs) else {
             throw RecipeAccessContractError.invalidInput
         }
         self.origin = .importJob
@@ -304,7 +331,7 @@ public struct RecipeUsageSource: Codable, Hashable, Sendable {
         case .importJob:
             guard
                 let job, let candidates, session == nil, turn == nil, accessUUID(job),
-                accessUUIDs(candidates, minimum: 1)
+                accessCandidateIDs(candidates)
             else {
                 throw RecipeAccessContractError.invalidResponse
             }
@@ -462,19 +489,12 @@ public struct RecipeReservationRequest: Codable, Hashable, Sendable {
         operationID: String, capability: RecipeCapability, inputHash: String,
         estimatedUnits: Int, source: RecipeUsageSource
     ) throws {
-        guard accessUUID(operationID) && accessHash(inputHash) && accessPositive(estimatedUnits)
-        else {
+        // One unit per operation: smart_import settles one candidate, ai_edit one approved edit.
+        guard accessUUID(operationID) && accessHash(inputHash) && estimatedUnits == 1 else {
             throw RecipeAccessContractError.invalidInput
         }
-        switch source.origin {
-        case .importJob:
-            guard source.candidateIDs?.count == estimatedUnits else {
-                throw RecipeAccessContractError.invalidInput
-            }
-        case .draftApproval:
-            guard estimatedUnits == 1 else {
-                throw RecipeAccessContractError.invalidInput
-            }
+        guard accessSaveRoute(capability, source) else {
+            throw RecipeAccessContractError.invalidInput
         }
         self.operationID = operationID
         self.capability = capability
@@ -546,13 +566,6 @@ public struct RecipeReservation: Decodable, Hashable, Sendable {
     }
 }
 
-private func accessSingleCandidate(_ source: RecipeUsageSource) -> Bool {
-    if case .importJob = source.origin {
-        return source.candidateIDs?.count == 1
-    }
-    return true
-}
-
 public struct RecipeUsageCommitRequest: Codable, Hashable, Sendable {
     public let capability: RecipeCapability
     public let inputHash: String
@@ -565,7 +578,7 @@ public struct RecipeUsageCommitRequest: Codable, Hashable, Sendable {
     }
 
     public init(capability: RecipeCapability, inputHash: String, source: RecipeUsageSource) throws {
-        guard accessHash(inputHash) && accessSingleCandidate(source) else {
+        guard accessHash(inputHash) && accessSaveRoute(capability, source) else {
             throw RecipeAccessContractError.invalidInput
         }
         self.capability = capability
@@ -607,7 +620,7 @@ public struct RecipeUsageCommitResponse: Decodable, Hashable, Sendable {
         committedUnits = try accessDecode(Int.self, container, "committed_units")
         periodStart = try accessDecode(String?.self, container, "period_start")
         try accessRequire(accessUUID(operationID) && status == "committed")
-        try accessRequire(accessPositive(committedUnits))
+        try accessRequire(committedUnits == 1)
         if let start = periodStart {
             try accessRequire(accessTimestamp(start))
         }
@@ -629,7 +642,7 @@ public struct RecipeUsageFinalizeRequest: Codable, Hashable, Sendable {
     }
 
     public init(capability: RecipeCapability, inputHash: String, source: RecipeUsageSource) throws {
-        guard accessHash(inputHash) && accessSingleCandidate(source) else {
+        guard accessHash(inputHash) && accessSaveRoute(capability, source) else {
             throw RecipeAccessContractError.invalidInput
         }
         self.capability = capability
@@ -678,7 +691,7 @@ public struct RecipeUsageFinalizeResponse: Decodable, Hashable, Sendable {
         periodStart = try accessDecode(String?.self, container, "period_start")
         try accessRequire(accessUUID(operationID) && status == "finalized")
         try accessRequire(accessUUID(recipeID) && accessHash(payloadHash))
-        try accessRequire(accessPositive(committedUnits))
+        try accessRequire(committedUnits == 1)
         if let start = periodStart {
             try accessRequire(accessTimestamp(start))
         }

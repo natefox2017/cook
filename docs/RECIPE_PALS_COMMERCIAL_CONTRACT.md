@@ -6,14 +6,14 @@ Machine-readable sources of truth:
 
 - [OpenAPI](schemas/commercial-v1.openapi.json) — six authenticated routes.
 - [JSON Schema](schemas/commercial-v1.schema.json) — DTO shapes and the versioned `x-commercial-policy`.
-- [Contract examples](commercial-fixtures/contract-examples.json) — free / premium / expired / multi-candidate / replay / error examples decoded identically by Swift and TypeScript.
+- [Contract examples](commercial-fixtures/contract-examples.json) — free / premium / expired / import / ai-edit / replay / error examples decoded identically by Swift and TypeScript.
 
 Cross-language DTO validators (the actual enforcement of the arithmetic invariants):
 
 - `ios/RecipeCore/Sources/RecipeCore/RecipeAccessContract.swift`
 - `supabase/functions/_shared/recipeAccessContract.mjs`
 
-Wire conventions: all UUIDs and hashes are canonical lowercase; uppercase is rejected. Integer counters are bounded to `2^53 - 1` so Swift and TypeScript decode identically. Request DTOs are `Codable` with validated public initializers so the app can construct and encode them for future HTTP; response DTOs are decode-only.
+Wire conventions: all UUIDs (operation/job/session/turn/recipe) and hashes are canonical lowercase; uppercase is rejected. Candidate IDs are bounded opaque strings (`candidate-v2-<32hex>[-n]` or legacy `candidate-<index>-<hash>`), not UUIDs; the server verifies membership of the owned job result. Integer counters are bounded to `2^53 - 1` so Swift and TypeScript decode identically. Request DTOs are `Codable` with validated public initializers so the app can construct and encode them for future HTTP; response DTOs are decode-only.
 
 ## Scope and authority
 
@@ -54,10 +54,10 @@ Returns `AccessResponse` (`owner_id`, `server_time`, `policy_version`, `stage`, 
 
 ## Usage reservation lifecycle
 
-Reserve before provider work; settle from the real persisted operation result; never from a client success boolean.
+Reserve and settle one unit per operation, always from the real persisted operation result, never from a client success boolean. Sequencing differs by capability: `smart_import` reserves only when the user confirms a save and the selected candidate already exists (never before candidates are known); `ai_edit` reserves one edit unit **before** generation, then settles at finalize.
 
-1. `POST /recipe-usage/reservations` — `{operation_id, capability, input_hash, estimated_units, source}`. `source` carries the persisted origin: for `smart_import`, an owned `job_id` plus the selected `candidate_ids` (their count equals `estimated_units`); for `ai_edit`, the approved `session_id` and `turn_request_id`. Returns a durable `Reservation` with `status: reserved`, a 10-minute `reserved_until` TTL, and `tier_at_reserve`/`policy_version`/`period_start` frozen at reserve time. The lock key is `(owner, capability)`; the counters (week/month/lifetime) are read inside that lock.
-2. `POST /recipe-usage/{operation_id}/commit` — settle a dispatched reservation. The server loads the persisted operation/proposal referenced by `source` (never a client success flag) to decide committed units.
+1. `POST /recipe-usage/reservations` — `{operation_id, capability, input_hash, estimated_units: 1, source}`. `source` carries the persisted origin: for `smart_import`, an owned `job_id` plus exactly one `candidate_id`; for `ai_edit`, the persisted pending `session_id` and `turn_request_id` (approval is only required at finalize). `capability` must match the origin — `smart_import`↔`import_job`, `ai_edit`↔`draft_approval`; other capabilities are reserved vocabulary and not accepted on these V1 save routes. Returns a durable `Reservation` with `status: reserved`, a 10-minute `reserved_until` TTL, and `tier_at_reserve`/`policy_version`/`period_start` frozen at reserve time. The lock key is `(owner, capability)`; the counters (week/month/lifetime) are read inside that lock. Multi-candidate saves reserve each selected candidate as a separate operation; on quota/error the client releases still-unfinalized peers before any finalize and retries the remaining selection, while already-finalized results always recover separately.
+2. `POST /recipe-usage/{operation_id}/commit` — settle a dispatched reservation. The server loads the persisted operation/proposal referenced by `source` (never a client success flag) to decide the committed unit.
 3. `POST /recipe-usage/{operation_id}/release` — release a reservation confirmed not dispatched or not committed. Units return to the original bucket.
 4. `POST /recipe-usage/{operation_id}/finalize` — the import/edit alias: atomically persists the authorized result, the stable `recipe_id`, the approved `payload_hash` and the usage commit. One candidate is settled per finalize (`source.candidate_ids` has exactly one entry), so the single `recipe_id`/`payload_hash` is unambiguous; multi-candidate saves issue one finalize per candidate. The `recipe_id` and `payload_hash` are server-produced; the client never supplies a success flag, an `actual_units` value or a recipe ID.
 5. `POST /recipe-usage/{operation_id}/ack` — confirms the device durably persisted the finalized save. Recovery after a crash reuses the same `operation_id` and never re-invokes the model.
@@ -66,7 +66,7 @@ The reservation is frozen with `owner`, `capability`, `period_start`, `policy_ve
 
 ### Idempotency and replay
 
-Identical replay returns the same durable outcome with `200`. The same idempotency key with different input returns `409 IDEMPOTENCY_CONFLICT`. The server never recalculates an old outcome against new evidence. Multi-candidate imports settle per successfully saved candidate ID: the same candidate under a new request must not be charged twice.
+Identical replay returns the same durable outcome with `200`. The same idempotency key with different input returns `409 IDEMPOTENCY_CONFLICT`. The server never recalculates an old outcome against new evidence. `finalize` is idempotent by `(owner, capability, source)`: a repeated operation — or a new operation with the same candidate — returns the same durable `recipe_id`/`payload_hash` and never charges twice. The old five draft paths keep their meaning; commerce never changes them.
 
 ## Error mapping
 
@@ -94,7 +94,7 @@ Fixed official `purchases-ios` release for the native StoreKit 2 "myApp + StoreK
 - **Package.resolved pin** (`version: 3`, `kind: remoteSourceControl`, `location: https://github.com/RevenueCat/purchases-ios.git`, `revision: 95ad250230efa7fc3e811c158ed264832aed2e79`).
 - **Deployment target:** iOS 13.0 minimum (satisfies the app's iOS 18 floor). StoreKit 2 is the default in v5; the removed `.with(usesStoreKit2IfAvailable:)` must not be reintroduced.
 - **Configuration:** `Purchases.configure(with: .builder(withAPIKey: apiKey).with(purchasesAreCompletedBy: .myApp, storeKitVersion: .storeKit2).build())`. "Observer Mode" was renamed `PurchasesAreCompletedBy` in v5.
-- **Identity/sync/restore:** `Purchases.shared.logIn(_ appUserID: String) async throws -> (customerInfo: CustomerInfo, created: Bool)`, `Purchases.shared.logOut() async throws -> CustomerInfo`, `Purchases.shared.syncPurchases() async throws -> CustomerInfo`, `Purchases.shared.restorePurchases() async throws -> CustomerInfo`, `Purchases.shared.getCustomerInfo() async throws -> CustomerInfo`, and `Purchases.shared.recordPurchase(_:)` for purchases completed by the app. `appUserID` is the verified Supabase UUID; no anonymous configure before login.
+- **Identity/sync/restore:** `Purchases.shared.logIn(_ appUserID: String) async throws -> (customerInfo: CustomerInfo, created: Bool)`, `Purchases.shared.logOut() async throws -> CustomerInfo`, `Purchases.shared.syncPurchases() async throws -> CustomerInfo`, `Purchases.shared.restorePurchases() async throws -> CustomerInfo`, `Purchases.shared.customerInfo() async throws -> CustomerInfo`, and `Purchases.shared.recordPurchase(_ purchaseResult: StoreKit.Product.PurchaseResult) async throws -> StoreTransaction?` for purchases completed by the app. `appUserID` is the verified Supabase UUID; no anonymous configure before login.
 
 Login/logout hardening: do not configure an anonymous SDK before login; on logout, invalidate the old owner's callbacks and block cloud entitlement; if the SDK cannot be deconfigured, keep an internal instance but block and mask the old owner's authorization and calls until the next verified owner binding completes. The original transaction owner is never silently transferred to a new account; a restore conflict prompts the original account. Dashboard restore behavior must be `Keep with original App User ID` (returns `receipt_already_in_use` on mismatch); the actual Dashboard configuration is read in DEV-101/93, not in this round.
 
@@ -104,10 +104,12 @@ References: [4.x → 5.x migration](https://www.revenuecat.com/docs/sdk-guides/i
 
 The five owner-draft wire paths (`POST /recipe-draft-sessions`, `GET /recipe-draft-sessions/{session_id}`, `POST …/turns`, `GET …/turns/{request_id}`, `POST …/turns/{request_id}/approval`) keep their existing meaning. Commerce binds on top with the independent usage routes above, and never adds undefined fields to those five paths:
 
-- `ai_edit` finalizes when a user accepts an edit overlay and saves it; the `source` references the owned `session_id` + `turn_request_id` of the approved turn, and `input_hash` is the canonical hash of the approved save payload.
-- `smart_import` finalizes per selected candidate; the `source` references the owned completed import `job_id` + exactly one `candidate_id` per finalize, and reservation happens only when the user confirms the save and the selected independent candidate count is known (never a guessed count before candidates exist).
+- `smart_import` finalizes one selected candidate; `source` references the owned completed import `job_id` + exactly one `candidate_id`. Reservation happens only when the user confirms the save and the candidate already exists (never a guessed count before candidates exist).
+- `ai_edit` reserves one unit **before** generation, against the persisted pending `session_id` + `turn_request_id`; approval is required only at finalize. The proposal/session is loaded from the persisted record, never from a client success flag.
 
-Approved-payload recovery: the client persists the approved payload as a local save intent before finalize. `finalize` returns the stable `recipe_id` and `payload_hash` but not the full payload; after the server commit the client writes the payload to the private library by the returned stable ID and ACKs. A crash after finalize but before the local write recovers by reloading the local save intent and re-reading/re-ACKing the same `operation_id`; `finalize` is idempotent by `(owner, capability, source)` and re-ACK is a no-op, so recovery never re-runs the model or double-charges.
+Canonical hashing: `input_hash` is the lowercase SHA-256 of the JCS (RFC 8785) canonical JSON of the immutable intent/context — the selected candidate content for `smart_import`, or the pending session/turn intent context for `ai_edit` — and is identical across reserve → commit → finalize. It is **not** the approved result hash (that output does not yet exist at reserve time). `payload_hash` is the separate server-derived SHA-256 of the approved output, computed at finalize.
+
+Approved-payload recovery: the client persists the approved payload as a durable local save intent before finalize. `finalize` returns the stable `recipe_id` and `payload_hash` but not the full payload; after the server commit the client writes its local payload (verified to match `payload_hash`) to the private library by the returned stable ID and ACKs. A crash after finalize but before the local write recovers by reloading the local save intent and replaying the same finalize by `(operation_id, source)`, which returns the identical `recipe_id`/`payload_hash`; there is no undefined GET/read endpoint. One candidate ID maps to one stable `recipe_id`, and a new operation for the same candidate returns the same durable outcome without a second charge. Recovery never re-runs the model or re-invokes the five draft paths.
 
 ## Shared file ownership
 
@@ -117,6 +119,4 @@ Approved-payload recovery: the client persists the approved payload as a local s
 
 ## Schema version and commit record
 
-- `x-commercial-policy.schema_version` = `1`, frozen by this contract. Any quota/config change must bump the versioned policy and sync user-facing copy; agents must not self-author commercial rules.
-
-*Schema version/commit recorded after PR merge: to be filled by the coordinator.*
+- `x-commercial-policy.schema_version` = `1`, frozen by this contract. Any quota/config change must bump the versioned policy and sync user-facing copy; agents must not self-author commercial rules. Merge evidence and the merged schema/commit version are recorded in Linear, not in this file.

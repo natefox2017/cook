@@ -197,21 +197,19 @@
         ]
       }
     },
-    "reservation_request_multi_candidate": {
+    "reservation_request_import": {
       "operation": "POST /recipe-usage/reservations",
       "schema": "ReservationRequest",
       "data": {
         "operation_id": "b0000000-0000-4000-8000-000000000002",
         "capability": "smart_import",
         "input_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "estimated_units": 3,
+        "estimated_units": 1,
         "source": {
           "origin": "import_job",
           "job_id": "e0000000-0000-4000-8000-000000000005",
           "candidate_ids": [
-            "f0000000-0000-4000-8000-000000000001",
-            "f0000000-0000-4000-8000-000000000002",
-            "f0000000-0000-4000-8000-000000000003"
+            "candidate-v2-0123456789abcdef0123456789abcdef"
           ],
           "session_id": null,
           "turn_request_id": null
@@ -228,7 +226,7 @@
         "period_start": "2026-10-12T00:00:00.000Z",
         "policy_version": 1,
         "tier_at_reserve": "free",
-        "reserved_units": 3,
+        "reserved_units": 1,
         "status": "reserved",
         "reserved_until": "2026-10-15T12:10:00.000Z"
       }
@@ -243,7 +241,7 @@
           "origin": "import_job",
           "job_id": "e0000000-0000-4000-8000-000000000005",
           "candidate_ids": [
-            "f0000000-0000-4000-8000-000000000001"
+            "candidate-v2-0123456789abcdef0123456789abcdef"
           ],
           "session_id": null,
           "turn_request_id": null
@@ -270,7 +268,7 @@
           "origin": "import_job",
           "job_id": "e0000000-0000-4000-8000-000000000005",
           "candidate_ids": [
-            "f0000000-0000-4000-8000-000000000001"
+            "candidate-v2-0123456789abcdef0123456789abcdef"
           ],
           "session_id": null,
           "turn_request_id": null

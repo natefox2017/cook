@@ -26,9 +26,9 @@ const operation = "b0000000-0000-4000-8000-000000000002";
 const recipe = "c0000000-0000-4000-8000-000000000003";
 const requestID = "d0000000-0000-4000-8000-000000000004";
 const job = "e0000000-0000-4000-8000-000000000005";
-const candidateA = "f0000000-0000-4000-8000-000000000001";
-const candidateB = "f0000000-0000-4000-8000-000000000002";
-const candidateC = "f0000000-0000-4000-8000-000000000003";
+const candidateA = "candidate-v2-0123456789abcdef0123456789abcdef";
+const candidateB = "candidate-v2-feedfacefeedfacefeedfacefeedface";
+const candidateC = "candidate-0-a1b2c3d4e5f6a7b8";
 const sessionID = "f0000000-0000-4000-8000-000000000004";
 const turnRequestID = "f0000000-0000-4000-8000-000000000005";
 const inputHash = "a".repeat(64);
@@ -94,23 +94,23 @@ test("premium access response grants monthly import and edit quotas", () => {
   assert.equal(edits.quota.period_type, "utc_month");
 });
 
-test("multi-candidate reservation and settlement decode", () => {
+test("single-candidate reservation and settlement decode", () => {
   const request = reservationRequest({
-    operation_id: operation, capability: "smart_import", input_hash: inputHash, estimated_units: 3,
+    operation_id: operation, capability: "smart_import", input_hash: inputHash, estimated_units: 1,
     source: {
       origin: "import_job", job_id: job,
-      candidate_ids: [candidateA, candidateB, candidateC],
+      candidate_ids: [candidateA],
       session_id: null, turn_request_id: null,
     },
   });
   assert.ok(request);
-  assert.equal(request.estimated_units, 3);
-  assert.equal(request.source.candidate_ids.length, 3);
+  assert.equal(request.estimated_units, 1);
+  assert.equal(request.source.candidate_ids.length, 1);
 
   const held = reservation({
     operation_id: operation, owner_id: owner, capability: "smart_import",
     period_start: "2026-10-12T00:00:00.000Z", policy_version: 1,
-    tier_at_reserve: "free", reserved_units: 3, status: "reserved",
+    tier_at_reserve: "free", reserved_units: 1, status: "reserved",
     reserved_until: "2026-10-15T12:10:00.000Z",
   });
   assert.ok(held);
@@ -238,11 +238,27 @@ test("draft approval source and ai_edit finalize decode", () => {
   assert.equal(request.source.session_id, sessionID);
 });
 
-test("import reservation with mismatched candidate count is rejected", () => {
+test("import reservation with non-unit estimate is rejected", () => {
   assert.equal(reservationRequest({
     operation_id: operation, capability: "smart_import", input_hash: inputHash, estimated_units: 2,
     source: { origin: "import_job", job_id: job, candidate_ids: [candidateA], session_id: null, turn_request_id: null },
   }), null);
+});
+
+test("source capability mismatch is rejected", () => {
+  assert.equal(reservationRequest({
+    operation_id: operation, capability: "smart_import", input_hash: inputHash, estimated_units: 1,
+    source: { origin: "draft_approval", job_id: null, candidate_ids: null, session_id: sessionID, turn_request_id: turnRequestID },
+  }), null);
+});
+
+test("legacy opaque candidate id is accepted", () => {
+  const request = reservationRequest({
+    operation_id: operation, capability: "smart_import", input_hash: inputHash, estimated_units: 1,
+    source: { origin: "import_job", job_id: job, candidate_ids: [candidateC], session_id: null, turn_request_id: null },
+  });
+  assert.ok(request);
+  assert.deepEqual(request.source.candidate_ids, [candidateC]);
 });
 
 test("finalize with more than one candidate is rejected", () => {
@@ -250,6 +266,11 @@ test("finalize with more than one candidate is rejected", () => {
     capability: "smart_import", input_hash: inputHash,
     source: { origin: "import_job", job_id: job, candidate_ids: [candidateA, candidateB], session_id: null, turn_request_id: null },
   }), null);
+});
+
+test("error code inherited from prototype is rejected", () => {
+  assert.equal(usageError({ code: "constructor", message: "nope", recoverable: false, request_id: requestID }), null);
+  assert.equal(usageError({ code: "toString", message: "nope", recoverable: false, request_id: requestID }), null);
 });
 
 test("invalid calendar date is rejected", () => {

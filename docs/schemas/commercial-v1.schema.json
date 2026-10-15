@@ -13,6 +13,11 @@
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
     },
+    "CandidateID": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$",
+      "description": "Bounded opaque candidate identifier, e.g. candidate-v2-<hex> or legacy candidate-<index>-<hash>; not a UUID."
+    },
     "Timestamp": {
       "type": "string",
       "format": "date-time",
@@ -92,6 +97,7 @@
     },
     "Source": {
       "type": "object",
+      "description": "Persisted origin for one usage operation. import_job pairs only with smart_import and carries one candidate; draft_approval pairs only with ai_edit. The Swift/TypeScript DTO validators enforce the capability-origin pairing.",
       "properties": {
         "origin": {
           "$ref": "#/$defs/Origin"
@@ -111,10 +117,10 @@
             {
               "type": "array",
               "items": {
-                "$ref": "#/$defs/UUID"
+                "$ref": "#/$defs/CandidateID"
               },
               "minItems": 1,
-              "maxItems": 60,
+              "maxItems": 1,
               "uniqueItems": true
             },
             {
@@ -168,10 +174,10 @@
               "candidate_ids": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/UUID"
+                  "$ref": "#/$defs/CandidateID"
                 },
                 "minItems": 1,
-                "maxItems": 60,
+                "maxItems": 1,
                 "uniqueItems": true
               },
               "session_id": {
@@ -394,7 +400,8 @@
         },
         "estimated_units": {
           "type": "integer",
-          "minimum": 1
+          "const": 1,
+          "description": "One unit per operation in V1: smart_import settles one candidate, ai_edit one approved edit."
         },
         "source": {
           "$ref": "#/$defs/Source"
@@ -493,7 +500,7 @@
         },
         "committed_units": {
           "type": "integer",
-          "minimum": 1
+          "const": 1
         },
         "period_start": {
           "anyOf": [
@@ -534,7 +541,7 @@
         },
         "committed_units": {
           "type": "integer",
-          "minimum": 1
+          "const": 1
         },
         "period_start": {
           "anyOf": [

@@ -68,9 +68,20 @@ function capability(v) {
   return typeof v === "string" && CAPABILITIES.has(v) ? v : null;
 }
 
-function uuids(values, minimum) {
-  return Array.isArray(values) && values.length >= minimum && values.length <= 60 &&
-    new Set(values).size === values.length && values.every(isUUID);
+// Candidate IDs are bounded opaque strings, not UUIDs: candidateIdentity.ts emits
+// `candidate-v2-<32hex>[-n]` and legacy `candidate-<index>-<hash>` remains intact.
+function candidateID(v) {
+  return typeof v === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(v);
+}
+
+function singleCandidate(v) {
+  return Array.isArray(v) && v.length === 1 && v.every(candidateID);
+}
+
+// V1 save routes accept only smart_import (import job source) or ai_edit (draft approval source).
+function saveRouteMatch(capabilityID, source) {
+  return (capabilityID === "smart_import" && source.origin === "import_job") ||
+    (capabilityID === "ai_edit" && source.origin === "draft_approval");
 }
 
 // The persisted origin a usage operation settles against; nulls mark the fields that do not apply.
@@ -79,7 +90,7 @@ export function usageSource(v) {
   if (!exactly(v, keys) || !ORIGINS.has(v.origin)) return null;
   if (v.origin === "import_job") {
     if (!isUUID(v.job_id) || v.session_id !== null || v.turn_request_id !== null) return null;
-    if (!uuids(v.candidate_ids, 1)) return null;
+    if (!singleCandidate(v.candidate_ids)) return null;
     return {origin: v.origin, job_id: v.job_id, candidate_ids: v.candidate_ids, session_id: null, turn_request_id: null};
   }
   if (v.job_id !== null || v.candidate_ids !== null) return null;
@@ -163,14 +174,10 @@ export function reservationRequest(v) {
   const keys = ["operation_id", "capability", "input_hash", "estimated_units", "source"];
   if (!exactly(v, keys) || !isUUID(v.operation_id) || !isHash(v.input_hash)) return null;
   const id = capability(v.capability);
-  if (!id || !positive(v.estimated_units)) return null;
+  // One unit per operation: smart_import settles one candidate, ai_edit one approved edit.
+  if (!id || v.estimated_units !== 1) return null;
   const source = usageSource(v.source);
-  if (!source) return null;
-  if (source.origin === "import_job") {
-    if (source.candidate_ids.length !== v.estimated_units) return null;
-  } else if (v.estimated_units !== 1) {
-    return null;
-  }
+  if (!source || !saveRouteMatch(id, source)) return null;
   return {
     operation_id: v.operation_id, capability: id,
     input_hash: v.input_hash, estimated_units: v.estimated_units, source,
@@ -203,15 +210,14 @@ export function commitRequest(v) {
   const id = capability(v.capability);
   if (!id) return null;
   const source = usageSource(v.source);
-  if (!source) return null;
-  if (source.origin === "import_job" && source.candidate_ids.length !== 1) return null;
+  if (!source || !saveRouteMatch(id, source)) return null;
   return {capability: id, input_hash: v.input_hash, source};
 }
 
 export function commitResponse(v) {
   const keys = ["operation_id", "status", "committed_units", "period_start"];
   if (!exactly(v, keys) || !isUUID(v.operation_id) || v.status !== "committed") return null;
-  if (!positive(v.committed_units)) return null;
+  if (v.committed_units !== 1) return null;
   let periodStart = null;
   if (v.period_start !== null) {
     periodStart = utcTimestamp(v.period_start);
@@ -230,7 +236,7 @@ export function finalizeRequest(v) {
 export function finalizeResponse(v) {
   const keys = ["operation_id", "status", "recipe_id", "payload_hash", "committed_units", "period_start"];
   if (!exactly(v, keys) || !isUUID(v.operation_id) || v.status !== "finalized") return null;
-  if (!isUUID(v.recipe_id) || !isHash(v.payload_hash) || !positive(v.committed_units)) return null;
+  if (!isUUID(v.recipe_id) || !isHash(v.payload_hash) || v.committed_units !== 1) return null;
   let periodStart = null;
   if (v.period_start !== null) {
     periodStart = utcTimestamp(v.period_start);
@@ -258,7 +264,8 @@ export const ERROR_STATUSES = {
 
 export function usageError(v) {
   if (!exactly(v, ["code", "message", "recoverable", "request_id"])) return null;
-  if (!(v.code in ERROR_STATUSES) || typeof v.recoverable !== "boolean" || !isUUID(v.request_id)) return null;
+  if (typeof v.code !== "string" || !Object.hasOwn(ERROR_STATUSES, v.code)) return null;
+  if (typeof v.recoverable !== "boolean" || !isUUID(v.request_id)) return null;
   if (typeof v.message !== "string" || !v.message.trim() || v.message.length > 300) return null;
   return {
     code: v.code, message: v.message, recoverable: v.recoverable, request_id: v.request_id,

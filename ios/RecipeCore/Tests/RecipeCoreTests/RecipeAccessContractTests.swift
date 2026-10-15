@@ -11,9 +11,9 @@ private let operation = "b0000000-0000-4000-8000-000000000002"
 private let recipe = "c0000000-0000-4000-8000-000000000003"
 private let requestID = "d0000000-0000-4000-8000-000000000004"
 private let job = "e0000000-0000-4000-8000-000000000005"
-private let candidateA = "f0000000-0000-4000-8000-000000000001"
-private let candidateB = "f0000000-0000-4000-8000-000000000002"
-private let candidateC = "f0000000-0000-4000-8000-000000000003"
+private let candidateA = "candidate-v2-0123456789abcdef0123456789abcdef"
+private let candidateB = "candidate-v2-feedfacefeedfacefeedfacefeedface"
+private let candidateC = "candidate-0-a1b2c3d4e5f6a7b8"
 private let sessionID = "f0000000-0000-4000-8000-000000000004"
 private let turnRequestID = "f0000000-0000-4000-8000-000000000005"
 private let inputHash = String(repeating: "a", count: 64)
@@ -127,18 +127,18 @@ private let expiredAccessJSON = #"""
     @Test func reservationAndSettlementResponsesDecode() throws {
         let request = try decode(
             RecipeReservationRequest.self,
-            from: #"{"operation_id":"\#(operation)","capability":"smart_import","input_hash":"\#(inputHash)","estimated_units":3,"source":{"origin":"import_job","job_id":"\#(job)","candidate_ids":["\#(candidateA)","\#(candidateB)","\#(candidateC)"],"session_id":null,"turn_request_id":null}}"#)
+            from: #"{"operation_id":"\#(operation)","capability":"smart_import","input_hash":"\#(inputHash)","estimated_units":1,"source":{"origin":"import_job","job_id":"\#(job)","candidate_ids":["\#(candidateA)"],"session_id":null,"turn_request_id":null}}"#)
         #expect(request.capability == .smartImport)
-        #expect(request.estimatedUnits == 3)
-        #expect(request.source.candidateIDs?.count == 3)
+        #expect(request.estimatedUnits == 1)
+        #expect(request.source.candidateIDs?.count == 1)
 
         let reservation = try decode(
             RecipeReservation.self,
             from: #"""
-            {"operation_id":"\#(operation)","owner_id":"\#(owner)","capability":"smart_import","period_start":"2026-10-12T00:00:00.000Z","policy_version":1,"tier_at_reserve":"free","reserved_units":3,"status":"reserved","reserved_until":"2026-10-15T12:10:00.000Z"}
+            {"operation_id":"\#(operation)","owner_id":"\#(owner)","capability":"smart_import","period_start":"2026-10-12T00:00:00.000Z","policy_version":1,"tier_at_reserve":"free","reserved_units":1,"status":"reserved","reserved_until":"2026-10-15T12:10:00.000Z"}
             """#)
         #expect(reservation.tierAtReserve == .free)
-        #expect(reservation.reservedUnits == 3)
+        #expect(reservation.reservedUnits == 1)
 
         let commit = try decode(
             RecipeUsageCommitResponse.self,
@@ -259,7 +259,7 @@ private let expiredAccessJSON = #"""
         }
     }
 
-    @Test func importReservationRequiresMatchingCandidateCount() {
+    @Test func reservationRejectsNonUnitEstimate() {
         #expect(throws: RecipeAccessContractError.invalidResponse) {
             _ = try decode(
                 RecipeReservationRequest.self,
@@ -275,11 +275,26 @@ private let expiredAccessJSON = #"""
         }
     }
 
+    @Test func sourceCapabilityMismatchIsRejected() {
+        #expect(throws: RecipeAccessContractError.invalidResponse) {
+            _ = try decode(
+                RecipeReservationRequest.self,
+                from: #"{"operation_id":"\#(operation)","capability":"smart_import","input_hash":"\#(inputHash)","estimated_units":1,"source":{"origin":"draft_approval","job_id":null,"candidate_ids":null,"session_id":"\#(sessionID)","turn_request_id":"\#(turnRequestID)"}}"#)
+        }
+    }
+
+    @Test func legacyCandidateIDIsAccepted() throws {
+        let request = try decode(
+            RecipeReservationRequest.self,
+            from: #"{"operation_id":"\#(operation)","capability":"smart_import","input_hash":"\#(inputHash)","estimated_units":1,"source":{"origin":"import_job","job_id":"\#(job)","candidate_ids":["\#(candidateC)"],"session_id":null,"turn_request_id":null}}"#)
+        #expect(request.source.candidateIDs == [candidateC])
+    }
+
     @Test func reservationRequestEncodesRoundTrip() throws {
-        let source = try RecipeUsageSource(importJobID: job, candidateIDs: [candidateA, candidateB])
+        let source = try RecipeUsageSource(importJobID: job, candidateIDs: [candidateA])
         let request = try RecipeReservationRequest(
             operationID: operation, capability: .smartImport, inputHash: inputHash,
-            estimatedUnits: 2, source: source)
+            estimatedUnits: 1, source: source)
         let encoded = try JSONEncoder().encode(request)
         let decoded = try JSONDecoder().decode(RecipeReservationRequest.self, from: encoded)
         #expect(decoded == request)
