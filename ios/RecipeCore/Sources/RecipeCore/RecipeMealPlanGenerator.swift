@@ -27,6 +27,11 @@ public enum RecipeMealPlanReason: Hashable, Sendable {
     case locked
     case insufficientCandidates
     case lockedRecipeDeleted
+    /// A locked slot kept despite failing an active filter. The associated
+    /// reason names the filter it conflicts with. Explicit locks are respected,
+    /// so the conflict is surfaced instead of being silently dropped or
+    /// double-reported as "skipped".
+    case lockedFilterConflict(RecipeMealPlanSkipReason)
 }
 
 /// One dinner slot in a generated proposal. Identity is stable across regeneration.
@@ -261,6 +266,14 @@ public enum RecipeMealPlanGenerator {
                     reason: .lockedRecipeDeleted)
             }
             used.insert(recipeID)
+            if let conflict = candidateSet.skipped[recipeID] {
+                return RecipeMealPlanSlot(
+                    id: slot.id,
+                    date: slot.date,
+                    recipeID: recipeID,
+                    isLocked: true,
+                    reason: .lockedFilterConflict(conflict))
+            }
             return RecipeMealPlanSlot(
                 id: slot.id,
                 date: slot.date,
@@ -287,10 +300,19 @@ public enum RecipeMealPlanGenerator {
                 for: assigned, recipeByID: recipeByID, maxTotalMinutes: proposal.maxTotalMinutes)
         }
 
+        // Locked recipes that survive regeneration are scheduled, not skipped:
+        // drop them from the skipped set so the footer never double-reports a
+        // pinned dinner as both "skipped" and placed.
+        var skipped = candidateSet.skipped
+        for slot in slots {
+            guard slot.isLocked, let recipeID = slot.recipeID else { continue }
+            skipped.removeValue(forKey: recipeID)
+        }
+
         return RecipeMealPlanProposal(
             slots: slots,
             candidateIDs: ordered,
-            skipped: candidateSet.skipped,
+            skipped: skipped,
             seed: effectiveSeed,
             maxTotalMinutes: proposal.maxTotalMinutes,
             dietaryTags: proposal.dietaryTags)
