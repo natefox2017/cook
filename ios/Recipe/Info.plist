@@ -49,6 +49,8 @@
     <string>https://semsjyrqjnumpvanibip.supabase.co</string>
     <key>RecipeSupabasePublishableKey</key>
     <string>sb_publishable_yhwoE_GwRNtohok44YUwKQ_hi_1uhCO</string>
+    <key>RecipeShareManagementEndpointURL</key>
+    <string></string>
     <key>RecipeSubscriptionProductIDs</key>
     <string>$(RECIPE_SUBSCRIPTION_PRODUCT_IDS)</string>
     <key>LegacyCookSubscriptionProductIDs</key>
