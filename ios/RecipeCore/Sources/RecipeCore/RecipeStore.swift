@@ -595,6 +595,132 @@ public final class RecipeStore {
         try commit(next)
     }
 
+    /// Applies meal entries in one atomic commit: the shared write-slot port used
+    /// by weekly templates and the meal generator. For each entry, an existing
+    /// entry in the same day and slot is preserved (`.fillEmptySlotsOnly`) or
+    /// replaced (`.replaceExisting`). Returns the number of newly placed slots;
+    /// a write failure rolls back in-memory state.
+    @discardableResult
+    public func applyMealEntries(
+        _ entries: [MealPlanEntry],
+        policy: RecipeMealPlanApplyPolicy,
+        calendar: Calendar
+    ) throws -> Int {
+        var next = snapshot
+        var placed = 0
+        for entry in entries {
+            guard entry.date.timeIntervalSinceReferenceDate.isFinite else {
+                throw RecipeStoreError.invalidValue(
+                    RecipeLanguage.localized("Choose a valid date for your meal."))
+            }
+            guard recipe(id: entry.recipeID) != nil else {
+                throw RecipeStoreError.missingRecipe
+            }
+            let day = calendar.startOfDay(for: entry.date)
+            let occupiedIDs = next.mealPlan.filter {
+                $0.slot == entry.slot && calendar.isDate($0.date, inSameDayAs: day)
+            }.map(\.id)
+            if !occupiedIDs.isEmpty {
+                switch policy {
+                case .fillEmptySlotsOnly:
+                    continue
+                case .replaceExisting:
+                    for occupiedID in occupiedIDs {
+                        next.deletedEntities?.insert(Self.deletionKey(.meal, occupiedID))
+                    }
+                    next.mealPlan.removeAll {
+                        $0.slot == entry.slot && calendar.isDate($0.date, inSameDayAs: day)
+                    }
+                }
+            }
+            var saved = entry
+            saved.date = day
+            next.mealPlan.append(saved)
+            placed += 1
+        }
+        next.mealPlan.sort { $0.date < $1.date }
+        try commit(next)
+        return placed
+    }
+
+    /// Computes, without writing, which template slots reference a missing
+    /// recipe and which target-week slots already hold a different recipe.
+    public func previewMealTemplate(
+        _ template: RecipeMealPlanTemplate,
+        startingAt weekStart: Date,
+        calendar: Calendar
+    ) -> MealTemplatePreview {
+        let weekStartDay = calendar.startOfDay(for: weekStart)
+        let recipeIDs = Set(recipes.map(\.id))
+        let missingCount = template.slots.filter { !recipeIDs.contains($0.recipeID) }.count
+        var conflicts: [MealTemplateConflict] = []
+        for slot in template.slots where recipeIDs.contains(slot.recipeID) {
+            guard
+                let date = calendar.date(
+                    byAdding: .day, value: slot.relativeDayOffset, to: weekStartDay)
+            else {
+                continue
+            }
+            for existing in mealPlan
+            where existing.slot == slot.mealSlot
+                && calendar.isDate(existing.date, inSameDayAs: date)
+            {
+                conflicts.append(
+                    MealTemplateConflict(
+                        date: date,
+                        mealSlot: slot.mealSlot,
+                        existingRecipeID: existing.recipeID,
+                        incomingRecipeID: slot.recipeID
+                    )
+                )
+            }
+        }
+        return MealTemplatePreview(
+            missingRecipeCount: missingCount,
+            conflicts: conflicts,
+            totalSlots: template.slots.count
+        )
+    }
+
+    /// Applies every resolvable template slot to the target week in one atomic
+    /// commit. Missing recipes are skipped; an all-missing template is never
+    /// written. Calendar day addition keeps DST transitions safe.
+    @discardableResult
+    public func applyMealTemplate(
+        _ template: RecipeMealPlanTemplate,
+        startingAt weekStart: Date,
+        calendar: Calendar,
+        policy: RecipeMealPlanApplyPolicy
+    ) throws -> MealTemplateApplyResult {
+        let weekStartDay = calendar.startOfDay(for: weekStart)
+        let recipeIDs = Set(recipes.map(\.id))
+        let missingCount = template.slots.filter { !recipeIDs.contains($0.recipeID) }.count
+
+        var resolved: [MealPlanEntry] = []
+        for slot in template.slots where recipeIDs.contains(slot.recipeID) {
+            guard
+                let date = calendar.date(
+                    byAdding: .day, value: slot.relativeDayOffset, to: weekStartDay)
+            else {
+                continue
+            }
+            resolved.append(MealPlanEntry(recipeID: slot.recipeID, date: date, slot: slot.mealSlot))
+        }
+        guard !resolved.isEmpty else {
+            return MealTemplateApplyResult(
+                appliedSlots: 0,
+                skippedMissingRecipes: missingCount,
+                skippedConflicts: 0
+            )
+        }
+        let placed = try applyMealEntries(resolved, policy: policy, calendar: calendar)
+        return MealTemplateApplyResult(
+            appliedSlots: placed,
+            skippedMissingRecipes: missingCount,
+            skippedConflicts: resolved.count - placed
+        )
+    }
+
     public func updateSettings(_ settings: RecipeSettings) throws {
         var next = snapshot
         next.settings = settings

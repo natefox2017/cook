@@ -374,6 +374,7 @@ struct RecipeApp: App {
     @State private var subscriptions = SubscriptionStore()
     @AppStorage(RecipeLanguage.preferenceKey) private var languageOverride = ""
     @State private var cloudSync: CloudSyncCoordinator
+    @State private var templateStore: RecipeMealPlanTemplateStore
     private let isUITesting: Bool
     private let bypassOnboarding: Bool
 
@@ -489,6 +490,16 @@ struct RecipeApp: App {
         #endif
 
         _store = State(initialValue: localStore)
+        _templateStore = State(
+            initialValue: Self.makeTemplateStore(isUITesting: isUITesting)
+        )
+    }
+
+    private static func makeTemplateStore(isUITesting: Bool) -> RecipeMealPlanTemplateStore {
+        if isUITesting {
+            return RecipeMealPlanTemplateStore(fileURL: nil)
+        }
+        return RecipeMealPlanTemplateStore(fileURL: RecipeMealPlanTemplateStore.defaultFileURL())
     }
 
     private static func makeProductionStore(defaults: UserDefaults) -> RecipeStore {
@@ -509,6 +520,7 @@ struct RecipeApp: App {
                 .environment(store)
                 .environment(subscriptions)
                 .environment(cloudSync)
+                .environment(templateStore)
                 .onOpenURL { url in
                     RecipeAuthService.shared.handleAuthCallback(url)
                 }
