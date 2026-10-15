@@ -20,6 +20,8 @@ jobs:
   merge:
     name: Squash eligible PR
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    # GitHub-hosted runner: the repo is public and ubuntu-latest ships gh/jq/base64/python3,
+    # so the trusted-base merge no longer depends on a self-hosted runner's toolset.
     runs-on: ubuntu-latest
     steps:
       - name: Resolve readiness and review gates
