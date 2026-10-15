@@ -171,6 +171,9 @@ struct RecipeDetailView: View {
                 didLoadServings = true
             }
         }
+        .task {
+            await resumePendingEditIfNeeded()
+        }
         .onChange(of: store.recipe(id: recipeID)?.servings) { old, new in
             if !didAdjustServings || servings == (old ?? 1) {
                 servings = max(1, new ?? 1)
@@ -1041,6 +1044,23 @@ struct RecipeDetailView: View {
             variantID: variantID
         )
 
+        // Record the approved receipt (target) so a later recovery can write and ACK
+        // directly without replaying the approval.
+        try pendingStore.save(
+            RecipeEditPendingCommit(
+                operationID: context.operationID,
+                proposalID: context.proposalID,
+                mode: mode,
+                variantID: variantID?.uuidString.lowercased(),
+                sourceRecipeID: recipeID.uuidString.lowercased(),
+                basedOnUpdate: reviewed.basedOnUpdate,
+                changes: reviewedChanges,
+                reasons: reviewed.reasons,
+                warnings: reviewed.warnings,
+                targetID: receipt.targetID
+            )
+        )
+
         // Apply the validated receipt to the correct local target.
         let saved: Recipe
         if asVariant {
@@ -1080,6 +1100,86 @@ struct RecipeDetailView: View {
             return userID
         }
         return nil
+    }
+
+    /// Resumes a pending approve → write → ACK intent on detail re-entry (e.g. after a
+    /// crash between approval and the local write). Re-applies the exact reviewed
+    /// changes to the correct target without re-invoking the provider, and clears the
+    /// intent only after the server ACKs. Fails closed on owner switch, a deleted
+    /// recipe, a stale revision, or an existing manual edit.
+    private func resumePendingEditIfNeeded() async {
+        guard ensureEditService(), let service = editService,
+            let ownerID = currentOwnerID()
+        else {
+            return
+        }
+        let pendingStore = RecipeEditPendingCommitStore(
+            ownerID: ownerID.uuidString.lowercased()
+        )
+        guard let pending = pendingStore.load() else {
+            return
+        }
+        // Only the source recipe's detail view recovers its own intent.
+        guard pending.sourceRecipeID == recipeID.uuidString.lowercased() else {
+            return
+        }
+        // Tombstone guard: the source recipe was deleted; nothing to recover.
+        guard let current = store.recipe(id: recipeID) else {
+            pendingStore.clear()
+            return
+        }
+        // Revision / existing-manual-edit guard: never overwrite a recipe that
+        // changed after the proposal was generated.
+        guard current.updatedAt == pending.basedOnUpdate else {
+            pendingStore.clear()
+            return
+        }
+        guard let proposal = RecipeEditProposalService.proposal(from: pending) else {
+            pendingStore.clear()
+            return
+        }
+        do {
+            // Recover the approved receipt (stored, or via the owner-scoped
+            // approve/replay route) without re-invoking the provider.
+            let targetID: String
+            if let stored = pending.targetID {
+                targetID = stored
+            } else {
+                let receipt = try await service.approve(
+                    proposalID: pending.proposalID,
+                    reviewed: proposal,
+                    wireChanges: pending.changes,
+                    recipe: current,
+                    mode: pending.mode,
+                    variantID: pending.variantID.flatMap(UUID.init(uuidString:))
+                )
+                targetID = receipt.targetID
+            }
+            // Local durable write before ACK.
+            switch pending.mode {
+            case .variant:
+                if let variantID = UUID(uuidString: targetID),
+                    store.recipe(id: variantID) == nil
+                {
+                    var variant = try proposal.approvedRecipe(
+                        from: current, at: .now, asVariant: true
+                    )
+                    variant.id = variantID
+                    try store.upsert(variant)
+                }
+            case .apply:
+                try store.applyApprovedRecipeEdit(proposal, asVariant: false)
+            }
+            // ACK then clear only after the server confirms.
+            _ = try await service.ack(
+                proposalID: pending.proposalID, operationID: pending.operationID
+            )
+            pendingStore.clear()
+        } catch {
+            // Transient transport failure or a server-side stale rejection: keep the
+            // intent for a later attempt; a stale/deleted source is already cleared by
+            // the guards above.
+        }
     }
 
     /// One-session undo only when the stored recipe is still the revision this view
@@ -2198,6 +2298,10 @@ private struct RecipeEditIntentSheet: View {
     @State private var supplement = ""
     @State private var isGenerating = false
     @State private var errorMessage: String?
+    // Stable per-intent operation id: a retry of the same edit request replays the
+    // already-persisted proposal instead of re-invoking the provider. Changing the
+    // intent or the notes mints a fresh id so separate requests stay distinct.
+    @State private var operationID = UUID()
 
     private var canGenerate: Bool {
         !isGenerating && !recipe.ingredients.isEmpty && !recipe.steps.isEmpty
@@ -2251,6 +2355,12 @@ private struct RecipeEditIntentSheet: View {
             } message: {
                 Text(errorMessage ?? "Please try again.")
             }
+            .onChange(of: intent) { _, _ in
+                operationID = UUID()
+            }
+            .onChange(of: supplement) { _, _ in
+                operationID = UUID()
+            }
         }
     }
 
@@ -2266,7 +2376,8 @@ private struct RecipeEditIntentSheet: View {
                 let result = try await service.createProposal(
                     recipe: recipe,
                     intent: intent,
-                    supplement: trimmed.isEmpty ? nil : trimmed
+                    supplement: trimmed.isEmpty ? nil : trimmed,
+                    operationID: operationID
                 )
                 dismiss()
                 onResult(result)

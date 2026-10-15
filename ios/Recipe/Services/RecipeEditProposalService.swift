@@ -138,8 +138,9 @@ struct RecipeEditAckResponse: Decodable, Sendable {
 /// Locally persisted recovery intent for the approve → write → ACK window. It
 /// survives a crash between the server approval (usage finalize) and the local
 /// durable write so the exact reviewed changes can be re-applied to the correct
-/// target without re-invoking the provider. Cleared only after the local write
-/// succeeds and the server acknowledges.
+/// target without re-invoking the provider. `targetID` is set only after the
+/// server approves, so a nil value means the approval (and usage finalize) has
+/// not happened yet and the recovery path must replay the approval.
 struct RecipeEditPendingCommit: Codable, Sendable {
     let operationID: String
     let proposalID: String
@@ -150,6 +151,31 @@ struct RecipeEditPendingCommit: Codable, Sendable {
     let changes: [RecipeEditWireChange]
     let reasons: [String]
     let warnings: [String]
+    let targetID: String?
+
+    init(
+        operationID: String,
+        proposalID: String,
+        mode: RecipeEditApplyMode,
+        variantID: String?,
+        sourceRecipeID: String,
+        basedOnUpdate: Date,
+        changes: [RecipeEditWireChange],
+        reasons: [String],
+        warnings: [String],
+        targetID: String? = nil
+    ) {
+        self.operationID = operationID
+        self.proposalID = proposalID
+        self.mode = mode
+        self.variantID = variantID
+        self.sourceRecipeID = sourceRecipeID
+        self.basedOnUpdate = basedOnUpdate
+        self.changes = changes
+        self.reasons = reasons
+        self.warnings = warnings
+        self.targetID = targetID
+    }
 }
 
 /// Single in-flight pending commit per owner. The edit review sheet is modal, so
@@ -396,6 +422,26 @@ final class RecipeEditProposalService {
             bytes[8], bytes[9], bytes[10], bytes[11],
             bytes[12], bytes[13], bytes[14], bytes[15]
         ))
+    }
+
+    /// Rebuilds the exact reviewed proposal a pending commit persisted, so recovery
+    /// can re-apply the same changes without re-invoking the provider.
+    static func proposal(from pending: RecipeEditPendingCommit) -> RecipeEditProposal? {
+        guard let recipeID = UUID(uuidString: pending.sourceRecipeID) else {
+            return nil
+        }
+        do {
+            let changes = try pending.changes.map(parseChange)
+            return RecipeEditProposal(
+                recipeID: recipeID,
+                basedOnUpdate: pending.basedOnUpdate,
+                changes: changes,
+                reasons: pending.reasons,
+                warnings: pending.warnings
+            )
+        } catch {
+            return nil
+        }
     }
 
     // MARK: - Transport
