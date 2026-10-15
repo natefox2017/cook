@@ -78,11 +78,13 @@ struct RecipeDocumentBatchService {
             }
         }
 
+        let jobID: UUID
         let candidates: [Candidate]
         let hasMore: Bool
         let unprocessed: Int
 
         enum CodingKeys: String, CodingKey {
+            case jobID = "job_id"
             case candidates
             case hasMore = "has_more"
             case unprocessed
@@ -147,7 +149,7 @@ struct RecipeDocumentBatchService {
     func scan(
         items: [RecipeDocumentBatchItem],
         ownerID: UUID
-    ) async throws -> RecipeDocumentBatchOutcome {
+    ) async throws -> (jobID: UUID, outcome: RecipeDocumentBatchOutcome) {
         try await verifySession(ownerID: ownerID)
         let response: ScanResponse = try await RecipeSupabase.client.functions.invoke(
             "recipe-document-batch",
@@ -166,17 +168,20 @@ struct RecipeDocumentBatchService {
                 )
             )
         )
-        return RecipeDocumentBatchOutcome(
-            candidates: response.candidates.map {
-                RecipeDocumentBatchCandidate(
-                    candidateID: $0.candidateID,
-                    title: $0.title,
-                    ingredients: $0.ingredients,
-                    steps: $0.steps
-                )
-            },
-            hasMore: response.hasMore,
-            unprocessed: response.unprocessed
+        return (
+            jobID: response.jobID,
+            outcome: RecipeDocumentBatchOutcome(
+                candidates: response.candidates.map {
+                    RecipeDocumentBatchCandidate(
+                        candidateID: $0.candidateID,
+                        title: $0.title,
+                        ingredients: $0.ingredients,
+                        steps: $0.steps
+                    )
+                },
+                hasMore: response.hasMore,
+                unprocessed: response.unprocessed
+            )
         )
     }
 
@@ -214,5 +219,129 @@ struct RecipeDocumentBatchService {
                 digest[12], digest[13], digest[14], digest[15]
             )
         )
+    }
+}
+
+/// HTTP client for the DEV-427 commercial usage ledger. It only settles one
+/// unit per operation and never authors quota or entitlement locally.
+struct RecipeUsageService {
+    func reserve(_ request: RecipeReservationRequest) async throws -> RecipeReservation {
+        try await RecipeSupabase.client.functions.invoke(
+            "recipe-usage/reservations",
+            options: FunctionInvokeOptions(method: .post, body: request)
+        )
+    }
+
+    func finalize(
+        operationID: String,
+        _ request: RecipeUsageFinalizeRequest
+    ) async throws -> RecipeUsageFinalizeResponse {
+        try await RecipeSupabase.client.functions.invoke(
+            "recipe-usage/\(operationID)/finalize",
+            options: FunctionInvokeOptions(method: .post, body: request)
+        )
+    }
+
+    func ack(operationID: String) async throws -> RecipeUsageAckResponse {
+        try await RecipeSupabase.client.functions.invoke(
+            "recipe-usage/\(operationID)/ack",
+            options: FunctionInvokeOptions(method: .post)
+        )
+    }
+}
+
+/// Real candidate-save boundary: one smart_import settle per confirmed candidate
+/// (reserve → finalize → local Store write → ACK). Each candidate is a separate
+/// usage operation keyed by its stable candidate ID, never a fabricated job.
+@MainActor
+struct RecipeDocumentBatchUsageSaveBoundary: RecipeDocumentBatchSaveBoundary {
+    private let usage: RecipeUsageService
+    private let store: RecipeStore
+
+    init(usage: RecipeUsageService = RecipeUsageService(), store: RecipeStore) {
+        self.usage = usage
+        self.store = store
+    }
+
+    func save(
+        jobID: UUID,
+        candidates: [RecipeDocumentBatchSaveCandidate],
+        ownerID: UUID
+    ) async throws {
+        for candidate in candidates {
+            try await settle(candidate, jobID: jobID)
+        }
+    }
+
+    private func settle(
+        _ candidate: RecipeDocumentBatchSaveCandidate,
+        jobID: UUID
+    ) async throws {
+        let jobIDText = jobID.uuidString
+        let source = try RecipeUsageSource(
+            importJobID: jobIDText, candidateIDs: [candidate.candidateID])
+        let inputHash = RecipeUsageHash.importInputHash(
+            jobID: jobIDText, candidateID: candidate.candidateID)
+        let operationID = UUID().uuidString
+
+        _ = try await usage.reserve(
+            try RecipeReservationRequest(
+                operationID: operationID,
+                capability: .smartImport,
+                inputHash: inputHash,
+                estimatedUnits: 1,
+                source: source
+            )
+        )
+        let finalized = try await usage.finalize(
+            operationID: operationID,
+            try RecipeUsageFinalizeRequest(
+                capability: .smartImport, inputHash: inputHash, source: source)
+        )
+        try writeFinalized(candidate, jobID: jobID, recipeID: finalized.recipeID)
+        _ = try await usage.ack(operationID: operationID)
+    }
+
+    /// Writes the settled recipe using the server-produced stable recipe ID, so
+    /// a replay or a second operation for the same candidate never duplicates a
+    /// dish or overwrites a locally edited recipe.
+    private func writeFinalized(
+        _ candidate: RecipeDocumentBatchSaveCandidate,
+        jobID: UUID,
+        recipeID: String
+    ) throws {
+        guard let targetID = UUID(uuidString: recipeID) else { return }
+        let title = candidate.title ?? "Untitled Recipe"
+        let content =
+            title
+            + "\n\nIngredients\n" + candidate.ingredients.joined(separator: "\n")
+            + "\n\nInstructions\n" + candidate.steps.joined(separator: "\n")
+        var recipe = RecipeDocumentParser.recipe(fromText: content, title: title)
+        recipe.id = targetID
+
+        var fields: [String: RecipeImportJobResponse.Field] = [:]
+        fields["title"] = .init(rawValue: title)
+        for (index, raw) in candidate.ingredients.enumerated() {
+            let field = RecipeImportJobResponse.Field(rawValue: raw)
+            fields["ingredients[\(index)].raw_text"] = field
+            fields["ingredients[\(index)].amount"] = field
+        }
+        for (index, instruction) in candidate.steps.enumerated() {
+            fields["steps[\(index)].instruction"] = .init(rawValue: instruction)
+        }
+        let result = RecipeImportJobResponse.Result(
+            recipeID: targetID,
+            status: "needs_review",
+            source: RecipeImportJobResponse.Source(inputType: "image"),
+            fields: fields,
+            evidence: [],
+            reviewFields: []
+        )
+        recipe.importRecord = RecipeImportRecord(
+            jobID: jobID,
+            result: result,
+            selectedCandidateID: candidate.candidateID
+        )
+        try store.upsert(recipe)
     }
 }

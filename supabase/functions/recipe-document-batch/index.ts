@@ -12,6 +12,8 @@ import {
   buildDocumentBatchPageUnits,
   validateDocumentBatch,
   type DocumentBatchArtifact,
+  type DocumentBatchCandidate,
+  type DocumentBatchSpec,
 } from "../recipe-import-worker/documentBatch.ts";
 import { createDocumentBatchExtractor } from "./extractor.ts";
 import {
@@ -159,6 +161,103 @@ async function resolveArtifact(
   };
 }
 
+// Derives a deterministic batch request ID from the selected artifact set so a
+// retried scan resumes the same completed job instead of minting a duplicate.
+async function stableBatchRequestID(artifactIDs: string[]): Promise<string> {
+  const digest = new Uint8Array(
+    await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode([...artifactIDs].sort().join("\n")),
+    ),
+  );
+  const hex = Array.from(
+    digest.slice(0, 16),
+    (byte) => byte.toString(16).padStart(2, "0"),
+  ).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+// Persists a real completed owner-scoped import job whose result carries the
+// batch candidates, so the smart_import settle verifies a candidate is a member
+// of an owned job instead of trusting a client success flag or a fabricated ID.
+async function persistBatchJob(
+  admin: SupabaseClient,
+  ownerID: string,
+  spec: DocumentBatchSpec,
+  candidates: DocumentBatchCandidate[],
+): Promise<{ jobID: string }> {
+  const inputType = spec.kind === "pdf" ? "file" : "image";
+  const primaryArtifactID = spec.artifacts[0].artifactID;
+  const clientRequestID = await stableBatchRequestID(
+    spec.artifacts.map((artifact) => artifact.artifactID),
+  );
+  const recipeID = crypto.randomUUID();
+
+  const result = {
+    recipe_id: recipeID,
+    status: "needs_review",
+    source: {
+      input_type: inputType,
+      original_url: null,
+      canonical_url: null,
+      source_artifact_id: primaryArtifactID,
+      platform: null,
+      author_name: null,
+      source_title: null,
+      external_content_id: null,
+    },
+    fields: {},
+    evidence: [],
+    review_fields: [],
+    candidate_recipes: candidates.map((candidate) => ({
+      candidate_id: candidate.candidate_id,
+      title: candidate.title,
+      ingredients: candidate.ingredients,
+      steps: candidate.steps,
+      evidence_ids: [],
+      review_fields: [],
+    })),
+  };
+
+  const { data: existing, error: existingError } = await admin
+    .from("recipe_import_jobs")
+    .select("id")
+    .eq("owner_id", ownerID)
+    .eq("client_request_id", clientRequestID)
+    .maybeSingle();
+  if (existingError) {
+    throw new AppError("server_misconfigured", "Import job is unavailable.", 503);
+  }
+  if (existing) {
+    return { jobID: existing.id as string };
+  }
+
+  const { data: inserted, error: insertError } = await admin
+    .from("recipe_import_jobs")
+    .insert({
+      owner_id: ownerID,
+      client_request_id: clientRequestID,
+      input_type: inputType,
+      source_value: primaryArtifactID,
+      source_fingerprint: clientRequestID,
+      artifact_id: primaryArtifactID,
+      status: "completed",
+      stage: "done",
+      recipe_id: recipeID,
+      recipe_status: "needs_review",
+      review_count: candidates.length,
+      result,
+      completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+  if (insertError || !inserted) {
+    throw new AppError("server_misconfigured", "Import job could not be persisted.", 503);
+  }
+  return { jobID: inserted.id as string };
+}
+
 Deno.serve(async (request: Request): Promise<Response> => {
   const cors = handleCors(request, "auth");
   if (cors) return cors;
@@ -234,9 +333,11 @@ Deno.serve(async (request: Request): Promise<Response> => {
         units,
         extractor,
       );
+      const { jobID } = await persistBatchJob(admin, user.id, spec, candidates);
 
       return json(
         {
+          job_id: jobID,
           kind: spec.kind,
           page_count: spec.pageCount,
           total_bytes: spec.totalBytes,

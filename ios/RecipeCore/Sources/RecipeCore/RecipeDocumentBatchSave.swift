@@ -1,6 +1,7 @@
 // Developer: gengyun
-// Purpose: Typed candidate-save boundary for the document batch scan.
+// Purpose: Typed candidate-save boundary and canonical usage hash for the document batch scan.
 
+import CryptoKit
 import Foundation
 
 /// One confirmed batch candidate, keyed by its stable worker candidate ID for
@@ -24,44 +25,29 @@ public struct RecipeDocumentBatchSaveCandidate: Sendable, Hashable {
     }
 }
 
-/// The candidate-save seam the DEV-427/432 wiring fills. The batch sheet
-/// resolves a confirmed selection into this boundary; the wiring builds the
-/// smart_import usage settle (`RecipeUsageFinalizeRequest`) from the stable
-/// candidate IDs and performs the local recipe write. Until wired it fails
-/// closed so a confirmed batch never saves unmetered.
+/// The candidate-save boundary the AddRecipeView wiring fills. Each confirmed
+/// candidate is settled through the smart_import usage contract (reserve →
+/// finalize → local Store write → ACK) against the batch's persisted import
+/// job; one candidate is settled per operation.
 @MainActor
 public protocol RecipeDocumentBatchSaveBoundary: Sendable {
     func save(
-        _ candidates: [RecipeDocumentBatchSaveCandidate],
-        batchID: UUID,
+        jobID: UUID,
+        candidates: [RecipeDocumentBatchSaveCandidate],
         ownerID: UUID
     ) async throws
 }
 
-public enum RecipeDocumentBatchSaveError: LocalizedError {
-    case unavailable
-
-    public var errorDescription: String? {
-        switch self {
-        case .unavailable:
-            RecipeLanguage.localized(
-                "Saving scanned recipes isn't available yet. The candidates stay available for review.")
-        }
-    }
-}
-
-/// Fail-closed default until the DEV-427/432 wiring supplies the real
-/// smart_import settle. A confirmed selection can never save unmetered through
-/// this boundary.
-@MainActor
-public struct RecipeDocumentBatchUnavailableSaveBoundary: RecipeDocumentBatchSaveBoundary {
-    public init() {}
-
-    public func save(
-        _ candidates: [RecipeDocumentBatchSaveCandidate],
-        batchID: UUID,
-        ownerID: UUID
-    ) async throws {
-        throw RecipeDocumentBatchSaveError.unavailable
+/// Canonical DEV-427 usage hashing. `importInputHash` mirrors the server's
+/// `computeInputHash({ capability: "smart_import", source })`, where the source
+/// is the normalized `import_job` shape with null session/turn members and
+/// exactly one candidate, so a client and the ledger never disagree on the
+/// immutable operation key.
+public enum RecipeUsageHash {
+    public static func importInputHash(jobID: String, candidateID: String) -> String {
+        let canonical =
+            #"{"capability":"smart_import","source":{"candidate_ids":["\#(candidateID)"],"job_id":"\#(jobID)","origin":"import_job","session_id":null,"turn_request_id":null}}"#
+        let digest = SHA256.hash(data: Data(canonical.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
     }
 }

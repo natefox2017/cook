@@ -33,12 +33,10 @@ struct AddRecipeView: View {
     @State private var showDocumentBatchFile = false
     @State private var documentBatchOutcome: RecipeDocumentBatchOutcome?
     @State private var documentBatchProgress: RecipeDocumentBatchProgress?
-    @State private var documentBatchBatchID = UUID()
+    @State private var documentBatchJobID: UUID?
     @State private var showDocumentBatchSheet = false
 
     private let documentBatchService = RecipeDocumentBatchService()
-    private let documentBatchSaveBoundary: any RecipeDocumentBatchSaveBoundary =
-        RecipeDocumentBatchUnavailableSaveBoundary()
 
     var body: some View {
         NavigationStack {
@@ -460,16 +458,18 @@ struct AddRecipeView: View {
         let spec = try RecipeDocumentBatch.validate(items)
         let units = RecipeDocumentBatch.pageUnits(for: spec)
         let batchID = UUID()
-        let outcome = try await documentBatchService.scan(items: items, ownerID: ownerID)
-        documentBatchOutcome = outcome
+        let result = try await documentBatchService.scan(items: items, ownerID: ownerID)
+        documentBatchJobID = result.jobID
+        documentBatchOutcome = result.outcome
         documentBatchProgress = RecipeDocumentBatch.initialProgress(
             batchID: batchID, units: units)
-        documentBatchBatchID = batchID
         showDocumentBatchSheet = true
     }
 
     private func saveDocumentBatchCandidates(_ selectedIDs: Set<String>) {
-        guard let outcome = documentBatchOutcome else { return }
+        guard let outcome = documentBatchOutcome, let jobID = documentBatchJobID else {
+            return
+        }
         let candidates = outcome.candidates
             .filter { selectedIDs.contains($0.candidateID) }
             .map {
@@ -483,11 +483,8 @@ struct AddRecipeView: View {
         Task { @MainActor in
             do {
                 let ownerID = try currentOwnerID()
-                try await documentBatchSaveBoundary.save(
-                    candidates,
-                    batchID: documentBatchBatchID,
-                    ownerID: ownerID
-                )
+                let boundary = RecipeDocumentBatchUsageSaveBoundary(store: store)
+                try await boundary.save(jobID: jobID, candidates: candidates, ownerID: ownerID)
                 showDocumentBatchSheet = false
             } catch is CancellationError {
             } catch {
