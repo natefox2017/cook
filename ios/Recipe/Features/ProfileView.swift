@@ -90,7 +90,7 @@ struct ProfileView: View {
             }
             .listRowBackground(RecipeTheme.card)
 
-            Section("Account & subscription") {
+            Section("Account") {
                 Button(action: onOpenAccount) {
                     ProfileRowLabel(
                         title: "Account",
@@ -99,13 +99,15 @@ struct ProfileView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("profile.account")
-                NavigationLink {
-                    SubscriptionView()
-                } label: {
-                    ProfileRowLabel(
-                        title: "Premium",
-                        systemImage: "sparkles"
-                    )
+                if RecipeMonetization.isEnabled {
+                    NavigationLink {
+                        SubscriptionView()
+                    } label: {
+                        ProfileRowLabel(
+                            title: "Premium",
+                            systemImage: "sparkles"
+                        )
+                    }
                 }
             }
             .listRowBackground(RecipeTheme.card)

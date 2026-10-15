@@ -47,17 +47,19 @@ struct FirstLaunchFlowView: View {
                             title: "Save recipe links",
                             subtitle:
                                 "Share a recipe link to Recipe Pals. Review and complete the details when you’re ready.",
-                            actionTitle: "See Plans",
+                            actionTitle: RecipeMonetization.isEnabled ? "See Plans" : "Get Started",
                             page: 2,
                             onNext: advance,
                             onSkip: showPaywall
                         )
                     default:
-                        PremiumPaywallContent(
-                            context: .onboarding,
-                            onContinue: onComplete,
-                            onManageSubscription: nil
-                        )
+                        if RecipeMonetization.isEnabled {
+                            PremiumPaywallContent(
+                                context: .onboarding,
+                                onContinue: onComplete,
+                                onManageSubscription: nil
+                            )
+                        }
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .trailing)))
@@ -68,12 +70,20 @@ struct FirstLaunchFlowView: View {
     }
 
     private func advance() {
+        if step == 2 {
+            showPaywall()
+            return
+        }
         withAnimation(.easeInOut(duration: 0.2)) {
             step += 1
         }
     }
 
     private func showPaywall() {
+        guard RecipeMonetization.isEnabled else {
+            onComplete()
+            return
+        }
         withAnimation(.easeInOut(duration: 0.2)) {
             step = 3
         }

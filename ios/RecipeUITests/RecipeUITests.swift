@@ -1628,134 +1628,71 @@ final class RecipeUITests: XCTestCase {
         "recipe.BF80A79C-A36C-6C5A-AA23-15B5E66BAF06"
 
     @MainActor
-    func testSubscriptionOpensFromProfileAndSettings() {
+    func testFreeReleaseHidesSubscriptionFromProfileAndSettings() {
         let app = launchSeededApp()
         defer {
             app.terminate()
         }
-
         let profile = app.tabBars.buttons["Profile"]
         waitUntilReady(profile)
         profile.tap()
-
-        let premium = app.buttons["Premium"]
-        reveal(premium, in: app, maximumSwipes: 4)
-        premium.tap()
-        XCTAssertTrue(app.staticTexts["Premium"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["Restore Purchases"].exists)
-        attachScreenshot("Subscription from Profile", app: app)
-
-        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertFalse(app.buttons["Premium"].exists)
         let settings = app.buttons["Settings"]
         reveal(settings, in: app, maximumSwipes: 4)
         settings.tap()
-
-        let subscription = app.buttons["Subscription"]
-        reveal(subscription, in: app, maximumSwipes: 4)
-        subscription.tap()
-
-        XCTAssertTrue(app.staticTexts["Premium"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["Restore Purchases"].exists)
-        attachScreenshot("Subscription from Settings", app: app)
+        XCTAssertTrue(app.buttons["Account"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Cloud Sync"].exists)
+        XCTAssertFalse(app.buttons["Subscription"].exists)
+        attachScreenshot("Free release settings", app: app)
     }
 
     @MainActor
-    func testOnboardingPreservesNonAILaunchStoryAndPaywall() {
+    func testFreeOnboardingPreservesNonAIStoriesAndCompletesWithoutPaywall() {
         let app = launchOnboardingApp(productIDs: "")
         defer {
             app.terminate()
         }
-
-        // The first submission must describe available non-AI functionality.
         XCTAssertTrue(app.staticTexts["Create a recipe"].waitForExistence(timeout: 8))
-        XCTAssertTrue(
-            app.staticTexts[
-                "Add your own ingredients and steps. Keep your recipes together and ready to cook."
-            ].exists
-        )
         let next = app.buttons["onboarding.primary"]
         waitUntilReady(next)
-        XCTAssertEqual(next.label, "Next")
-
         next.tap()
         XCTAssertTrue(app.staticTexts["Save recipe links"].waitForExistence(timeout: 8))
         waitUntilReady(next)
         next.tap()
-        XCTAssertTrue(app.staticTexts["Save recipe links"].waitForExistence(timeout: 8))
         waitUntilReady(next)
-        XCTAssertEqual(next.label, "See Plans")
-
+        XCTAssertEqual(next.label, "Get Started")
         next.tap()
-        XCTAssertTrue(app.staticTexts["Premium"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["Private recipe collection"].exists)
-        XCTAssertFalse(app.staticTexts["Create with AI"].exists)
-        let annual = app.buttons["subscription.plan.annual.unavailable"]
-        let monthly = app.buttons["subscription.plan.monthly.unavailable"]
-        XCTAssertTrue(annual.isSelected)
-        XCTAssertGreaterThan(annual.frame.minY, monthly.frame.minY)
-        XCTAssertTrue(app.buttons["onboarding.plan.free"].exists)
-        XCTAssertTrue(app.buttons["subscription.restore"].exists)
-        attachScreenshot("Non-AI first submission onboarding and Premium", app: app)
+        waitUntilReady(app.buttons["addRecipeButton"])
+        XCTAssertFalse(app.buttons["onboarding.purchase"].exists)
+        XCTAssertFalse(app.staticTexts["Premium"].exists)
+        attachScreenshot("Free onboarding completed", app: app)
     }
 
     @MainActor
-    func testOnboardingPaywallFreeAndClosePaths() {
+    func testFreeOnboardingSkipEntersLibraryDirectly() {
         let app = launchOnboardingApp(productIDs: "")
         defer {
             app.terminate()
         }
         waitUntilReady(app.buttons["onboarding.skip"])
         app.buttons["onboarding.skip"].tap()
-        waitUntilReady(app.buttons["onboarding.plan.free"])
-        let continueFree = app.buttons["onboarding.purchase"]
-        XCTAssertTrue(continueFree.waitForExistence(timeout: 8))
-        XCTAssertEqual(continueFree.label, "Subscribe")
-        XCTAssertFalse(continueFree.isEnabled)
-        let annual = app.buttons["subscription.plan.annual.unavailable"]
-        let monthly = app.buttons["subscription.plan.monthly.unavailable"]
-        XCTAssertTrue(annual.isSelected)
-        XCTAssertGreaterThan(annual.frame.minY, monthly.frame.minY)
-        XCTAssertTrue(app.buttons["onboarding.close"].isHittable)
-        XCTAssertTrue(app.buttons["subscription.restore"].isHittable)
-        attachScreenshot("Product Design subscription - actual unavailable plans", app: app)
-        app.buttons["onboarding.plan.free"].tap()
         waitUntilReady(app.buttons["addRecipeButton"])
-
-        app.terminate()
-        app.launch()
-        waitUntilReady(app.buttons["onboarding.skip"])
-        app.buttons["onboarding.skip"].tap()
-        waitUntilReady(app.buttons["onboarding.close"])
-        app.buttons["onboarding.close"].tap()
-        waitUntilReady(app.buttons["addRecipeButton"])
-
-        app.terminate()
-        app.launchArguments = [
-            "--uitesting", "--uitesting-onboarding", "--uitesting-locale", "zh-Hans",
-        ]
-        app.launch()
-        XCTAssertTrue(app.staticTexts["用 AI 创作"].waitForExistence(timeout: 8))
-        waitUntilReady(app.buttons["onboarding.skip"])
-        app.buttons["onboarding.skip"].tap()
-        XCTAssertTrue(app.staticTexts["私人菜谱高级版"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["onboarding.purchase"].waitForExistence(timeout: 8))
-        attachScreenshot("Product Design subscription - Chinese layout smoke", app: app)
+        XCTAssertFalse(app.buttons["onboarding.purchase"].exists)
+        XCTAssertFalse(app.buttons["subscription.restore"].exists)
     }
 
     @MainActor
-    func testOnboardingPaywallAccessibilitySizeKeepsFreeExitReachable() {
+    func testFreeOnboardingAccessibilitySizeKeepsSkipReachable() {
         let app = launchOnboardingApp(productIDs: "", accessibilitySize: true)
         defer {
             app.terminate()
         }
-        waitUntilReady(app.buttons["onboarding.skip"])
-        app.buttons["onboarding.skip"].tap()
-        let action = app.buttons["onboarding.plan.free"]
-        reveal(action, in: app, maximumSwipes: 12)
-        XCTAssertTrue(action.isHittable)
-        attachScreenshot("Product Design subscription - accessibility size", app: app)
-        action.tap()
+        let skip = app.buttons["onboarding.skip"]
+        reveal(skip, in: app, maximumSwipes: 12)
+        XCTAssertTrue(skip.isHittable)
+        skip.tap()
         waitUntilReady(app.buttons["addRecipeButton"])
+        XCTAssertFalse(app.buttons["onboarding.purchase"].exists)
     }
 
     @MainActor
@@ -1770,6 +1707,10 @@ final class RecipeUITests: XCTestCase {
         }
         waitUntilReady(app.buttons["onboarding.skip"])
         app.buttons["onboarding.skip"].tap()
+        try XCTSkipUnless(
+            app.buttons["onboarding.purchase"].exists,
+            "Paid onboarding is intentionally disabled for the free release (DEV-422)."
+        )
         let monthly = app.buttons["subscription.plan.\(Self.localStoreKitProductID)"]
         waitUntilReady(monthly)
         monthly.tap()
@@ -1802,7 +1743,7 @@ final class RecipeUITests: XCTestCase {
         defer {
             app.terminate()
         }
-        openSubscription(in: app)
+        try openSubscription(in: app)
 
         let restore = app.buttons["subscription.restore"]
         waitUntilReady(restore)
@@ -1844,7 +1785,7 @@ final class RecipeUITests: XCTestCase {
         ] {
             session.clearTransactions()
             let app = launchSeededApp()
-            openSubscription(in: app)
+            try openSubscription(in: app)
 
             let monthly = app.buttons["subscription.plan.com.shopkivoo.recipe.pro.monthly"]
             let annual = app.buttons["subscription.plan.com.shopkivoo.recipe.pro.yearly"]
@@ -1882,7 +1823,7 @@ final class RecipeUITests: XCTestCase {
             session.clearTransactions()
             _ = try await session.buyProduct(identifier: productID)
             let app = launchSeededApp()
-            openSubscription(in: app)
+            try openSubscription(in: app)
             XCTAssertTrue(app.staticTexts["Subscription active"].waitForExistence(timeout: 8))
             XCTAssertFalse(app.buttons["subscription.purchase"].exists)
             app.terminate()
@@ -1904,7 +1845,7 @@ final class RecipeUITests: XCTestCase {
         defer {
             app.terminate()
         }
-        openSubscription(in: app)
+        try openSubscription(in: app)
 
         XCTAssertTrue(
             app.staticTexts["Premium plans aren’t available right now."].waitForExistence(
@@ -1946,19 +1887,19 @@ final class RecipeUITests: XCTestCase {
         defer {
             app.terminate()
         }
-        openSubscription(in: app)
+        try openSubscription(in: app)
 
         XCTAssertTrue(app.staticTexts["Subscription active"].waitForExistence(timeout: 8))
         XCTAssertFalse(app.buttons["subscription.retry"].exists)
     }
 
     @MainActor
-    func testRestoreExplainsWhenSubscriptionProductsAreUnconfigured() {
+    func testRestoreExplainsWhenSubscriptionProductsAreUnconfigured() throws {
         let app = launchSeededApp(storeKitTestProductID: "")
         defer {
             app.terminate()
         }
-        openSubscription(in: app)
+        try openSubscription(in: app)
 
         let restore = app.buttons["subscription.restore"]
         waitUntilReady(restore)
@@ -2309,12 +2250,16 @@ final class RecipeUITests: XCTestCase {
     }
 
     @MainActor
-    private func openSubscription(in app: XCUIApplication) {
+    private func openSubscription(in app: XCUIApplication) throws {
         let profile = app.tabBars.buttons["Profile"]
         waitUntilReady(profile)
         profile.tap()
 
         let premium = app.buttons["Premium"]
+        try XCTSkipUnless(
+            premium.exists,
+            "Paid navigation is intentionally disabled for the free release (DEV-422)."
+        )
         reveal(premium, in: app, maximumSwipes: 4)
         premium.tap()
         XCTAssertTrue(app.staticTexts["Premium"].waitForExistence(timeout: 8))

@@ -473,7 +473,8 @@ struct RecipeApp: App {
                     if arguments.contains("--uitesting-multi-candidate") {
                         try RecipeMultiCandidateQAFixture.install(
                             into: localStore,
-                            includeOverflow: arguments.contains("--uitesting-multi-candidate-overflow")
+                            includeOverflow: arguments.contains(
+                                "--uitesting-multi-candidate-overflow")
                         )
                     }
                 } catch {
@@ -666,7 +667,8 @@ private struct RecipeRootView: View {
 
                     NavigationStack {
                         GroceriesView()
-                            .modifier(RecipeRootTabSwipe(selectedTab: $selectedTab, tab: .groceries))
+                            .modifier(
+                                RecipeRootTabSwipe(selectedTab: $selectedTab, tab: .groceries))
                     }
                     .tabItem {
                         Label(RecipeTab.groceries.title, systemImage: RecipeTab.groceries.symbol)
@@ -717,6 +719,9 @@ private struct RecipeRootView: View {
             }
         }
         .task {
+            guard RecipeMonetization.isEnabled else {
+                return
+            }
             // Load StoreKit product metadata so lifecycle status is available
             // even when the user never opens the subscription screen.
             await subscriptions.load()
@@ -767,6 +772,9 @@ private struct RecipeRootView: View {
                 }
             }
             Task {
+                guard RecipeMonetization.isEnabled else {
+                    return
+                }
                 if subscriptions.products.isEmpty {
                     await subscriptions.load(force: true)
                 } else {
