@@ -8,6 +8,7 @@ import SwiftUI
 
 enum RecipeUITestNamespace {
     static let resetCookingSessionsArgument = "--uitesting-reset-cooking-sessions"
+    static let draftReviewArgument = "--uitesting-draft-review"
     static let exportQAArgument = "--uitesting-export-qa"
     static let resetExportQAArgument = "--uitesting-export-qa-reset"
     static let exportQAPermissionFailureArgument =
@@ -613,6 +614,7 @@ private struct RecipeRootView: View {
     @State private var selectedTab: RecipeTab = .recipes
     @State private var shareInbox = RecipeShareInboxCoordinator()
     @State private var isAccountPresented = false
+    @State private var isDraftReviewPresented = false
     @State private var accountDetent: PresentationDetent = .large
 
     let isUITesting: Bool
@@ -702,11 +704,26 @@ private struct RecipeRootView: View {
             .presentationCornerRadius(28)
             .presentationBackground(RecipeTheme.canvas)
         }
+        .sheet(isPresented: $isDraftReviewPresented) {
+            NavigationStack {
+                RecipeDraftReviewView(jobID: UUID())
+            }
+        }
         .task {
             // In UI-test mode App Group provisioning may not be installed.
             // Normal installs read durable receipts from the shared container.
             if !isUITesting {
                 await shareInbox.synchronize(store: store)
+            }
+        }
+        .task {
+            // Test-only presentation of the draft review flow; normal launches
+            // reach it from a completed import that needs review.
+            if isUITesting
+                && ProcessInfo.processInfo.arguments.contains(
+                    RecipeUITestNamespace.draftReviewArgument)
+            {
+                isDraftReviewPresented = true
             }
         }
         .task {
