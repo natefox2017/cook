@@ -743,7 +743,17 @@ private struct RecipeRootView: View {
             // even when the user never opens the subscription screen.
             await subscriptions.load()
         }
+        .task {
+            // Bind the purchase identity bridge to the current verified owner once auth settles.
+            subscriptions.purchaseAccountBridge.ownerDidChange(
+                to: Self.verifiedOwnerID(in: auth.state)
+            )
+        }
         .onChange(of: auth.state) { _, state in
+            // Re-bind the purchase identity bridge across sign-in, sign-out, and account switch.
+            subscriptions.purchaseAccountBridge.ownerDidChange(
+                to: Self.verifiedOwnerID(in: state)
+            )
             // An ACK from the previous account must not hide a receipt from
             // the newly signed-in account after an authentication transition.
             if !isUITesting {
@@ -810,6 +820,13 @@ private struct RecipeRootView: View {
         // Keep the current tab and reveal the recovery/account callback as a sheet.
         accountDetent = .large
         isAccountPresented = true
+    }
+
+    private static func verifiedOwnerID(in state: RecipeAuthState) -> UUID? {
+        if case .signedIn(let userID, _) = state {
+            return userID
+        }
+        return nil
     }
 }
 
