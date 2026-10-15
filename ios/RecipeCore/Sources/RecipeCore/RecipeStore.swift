@@ -721,6 +721,72 @@ public final class RecipeStore {
         )
     }
 
+    /// Appends consolidated weekly grocery rows in one atomic commit, reusing the
+    /// existing safe merge (exact same-name/same-unit, never into a checked row).
+    /// A write failure rolls back in-memory state without a partial append.
+    @discardableResult
+    public func appendGroceries(_ items: [WeeklyGroceryAppendItem]) throws -> Int {
+        guard !items.isEmpty else { return 0 }
+        var next = snapshot
+        var consolidationIndices: [GroceryConsolidationKey: Int] = [:]
+        for (index, grocery) in next.groceries.enumerated()
+        where !grocery.isChecked && grocery.quantity != nil {
+            let key = GroceryConsolidationKey(
+                name: normalized(grocery.name),
+                unit: unitKey(grocery.unit)
+            )
+            if consolidationIndices[key] == nil {
+                consolidationIndices[key] = index
+            }
+        }
+
+        var appended = 0
+        for item in items {
+            guard !normalized(item.name).isEmpty else {
+                throw RecipeStoreError.invalidValue(
+                    RecipeLanguage.localized("Give each grocery item a name."))
+            }
+            let key = GroceryConsolidationKey(
+                name: normalized(item.name),
+                unit: unitKey(item.unit)
+            )
+            if let index = consolidationIndices[key],
+                var existing = next.groceries[index].quantity,
+                var added = item.quantity
+            {
+                var total = Decimal()
+                guard NSDecimalAdd(&total, &existing, &added, .plain) == .noError else {
+                    throw IngredientAmount.ValidationError.arithmeticFailure
+                }
+                next.groceries[index].quantity = total
+                next.groceries[index].amountText = RecipeIngredient.formatted(
+                    total, unit: next.groceries[index].unit
+                )
+                for recipeID in item.recipeIDs
+                where !next.groceries[index].recipeIDs.contains(recipeID) {
+                    next.groceries[index].recipeIDs.append(recipeID)
+                }
+            } else {
+                next.groceries.append(
+                    GroceryItem(
+                        name: item.name,
+                        amountText: item.amountText,
+                        quantity: item.quantity,
+                        unit: item.unit,
+                        category: item.category,
+                        recipeIDs: item.recipeIDs
+                    )
+                )
+                if item.quantity != nil, consolidationIndices[key] == nil {
+                    consolidationIndices[key] = next.groceries.count - 1
+                }
+            }
+            appended += 1
+        }
+        try commit(next)
+        return appended
+    }
+
     public func updateSettings(_ settings: RecipeSettings) throws {
         var next = snapshot
         next.settings = settings
