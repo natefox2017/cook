@@ -2,7 +2,6 @@
 // Purpose: Authenticated HTTP adapter that backs the recipe-translation provider port against the
 //          recipe-translations Edge Function without introducing a second wire DTO.
 
-import CryptoKit
 import Foundation
 
 #if canImport(FoundationNetworking)
@@ -201,7 +200,7 @@ public struct RecipeTranslationClient: RecipeTranslationProviderPort, Sendable {
             ),
             recipeID: recipe.id.uuidString.lowercased(),
             expectedRevision: revisionString(recipe.updatedAt),
-            proposalID: proposalID(for: request)
+            proposalID: request.proposalID.uuidString.lowercased()
         )
     }
 
@@ -268,26 +267,6 @@ public struct RecipeTranslationClient: RecipeTranslationProviderPort, Sendable {
         default:
             return .invalidResponse
         }
-    }
-
-    /// Client-stable idempotency key: deterministic over the recipe identity, so a retry reuses the
-    /// same operation id (no double charge) and the key survives account/session changes.
-    private static func proposalID(for request: RecipeTranslationRequest) -> String {
-        let canonical =
-            "recipe-translation-proposal:\(request.recipe.id.uuidString.lowercased()):"
-            + "\(revisionString(request.recipe.updatedAt)):\(request.target.rawValue)"
-        let digest = SHA256.hash(data: Data(canonical.utf8))
-        var bytes = digest.withUnsafeBytes { Array($0.prefix(16)) }
-        bytes[6] = (bytes[6] & 0x0F) | 0x50
-        bytes[8] = (bytes[8] & 0x3F) | 0x80
-        return bytes.map { String(format: "%02x", $0) }
-            .enumerated()
-            .reduce(into: "") { result, pair in
-                if [4, 6, 8, 10].contains(pair.offset) {
-                    result.append("-")
-                }
-                result.append(pair.element)
-            }
     }
 
     private static func revisionString(_ date: Date) -> String {
