@@ -55,6 +55,8 @@
     <string>$(RECIPE_SUBSCRIPTION_PRODUCT_IDS)</string>
     <key>LegacyCookSubscriptionProductIDs</key>
     <string>$(COOK_SUBSCRIPTION_PRODUCT_IDS)</string>
+    <key>RecipeReleaseStage</key>
+    <string>$(RECIPE_RELEASE_STAGE)</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSMicrophoneUsageDescription</key>
