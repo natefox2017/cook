@@ -28,6 +28,11 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
     public let reservedUntil: String?
     public let createdAt: Date
     public let updatedAt: Date
+    /// Server-authored stable recipe ID, persisted once finalize commits so a crash before the local
+    /// recipe save/ack can replay the result instead of settling the quota unit a second time.
+    public let recipeID: String?
+    /// Server-authored payload hash for the settled recipe; persisted together with `recipeID`.
+    public let payloadHash: String?
 
     public var id: UUID { operationID }
 
@@ -40,7 +45,9 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
         state: State,
         reservedUntil: String? = nil,
         createdAt: Date = .now,
-        updatedAt: Date = .now
+        updatedAt: Date = .now,
+        recipeID: String? = nil,
+        payloadHash: String? = nil
     ) {
         self.operationID = operationID
         self.ownerID = ownerID
@@ -51,6 +58,8 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
         self.reservedUntil = reservedUntil
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.recipeID = recipeID
+        self.payloadHash = payloadHash
     }
 
     /// Derives a stable operation ID from the owner + job + candidate so a lost-response retry replays
@@ -88,14 +97,42 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
             state: state,
             reservedUntil: reservedUntil ?? self.reservedUntil,
             createdAt: createdAt,
-            updatedAt: .now
+            updatedAt: .now,
+            recipeID: recipeID,
+            payloadHash: payloadHash
+        )
+    }
+
+    /// Records the server-authored settle result so a crash before the local recipe save/ack can
+    /// replay the exact same recipe ID and payload hash without settling the quota unit a second time.
+    public func markingFinalized(recipeID: String, payloadHash: String) -> RecipeImportUsageOperation {
+        RecipeImportUsageOperation(
+            operationID: operationID,
+            ownerID: ownerID,
+            jobID: jobID,
+            candidateID: candidateID,
+            receiptID: receiptID,
+            state: .finalized,
+            reservedUntil: reservedUntil,
+            createdAt: createdAt,
+            updatedAt: .now,
+            recipeID: recipeID,
+            payloadHash: payloadHash
         )
     }
 }
 
 /// File-backed owner-scoped store. The main app is the only writer (the Share Extension never reserves
-/// or purchases), so a single atomic file per owner is sufficient and race-free.
+/// or purchases); each owner gets one atomic file. A shared lock serializes read-modify-write updates
+/// so a concurrent multi-candidate selection cannot overwrite a locally tracked operation.
 public struct RecipeImportUsageStore: Sendable {
+    /// Shared across every value copy of the store (the bridge is a value type), so concurrent
+    /// read-modify-write updates serialize instead of dropping an operation to a last-writer-wins race.
+    private final class Lock: @unchecked Sendable {
+        let nsLock = NSLock()
+    }
+
+    private let lock = Lock()
     private let root: URL
 
     /// The application-support directory is shared with the recipe library and survives relaunch.
@@ -120,17 +157,21 @@ public struct RecipeImportUsageStore: Sendable {
     }
 
     public func save(_ operation: RecipeImportUsageOperation) throws {
-        var existing = try operations(for: operation.ownerID)
-        existing.removeAll { $0.operationID == operation.operationID }
-        existing.append(operation)
-        existing.sort { $0.createdAt < $1.createdAt }
-        try write(existing, to: fileURL(for: operation.ownerID))
+        try lock.nsLock.withLock {
+            var existing = try operations(for: operation.ownerID)
+            existing.removeAll { $0.operationID == operation.operationID }
+            existing.append(operation)
+            existing.sort { $0.createdAt < $1.createdAt }
+            try write(existing, to: fileURL(for: operation.ownerID))
+        }
     }
 
     public func remove(operationID: UUID, ownerID: UUID) throws {
-        var existing = try operations(for: ownerID)
-        existing.removeAll { $0.operationID == operationID }
-        try write(existing, to: fileURL(for: ownerID))
+        try lock.nsLock.withLock {
+            var existing = try operations(for: ownerID)
+            existing.removeAll { $0.operationID == operationID }
+            try write(existing, to: fileURL(for: ownerID))
+        }
     }
 
     private func fileURL(for ownerID: UUID) -> URL {
