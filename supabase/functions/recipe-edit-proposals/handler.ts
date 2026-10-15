@@ -378,20 +378,33 @@ async function createProposal(
     }
     return json(wireProposal(existing), 200);
   }
+  const source = {
+    recipe_id: body.recipe.id,
+    snapshot_hash: body.recipe.snapshotHash,
+    source_revision: body.recipe.sourceRevision,
+    intent: body.intent,
+  };
   try {
-    await deps.usage.reserve({
+    const reserveStatus = await deps.usage.reserve({
+      ownerId: owner.id,
       operationId: body.operationId,
       capability: "ai_edit",
       inputHash,
       estimatedUnits: 1,
-      source: {
-        recipe_id: body.recipe.id,
-        snapshot_hash: body.recipe.snapshotHash,
-        source_revision: body.recipe.sourceRevision,
-        intent: body.intent,
-      },
+      source,
+    });
+    if (reserveStatus === "replay") {
+      // A prior attempt fenced this operation but never persisted a proposal; do not re-dispatch.
+      throw new Failure("USAGE_UNAVAILABLE");
+    }
+    await deps.usage.markDispatched({
+      ownerId: owner.id,
+      operationId: body.operationId,
+      capability: "ai_edit",
+      inputHash,
     });
   } catch (error) {
+    if (error instanceof Failure) throw error;
     console.error("usage_reserve_failed");
     throw new Failure("USAGE_UNAVAILABLE");
   }
@@ -411,6 +424,7 @@ async function createProposal(
   } catch (error) {
     // Timeout/security rejection preserves the original recipe and releases the reservation.
     await deps.usage.release({
+      ownerId: owner.id,
       operationId: body.operationId,
       capability: "ai_edit",
       inputHash,
@@ -435,6 +449,7 @@ async function createProposal(
   } catch (error) {
     // The proposal was not persisted (stale/conflict); release the uncommitted reservation.
     await deps.usage.release({
+      ownerId: owner.id,
       operationId: body.operationId,
       capability: "ai_edit",
       inputHash,
@@ -444,6 +459,13 @@ async function createProposal(
   if (result.outcome === "replay") {
     return json(wireProposal(result.proposal), 200);
   }
+  // Known persisted generated result: switch the ledger hold to the 24h generated window.
+  await deps.usage.markGenerated({
+    ownerId: owner.id,
+    operationId: body.operationId,
+    capability: "ai_edit",
+    inputHash,
+  }).catch(() => {});
   return json(wireProposal(result.proposal), 201);
 }
 
@@ -481,12 +503,18 @@ async function approveProposal(
   if (result.outcome === "approved" || result.outcome === "replay") {
     try {
       await deps.usage.finalize({
+        ownerId: owner.id,
         operationId: result.proposal.operation_id,
         capability: "ai_edit",
         inputHash: result.proposal.input_hash,
-        committedUnits: 1,
-        stableRecipeId: result.proposal.recipe_id,
+        source: {
+          recipe_id: result.proposal.recipe_id,
+          snapshot_hash: result.proposal.snapshot_hash,
+          source_revision: result.proposal.source_revision,
+          intent: result.proposal.intent,
+        },
         payloadHash: result.proposal.payload_hash ?? payloadHash,
+        payload: { changes: body.changes },
       });
     } catch (error) {
       console.error("usage_finalize_failed");
