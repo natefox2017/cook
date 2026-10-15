@@ -18,6 +18,7 @@ import {
   computeInputHash,
   extractEditPayload,
   extractImportPayload,
+  resolveStage,
 } from "../_shared/recipeAccess.ts";
 import { canonicalHash } from "../recipe-draft-sessions/canonicalJSON.ts";
 import { handleCors } from "../_shared/cors.ts";
@@ -29,6 +30,8 @@ export interface Dependencies {
     request: Request,
   ): Promise<{ id: string; isAnonymous: boolean } | null>;
   isEnabled(): boolean | Promise<boolean>;
+  /** Server-owned release stage (freeTest dormant default or commercial). */
+  stage: "freeTest" | "commercial";
   loadOwnedJob(owner: string, job: string): Promise<Row | null>;
   loadOwnedSession(owner: string, session: string): Promise<Row | null>;
   loadOwnedTurn(owner: string, session: string, turn: string): Promise<Row | null>;
@@ -174,7 +177,7 @@ async function loadSource(
     );
     requireThat(approval !== null, "NOT_FOUND");
     requireThat(approval.action === "accept", "INVALID_INPUT");
-    const payload = extractEditPayload(approval);
+    const payload = extractEditPayload(approval, turn);
     requireThat(payload !== null, "INVALID_INPUT");
     return payload;
   }
@@ -217,6 +220,12 @@ export async function handleRequest(
     );
     const owner = auth.id;
     requireThat(await deps.isEnabled() === true, "SERVICE_UNAVAILABLE");
+    // Fail closed on a client/server release-stage disagreement. The client stage is only ever compared,
+    // never trusted to grant entitlement.
+    const clientStage = request.headers.get("x-recipe-pals-stage");
+    if (clientStage !== null && resolveStage(clientStage) !== deps.stage) {
+      return error("CONFIGURATION_UNAVAILABLE", requestID);
+    }
 
     const segments = new URL(request.url).pathname.split("/").filter(Boolean);
     const base = segments.lastIndexOf("recipe-usage");

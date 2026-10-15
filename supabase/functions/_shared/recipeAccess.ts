@@ -77,7 +77,9 @@ export function extractImportPayload(
 ): Record<string, unknown> | null {
   if (!result || typeof result !== "object" || Array.isArray(result)) return null;
   const candidates = result.candidate_recipes;
-  if (Array.isArray(candidates)) {
+  // A multi-result job carries a non-empty candidate_recipes array; only its exact members are valid.
+  // `primary` is reserved for the single-result shape (candidate_recipes absent OR empty []).
+  if (Array.isArray(candidates) && candidates.length > 0) {
     const match = candidates.find(
       (candidate) =>
         candidate !== null && typeof candidate === "object" &&
@@ -86,22 +88,38 @@ export function extractImportPayload(
     );
     return (match as Record<string, unknown>) ?? null;
   }
-  // Single-result job: the reserved literal "primary" maps to the whole parsed recipe.
   if (candidateID === "primary") return result;
   return null;
 }
 
 /**
- * ai_edit approved payload: the durable approval receipt persisted by the draft stack. The receipt
- * binds the owner, session, turn and applied revision; finalize persists it as the recoverable payload.
+ * ai_edit approved payload: an immutable snapshot derived from the persisted turn (context_snapshot +
+ * result) and the accepted approval (selected_paths + applied_revision). The draft approval `receipt`
+ * is coordination metadata (request/turn/action/session ids), not the recipe; it is never persisted as
+ * the recoverable recipe. Final apply of selected_paths to produce the saveable recipe fields is the
+ * DEV-428 draft-composition contract; until it freezes, this immutable snapshot is the durable payload.
  */
 export function extractEditPayload(
   approval: Record<string, unknown> | null,
+  turn: Record<string, unknown> | null,
 ): Record<string, unknown> | null {
   if (!approval || typeof approval !== "object" || Array.isArray(approval)) return null;
-  const receipt = approval.receipt;
-  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) return null;
-  return receipt as Record<string, unknown>;
+  if (!turn || typeof turn !== "object" || Array.isArray(turn)) return null;
+  const contextSnapshot = turn.context_snapshot;
+  const result = turn.result;
+  if (!contextSnapshot || typeof contextSnapshot !== "object" || Array.isArray(contextSnapshot)) {
+    return null;
+  }
+  if (!result || typeof result !== "object" || Array.isArray(result)) return null;
+  if (!Array.isArray(approval.selected_paths)) return null;
+  const appliedRevision = approval.applied_revision;
+  if (appliedRevision === null || appliedRevision === undefined) return null;
+  return {
+    context_snapshot: contextSnapshot as Record<string, unknown>,
+    result: result as Record<string, unknown>,
+    selected_paths: approval.selected_paths as string[],
+    applied_revision: appliedRevision,
+  };
 }
 
 /** Release stage from server configuration; freeTest is the dormant default. */

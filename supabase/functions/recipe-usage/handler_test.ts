@@ -58,19 +58,42 @@ const completedJob = {
   },
 };
 const session = { id: SESSION, owner_id: OWNER };
+const editContext = {
+  status: "needs_review",
+  fields: { title: { raw_value: "Soup", evidence_ids: [], user_confirmed: true, origin: "extracted" } },
+  evidence: [],
+  review_fields: ["title"],
+};
+const editResult = {
+  status: "proposal",
+  origin: "AI_suggested",
+  requires_approval: false,
+  questions: [],
+  suggestions: [{ path: "title", value: "Soup" }],
+};
 const turn = {
   owner_id: OWNER,
   session_id: SESSION,
   request_id: TURN,
-  state: "pending",
-  dispatch_state: "predispatch",
+  state: "terminal",
+  dispatch_state: "settled",
+  context_snapshot: editContext,
+  result: editResult,
 };
 const approval = {
   owner_id: OWNER,
   session_id: SESSION,
   turn_request_id: TURN,
   action: "accept",
+  selected_paths: ["title"],
+  applied_revision: "2",
   receipt,
+};
+const editPayload = {
+  context_snapshot: editContext,
+  result: editResult,
+  selected_paths: ["title"],
+  applied_revision: "2",
 };
 
 const reservationBody = (inputHash: string) => ({
@@ -99,6 +122,7 @@ function makeDeps(
   return {
     verifiedOwner: async () => ({ id: OWNER, isAnonymous: false }),
     isEnabled: async () => true,
+    stage: "freeTest",
     loadOwnedJob: async () => (job as Record<string, unknown>) ?? null,
     loadOwnedSession: async () => (session as Record<string, unknown>),
     loadOwnedTurn: async () => (turn as Record<string, unknown>),
@@ -195,9 +219,9 @@ Deno.test("smart_import finalize produces a server-owned recipe_id and payload_h
   assert.equal(body.payload_hash, payloadHash);
 });
 
-Deno.test("ai_edit finalize requires an accepted approval and hashes its receipt", async () => {
+Deno.test("ai_edit finalize requires an accepted approval and hashes the immutable turn snapshot", async () => {
   const inputHash = await canonicalHash({ capability: "ai_edit", source: editSource });
-  const payloadHash = await canonicalHash(receipt);
+  const payloadHash = await canonicalHash(editPayload);
   const deps = makeDeps(async () => ({
     code: "FINALIZED",
     operation_id: OP,

@@ -4,6 +4,7 @@
 
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2.117.3";
 import { createServiceClient, requireUser } from "../_shared/auth.ts";
+import { resolveStage } from "../_shared/recipeAccess.ts";
 import { Failure, handleRequest, type Dependencies } from "./handler.ts";
 
 function enabled(): boolean {
@@ -37,6 +38,7 @@ export function createRecipeUsageDependencies(
       return { id: user.id, isAnonymous: user.is_anonymous ?? false };
     },
     isEnabled: enabled,
+    stage: resolveStage(Deno.env.get("RECIPE_COMMERCIAL_STAGE")),
     loadOwnedJob: (owner, job) =>
       ownedRead("recipe_import_jobs", "id,owner_id,status,result", owner, {
         id: job,
@@ -46,14 +48,14 @@ export function createRecipeUsageDependencies(
     loadOwnedTurn: (owner, session, turn) =>
       ownedRead(
         "recipe_draft_turns",
-        "owner_id,session_id,request_id,state,dispatch_state",
+        "owner_id,session_id,request_id,state,dispatch_state,context_snapshot,result",
         owner,
         { session_id: session, request_id: turn },
       ),
     loadOwnedApproval: (owner, session, turn) =>
       ownedRead(
         "recipe_draft_approvals",
-        "owner_id,session_id,turn_request_id,action,receipt",
+        "owner_id,session_id,turn_request_id,action,selected_paths,applied_revision",
         owner,
         { session_id: session, turn_request_id: turn },
       ),
