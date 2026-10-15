@@ -9,21 +9,41 @@ public enum RecipeImportUsageReserveOutcome: Sendable {
     case awaitingUpgrade(RecipeImportUsageOperation)
 }
 
+/// A recovered operation whose settle already completed. The server-authored recipe ID and payload
+/// hash are present so the caller can persist the recipe locally and then acknowledge without
+/// re-settling the already-committed quota unit.
+public struct RecipeImportUsageFinalizedOperation: Sendable {
+    public let operation: RecipeImportUsageOperation
+    public let recipeID: String
+    public let payloadHash: String
+
+    public init(operation: RecipeImportUsageOperation, recipeID: String, payloadHash: String) {
+        self.operation = operation
+        self.recipeID = recipeID
+        self.payloadHash = payloadHash
+    }
+}
+
 public struct RecipeImportUsageRecoveryReport: Sendable {
     /// Operations that recovered to `reserved` after the upgrade.
     public let recovered: [RecipeImportUsageOperation]
     /// Operations still blocked by a 402 outcome; the caller keeps them pending.
     public let stillAwaitingUpgrade: [RecipeImportUsageOperation]
+    /// Operations whose settle is already committed server-side; the caller persists each recipe
+    /// locally and acknowledges without a second finalize.
+    public let finalized: [RecipeImportUsageFinalizedOperation]
     /// Operations whose recovery hit a non-quota failure, keyed by operation ID.
     public let failed: [UUID: RecipeUsageFailure]
 
     public init(
         recovered: [RecipeImportUsageOperation],
         stillAwaitingUpgrade: [RecipeImportUsageOperation],
+        finalized: [RecipeImportUsageFinalizedOperation],
         failed: [UUID: RecipeUsageFailure]
     ) {
         self.recovered = recovered
         self.stillAwaitingUpgrade = stillAwaitingUpgrade
+        self.finalized = finalized
         self.failed = failed
     }
 }
@@ -87,44 +107,80 @@ public struct RecipeImportUsageBridge: Sendable {
         }
     }
 
-    /// Re-reserves every pending (`reserving` or `awaitingUpgrade`) operation for an owner using its
-    /// stable operation ID (idempotent REPLAY). It never rebuilds the import job or re-fetches cached results.
+    /// Resumes every pending operation for an owner: `reserving`/`awaitingUpgrade` replay their stable
+    /// reservation (idempotent REPLAY), while `reserved`/`finalized` replay or restore the server settle
+    /// result so the caller can persist the recipe locally and acknowledge without re-settling. It never
+    /// rebuilds the import job or re-fetches cached results.
     public func recover(ownerID: UUID) async throws -> RecipeImportUsageRecoveryReport {
         var recovered: [RecipeImportUsageOperation] = []
         var stillAwaitingUpgrade: [RecipeImportUsageOperation] = []
+        var finalized: [RecipeImportUsageFinalizedOperation] = []
         var failed: [UUID: RecipeUsageFailure] = [:]
 
-        for operation in try store.operations(for: ownerID)
-        where operation.state == .awaitingUpgrade || operation.state == .reserving {
-            let source = try operation.usageSource()
-            let request = try RecipeReservationRequest(
-                operationID: operation.operationID.uuidString.lowercased(),
-                capability: .smartImport,
-                inputHash: try operation.inputHash(),
-                estimatedUnits: 1,
-                source: source
-            )
-            do {
-                let reservation = try await client.reserve(ownerID: ownerID, request: request)
-                try reconcile(reservation, operationID: operation.operationID)
-                let updated = operation.marking(state: .reserved, reservedUntil: reservation.reservedUntil)
-                try store.save(updated)
-                recovered.append(updated)
-            } catch let failure as RecipeUsageFailure where failure.isAwaitingUpgrade {
-                let awaiting = operation.marking(state: .awaitingUpgrade)
-                try store.save(awaiting)
-                stillAwaitingUpgrade.append(awaiting)
-            } catch let failure as RecipeUsageFailure {
-                failed[operation.operationID] = failure
-            } catch {
-                failed[operation.operationID] = .transport(error.localizedDescription)
+        for operation in try store.operations(for: ownerID) {
+            switch operation.state {
+            case .reserving, .awaitingUpgrade:
+                let source = try operation.usageSource()
+                let request = try RecipeReservationRequest(
+                    operationID: operation.operationID.uuidString.lowercased(),
+                    capability: .smartImport,
+                    inputHash: try operation.inputHash(),
+                    estimatedUnits: 1,
+                    source: source
+                )
+                do {
+                    let reservation = try await client.reserve(ownerID: ownerID, request: request)
+                    try reconcile(reservation, operationID: operation.operationID)
+                    let updated = operation.marking(state: .reserved, reservedUntil: reservation.reservedUntil)
+                    try store.save(updated)
+                    recovered.append(updated)
+                } catch let failure as RecipeUsageFailure where failure.isAwaitingUpgrade {
+                    let awaiting = operation.marking(state: .awaitingUpgrade)
+                    try store.save(awaiting)
+                    stillAwaitingUpgrade.append(awaiting)
+                } catch let failure as RecipeUsageFailure {
+                    failed[operation.operationID] = failure
+                } catch {
+                    failed[operation.operationID] = .transport(error.localizedDescription)
+                }
+            case .reserved, .finalized:
+                do {
+                    finalized.append(try await finalizeResult(ownerID: ownerID, operation: operation))
+                } catch let failure as RecipeUsageFailure {
+                    failed[operation.operationID] = failure
+                } catch {
+                    failed[operation.operationID] = .transport(error.localizedDescription)
+                }
             }
         }
 
         return RecipeImportUsageRecoveryReport(
             recovered: recovered,
             stillAwaitingUpgrade: stillAwaitingUpgrade,
+            finalized: finalized,
             failed: failed
+        )
+    }
+
+    /// Replays the server settle for a `.reserved`/`.finalized` operation. A `.finalized` operation
+    /// that already persisted its recipe ID and payload hash is replayed from the store without a
+    /// network call, so the already-committed quota unit is never settled a second time.
+    private func finalizeResult(
+        ownerID: UUID,
+        operation: RecipeImportUsageOperation
+    ) async throws -> RecipeImportUsageFinalizedOperation {
+        if operation.state == .finalized,
+           let recipeID = operation.recipeID,
+           let payloadHash = operation.payloadHash {
+            return RecipeImportUsageFinalizedOperation(
+                operation: operation, recipeID: recipeID, payloadHash: payloadHash)
+        }
+        let response = try await finalize(ownerID: ownerID, operation: operation)
+        return RecipeImportUsageFinalizedOperation(
+            operation: operation.markingFinalized(
+                recipeID: response.recipeID, payloadHash: response.payloadHash),
+            recipeID: response.recipeID,
+            payloadHash: response.payloadHash
         )
     }
 
@@ -143,7 +199,8 @@ public struct RecipeImportUsageBridge: Sendable {
     }
 
     /// Settles a reserved operation and returns the server-authored stable recipe ID and payload hash.
-    /// The local recipe save is the caller's step; it must happen before `acknowledge`.
+    /// The settle result is persisted before returning, so a crash before the caller's local recipe
+    /// save/acknowledge can be replayed by `recover` without settling the quota unit a second time.
     public func finalize(
         ownerID: UUID,
         operation: RecipeImportUsageOperation
@@ -158,7 +215,9 @@ public struct RecipeImportUsageBridge: Sendable {
             operationID: operation.operationID.uuidString.lowercased(),
             request: request
         )
-        try store.save(operation.marking(state: .finalized))
+        try store.save(
+            operation.markingFinalized(recipeID: response.recipeID, payloadHash: response.payloadHash)
+        )
         return response
     }
 
