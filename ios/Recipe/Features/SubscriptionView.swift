@@ -118,10 +118,10 @@ struct PremiumPaywallContent: View {
     }
 
     private func onboardingContent(imageHeight: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
+        VStack(alignment: .leading, spacing: RecipeSpacing.large) {
             HStack {
                 Text("Premium")
-                    .font(RecipeTheme.heading(.card))
+                    .font(RecipeTheme.heading(.title))
                     .fixedSize(horizontal: false, vertical: true)
 
                 Spacer()
@@ -140,16 +140,18 @@ struct PremiumPaywallContent: View {
                 .accessibilityIdentifier("onboarding.close")
             }
 
-            Image("OnboardingAI")
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity)
-                .frame(height: dynamicTypeSize.isAccessibilitySize ? 112 : imageHeight)
-                .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .accessibilityLabel(Text("A roast chicken dinner."))
+            VStack(spacing: RecipeSpacing.medium) {
+                Image("OnboardingAI")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: dynamicTypeSize.isAccessibilitySize ? 112 : imageHeight)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .accessibilityLabel(Text("A roast chicken dinner."))
 
-            premiumFeatures
+                premiumFeatures
+            }
 
             if subscriptions.state.hasEntitlement {
                 activeSubscription
@@ -197,18 +199,20 @@ struct PremiumPaywallContent: View {
                 .accessibilityIdentifier("onboarding.purchase")
             }
 
-            if !subscriptions.state.hasEntitlement {
-                freePlanChoice
-            }
+            VStack(spacing: RecipeSpacing.xxSmall) {
+                if !subscriptions.state.hasEntitlement {
+                    freePlanChoice
+                }
 
-            legalFooter
+                legalFooter
+            }
         }
     }
 
     private var planOptions: some View {
         VStack(alignment: .leading, spacing: RecipeSpacing.small) {
             Text("Choose your plan")
-                .font(RecipeTheme.heading(.card))
+                .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
 
             paidPlanChoice(for: .monthly)
             paidPlanChoice(for: .yearly)
@@ -289,27 +293,41 @@ struct PremiumPaywallContent: View {
     }
 
     private var premiumFeatures: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let layout =
+            dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: RecipeSpacing.small))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: RecipeSpacing.small))
+
+        return layout {
             premiumFeature("book.closed", title: "Private recipe collection")
             premiumFeature("link", title: "Links & social")
             premiumFeature("fork.knife", title: "Cook & plan")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, RecipeSpacing.xSmall)
     }
 
     private func premiumFeature(_ symbol: String, title: LocalizedStringKey) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: RecipeSpacing.small) {
+        let layout =
+            dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: RecipeSpacing.small))
+            : AnyLayout(VStackLayout(spacing: RecipeSpacing.xSmall))
+
+        return layout {
             Image(systemName: symbol)
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(.title3, weight: .regular))
                 .foregroundStyle(RecipeTheme.accentForeground)
                 .frame(width: 22)
                 .accessibilityHidden(true)
 
             Text(title)
-                .font(RecipeTheme.text(15, weight: .medium, relativeTo: .subheadline))
+                .font(RecipeTheme.text(13, weight: .medium, relativeTo: .footnote))
+                .multilineTextAlignment(dynamicTypeSize.isAccessibilitySize ? .leading : .center)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(
+            maxWidth: .infinity, alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center
+        )
+        .accessibilityElement(children: .combine)
     }
 
     private func paidPlanChoice(for period: SubscriptionBillingPeriod) -> some View {
@@ -332,7 +350,7 @@ struct PremiumPaywallContent: View {
                         .font(RecipeTheme.text(17, weight: .semibold, relativeTo: .headline))
                     Text(period.billingCopy)
                         .font(RecipeTheme.text(13, relativeTo: .footnote))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.primary.opacity(0.65))
                         .fixedSize(horizontal: false, vertical: true)
                     if dynamicTypeSize.isAccessibilitySize {
                         planPrice(product)
