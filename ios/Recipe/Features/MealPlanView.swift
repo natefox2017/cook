@@ -20,6 +20,8 @@ struct MealPlanView: View {
     @State private var mealToDelete: MealPlanEntry?
     @State private var errorMessage: String?
     @State private var showGenerator = false
+    @State private var showTemplates = false
+    @State private var showWeeklyGroceries = false
 
     // Use the same configured calendar for date order, counts, and navigation.
     private var calendar: Calendar {
@@ -137,6 +139,22 @@ struct MealPlanView: View {
                 .accessibilityIdentifier("mealplan.autoplan")
             }
             ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showTemplates = true
+                } label: {
+                    Label("Templates", systemImage: "square.grid.2x2")
+                }
+                .accessibilityIdentifier("mealplan.templates")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showWeeklyGroceries = true
+                } label: {
+                    Label("Weekly Groceries", systemImage: "basket")
+                }
+                .accessibilityIdentifier("mealplan.weeklyGroceries")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Button("Today") { selectedDate = Date() }
             }
         }
@@ -145,6 +163,18 @@ struct MealPlanView: View {
         }
         .sheet(isPresented: $showGenerator) {
             MealPlanGeneratorSheet()
+        }
+        .sheet(isPresented: $showTemplates) {
+            MealPlanTemplateSheet(weekStart: currentWeekStart, calendar: calendar)
+        }
+        .sheet(isPresented: $showWeeklyGroceries) {
+            WeeklyGroceryPreviewSheet(
+                calendar: calendar,
+                weekDates: weekDates,
+                snapshot: weeklyGrocerySnapshot,
+                refresh: { weeklyGrocerySnapshot },
+                append: weeklyGroceryAppendPort()
+            )
         }
         .confirmationDialog(
             "Remove planned meal?",
@@ -293,6 +323,37 @@ struct MealPlanView: View {
         if let date = calendar.date(byAdding: .weekOfYear, value: count, to: selectedDate) {
             selectedDate = date
         }
+    }
+
+    private var currentWeekStart: Date {
+        weekDates.first ?? calendar.startOfDay(for: selectedDate)
+    }
+
+    /// A point-in-time copy of this week's plan plus the full recipe library.
+    private var weeklyGrocerySnapshot: WeeklyGrocerySnapshot {
+        let weekEntries = store.mealPlan.filter { entry in
+            weekDates.contains { calendar.isDate($0, inSameDayAs: entry.date) }
+        }
+        return WeeklyGrocerySnapshot(entries: weekEntries, recipes: store.recipes)
+    }
+
+    /// Builds the injected atomic-append port: the live signature detects a stale
+    /// preview, and the store transaction appends all rows in one commit.
+    private func weeklyGroceryAppendPort() -> WeeklyGroceryAppendPort {
+        let store = self.store
+        let coordinator = WeeklyGroceryAppendCoordinator(
+            liveSignature: {
+                let weekEntries = store.mealPlan.filter { entry in
+                    weekDates.contains { calendar.isDate($0, inSameDayAs: entry.date) }
+                }
+                return RecipeWeeklyGroceryPreview.sourceSignature(
+                    entries: weekEntries, recipes: store.recipes)
+            },
+            atomicAppend: { items in
+                try store.appendGroceries(items)
+            }
+        )
+        return coordinator.append
     }
 }
 

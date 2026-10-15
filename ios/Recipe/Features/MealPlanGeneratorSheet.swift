@@ -201,6 +201,13 @@ struct MealPlanGeneratorSheet: View {
                     Image(systemName: "arrow.triangle.2.circlepath")
                 }
                 .accessibilityLabel("Replace meal")
+            } else if slot.reason == .lockedRecipeDeleted {
+                Button {
+                    replaceSlot = slot
+                } label: {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                }
+                .accessibilityLabel("Replace meal")
             }
         }
         .buttonStyle(.borderless)
@@ -249,15 +256,11 @@ struct MealPlanGeneratorSheet: View {
     private func applyCurrentProposal(policy: RecipeMealPlanApplyPolicy) {
         guard let current = proposal else { return }
         do {
-            for slot in current.slots {
-                guard let recipeID = slot.recipeID else { continue }
-                let occupied = store.mealPlan.contains {
-                    $0.slot == .dinner && calendar.isDate($0.date, inSameDayAs: slot.date)
-                }
-                if occupied && policy == .fillEmptySlotsOnly { continue }
-                try store.upsertMeal(
-                    MealPlanEntry(recipeID: recipeID, date: slot.date, slot: .dinner))
+            let entries = current.slots.compactMap { slot -> MealPlanEntry? in
+                guard let recipeID = slot.recipeID else { return nil }
+                return MealPlanEntry(recipeID: recipeID, date: slot.date, slot: .dinner)
             }
+            try store.applyMealEntries(entries, policy: policy, calendar: calendar)
             dismiss()
         } catch {
             errorMessage = error.localizedDescription
@@ -300,8 +303,18 @@ struct MealPlanGeneratorSheet: View {
         case .assigned: return filterSummary.isEmpty ? "From your saved recipes" : filterSummary
         case .timeUnknown: return "Time unknown"
         case .locked: return "Locked"
+        case .lockedFilterConflict(let conflict): return "Locked · \(conflictText(conflict))"
         case .insufficientCandidates: return "No matching recipe"
         case .lockedRecipeDeleted: return "Locked recipe was deleted"
+        }
+    }
+
+    private func conflictText(_ reason: RecipeMealPlanSkipReason) -> String {
+        switch reason {
+        case .missingIngredientsOrSteps: return "missing ingredients or steps"
+        case .missingDuration: return "no time recorded"
+        case .exceedsDuration: return "over the time limit"
+        case .missingDietaryTag: return "missing a selected tag"
         }
     }
 

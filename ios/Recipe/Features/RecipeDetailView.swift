@@ -9,6 +9,8 @@ struct RecipeDetailView: View {
     let recipeID: UUID
     var ownerSharing: RecipeOwnerSharingService = .shared
     @Environment(RecipeStore.self) private var store
+    @Environment(RecipeAccessStore.self) private var access
+    @Environment(UpgradeRouter.self) private var router
     @Environment(\.dismiss) private var dismiss
     @Environment(\.locale) private var locale
     @Environment(\.openURL) private var openURL
@@ -31,6 +33,23 @@ struct RecipeDetailView: View {
     @State private var isLoadingSourceArtifact = false
     @State private var isDeletingSourceArtifact = false
     @State private var confirmsSourceArtifactDeletion = false
+    @State private var isChoosingEditIntent = false
+    @State private var proposalToReview: RecipeEditReviewContext?
+    @State private var editService: RecipeEditProposalService?
+    @State private var undoState: RecipeEditUndoState?
+
+    private struct RecipeEditReviewContext: Identifiable {
+        let id = UUID()
+        let proposal: RecipeEditProposal
+        let proposalID: String
+        let operationID: String
+        let wireChanges: [RecipeEditWireChange]
+    }
+
+    private struct RecipeEditUndoState {
+        let before: Recipe
+        let appliedRevision: Date
+    }
 
     // Keep the requested step in the presentation payload so the first cover cannot read stale state.
     private struct CookingPresentation: Identifiable {
@@ -67,6 +86,20 @@ struct RecipeDetailView: View {
         .sheet(isPresented: $isEditing) {
             if let recipe = store.recipe(id: recipeID) {
                 RecipeEditorView(recipe: recipe)
+            }
+        }
+        .sheet(isPresented: $isChoosingEditIntent) {
+            if let recipe = store.recipe(id: recipeID), let service = editService {
+                RecipeEditIntentSheet(
+                    recipe: recipe,
+                    service: service,
+                    onResult: handleEditResult
+                )
+            }
+        }
+        .sheet(item: $proposalToReview) { context in
+            RecipeEditProposalReviewSheet(proposal: context.proposal) { reviewed, asVariant in
+                try await applyEdit(reviewed, context: context, asVariant: asVariant)
             }
         }
         .sheet(isPresented: $isChoosingRecipeCandidates) {
@@ -138,6 +171,9 @@ struct RecipeDetailView: View {
                 didLoadServings = true
             }
         }
+        .task {
+            await resumePendingEditIfNeeded()
+        }
         .onChange(of: store.recipe(id: recipeID)?.servings) { old, new in
             if !didAdjustServings || servings == (old ?? 1) {
                 servings = max(1, new ?? 1)
@@ -149,6 +185,9 @@ struct RecipeDetailView: View {
     private func recipeContent(_ recipe: Recipe) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: RecipeSpacing.large) {
+                if undoState != nil {
+                    undoBanner
+                }
                 RecipeImage(recipe: recipe, height: 270)
                     .clipShape(RoundedRectangle(cornerRadius: 24))
                 overview(recipe)
@@ -871,6 +910,12 @@ struct RecipeDetailView: View {
                 }
                 .accessibilityIdentifier("recipeEdit")
                 Menu {
+                    if canAdjustRecipe {
+                        Button("Adjust Recipe", systemImage: "wand.and.stars") {
+                            presentAdjustRecipe()
+                        }
+                        .accessibilityIdentifier("recipeAdjustRecipe")
+                    }
                     Button("Share", systemImage: "square.and.arrow.up") {
                         sharePresentation = SharePresentation(
                             state: ownerSharing.consentState(recipeID: recipeID, store: store)
@@ -898,6 +943,276 @@ struct RecipeDetailView: View {
         Text(LocalizedStringKey(title))
             .font(RecipeTheme.heading(.section))
             .accessibilityAddTraits(.isHeader)
+    }
+
+    // MARK: - AI recipe adjustment (DEV-76)
+
+    /// The Adjust Recipe entry is subordinate to the frozen release stage and the
+    /// `ai_edit` capability: dormant in the free first release, visible only when the
+    /// commercial access snapshot reports the capability as usable or upgradeable.
+    private var canAdjustRecipe: Bool {
+        access.isEnabled && (access.canUse(.aiEdit) || router.requiresUpgrade(.aiEdit))
+    }
+
+    private func presentAdjustRecipe() {
+        guard ensureEditService() else {
+            feedbackMessage = RecipeEditProposalServiceError.invalidConfiguration.localizedDescription
+            return
+        }
+        if router.requiresUpgrade(.aiEdit) {
+            router.showUpgrade(capability: .aiEdit, pendingID: UUID().uuidString.lowercased())
+        } else {
+            isChoosingEditIntent = true
+        }
+    }
+
+    @discardableResult
+    private func ensureEditService() -> Bool {
+        if editService == nil {
+            editService = try? RecipeEditProposalService(bundle: .main)
+        }
+        return editService != nil
+    }
+
+    private func handleEditResult(_ result: RecipeEditProposalRequestResult) {
+        if let proposal = result.proposal {
+            proposalToReview = RecipeEditReviewContext(
+                proposal: proposal,
+                proposalID: result.proposalID,
+                operationID: result.operationID,
+                wireChanges: result.wireChanges
+            )
+        } else {
+            feedbackMessage = RecipeEditProposalServiceError.needsManualEdit.localizedDescription
+            isEditing = true
+        }
+    }
+
+    /// Persists a recovery intent, approves on the server (usage finalize), applies
+    /// the validated receipt to the correct local target, then ACKs only after the
+    /// local durable write succeeds. The provider is never re-invoked on replay.
+    private func applyEdit(
+        _ reviewed: RecipeEditProposal,
+        context: RecipeEditReviewContext,
+        asVariant: Bool
+    ) async throws -> Recipe {
+        guard let service = editService else {
+            throw RecipeEditProposalServiceError.invalidConfiguration
+        }
+        guard let current = store.recipe(id: recipeID) else {
+            throw RecipeEditProposalServiceError.invalidResponse
+        }
+        guard let ownerID = currentOwnerID() else {
+            throw RecipeEditProposalServiceError.notSignedIn
+        }
+
+        let mode: RecipeEditApplyMode = asVariant ? .variant : .apply
+        let variantID = asVariant
+            ? RecipeEditProposalService.stableVariantID(operationID: context.operationID)
+            : nil
+        let reviewedChanges = try RecipeEditProposalService.reviewedWireChanges(
+            reviewed: reviewed, wireChanges: context.wireChanges
+        )
+
+        // Persist the recovery intent before the server approves/finalizes so a crash
+        // between approval and the local write can be resumed without re-invoking the
+        // provider.
+        let pendingStore = RecipeEditPendingCommitStore(
+            ownerID: ownerID.uuidString.lowercased()
+        )
+        try pendingStore.save(
+            RecipeEditPendingCommit(
+                operationID: context.operationID,
+                proposalID: context.proposalID,
+                mode: mode,
+                variantID: variantID?.uuidString.lowercased(),
+                sourceRecipeID: recipeID.uuidString.lowercased(),
+                basedOnUpdate: reviewed.basedOnUpdate,
+                changes: reviewedChanges,
+                reasons: reviewed.reasons,
+                warnings: reviewed.warnings
+            )
+        )
+
+        // Server approval (usage finalize) with an explicit apply/variant target.
+        let receipt = try await service.approve(
+            proposalID: context.proposalID,
+            reviewed: reviewed,
+            wireChanges: context.wireChanges,
+            recipe: current,
+            mode: mode,
+            variantID: variantID
+        )
+
+        // Record the approved receipt (target) so a later recovery can write and ACK
+        // directly without replaying the approval.
+        try pendingStore.save(
+            RecipeEditPendingCommit(
+                operationID: context.operationID,
+                proposalID: context.proposalID,
+                mode: mode,
+                variantID: variantID?.uuidString.lowercased(),
+                sourceRecipeID: recipeID.uuidString.lowercased(),
+                basedOnUpdate: reviewed.basedOnUpdate,
+                changes: reviewedChanges,
+                reasons: reviewed.reasons,
+                warnings: reviewed.warnings,
+                targetID: receipt.targetID
+            )
+        )
+
+        // Apply the validated receipt to the correct local target.
+        let saved: Recipe
+        if asVariant {
+            guard let targetID = UUID(uuidString: receipt.targetID) else {
+                throw RecipeEditProposalServiceError.invalidResponse
+            }
+            var variant = try reviewed.approvedRecipe(from: current, at: .now, asVariant: true)
+            variant.id = targetID
+            try store.upsert(variant)
+            saved = variant
+            feedbackMessage = String(
+                localized: LocalizedStringResource(
+                    "Saved a new private recipe.", locale: RecipeLanguage.active
+                )
+            )
+        } else {
+            saved = try store.applyApprovedRecipeEdit(reviewed, asVariant: false)
+            undoState = RecipeEditUndoState(before: current, appliedRevision: saved.updatedAt)
+        }
+
+        // ACK only after the local durable write succeeded. A failed ACK keeps the
+        // pending intent so a later recovery can re-ack idempotently.
+        do {
+            _ = try await service.ack(
+                proposalID: context.proposalID, operationID: context.operationID
+            )
+            pendingStore.clear()
+        } catch {
+            // The local write is durable; leave the pending intent for recovery.
+        }
+
+        return saved
+    }
+
+    private func currentOwnerID() -> UUID? {
+        if case .signedIn(let userID, _) = RecipeAuthService.shared.state {
+            return userID
+        }
+        return nil
+    }
+
+    /// Resumes a pending approve → write → ACK intent on detail re-entry (e.g. after a
+    /// crash between approval and the local write). Re-applies the exact reviewed
+    /// changes to the correct target without re-invoking the provider, and clears the
+    /// intent only after the server ACKs. Fails closed on owner switch, a deleted
+    /// recipe, a stale revision, or an existing manual edit.
+    private func resumePendingEditIfNeeded() async {
+        guard ensureEditService(), let service = editService,
+            let ownerID = currentOwnerID()
+        else {
+            return
+        }
+        let pendingStore = RecipeEditPendingCommitStore(
+            ownerID: ownerID.uuidString.lowercased()
+        )
+        guard let pending = pendingStore.load() else {
+            return
+        }
+        // Only the source recipe's detail view recovers its own intent.
+        guard pending.sourceRecipeID == recipeID.uuidString.lowercased() else {
+            return
+        }
+        // Tombstone guard: the source recipe was deleted; nothing to recover.
+        guard let current = store.recipe(id: recipeID) else {
+            pendingStore.clear()
+            return
+        }
+        // Revision / existing-manual-edit guard: never overwrite a recipe that
+        // changed after the proposal was generated.
+        guard current.updatedAt == pending.basedOnUpdate else {
+            pendingStore.clear()
+            return
+        }
+        guard let proposal = RecipeEditProposalService.proposal(from: pending) else {
+            pendingStore.clear()
+            return
+        }
+        do {
+            // Recover the approved receipt (stored, or via the owner-scoped
+            // approve/replay route) without re-invoking the provider.
+            let targetID: String
+            if let stored = pending.targetID {
+                targetID = stored
+            } else {
+                let receipt = try await service.approve(
+                    proposalID: pending.proposalID,
+                    reviewed: proposal,
+                    wireChanges: pending.changes,
+                    recipe: current,
+                    mode: pending.mode,
+                    variantID: pending.variantID.flatMap(UUID.init(uuidString:))
+                )
+                targetID = receipt.targetID
+            }
+            // Local durable write before ACK.
+            switch pending.mode {
+            case .variant:
+                if let variantID = UUID(uuidString: targetID),
+                    store.recipe(id: variantID) == nil
+                {
+                    var variant = try proposal.approvedRecipe(
+                        from: current, at: .now, asVariant: true
+                    )
+                    variant.id = variantID
+                    try store.upsert(variant)
+                }
+            case .apply:
+                try store.applyApprovedRecipeEdit(proposal, asVariant: false)
+            }
+            // ACK then clear only after the server confirms.
+            _ = try await service.ack(
+                proposalID: pending.proposalID, operationID: pending.operationID
+            )
+            pendingStore.clear()
+        } catch {
+            // Transient transport failure or a server-side stale rejection: keep the
+            // intent for a later attempt; a stale/deleted source is already cleared by
+            // the guards above.
+        }
+    }
+
+    /// One-session undo only when the stored recipe is still the revision this view
+    /// just applied. Variants and later edits are never undone.
+    private func undoEdit() {
+        guard let undoState,
+            let current = store.recipe(id: recipeID),
+            current.updatedAt == undoState.appliedRevision
+        else {
+            self.undoState = nil
+            return
+        }
+        do {
+            try store.upsert(undoState.before)
+        } catch {
+            feedbackMessage = error.localizedDescription
+        }
+        self.undoState = nil
+    }
+
+    private var undoBanner: some View {
+        HStack {
+            Text("Changes applied")
+                .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+            Spacer()
+            Button("Undo") {
+                undoEdit()
+            }
+            .font(RecipeTheme.text(15, weight: .semibold, relativeTo: .subheadline))
+            .accessibilityIdentifier("undoRecipeEdit")
+        }
+        .padding(RecipeSpacing.medium)
+        .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 14))
     }
 
     private var servingsSelection: Binding<Int> {
@@ -1719,4 +2034,385 @@ private struct RecipeCandidateSelectionView: View {
                 digest[12], digest[13], digest[14], digest[15]
             ))
     }
+}
+
+
+/// Review an untrusted AI edit proposal before mutating private recipe data. The
+/// provider only emits the three value-replacement change paths; this sheet never
+/// persists until the user explicitly applies a reviewed (and optionally edited) proposal.
+private struct RecipeEditProposalReviewSheet: View {
+    let proposal: RecipeEditProposal
+    let apply: (RecipeEditProposal, Bool) async throws -> Recipe
+
+    @Environment(RecipeStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var errorMessage: String?
+    @State private var isApplying = false
+    // Store only user edits. Do not eagerly copy unvalidated provider changes.
+    @State private var proposedTexts: [Int: String] = [:]
+
+    // Only allow edits to the three already approved RecipeEditChange cases.
+    // Rebuild the validated proposal instead of directly saving edited text.
+    private var reviewedProposal: RecipeEditProposal {
+        let changes: [RecipeEditChange] = proposal.changes.enumerated().map { index, change in
+            switch change {
+            case .ingredientName(let id, let original, let proposed):
+                return .ingredientName(
+                    id: id, original: original,
+                    proposed: proposedTexts[index] ?? proposed
+                )
+            case .ingredientAmount(let id, let original, let proposed):
+                return .ingredientAmount(
+                    id: id, original: original,
+                    proposed: proposedTexts[index] ?? proposed
+                )
+            case .stepInstruction(let id, let original, let proposed):
+                return .stepInstruction(
+                    id: id, original: original,
+                    proposed: proposedTexts[index] ?? proposed
+                )
+            }
+        }
+        return RecipeEditProposal(
+            recipeID: proposal.recipeID,
+            basedOnUpdate: proposal.basedOnUpdate,
+            changes: changes,
+            reasons: proposal.reasons,
+            warnings: proposal.warnings
+        )
+    }
+
+    private var isStale: Bool {
+        guard let current = store.recipe(id: proposal.recipeID) else {
+            return true
+        }
+        return current.updatedAt != proposal.basedOnUpdate
+    }
+
+    // Validate the original untrusted proposal before constructing any rows or
+    // editable replacements. Core owns the change/text/explanation budgets.
+    private var sourcePreview: RecipeEditPreview? {
+        guard let current = store.recipe(id: proposal.recipeID) else {
+            return nil
+        }
+        return try? proposal.preview(on: current)
+    }
+
+    // Invalid user edits must leave the initially valid fields editable.
+    // The Store checks the latest revision again when committing.
+    private var preview: RecipeEditPreview? {
+        guard sourcePreview != nil,
+            let current = store.recipe(id: proposal.recipeID)
+        else {
+            return nil
+        }
+        return try? reviewedProposal.preview(on: current)
+    }
+
+    private var reviewRows: [RecipeEditReviewRow] {
+        guard sourcePreview != nil else {
+            return []
+        }
+        return proposal.changes.enumerated().map { index, change in
+            let field: String
+            let before: String
+            let proposed: String
+            switch change {
+            case .ingredientName(_, let original, let replacement):
+                field = "Ingredient name"
+                before = original
+                proposed = replacement
+            case .ingredientAmount(_, let original, let replacement):
+                field = "Ingredient amount"
+                before = original
+                proposed = replacement
+            case .stepInstruction(_, let original, let replacement):
+                field = "Step instruction"
+                before = original
+                proposed = replacement
+            }
+            return RecipeEditReviewRow(
+                id: index, field: field, before: before, proposed: proposed
+            )
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: RecipeSpacing.medium) {
+                    if isStale {
+                        Text("This recipe changed. Get a new suggestion before saving.")
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("staleRecipeProposal")
+                    } else if sourcePreview != nil {
+                        Text("Review every proposed change before saving.")
+                            .foregroundStyle(.secondary)
+                        ForEach(reviewRows) { row in
+                            VStack(alignment: .leading, spacing: RecipeSpacing.small) {
+                                Text(LocalizedStringKey(row.field))
+                                    .font(RecipeTheme.heading(.card))
+                                Text("Original")
+                                    .font(RecipeTheme.text(
+                                        13, weight: .semibold, relativeTo: .footnote
+                                    ))
+                                    .foregroundStyle(.secondary)
+                                Text(row.before)
+                                    .strikethrough()
+                                    .accessibilityIdentifier("reviewProposalBefore.\(row.id)")
+                                Text("Proposed")
+                                    .font(RecipeTheme.text(
+                                        13, weight: .semibold, relativeTo: .footnote
+                                    ))
+                                    .foregroundStyle(.secondary)
+                                TextField(
+                                    "Proposed",
+                                    text: Binding(
+                                        get: { proposedTexts[row.id] ?? row.proposed },
+                                        set: { proposedTexts[row.id] = $0 }
+                                    ),
+                                    axis: .vertical
+                                )
+                                .lineLimit(2...6)
+                                .font(RecipeTheme.text(
+                                    17, weight: .semibold, relativeTo: .body
+                                ))
+                                .accessibilityIdentifier("reviewProposalAfter.\(row.id)")
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(RecipeSpacing.medium)
+                            .background(
+                                RecipeTheme.card,
+                                in: RoundedRectangle(cornerRadius: 18)
+                            )
+                        }
+
+                        if !proposal.reasons.isEmpty {
+                            explanation(
+                                title: "Why this was suggested",
+                                lines: proposal.reasons
+                            )
+                        }
+                        if !proposal.warnings.isEmpty {
+                            explanation(
+                                title: "Check before saving",
+                                lines: proposal.warnings
+                            )
+                        }
+                        if preview == nil {
+                            Text("Check the proposed text. It cannot be empty or too long.")
+                                .foregroundStyle(.secondary)
+                                .accessibilityIdentifier("invalidRecipeProposal")
+                        }
+                    } else {
+                        Text("Check the proposed text. It cannot be empty or too long.")
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("invalidRecipeProposal")
+                    }
+                }
+                .recipePageContentInsets()
+            }
+            .background(RecipeTheme.canvas)
+            .navigationTitle("Review changes")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: RecipeSpacing.small) {
+                    Button("Apply to recipe") { save(asVariant: false) }
+                        .buttonStyle(RecipeDetailActionButtonStyle(variant: .primary))
+                        .disabled(preview == nil || isApplying)
+                        .accessibilityIdentifier("applyRecipeProposal")
+                    Button("Save as new recipe") { save(asVariant: true) }
+                        .buttonStyle(RecipeDetailActionButtonStyle(variant: .secondary))
+                        .disabled(preview == nil || isApplying)
+                        .accessibilityIdentifier("saveRecipeProposalVariant")
+                    Button("Discard changes") { dismiss() }
+                        .accessibilityIdentifier("discardRecipeProposal")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, RecipeSpacing.pageInset)
+                .padding(.vertical, RecipeSpacing.small)
+                .background(.regularMaterial)
+            }
+            .alert(
+                "Couldn't save changes",
+                isPresented: Binding(
+                    get: { errorMessage != nil },
+                    set: { if !$0 { errorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "Please try again.")
+            }
+        }
+    }
+
+    private func explanation(title: LocalizedStringKey, lines: [String]) -> some View {
+        VStack(alignment: .leading, spacing: RecipeSpacing.small) {
+            Text(title)
+                .font(RecipeTheme.heading(.card))
+            ForEach(Array(lines.enumerated()), id: \.offset) { item in
+                Text(item.element)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func save(asVariant: Bool) {
+        // Never persist a proposal that is already stale on screen.
+        guard preview != nil, !isApplying else {
+            return
+        }
+        isApplying = true
+        Task {
+            defer { isApplying = false }
+            do {
+                _ = try await apply(reviewedProposal, asVariant)
+                dismiss()
+            } catch {
+                errorMessage = String(
+                    localized: LocalizedStringResource(
+                        "The recipe changed or could not be saved. Review it and try again.",
+                        locale: RecipeLanguage.active
+                    )
+                )
+            }
+        }
+    }
+}
+
+/// Captures the adjust intent and an optional free-text supplement before dispatch.
+private struct RecipeEditIntentSheet: View {
+    let recipe: Recipe
+    let service: RecipeEditProposalService
+    let onResult: (RecipeEditProposalRequestResult) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var intent: RecipeEditIntent = .substitute
+    @State private var supplement = ""
+    @State private var isGenerating = false
+    @State private var errorMessage: String?
+    // Stable per-intent operation id: a retry of the same edit request replays the
+    // already-persisted proposal instead of re-invoking the provider. Changing the
+    // intent or the notes mints a fresh id so separate requests stay distinct.
+    @State private var operationID = UUID()
+
+    private var canGenerate: Bool {
+        !isGenerating && !recipe.ingredients.isEmpty && !recipe.steps.isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Picker("Adjustment", selection: $intent) {
+                        ForEach(RecipeEditIntent.allCases) { intent in
+                            Text(Self.title(intent)).tag(intent)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                } header: {
+                    Text("Adjustment")
+                } footer: {
+                    Text(Self.detail(intent))
+                }
+                Section {
+                    TextField("Notes (optional)", text: $supplement, axis: .vertical)
+                        .lineLimit(2...4)
+                } header: {
+                    Text("Notes (optional)")
+                } footer: {
+                    Text(
+                        "Describe the change you want, for example which ingredient to substitute or what diet to follow."
+                    )
+                }
+            }
+            .navigationTitle("Adjust Recipe")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Generate") { generate() }
+                        .disabled(!canGenerate)
+                }
+            }
+            .alert(
+                "Couldn't generate suggestions",
+                isPresented: Binding(
+                    get: { errorMessage != nil },
+                    set: { if !$0 { errorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "Please try again.")
+            }
+            .onChange(of: intent) { _, _ in
+                operationID = UUID()
+            }
+            .onChange(of: supplement) { _, _ in
+                operationID = UUID()
+            }
+        }
+    }
+
+    private func generate() {
+        guard canGenerate else {
+            return
+        }
+        isGenerating = true
+        Task {
+            defer { isGenerating = false }
+            do {
+                let trimmed = supplement.trimmingCharacters(in: .whitespacesAndNewlines)
+                let result = try await service.createProposal(
+                    recipe: recipe,
+                    intent: intent,
+                    supplement: trimmed.isEmpty ? nil : trimmed,
+                    operationID: operationID
+                )
+                dismiss()
+                onResult(result)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private static func title(_ intent: RecipeEditIntent) -> String {
+        switch intent {
+        case .substitute:
+            return RecipeLanguage.localized("Substitute ingredients")
+        case .simplify:
+            return RecipeLanguage.localized("Simplify steps")
+        case .dietary:
+            return RecipeLanguage.localized("Dietary adjustments")
+        }
+    }
+
+    private static func detail(_ intent: RecipeEditIntent) -> String {
+        switch intent {
+        case .substitute:
+            return RecipeLanguage.localized("Swap an ingredient for an alternative.")
+        case .simplify:
+            return RecipeLanguage.localized("Reduce steps or techniques.")
+        case .dietary:
+            return RecipeLanguage.localized("Adapt the recipe for a diet or allergy.")
+        }
+    }
+}
+
+private struct RecipeEditReviewRow: Identifiable {
+    let id: Int
+    let field: String
+    let before: String
+    let proposed: String
 }

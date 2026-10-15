@@ -1,207 +1,422 @@
 // Developer: gengyun
-// Purpose: Presents the owner draft review flow with explicit loading, review, error, retry, and manual exit paths.
+// Purpose: Independent owner review screen for AI draft suggestions, with explicit approve, skip, retry, and manual-exit paths.
 
 import RecipeCore
 import SwiftUI
 
 struct RecipeDraftReviewView: View {
-    @State private var service: RecipeDraftService?
-    @State private var configurationError: String?
+    @Bindable var service: RecipeDraftService
     @Environment(\.dismiss) private var dismiss
-    private let jobID: UUID
 
-    init(jobID: UUID) {
+    private let jobID: UUID
+    private let clientRequestID: UUID
+
+    init(service: RecipeDraftService, jobID: UUID, clientRequestID: UUID) {
+        self.service = service
         self.jobID = jobID
+        self.clientRequestID = clientRequestID
     }
 
     var body: some View {
-        Group {
-            if let service {
-                content(for: service)
-            } else if let configurationError {
-                failure(message: configurationError, retryable: false)
-            } else {
-                ProgressView()
-                    .accessibilityIdentifier("draft-review.loading")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+        NavigationStack {
+            content
+                .navigationTitle(
+                    String(
+                        localized: LocalizedStringResource(
+                            "Review Recipe", locale: RecipeLanguage.active
+                        )
+                    )
+                )
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button {
+                            service.reset()
+                            dismiss()
+                        } label: {
+                            Text(
+                                String(
+                                    localized: LocalizedStringResource(
+                                        "Cancel", locale: RecipeLanguage.active
+                                    )
+                                )
+                            )
+                        }
+                    }
+                }
         }
-        .navigationTitle(RecipeLanguage.localized("Draft Review"))
-        .navigationBarTitleDisplayMode(.inline)
         .task {
-            guard service == nil && configurationError == nil else { return }
-            do {
-                let built = try RecipeDraftService()
-                service = built
-                await built.createOrResumeSession(jobID: jobID)
-            } catch {
-                configurationError = error.localizedDescription
-            }
+            await service.start(jobID: jobID, clientRequestID: clientRequestID)
         }
     }
 
     @ViewBuilder
-    private func content(for service: RecipeDraftService) -> some View {
+    private var content: some View {
         switch service.phase {
-        case .idle, .loading, .approving:
-            ProgressView()
-                .accessibilityIdentifier("draft-review.loading")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .reviewing(let state):
-            review(state: state, service: service)
-        case .ready:
-            ready(service: service)
-        case .committed:
-            committed
-        case .failed(let message, let retryable):
-            failure(message: message, retryable: retryable) {
-                if retryable {
-                    Task {
-                        await service.createOrResumeSession(jobID: jobID)
-                    }
-                }
-            }
+        case .idle, .loading:
+            loading
+        case .reviewing(let review):
+            reviewList(review)
+        case .approving:
+            approving
+        case .saved:
+            saved
+        case .noChangesNeeded:
+            noChanges
+        case .manualFallback:
+            manualFallback
+        case .failed(let failure):
+            failureView(failure)
+        case .unavailable(let message):
+            unavailable(message)
         }
     }
 
-    private func review(
-        state: RecipeDraftService.RecipeDraftReviewState,
-        service: RecipeDraftService
-    ) -> some View {
-        List {
-            if !state.reviewFields.isEmpty {
-                Section(RecipeLanguage.localized("Fields to review")) {
-                    ForEach(state.reviewFields, id: \.self) { path in
-                        Text(path)
-                            .font(RecipeTheme.body())
-                    }
-                }
-            }
-
-            if !state.questions.isEmpty {
-                Section(RecipeLanguage.localized("Questions")) {
-                    ForEach(state.questions, id: \.path) { question in
-                        Text(question.question)
-                            .font(RecipeTheme.body())
-                    }
-                }
-            }
-
-            if !state.suggestions.isEmpty {
-                Section(RecipeLanguage.localized("AI suggestions")) {
-                    ForEach(state.suggestions, id: \.path) { suggestion in
-                        VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
-                            Text(suggestion.rawValue)
-                                .font(RecipeTheme.body())
-                            Text(suggestion.reason)
-                                .font(RecipeTheme.body(15))
-                                .foregroundStyle(.secondary)
-                            Label(
-                                RecipeLanguage.localized("AI suggested"),
-                                systemImage: "sparkles"
-                            )
-                            .font(RecipeTheme.body(13))
-                            .foregroundStyle(RecipeTheme.accent)
-                        }
-                        .padding(.vertical, RecipeSpacing.xSmall)
-                    }
-                }
-            }
-
-            Section {
-                Button {
-                    Task {
-                        await service.accept(selectedPaths: state.suggestions.map(\.path))
-                    }
-                } label: {
-                    Text(RecipeLanguage.localized("Accept suggestions"))
-                }
-                .accessibilityIdentifier("draft-review.accept")
-                .disabled(state.suggestions.isEmpty)
-
-                Button(role: .destructive) {
-                    Task {
-                        await service.reject()
-                    }
-                } label: {
-                    Text(RecipeLanguage.localized("Reject all"))
-                }
-                .accessibilityIdentifier("draft-review.reject")
-
-                Button {
-                    service.skipToManual()
-                    dismiss()
-                } label: {
-                    Text(RecipeLanguage.localized("Skip AI and enter manually"))
-                }
-                .accessibilityIdentifier("draft-review.skip-manual")
-            }
-        }
-        .accessibilityIdentifier("draft-review.review")
-    }
-
-    private func ready(service: RecipeDraftService) -> some View {
+    private var loading: some View {
         VStack(spacing: RecipeSpacing.medium) {
-            Text(RecipeLanguage.localized("This draft is ready to save."))
-                .font(RecipeTheme.heading(.section))
+            ProgressView()
+            Text(
+                String(
+                    localized: LocalizedStringResource(
+                        "Reviewing this recipe…", locale: RecipeLanguage.active
+                    )
+                )
+            )
+            .font(RecipeTheme.body())
+            .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(RecipeTheme.canvas.ignoresSafeArea())
+    }
+
+    private var approving: some View {
+        VStack(spacing: RecipeSpacing.medium) {
+            ProgressView()
+            Text(
+                String(
+                    localized: LocalizedStringResource(
+                        "Saving approved changes…", locale: RecipeLanguage.active
+                    )
+                )
+            )
+            .font(RecipeTheme.body())
+            .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(RecipeTheme.canvas.ignoresSafeArea())
+    }
+
+    private var saved: some View {
+        VStack(spacing: RecipeSpacing.medium) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(RecipeTheme.accent)
+            Text(
+                String(
+                    localized: LocalizedStringResource(
+                        "Saved to your library", locale: RecipeLanguage.active
+                    )
+                )
+            )
+            .font(RecipeTheme.heading(.section))
+            Button {
+                dismiss()
+            } label: {
+                Text(
+                    String(
+                        localized: LocalizedStringResource(
+                            "Done", locale: RecipeLanguage.active
+                        )
+                    )
+                )
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .accessibilityIdentifier("draftReviewDone")
+        }
+        .padding(RecipeSpacing.pageInset)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(RecipeTheme.canvas.ignoresSafeArea())
+    }
+
+    private var noChanges: some View {
+        VStack(spacing: RecipeSpacing.medium) {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 48))
+                .foregroundStyle(RecipeTheme.accent)
+            Text(
+                String(
+                    localized: LocalizedStringResource(
+                        "No changes needed", locale: RecipeLanguage.active
+                    )
+                )
+            )
+            .font(RecipeTheme.heading(.section))
+            Text(
+                String(
+                    localized: LocalizedStringResource(
+                        "This recipe is complete. You can save it now.", locale: RecipeLanguage.active
+                    )
+                )
+            )
+            .font(RecipeTheme.body())
+            .foregroundStyle(.secondary)
+            Button {
+                service.skipToManual()
+            } label: {
+                Text(
+                    String(
+                        localized: LocalizedStringResource(
+                            "Continue", locale: RecipeLanguage.active
+                        )
+                    )
+                )
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(PrimaryButtonStyle())
+        }
+        .padding(RecipeSpacing.pageInset)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(RecipeTheme.canvas.ignoresSafeArea())
+    }
+
+    private var manualFallback: some View {
+        Color.clear.onAppear {
+            service.reset()
+            dismiss()
+        }
+    }
+
+    private func unavailable(_ message: String) -> some View {
+        VStack(spacing: RecipeSpacing.medium) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 44))
+                .foregroundStyle(.secondary)
+            Text(message)
+                .font(RecipeTheme.body())
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button {
                 service.skipToManual()
-                dismiss()
             } label: {
-                Text(RecipeLanguage.localized("Continue"))
+                Text(
+                    String(
+                        localized: LocalizedStringResource(
+                            "Enter Manually", locale: RecipeLanguage.active
+                        )
+                    )
+                )
+                .frame(maxWidth: .infinity)
             }
             .buttonStyle(PrimaryButtonStyle())
-            .accessibilityIdentifier("draft-review.continue")
         }
         .padding(RecipeSpacing.pageInset)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(RecipeTheme.canvas.ignoresSafeArea())
     }
 
-    private var committed: some View {
+    private func failureView(_ failure: RecipeDraftFailure) -> some View {
         VStack(spacing: RecipeSpacing.medium) {
-            Image(systemName: "checkmark.circle.fill")
+            Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 44))
-                .foregroundStyle(RecipeTheme.accent)
-            Text(RecipeLanguage.localized("Review complete."))
-                .font(RecipeTheme.heading(.section))
-            Button(RecipeLanguage.localized("Done")) {
-                dismiss()
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .accessibilityIdentifier("draft-review.done")
-        }
-        .padding(RecipeSpacing.pageInset)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityIdentifier("draft-review.committed")
-    }
-
-    private func failure(
-        message: String,
-        retryable: Bool,
-        retry: (() -> Void)? = nil
-    ) -> some View {
-        VStack(spacing: RecipeSpacing.medium) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 36))
-                .foregroundStyle(.yellow)
-            Text(message)
+                .foregroundStyle(.secondary)
+            Text(failure.message)
                 .font(RecipeTheme.body())
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            if retryable, let retry {
-                Button(RecipeLanguage.localized("Retry")) {
-                    retry()
+            if failure.recoverable {
+                Button {
+                    Task {
+                        await service.retry()
+                    }
+                } label: {
+                    Text(
+                        String(
+                            localized: LocalizedStringResource(
+                                "Try Again", locale: RecipeLanguage.active
+                            )
+                        )
+                    )
+                    .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(PrimaryButtonStyle())
-                .accessibilityIdentifier("draft-review.retry")
             }
-            Button(RecipeLanguage.localized("Skip AI and enter manually")) {
-                dismiss()
+            Button {
+                service.skipToManual()
+            } label: {
+                Text(
+                    String(
+                        localized: LocalizedStringResource(
+                            "Enter Manually", locale: RecipeLanguage.active
+                        )
+                    )
+                )
+                .frame(maxWidth: .infinity)
             }
-            .accessibilityIdentifier("draft-review.skip-manual")
+            .buttonStyle(.bordered)
         }
         .padding(RecipeSpacing.pageInset)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityIdentifier("draft-review.failure")
+        .background(RecipeTheme.canvas.ignoresSafeArea())
+    }
+
+    private func reviewList(_ review: RecipeDraftReview) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: RecipeSpacing.large) {
+                if !review.suggestions.isEmpty {
+                    VStack(alignment: .leading, spacing: RecipeSpacing.small) {
+                        Text(
+                            String(
+                                localized: LocalizedStringResource(
+                                    "AI Suggestions", locale: RecipeLanguage.active
+                                )
+                            )
+                        )
+                        .font(RecipeTheme.heading(.section))
+
+                        ForEach(review.suggestions, id: \.self) { suggestion in
+                            SuggestionRow(
+                                suggestion: suggestion,
+                                isSelected: review.selectedPaths.contains(suggestion.path),
+                                onToggle: {
+                                    if review.selectedPaths.contains(suggestion.path) {
+                                        service.deselect(suggestion.path)
+                                    } else {
+                                        service.select(suggestion.path)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                if !review.questions.isEmpty || !review.reviewFields.isEmpty {
+                    VStack(alignment: .leading, spacing: RecipeSpacing.small) {
+                        Text(
+                            String(
+                                localized: LocalizedStringResource(
+                                    "Needs Your Input", locale: RecipeLanguage.active
+                                )
+                            )
+                        )
+                        .font(RecipeTheme.heading(.section))
+
+                        ForEach(review.questions, id: \.self) { question in
+                            QuestionRow(question: question)
+                        }
+                        ForEach(review.reviewFields, id: \.self) { path in
+                            Text(path)
+                                .font(RecipeTheme.body())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                VStack(spacing: RecipeSpacing.small) {
+                    Button {
+                        Task {
+                            await service.approve()
+                        }
+                    } label: {
+                        Text(
+                            String(
+                                localized: LocalizedStringResource(
+                                    "Save Approved Changes", locale: RecipeLanguage.active
+                                )
+                            )
+                        )
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .disabled(review.selectedPaths.isEmpty)
+                    .accessibilityIdentifier("draftReviewApprove")
+
+                    Button {
+                        Task {
+                            await service.rejectAI()
+                        }
+                    } label: {
+                        Text(
+                            String(
+                                localized: LocalizedStringResource(
+                                    "Skip AI Suggestions", locale: RecipeLanguage.active
+                                )
+                            )
+                        )
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("draftReviewSkip")
+                }
+            }
+            .padding(RecipeSpacing.pageInset)
+        }
+        .background(RecipeTheme.canvas.ignoresSafeArea())
+    }
+}
+
+private struct SuggestionRow: View {
+    let suggestion: RecipeDraftSuggestion
+    let isSelected: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(alignment: .top, spacing: RecipeSpacing.small) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? RecipeTheme.accent : .secondary)
+                VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
+                    Text(suggestion.rawValue)
+                        .font(RecipeTheme.body(17))
+                        .multilineTextAlignment(.leading)
+                    if !suggestion.reason.isEmpty {
+                        Text(suggestion.reason)
+                            .font(RecipeTheme.body(14))
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
+                    Text(
+                        String(
+                            localized: LocalizedStringResource(
+                                "AI suggested", locale: RecipeLanguage.active
+                            )
+                        )
+                    )
+                    .font(RecipeTheme.body(12))
+                    .foregroundStyle(RecipeTheme.accent)
+                    .padding(.horizontal, RecipeSpacing.small)
+                    .padding(.vertical, RecipeSpacing.xxSmall)
+                    .background(RecipeTheme.accent.opacity(0.12), in: Capsule())
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(RecipeSpacing.medium)
+            .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("draftSuggestion-\(suggestion.path)")
+    }
+}
+
+private struct QuestionRow: View {
+    let question: RecipeDraftQuestion
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: RecipeSpacing.xSmall) {
+            Text(question.question)
+                .font(RecipeTheme.body())
+            Text(
+                String(
+                    localized: LocalizedStringResource(
+                        "Answer by entering the details manually.", locale: RecipeLanguage.active
+                    )
+                )
+            )
+            .font(RecipeTheme.body(14))
+            .foregroundStyle(.secondary)
+        }
+        .padding(RecipeSpacing.medium)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RecipeTheme.card, in: RoundedRectangle(cornerRadius: 12))
     }
 }
