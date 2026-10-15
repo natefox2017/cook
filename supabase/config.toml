@@ -69,9 +69,13 @@ verify_jwt = true
 
 # DEV-427: server-owned commercial usage ledger; settlement is re-adjudicated per verified owner.
 [functions.recipe-usage]
+# DEV-438: bounded recipe Q&A always requires a verified Supabase Auth owner JWT.
+[functions.recipe-questions]
 verify_jwt = true
 
 # DEV-428: owner-authenticated draft session API; provider dispatch and ai_edit usage
 # hooks run behind the service role inside the function, never on the client.
 [functions.recipe-draft-sessions]
+# DEV-443: private recipe document batch scanning always requires a verified owner JWT.
+[functions.recipe-document-batch]
 verify_jwt = true
