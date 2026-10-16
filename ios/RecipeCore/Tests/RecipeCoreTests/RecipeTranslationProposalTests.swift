@@ -101,7 +101,43 @@ func approvedVariantIsStableAndPreservesProvenance() throws {
     #expect(first.importRecord == nil)
     #expect(first.sourceURL == original.sourceURL)
     #expect(first.isFavorite == false)
+    #expect(first.translationProvenance?.originalRecipeID == original.id)
+    #expect(first.translationProvenance?.targetLocale == "ja")
+    #expect(first.translationProvenance?.sourceURL == original.sourceURL)
     #expect(original.updatedAt == Date(timeIntervalSince1970: 1000))
+}
+
+@Test
+func savedVariantProvenanceSurvivesCodableAndLegacyRecipesDecodeAsUntranslated() throws {
+    let ingredient = RecipeIngredient(name: "Rice", amountText: "200 g")
+    let original = Recipe(
+        title: "Rice Bowl", ingredients: [ingredient],
+        steps: [.init(instruction: "Cook rice.")],
+        sourceURL: "https://example.com/rice", sourceName: "Author",
+        updatedAt: Date(timeIntervalSince1970: 1000)
+    )
+    let proposal = RecipeTranslationProposal(
+        recipeID: original.id, basedOnUpdate: original.updatedAt,
+        targetLocale: "en",
+        title: "Rice Bowl (EN)",
+        ingredientNames: [.init(id: ingredient.id, original: "Rice", translated: "Rice")],
+        sourceURL: original.sourceURL, sourceName: original.sourceName
+    )
+    let savedAt = Date(timeIntervalSince1970: 1100)
+    let variant = try proposal.approvedVariant(from: original, at: savedAt)
+
+    // A saved variant recovers its lineage after a full Codable round-trip.
+    let restored = try JSONDecoder().decode(Recipe.self, from: JSONEncoder().encode(variant))
+    #expect(restored.translationProvenance?.originalRecipeID == original.id)
+    #expect(restored.translationProvenance?.targetLocale == "en")
+    #expect(restored.translationProvenance?.sourceURL == original.sourceURL)
+    #expect(restored.translationProvenance?.sourceName == original.sourceName)
+    #expect(restored.translationProvenance?.generatedAt == savedAt)
+
+    // A legacy recipe without the provenance key decodes as untranslated (nil provenance).
+    let legacy = try JSONDecoder().decode(Recipe.self, from: JSONEncoder().encode(original))
+    #expect(legacy.translationProvenance == nil)
+    #expect(legacy == original)
 }
 
 @Test

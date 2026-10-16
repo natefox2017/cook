@@ -76,7 +76,9 @@ public struct RecipeTranslationService: Sendable {
         let variant = try proposal.approvedVariant(from: original)
         return RecipeTranslationApproval(
             variant: variant,
-            provenance: proposal.provenance()
+            // The variant already carries the durable lineage; keep the standalone record
+            // identical so callers never observe two provenance timestamps.
+            provenance: variant.translationProvenance ?? proposal.provenance()
         )
     }
 

@@ -87,8 +87,8 @@ final class RecipeTranslationCoordinator {
 
     /// Approves a reviewed proposal into a deterministic variant and persists it locally.
     /// The variant id encodes the source recipe and target locale, so a re-translation of the
-    /// same recipe never creates a duplicate. Provenance lineage is preserved through the
-    /// variant's stable id and its retained source URL/name.
+    /// same recipe never creates a duplicate. The variant carries its `translationProvenance`
+    /// (source recipe id, target locale, and provenance marker) into durable saved state.
     func save(
         proposal: RecipeTranslationProposal,
         original: Recipe,
