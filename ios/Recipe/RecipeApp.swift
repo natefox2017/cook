@@ -768,6 +768,7 @@ private struct RecipeRootView: View {
             // Bind the unified commercial services and resume any pending import reservation.
             let ownerID = Self.verifiedOwnerID(in: auth.state)
             commerce.ownerDidChange(to: ownerID)
+            shareInbox.usage = commerce.importSettlePort
             if let ownerID {
                 await commerce.recoverPendingImportUsage(ownerID: ownerID)
             }
@@ -781,6 +782,7 @@ private struct RecipeRootView: View {
             // import reservation left by the previous session.
             let ownerID = Self.verifiedOwnerID(in: state)
             commerce.ownerDidChange(to: ownerID)
+            shareInbox.usage = commerce.importSettlePort
             if let ownerID, !isUITesting {
                 Task {
                     await commerce.recoverPendingImportUsage(ownerID: ownerID)

@@ -20,6 +20,10 @@ final class RecipeCommerceComposition {
     /// directory could not be created (disk failure); import quota then remains unavailable.
     let importUsage: RecipeImportUsageBridge?
 
+    /// The owner the composition is currently bound to. Mirrors the access store binding so the
+    /// settle port can gate on a matched owner without reaching into `RecipeAccessStore` internals.
+    @ObservationIgnored private var boundOwnerID: String?
+
     init() {
         let access = RecipeAccessStore()
         self.accessStore = access
@@ -37,6 +41,7 @@ final class RecipeCommerceComposition {
     /// account switch. A different owner clears the access snapshot and upgrade state so stale
     /// data from the previous account never surfaces in the new one.
     func ownerDidChange(to ownerID: UUID?) {
+        boundOwnerID = ownerID?.uuidString.lowercased()
         if let ownerID {
             accessStore.bind(ownerID: ownerID.uuidString.lowercased())
         } else {
@@ -56,6 +61,17 @@ final class RecipeCommerceComposition {
             return
         }
         _ = try? await importUsage.recover(ownerID: ownerID)
+    }
+
+    /// The commercial settle port for the normal single-recipe import save. Non-nil only when
+    /// commercial is enabled and a verified owner is bound; `nil` keeps the freeTest save
+    /// byte-equivalent and unmetered. The adapter's bridge re-verifies the session owner on every
+    /// reserve/finalize/acknowledge, so a stale account callback never settles for a previous owner.
+    var importSettlePort: (any RecipeImportUsageSettling)? {
+        guard RecipeMonetization.isEnabled, let importUsage, boundOwnerID != nil else {
+            return nil
+        }
+        return RecipeImportUsageSettleAdapter(bridge: importUsage)
     }
 
     /// Minimal PDF export capability entry for DEV-440's Profile. Returns `true` when the export
