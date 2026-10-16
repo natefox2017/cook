@@ -52,6 +52,7 @@ public enum RecipeShareImportWorkflow {
         client: any RecipeImportJobClient,
         ownerID: UUID,
         currentOwnerID: @escaping @MainActor () -> UUID?,
+        usage: (any RecipeImportUsageSettling)? = nil,
         maxPollRounds: Int = 12,
         pollInterval: Duration = .seconds(5)
     ) async -> RecipeShareImportReport {
@@ -204,11 +205,13 @@ public enum RecipeShareImportWorkflow {
                             throw RecipeShareImportWorkflowError.localSourceChanged
                         }
                         if response.status == .completed {
-                            try saveCompletedResult(
+                            try await saveCompletedResult(
                                 response,
                                 receipt: receipt,
                                 source: source,
-                                store: store
+                                store: store,
+                                ownerID: ownerID,
+                                usage: usage
                             )
                         } else if response.status == .failed {
                             let serverMessage =
@@ -314,8 +317,10 @@ public enum RecipeShareImportWorkflow {
         _ response: RecipeImportJobResponse,
         receipt: RecipeShareReceipt,
         source: String,
-        store: RecipeStore
-    ) throws {
+        store: RecipeStore,
+        ownerID: UUID,
+        usage: (any RecipeImportUsageSettling)?
+    ) async throws {
         guard let result = response.result else {
             throw RecipeShareImportWorkflowError.completedResultMissing
         }
@@ -396,7 +401,6 @@ public enum RecipeShareImportWorkflow {
                 recipe.steps = sourceRecipe.steps
             }
         }
-        recipe.id = result.recipeID
         recipe.servings = nil
         recipe.sourceText = receipt.inputType == .text ? source : nil
         let sharedURL =
@@ -417,7 +421,23 @@ public enum RecipeShareImportWorkflow {
             result: result,
             clientRequestID: response.clientRequestID
         )
-        try store.upsert(recipe)
+        if let usage {
+            // Commercial: durable reserve -> finalize -> persist the server-authored recipe ID
+            // -> acknowledge. A quota/upgrade outcome keeps the receipt and skips the local save.
+            _ = try await usage.settle(
+                ownerID: ownerID,
+                jobID: response.jobID,
+                receiptID: receipt.id,
+                persist: { recipeID in
+                    recipe.id = recipeID
+                    try store.upsert(recipe)
+                }
+            )
+        } else {
+            // freeTest: byte-equivalent, unmetered save.
+            recipe.id = result.recipeID
+            try store.upsert(recipe)
+        }
     }
 
     /// Add only whole missing sections with traceable evidence from the same
