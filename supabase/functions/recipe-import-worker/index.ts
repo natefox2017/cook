@@ -31,6 +31,7 @@ import {
   attachOwnerUploadedMediaEvidence,
   isWebVTTText,
   MediaError,
+  unsupportedMediaError,
   webVTTDurationSeconds,
 } from "./mediaAdapter.ts";
 import {
@@ -40,6 +41,7 @@ import {
   reserveMediaImport,
   settleMediaImport,
 } from "./mediaUsage.ts";
+import { SUPPORTED_MEDIA_TYPES } from "../_shared/mediaProbe.ts";
 
 interface QueueMessage {
   msg_id: number;
@@ -374,6 +376,25 @@ Deno.serve(async (request: Request): Promise<Response> => {
               throw error;
             }
           }
+        } else if (
+          claimed.input_type === "file" &&
+          SUPPORTED_MEDIA_TYPES[artifact!.mime_type] === true
+        ) {
+          // Finite media audio/video: no bounded ASR or keyframe capability
+          // exists in Edge, so fail actionably without a provider call and
+          // preserve the source for manual entry.
+          const unsupported = unsupportedMediaError(
+            artifact!.mime_type.startsWith("audio/") ? "audio" : "video",
+            artifact!.mime_type,
+          );
+          completionError = {
+            code: unsupported.code,
+            message: unsupported.message,
+            recoverable: unsupported.recoverable,
+            suggested_action:
+              "Keep the original source and add the recipe details manually.",
+            request_id: crypto.randomUUID(),
+          };
         } else if (
           claimed.input_type === "image" ||
           (claimed.input_type === "file" &&
