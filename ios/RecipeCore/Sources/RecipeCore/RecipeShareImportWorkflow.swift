@@ -470,6 +470,8 @@ public enum RecipeShareImportWorkflow {
                             try store.upsert(recipe)
                         }
                     )
+                    // usage.settle acknowledged the primary candidate, which atomically advanced the
+                    // media unit to `.finalizeReady` via the bridge's atomic acknowledge.
                     _ = try await mediaBundle.finalizeMedia(
                         ownerID: ownerID, jobID: response.jobID, currentOwner: currentOwner)
                 }

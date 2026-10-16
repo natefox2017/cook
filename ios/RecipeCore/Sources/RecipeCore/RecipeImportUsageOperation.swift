@@ -22,6 +22,9 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
         case awaitingUpgrade
         /// Reserve succeeded; finalize/ack is still owed. Never auto-release a dispatched reserve.
         case reserved
+        /// Media bundle only: every candidate has been finalized and acknowledged, so the media_import
+        /// finalize is now owed and safe to replay by its stable job ID.
+        case finalizeReady
         /// Finalize returned the server recipe ID; the local ack is still owed.
         case finalized
     }
@@ -47,6 +50,10 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
     /// The capability this operation settles. `nil` is the ordinary smart_import candidate (old records);
     /// `.mediaImport` marks the media_import unit whose operation ID is the job ID.
     public let capability: RecipeImportUsageCapability?
+    /// The stable original candidate set of a media bundle, recorded on the media unit so recovery can
+    /// replay the full membership even after some candidates were acknowledged and removed. `nil` for
+    /// non-media operations and old records.
+    public let bundleCandidateIDs: [String]?
 
     public var id: UUID { operationID }
 
@@ -68,7 +75,8 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
         recipeID: String? = nil,
         payloadHash: String? = nil,
         mediaBundleJobID: UUID? = nil,
-        capability: RecipeImportUsageCapability? = nil
+        capability: RecipeImportUsageCapability? = nil,
+        bundleCandidateIDs: [String]? = nil
     ) {
         self.operationID = operationID
         self.ownerID = ownerID
@@ -83,6 +91,7 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
         self.payloadHash = payloadHash
         self.mediaBundleJobID = mediaBundleJobID
         self.capability = capability
+        self.bundleCandidateIDs = bundleCandidateIDs
     }
 
     /// Derives a stable operation ID from the owner + job + candidate so a lost-response retry replays
@@ -124,7 +133,8 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
             recipeID: recipeID,
             payloadHash: payloadHash,
             mediaBundleJobID: mediaBundleJobID,
-            capability: capability
+            capability: capability,
+            bundleCandidateIDs: bundleCandidateIDs
         )
     }
 
@@ -144,7 +154,8 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
             recipeID: recipeID,
             payloadHash: payloadHash,
             mediaBundleJobID: mediaBundleJobID,
-            capability: capability
+            capability: capability,
+            bundleCandidateIDs: bundleCandidateIDs
         )
     }
 }
@@ -198,6 +209,28 @@ public struct RecipeImportUsageStore: Sendable {
             var existing = try operations(for: ownerID)
             existing.removeAll { $0.operationID == operationID }
             try write(existing, to: fileURL(for: ownerID))
+        }
+    }
+
+    /// Atomically removes a candidate and, when it is the last member of its media bundle, marks that
+    /// bundle's media unit `.finalizeReady` in a single locked write. This closes the crash window
+    /// between acknowledging the final candidate and recording that the media finalize is now owed.
+    public func acknowledgeCandidate(
+        _ candidate: RecipeImportUsageOperation,
+        markingMediaFinalizeReady mediaJobID: UUID?
+    ) throws {
+        try lock.nsLock.withLock {
+            var existing = try operations(for: candidate.ownerID)
+            existing.removeAll { $0.operationID == candidate.operationID }
+            if let mediaJobID,
+                !existing.contains(where: { $0.mediaBundleJobID == mediaJobID && !$0.isMediaImport }),
+                let mediaIndex = existing.firstIndex(where: {
+                    $0.isMediaImport && $0.jobID == mediaJobID
+                })
+            {
+                existing[mediaIndex] = existing[mediaIndex].marking(state: .finalizeReady)
+            }
+            try write(existing, to: fileURL(for: candidate.ownerID))
         }
     }
 

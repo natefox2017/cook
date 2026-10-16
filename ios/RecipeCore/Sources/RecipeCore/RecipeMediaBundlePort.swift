@@ -77,7 +77,8 @@ public struct RecipeMediaBundlePort {
             receiptID: receiptID,
             state: .reserving,
             mediaBundleJobID: jobID,
-            capability: .mediaImport
+            capability: .mediaImport,
+            bundleCandidateIDs: candidateIDs
         )
         try store.save(mediaOperation)
 
@@ -162,6 +163,17 @@ public struct RecipeMediaBundlePort {
         return response
     }
 
+    /// Marks the media unit ready to finalize after the caller finalized and acknowledged every
+    /// candidate. Recovery only replays the media finalize once this marker is persisted, so a crash
+    /// mid-bundle can never consume the media unit while candidates are still dangling.
+    public func markMediaFinalizeReady(ownerID: UUID, jobID: UUID) throws {
+        if let media = try store.operations(for: ownerID).first(where: {
+            $0.isMediaImport && $0.jobID == jobID
+        }) {
+            try store.save(media.marking(state: .finalizeReady))
+        }
+    }
+
     /// Best-effort release of a reserved media_import unit that will not be settled.
     public func releaseMedia(ownerID: UUID, jobID: UUID) async throws -> RecipeMediaActionResponse {
         try await client.releaseMedia(ownerID: ownerID, jobID: jobID)
@@ -183,7 +195,13 @@ public struct RecipeMediaBundlePort {
         for (jobID, operations) in grouped {
             let media = operations.first(where: { $0.isMediaImport })
             let candidates = operations.filter { !$0.isMediaImport }
-            let candidateIDs = candidates.map(\.candidateID)
+            // Stable full membership comes from the media anchor, not the partial stored candidates.
+            let fullCandidateIDs: [String]
+            if let media, let ids = media.bundleCandidateIDs, !ids.isEmpty {
+                fullCandidateIDs = ids
+            } else {
+                fullCandidateIDs = candidates.map(\.candidateID)
+            }
 
             let hasPending = operations.contains {
                 $0.state == .reserving || $0.state == .awaitingUpgrade
@@ -191,20 +209,37 @@ public struct RecipeMediaBundlePort {
             if hasPending {
                 do {
                     let response = try await client.reserveMediaBundle(
-                        ownerID: ownerID, jobID: jobID, candidateIDs: candidateIDs)
+                        ownerID: ownerID, jobID: jobID, candidateIDs: fullCandidateIDs)
                     if let media {
                         try store.save(
                             media.marking(
                                 state: .reserved, reservedUntil: response.media.reservedUntil))
                     }
                     for candidate in response.candidates {
-                        guard let candidateID = candidate.candidateID,
-                            let existing = candidates.first(where: { $0.candidateID == candidateID })
-                        else { continue }
-                        let updated = existing.marking(
-                            state: .reserved, reservedUntil: candidate.reservedUntil)
-                        try store.save(updated)
-                        recovered.append(updated)
+                        guard let candidateID = candidate.candidateID else { continue }
+                        let operationID = RecipeImportUsageOperation.stableOperationID(
+                            ownerID: ownerID, jobID: jobID, candidateID: candidateID)
+                        if let existing = candidates.first(where: { $0.candidateID == candidateID }) {
+                            let updated = existing.marking(
+                                state: .reserved, reservedUntil: candidate.reservedUntil)
+                            try store.save(updated)
+                            recovered.append(updated)
+                        } else {
+                            // The candidate was never persisted (crash mid-save); recreate it from the
+                            // stable bundle response using the media unit's authoritative receipt.
+                            let recreated = RecipeImportUsageOperation(
+                                operationID: operationID,
+                                ownerID: ownerID,
+                                jobID: jobID,
+                                candidateID: candidateID,
+                                receiptID: media?.receiptID ?? UUID(),
+                                state: .reserved,
+                                reservedUntil: candidate.reservedUntil,
+                                mediaBundleJobID: jobID
+                            )
+                            try store.save(recreated)
+                            recovered.append(recreated)
+                        }
                     }
                 } catch let error as RecipeMediaSaveAPIError
                     where error.code == "UPGRADE_REQUIRED" || error.code == "QUOTA_EXCEEDED"
@@ -217,9 +252,9 @@ public struct RecipeMediaBundlePort {
                 } catch let error as RecipeMediaSaveAPIError {
                     failed[jobID] = error
                 }
-            } else if let media, media.state == .reserved {
-                // Candidates were settled/ACKed; the media finalize response was unknown. Replay the
-                // media finalize (idempotent by job ID) so the bundle is fully settled.
+            } else if let media, media.state == .finalizeReady {
+                // Every candidate was finalized and acknowledged, and the finalize marker is
+                // persisted. Replay the media finalize (idempotent by job ID).
                 do {
                     let response = try await client.finalizeMedia(
                         ownerID: ownerID, jobID: jobID)
@@ -230,6 +265,8 @@ public struct RecipeMediaBundlePort {
                     failed[jobID] = error
                 }
             }
+            // A `.reserved`/`.finalized` media with candidates still dangling is intentionally left
+            // untouched: the caller must finalize/ACK the candidates, then mark it finalize-ready.
         }
 
         return RecipeMediaBundleRecoveryReport(

@@ -83,14 +83,19 @@ public struct RecipeImportUsageBridge: Sendable {
         )
 
         // Durable intent must exist before the network call; a later replay of the same operation ID
-        // is the only idempotency key the frozen contract exposes.
+        // is the only idempotency key the frozen contract exposes. Preserve any media-bundle linkage on
+        // the existing stable operation so a REPLAY never drops the bundle membership marker.
+        let prior = try store.operations(for: ownerID).first { $0.operationID == operationID }
         let pending = RecipeImportUsageOperation(
             operationID: operationID,
             ownerID: ownerID,
             jobID: jobID,
             candidateID: candidateID,
             receiptID: receiptID,
-            state: .reserving
+            state: .reserving,
+            mediaBundleJobID: prior?.mediaBundleJobID,
+            capability: prior?.capability,
+            bundleCandidateIDs: prior?.bundleCandidateIDs
         )
         try store.save(pending)
 
@@ -231,7 +236,13 @@ public struct RecipeImportUsageBridge: Sendable {
             ownerID: ownerID,
             operationID: operation.operationID.uuidString.lowercased()
         )
-        try store.remove(operationID: operation.operationID, ownerID: ownerID)
+        if let mediaJobID = operation.mediaBundleJobID {
+            // Delete the candidate and advance the media unit to `.finalizeReady` in one atomic write
+            // when it is the last bundle member, so the media finalize is never replayed prematurely.
+            try store.acknowledgeCandidate(operation, markingMediaFinalizeReady: mediaJobID)
+        } else {
+            try store.remove(operationID: operation.operationID, ownerID: ownerID)
+        }
     }
 
     /// Releases a reservation the user abandoned before finalize so it never lingers past its TTL.

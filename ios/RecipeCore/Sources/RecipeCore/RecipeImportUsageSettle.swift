@@ -68,18 +68,22 @@ public struct RecipeImportUsageSettleAdapter: RecipeImportUsageSettling {
         case .awaitingUpgrade:
             return .awaitingUpgrade
         case .reserved(let reservation):
+            let operationID = RecipeImportUsageOperation.stableOperationID(
+                ownerID: ownerID, jobID: jobID, candidateID: Self.primaryCandidateID)
+            let prior = try bridge.store.operations(for: ownerID).first {
+                $0.operationID == operationID
+            }
             let operation = RecipeImportUsageOperation(
-                operationID: RecipeImportUsageOperation.stableOperationID(
-                    ownerID: ownerID,
-                    jobID: jobID,
-                    candidateID: Self.primaryCandidateID
-                ),
+                operationID: operationID,
                 ownerID: ownerID,
                 jobID: jobID,
                 candidateID: Self.primaryCandidateID,
                 receiptID: receiptID,
                 state: .reserved,
-                reservedUntil: reservation.reservedUntil
+                reservedUntil: reservation.reservedUntil,
+                mediaBundleJobID: prior?.mediaBundleJobID,
+                capability: prior?.capability,
+                bundleCandidateIDs: prior?.bundleCandidateIDs
             )
 
             try requireOwner(ownerID, generation: startGeneration, currentOwner: currentOwner)
