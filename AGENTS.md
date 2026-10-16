@@ -87,6 +87,7 @@ Recipe is the native iOS codebase for Recipe Pals, a private recipe collection a
 
 ## Change Workflow
 
+- **Batch delivery (DEV-424 F0–F9, current workflow):** Orca agents complete the authorized Cook implementation in parallel, then run necessary source review, then perform a dependency-ordered concentrated merge of only this batch's ready Cook PRs (only after the batch is ready and the coordinator gives GO). After merge, Orca runs ONE real-App use-order acceptance F0–F9. Codex only dispatches, coordinates, and records Linear evidence. Reuse valid PASS evidence; on a failure fix, retest only the affected flow. Mandatory repository status, security, and branch-protection checks still run before any merge — never bypass or use an admin override. No deployment, release, fee activation, new cost, other projects, or unrelated PRs.
 - Keep `main` PR-only. Use a focused branch for implementation.
 - User delivery preference: after authorized code development and required checks are complete, push the branch to GitHub, create the PR, and complete its merge. Do not leave completed work only in the session workspace or an unmerged branch. Verify the merged PR and final `main` contents before reporting delivery; merging code does not imply production deployment or completion of separate release acceptance.
 - **Before a PR, rebase/merge the current `origin/main`** and compare against the latest accepted onboarding, branding, navigation and purchase contracts. Do not restore older screen implementations from an old branch merely to resolve conflicts.
