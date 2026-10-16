@@ -437,21 +437,45 @@ public enum RecipeShareImportWorkflow {
         // selected candidate separately, so the single-result "primary" path never takes an aggregate charge.
         let isMultiCandidate = result.candidateRecipes?.isEmpty == false
         let isMedia = inbox.mediaMimeType(for: receipt) != nil
-        if let usage, let mediaBundle, isMedia, !isMultiCandidate {
-            // Media single-result: reserve the media_import unit + the primary smart_import unit
-            // atomically, then settle the primary through the existing smart_import settle (idempotent
-            // REPLAY) and settle the media. A quota/upgrade block keeps the receipt.
-            let outcome = try await mediaBundle.reserveBundle(
-                ownerID: ownerID,
-                jobID: response.jobID,
-                candidateIDs: [RecipeImportUsageSettleAdapter.primaryCandidateID],
-                receiptID: receipt.receiptID,
-                currentOwner: currentOwner
-            )
-            switch outcome {
-            case .awaitingUpgrade:
-                return
-            case .reserved:
+        if let usage, !isMultiCandidate {
+            if isMedia {
+                // Media single-result: reserve the media_import unit + the primary smart_import unit
+                // atomically, then settle the primary (idempotent REPLAY) and the media. A missing
+                // media bundle port in a commercial build fails closed instead of settling
+                // smart_import-only.
+                guard let mediaBundle else {
+                    throw RecipeUsageFailure.api(
+                        .internalError, recoverable: true,
+                        message: "Media import settle is unavailable.", requestID: nil)
+                }
+                let outcome = try await mediaBundle.reserveBundle(
+                    ownerID: ownerID,
+                    jobID: response.jobID,
+                    candidateIDs: [RecipeImportUsageSettleAdapter.primaryCandidateID],
+                    receiptID: receipt.receiptID,
+                    currentOwner: currentOwner
+                )
+                switch outcome {
+                case .awaitingUpgrade:
+                    return
+                case .reserved:
+                    _ = try await usage.settle(
+                        ownerID: ownerID,
+                        jobID: response.jobID,
+                        receiptID: receipt.id,
+                        resultPayloadHash: response.resultPayloadHash,
+                        currentOwner: currentOwner,
+                        persist: { recipeID in
+                            recipe.id = recipeID
+                            try store.upsert(recipe)
+                        }
+                    )
+                    _ = try await mediaBundle.finalizeMedia(
+                        ownerID: ownerID, jobID: response.jobID, currentOwner: currentOwner)
+                }
+            } else {
+                // Commercial non-media single-result: durable reserve -> finalize -> persist the
+                // server-authored recipe ID -> acknowledge.
                 _ = try await usage.settle(
                     ownerID: ownerID,
                     jobID: response.jobID,
@@ -463,23 +487,7 @@ public enum RecipeShareImportWorkflow {
                         try store.upsert(recipe)
                     }
                 )
-                _ = try await mediaBundle.finalizeMedia(
-                    ownerID: ownerID, jobID: response.jobID, currentOwner: currentOwner)
             }
-        } else if let usage, !isMultiCandidate {
-            // Commercial non-media single-result: durable reserve -> finalize -> persist the
-            // server-authored recipe ID -> acknowledge.
-            _ = try await usage.settle(
-                ownerID: ownerID,
-                jobID: response.jobID,
-                receiptID: receipt.id,
-                resultPayloadHash: response.resultPayloadHash,
-                currentOwner: currentOwner,
-                persist: { recipeID in
-                    recipe.id = recipeID
-                    try store.upsert(recipe)
-                }
-            )
         } else {
             // freeTest (any) or multi-candidate container: persist without settling.
             recipe.id = result.recipeID
