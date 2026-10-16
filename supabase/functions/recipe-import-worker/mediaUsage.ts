@@ -1,14 +1,14 @@
 // Developer: gengyun
-// Purpose: Worker-side media_import metering hook. Binds the persisted owned
-//          import job as the media task identity (media_task_id = job id) and
-//          settles exactly once against the DEV-427/438 phase-II ledger RPCs.
+// Purpose: DEV-78 media-import metering at the user-selected save callsite. One
+//          bounded adapter atomically reserves the media_import quota plus one
+//          smart_import unit per selected candidate in a single transaction via
+//          the additive bundle RPC, then settles/releases per capability.
 
 import {
   computeInternalInputHash,
   finalizeInternal,
   internalSourceForMediaImport,
   releaseInternal,
-  reserveInternal,
   type InternalUsageRPC,
   type InternalUsageResult,
 } from "../_shared/recipeInternalUsage.ts";
@@ -30,64 +30,132 @@ export function createLedgerRPC(invoke: RPCInvoke): InternalUsageRPC {
   };
 }
 
-async function sourceAndHash(mediaTaskID: string) {
-  const source = internalSourceForMediaImport(mediaTaskID);
-  const inputHash = await computeInternalInputHash("media_import", source);
-  return { source, inputHash };
+export interface SmartImportSource {
+  origin: "import_job";
+  job_id: string;
+  candidate_ids: [string];
+  session_id: null;
+  turn_request_id: null;
 }
 
-/** Reserve one media_import unit keyed by the durable owned import job id. */
-export async function reserveMediaImport(
-  rpc: InternalUsageRPC,
-  ownerID: string,
-  mediaTaskID: string,
-): Promise<InternalUsageResult> {
-  const { source, inputHash } = await sourceAndHash(mediaTaskID);
-  return await reserveInternal(
-    rpc,
-    ownerID,
-    mediaTaskID,
-    "media_import",
-    inputHash,
-    source,
+export interface MediaBundleCandidate {
+  candidate_id: string;
+  input_hash: string;
+  source: SmartImportSource;
+}
+
+export type MediaBundleBlockedCode =
+  | "UPGRADE_REQUIRED"
+  | "QUOTA_EXCEEDED"
+  | "IDEMPOTENCY_CONFLICT"
+  | "NOT_FOUND"
+  | "INVALID_INPUT";
+
+export type ReserveMediaBundleResult =
+  | {
+      code: "RESERVED" | "REPLAY";
+      operationId: string;
+      reservedCandidates: number;
+    }
+  | { code: MediaBundleBlockedCode | "MEDIA_BUNDLE_BLOCKED"; message: string };
+
+function blockedCode(message: string): MediaBundleBlockedCode | "MEDIA_BUNDLE_BLOCKED" {
+  const match = /MEDIA_BUNDLE_BLOCKED:(\w+)/.exec(message);
+  if (!match) return "MEDIA_BUNDLE_BLOCKED";
+  const code = match[1];
+  return (
+    code === "UPGRADE_REQUIRED" ||
+    code === "QUOTA_EXCEEDED" ||
+    code === "IDEMPOTENCY_CONFLICT" ||
+    code === "NOT_FOUND" ||
+    code === "INVALID_INPUT"
+  )
+    ? code
+    : "MEDIA_BUNDLE_BLOCKED";
+}
+
+function isBlockedCode(value: string): value is MediaBundleBlockedCode {
+  return (
+    value === "UPGRADE_REQUIRED" ||
+    value === "QUOTA_EXCEEDED" ||
+    value === "IDEMPOTENCY_CONFLICT" ||
+    value === "NOT_FOUND" ||
+    value === "INVALID_INPUT"
   );
 }
 
 /**
- * Map a reserve result to a user-facing completion block. RESERVED/REPLAY allow
- * work and return null; quota/entitlement/malformed results return a block that
- * never settles a success unit.
+ * Atomically reserve the media_import unit plus one smart_import unit per
+ * selected candidate under one media import operation. The bundle RPC raises
+ * on any block, so the whole transaction rolls back and no partial reservation
+ * survives. Stable child operation ids are derived server-side (md5).
  */
-export function mediaQuotaBlock(
-  result: InternalUsageResult,
-): { code: string; message: string } | null {
-  if (result.code === "RESERVED" || result.code === "REPLAY") return null;
-  if (result.code === "UPGRADE_REQUIRED") {
+export async function reserveMediaBundle(
+  rpc: InternalUsageRPC,
+  ownerID: string,
+  jobID: string,
+  candidateIDs: readonly string[],
+): Promise<ReserveMediaBundleResult> {
+  const mediaSource = internalSourceForMediaImport(jobID);
+  const mediaHash = await computeInternalInputHash("media_import", mediaSource);
+  const candidates: MediaBundleCandidate[] = [];
+  for (const candidateID of candidateIDs) {
+    const source: SmartImportSource = {
+      origin: "import_job",
+      job_id: jobID,
+      candidate_ids: [candidateID],
+      session_id: null,
+      turn_request_id: null,
+    };
+    const inputHash = await canonicalHash({
+      capability: "smart_import",
+      source,
+    });
+    candidates.push({
+      candidate_id: candidateID,
+      input_hash: inputHash,
+      source,
+    });
+  }
+
+  let raw: Record<string, unknown>;
+  try {
+    raw = await rpc("recipe_usage_reserve_media_bundle", {
+      p_owner_id: ownerID,
+      p_job_id: jobID,
+      p_media_source: mediaSource,
+      p_media_input_hash: mediaHash,
+      p_candidates: candidates,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    return { code: blockedCode(message), message };
+  }
+
+  const code = raw.code;
+  if (code === "RESERVED" || code === "REPLAY") {
     return {
-      code: result.code,
-      message: "Media import requires a premium subscription.",
+      code,
+      operationId: String(raw.operation_id ?? jobID),
+      reservedCandidates: Number(raw.reserved_candidates ?? candidateIDs.length),
     };
   }
-  if (result.code === "QUOTA_EXCEEDED") {
-    return {
-      code: result.code,
-      message: "The monthly media import limit has been reached.",
-    };
-  }
+  const fallback = String(code ?? "INVALID_INPUT");
   return {
-    code: "MEDIA_QUOTA_UNAVAILABLE",
-    message: "Media import quota is unavailable.",
+    code: isBlockedCode(fallback) ? fallback : "INVALID_INPUT",
+    message: "The media bundle reservation was rejected.",
   };
 }
 
-/** Settle the reservation once, binding the durable owned job as a media_task. */
+/** Settle the reserved media_import unit, binding the durable owned job as a media_task. */
 export async function settleMediaImport(
   rpc: InternalUsageRPC,
   ownerID: string,
   mediaTaskID: string,
   payload: Record<string, unknown>,
 ): Promise<InternalUsageResult> {
-  const { source, inputHash } = await sourceAndHash(mediaTaskID);
+  const source = internalSourceForMediaImport(mediaTaskID);
+  const inputHash = await computeInternalInputHash("media_import", source);
   const payloadHash = await canonicalHash(payload);
   return await finalizeInternal(
     rpc,
@@ -104,7 +172,7 @@ export async function settleMediaImport(
   );
 }
 
-/** Best-effort release of a reservation that will not be settled. */
+/** Best-effort release of a media_import reservation that will not be settled. */
 export async function releaseMediaImport(
   rpc: InternalUsageRPC,
   ownerID: string,
