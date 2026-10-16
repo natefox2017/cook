@@ -416,6 +416,10 @@ public struct RecipeImportRecord: Codable, Hashable, Sendable {
     /// The share receipt's stable identity, so multi-candidate saves recover against the same source
     /// receipt instead of minting a fresh ID. Optional for recipes persisted before this field shipped.
     public let receiptID: UUID?
+    /// Durable media-import marker: non-nil (the audio/video MIME type) when the source routed through
+    /// the media bundle save; nil for link/text/image/PDF imports. Set before ACK from the authoritative
+    /// receipt so the View can route primary + multi through the media bundle port.
+    public let mediaMimeType: String?
     public let result: RecipeImportJobResponse.Result
     /// Records explicit local review without altering server fields or evidence.
     public var reviewedAt: Date?
@@ -431,7 +435,8 @@ public struct RecipeImportRecord: Codable, Hashable, Sendable {
         sourceArtifactDeletedAt: Date? = nil,
         selectedCandidateID: String? = nil,
         clientRequestID: UUID? = nil,
-        receiptID: UUID? = nil
+        receiptID: UUID? = nil,
+        mediaMimeType: String? = nil
     ) {
         self.jobID = jobID
         self.result = result
@@ -440,6 +445,7 @@ public struct RecipeImportRecord: Codable, Hashable, Sendable {
         self.selectedCandidateID = selectedCandidateID
         self.clientRequestID = clientRequestID
         self.receiptID = receiptID
+        self.mediaMimeType = mediaMimeType
     }
 }
 
