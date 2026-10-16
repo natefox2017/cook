@@ -51,6 +51,26 @@ function candidateValidationError(candidateIDs: unknown): string | null {
   return null;
 }
 
+/**
+ * Canonical media finalize payload derived from the persisted, owner-verified
+ * job result — never from a client body. Deterministic so a replay computes the
+ * same payload hash and the ledger settles exactly once.
+ */
+function deriveMediaPayload(
+  jobID: string,
+  result: unknown,
+): Record<string, unknown> {
+  const row: Record<string, unknown> = result !== null &&
+    typeof result === "object" && !Array.isArray(result)
+    ? result as Record<string, unknown>
+    : {};
+  return {
+    media_task_id: jobID,
+    recipe_id: typeof row.recipe_id === "string" ? row.recipe_id : null,
+    recipe_status: typeof row.status === "string" ? row.status : "needs_review",
+  };
+}
+
 Deno.serve(async (request: Request): Promise<Response> => {
   const cors = handleCors(request, "auth");
   if (cors) return cors;
@@ -91,7 +111,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
     }
 
     const { data: job, error: jobError } = await admin.from("recipe_import_jobs")
-      .select("id,owner_id,status,result")
+      .select("id,owner_id,status,result,error,recipe_status")
       .eq("id", jobID)
       .eq("owner_id", user.id)
       .maybeSingle();
@@ -147,13 +167,18 @@ Deno.serve(async (request: Request): Promise<Response> => {
     }
 
     if (action === "finalize") {
-      // Settle the media_import unit. Per-candidate smart_import finalize is
-      // the existing recipe-usage flow (DEV-430), not this endpoint.
-      const rawPayload = body?.payload;
-      const payload = rawPayload !== null && typeof rawPayload === "object" &&
-        !Array.isArray(rawPayload)
-        ? rawPayload
-        : { media_task_id: jobID };
+      // Failed/unsupported media tasks must never settle a success unit.
+      if (job.error !== null && job.error !== undefined) {
+        return errorResponse(
+          "MEDIA_NOT_SUCCESSFUL",
+          "The media task did not produce valid evidence.",
+          422,
+          headers,
+        );
+      }
+      // Derive the canonical payload from the persisted job result; never trust
+      // a client-supplied payload to forge a successful settle.
+      const payload = deriveMediaPayload(jobID, job.result);
       const result = await settleMediaImport(rpc, user.id, jobID, payload);
       return json({ code: result.code ?? "FINALIZED", operation_id: jobID }, 200, headers);
     }
