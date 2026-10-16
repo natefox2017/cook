@@ -93,6 +93,12 @@ final class RecipeCommerceComposition {
             return
         }
         _ = try? await importUsage.recover(ownerID: ownerID)
+        // DEV-78 media bundles recover atomically (grouped by job, idempotent REPLAY + reserved media
+        // finalize unknown-result replay). `mediaBundlePort` is nil in freeTest or without a bound
+        // owner/store (fail-closed), so the freeTest save stays byte-equivalent and unmetered.
+        if let mediaBundlePort {
+            _ = try? await mediaBundlePort.recover(ownerID: ownerID)
+        }
     }
 
     /// The commercial settle port for the normal single-recipe import save. Non-nil only when
