@@ -24,6 +24,26 @@ final class RecipeCommerceComposition {
     /// settle port can gate on a matched owner without reaching into `RecipeAccessStore` internals.
     @ObservationIgnored private var boundOwnerID: String?
 
+    /// Monotonic generation bumped only when the bound owner changes (rebind/sign-out/sign-in), so a
+    /// caller that captured an older snapshot can detect a mid-flight account switch.
+    @ObservationIgnored private var ownerGeneration = 0
+
+    /// An immutable snapshot of the bound owner plus its monotonic generation. Callers capture this
+    /// before awaited bridge work and re-compare after the await: a changed generation means the
+    /// owner/session was rebound, so the stale result must not be persisted or acknowledged.
+    struct ImportUsageContext: Equatable, Sendable {
+        let ownerID: UUID?
+        let generation: Int
+    }
+
+    /// Live bound-owner + generation snapshot for the Detail owner's saveSelected fence.
+    var importUsageContext: ImportUsageContext {
+        ImportUsageContext(
+            ownerID: boundOwnerID.flatMap(UUID.init(uuidString:)),
+            generation: ownerGeneration
+        )
+    }
+
     init() {
         let access = RecipeAccessStore()
         self.accessStore = access
@@ -41,7 +61,11 @@ final class RecipeCommerceComposition {
     /// account switch. A different owner clears the access snapshot and upgrade state so stale
     /// data from the previous account never surfaces in the new one.
     func ownerDidChange(to ownerID: UUID?) {
-        boundOwnerID = ownerID?.uuidString.lowercased()
+        let nextBound = ownerID?.uuidString.lowercased()
+        if nextBound != boundOwnerID {
+            boundOwnerID = nextBound
+            ownerGeneration &+= 1
+        }
         if let ownerID {
             accessStore.bind(ownerID: ownerID.uuidString.lowercased())
         } else {
