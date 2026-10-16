@@ -1984,6 +1984,13 @@ private struct RecipeCandidateSelectionView: View {
             return
         }
 
+        // Media-import sources (VTT/audio/video) route through the media bundle port;
+        // the durable mediaMimeType marker is set by the backend, never guessed here.
+        if sourceRecord.mediaMimeType != nil {
+            try await saveMediaSelected(sourceRecord: sourceRecord, chosen: chosen)
+            return
+        }
+
         // Free first release keeps the existing unmetered save byte-equivalent.
         guard RecipeMonetization.isEnabled else {
             try saveUnmetered(sourceRecord: sourceRecord, chosen: chosen)
@@ -2058,6 +2065,84 @@ private struct RecipeCandidateSelectionView: View {
                 importUsage: importUsage
             )
         }
+    }
+
+    private func saveMediaSelected(
+        sourceRecord: RecipeImportRecord,
+        chosen: [RecipeImportJobResponse.Candidate]
+    ) async throws {
+        // Free first release: media metering is closed by default, so keep the
+        // existing unmetered save (the media bundle port is unavailable).
+        guard RecipeMonetization.isEnabled else {
+            try saveUnmetered(sourceRecord: sourceRecord, chosen: chosen)
+            return
+        }
+        let startContext = commerce.importUsageContext
+        guard let mediaPort = commerce.mediaBundlePort else {
+            throw RecipeImportCandidateSaveError.bridgeUnavailable
+        }
+        guard let importUsage = commerce.importUsage else {
+            throw RecipeImportCandidateSaveError.bridgeUnavailable
+        }
+        guard let ownerID = startContext.ownerID else {
+            throw RecipeImportCandidateSaveError.signedOut
+        }
+        guard let receiptID = sourceRecord.receiptID else {
+            throw RecipeImportCandidateSaveError.missingReceipt
+        }
+
+        // Atomic media bundle reserve persists each candidate's durable intent before
+        // the RPC and returns the stored `.reserved` operations.
+        let outcome = try await mediaPort.reserveBundle(
+            ownerID: ownerID,
+            jobID: sourceRecord.jobID,
+            candidateIDs: chosen.map(\.candidateID),
+            receiptID: receiptID,
+            currentOwner: { self.currentOwnerContext() }
+        )
+        switch outcome {
+        case .awaitingUpgrade:
+            throw RecipeImportCandidateSaveError.upgradeRequired
+        case .reserved(_, let operations):
+            var pending = operations
+            do {
+                for candidate in chosen {
+                    guard let index = pending.firstIndex(where: {
+                        $0.candidateID == candidate.candidateID
+                    }) else {
+                        throw RecipeImportCandidateSaveError.invalidResponse
+                    }
+                    let operation = pending.remove(at: index)
+                    try await settleReserved(
+                        ReservedCandidate(candidate: candidate, operation: operation),
+                        sourceRecord: sourceRecord,
+                        ownerID: ownerID,
+                        startContext: startContext,
+                        importUsage: importUsage
+                    )
+                }
+                // Settle the reserved media_import unit after every candidate settles.
+                _ = try await mediaPort.finalizeMedia(
+                    ownerID: ownerID,
+                    jobID: sourceRecord.jobID,
+                    currentOwner: { self.currentOwnerContext() }
+                )
+            } catch {
+                // Partial failure: release only the still-unfinalized candidate
+                // reservations, then the media unit; finalized/failed operations stay
+                // in the recovery store.
+                for operation in pending {
+                    try? await importUsage.cancel(ownerID: ownerID, operation: operation)
+                }
+                try? await mediaPort.releaseMedia(ownerID: ownerID, jobID: sourceRecord.jobID)
+                throw error
+            }
+        }
+    }
+
+    private func currentOwnerContext() -> (ownerID: UUID?, generation: Int) {
+        let context = commerce.importUsageContext
+        return (context.ownerID, context.generation)
     }
 
     private func settleReserved(
