@@ -3,6 +3,11 @@
 
 import { createServiceClient, requireUser } from "../_shared/auth.ts";
 import { authCorsHeaders, handleCors } from "../_shared/cors.ts";
+import {
+  MEDIA_AUDIO_VIDEO_MAX_BYTES,
+  SUPPORTED_MEDIA_TYPES,
+  verifyMediaUpload,
+} from "../_shared/mediaProbe.ts";
 
 const BUCKET = "recipe-import-artifacts";
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -172,9 +177,16 @@ Deno.serve(async (request: Request): Promise<Response> => {
         typeof mimeType === "string" && IMAGE_TYPES.has(mimeType);
       const validFile = inputType === "file" &&
         typeof mimeType === "string" && FILE_TYPES.has(mimeType);
+      const validMedia = inputType === "file" &&
+        typeof mimeType === "string" &&
+        SUPPORTED_MEDIA_TYPES[mimeType] === true;
+      const sizeLimit = validMedia
+        ? MEDIA_AUDIO_VIDEO_MAX_BYTES
+        : MAX_BYTES;
       if (
-        (!validImage && !validFile) || typeof size !== "number" ||
-        !Number.isSafeInteger(size) || size < 1 || size > MAX_BYTES ||
+        (!validImage && !validFile && !validMedia) ||
+        typeof size !== "number" || !Number.isSafeInteger(size) ||
+        size < 1 || size > sizeLimit ||
         typeof clientRequestID !== "string" || !UUID.test(clientRequestID)
       ) {
         return errorResponse("INVALID_INPUT", "Unsupported artifact type or size.", 400, headers);
@@ -297,14 +309,30 @@ Deno.serve(async (request: Request): Promise<Response> => {
         return errorResponse("ARTIFACT_NOT_READY", "The uploaded file could not be confirmed.", 422, headers);
       }
       const bytes = new Uint8Array(await storedFile.arrayBuffer());
-      if (!hasExpectedContent(bytes, row.mime_type)) {
+      const isMedia = SUPPORTED_MEDIA_TYPES[row.mime_type] === true;
+      const mediaFailure = isMedia
+        ? verifyMediaUpload(row.mime_type, bytes)
+        : null;
+      const bytesInvalid = isMedia
+        ? mediaFailure !== null
+        : !hasExpectedContent(bytes, row.mime_type);
+      if (bytesInvalid) {
         await admin.storage.from(BUCKET).remove([row.storage_path]);
         await admin.from("recipe_import_artifacts").update({
           state: "rejected",
           expires_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }).eq("id", row.id).eq("owner_id", user.id);
-        return errorResponse("INVALID_INPUT", "The uploaded bytes do not match the declared file type.", 422, headers);
+        return errorResponse(
+          isMedia && mediaFailure
+            ? mediaFailure.code
+            : "INVALID_INPUT",
+          isMedia && mediaFailure
+            ? mediaFailure.message
+            : "The uploaded bytes do not match the declared file type.",
+          422,
+          headers,
+        );
       }
       const availableUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000)
         .toISOString();
