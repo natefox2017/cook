@@ -600,7 +600,7 @@ private struct MediaImportModifier: ViewModifier {
         content
             .fileImporter(
                 isPresented: $showMediaPicker,
-                allowedContentTypes: [.mp3, .m4aAudio, .wav, .mpeg4Movie, .plainText]
+                allowedContentTypes: [.mp3, .mpeg4Audio, .wav, .mpeg4Movie, .plainText]
             ) { result in
                 switch result {
                 case .success(let url):
