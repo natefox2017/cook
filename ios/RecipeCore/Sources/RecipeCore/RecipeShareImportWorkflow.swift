@@ -54,6 +54,7 @@ public enum RecipeShareImportWorkflow {
         currentOwnerID: @escaping @MainActor () -> UUID?,
         currentOwnerGeneration: @escaping @MainActor () -> Int = { 0 },
         usage: (any RecipeImportUsageSettling)? = nil,
+        mediaBundle: RecipeMediaBundlePort? = nil,
         maxPollRounds: Int = 12,
         pollInterval: Duration = .seconds(5)
     ) async -> RecipeShareImportReport {
@@ -214,6 +215,7 @@ public enum RecipeShareImportWorkflow {
                                 inbox: inbox,
                                 ownerID: ownerID,
                                 usage: usage,
+                                mediaBundle: mediaBundle,
                                 currentOwner: {
                                     (ownerID: currentOwnerID(), generation: currentOwnerGeneration())
                                 }
@@ -326,6 +328,7 @@ public enum RecipeShareImportWorkflow {
         inbox: RecipeShareInbox,
         ownerID: UUID,
         usage: (any RecipeImportUsageSettling)?,
+        mediaBundle: RecipeMediaBundlePort?,
         currentOwner: @escaping @MainActor () -> (ownerID: UUID?, generation: Int)
     ) async throws {
         guard let result = response.result else {
@@ -433,9 +436,39 @@ public enum RecipeShareImportWorkflow {
         // A multi-candidate job persists only its review container here; the Detail owner settles each
         // selected candidate separately, so the single-result "primary" path never takes an aggregate charge.
         let isMultiCandidate = result.candidateRecipes?.isEmpty == false
-        if let usage, !isMultiCandidate {
-            // Commercial single-result: durable reserve -> finalize -> persist the server-authored
-            // recipe ID -> acknowledge. A quota/upgrade outcome keeps the receipt and skips the save.
+        let isMedia = inbox.mediaMimeType(for: receipt) != nil
+        if let usage, let mediaBundle, isMedia, !isMultiCandidate {
+            // Media single-result: reserve the media_import unit + the primary smart_import unit
+            // atomically, then settle the primary through the existing smart_import settle (idempotent
+            // REPLAY) and settle the media. A quota/upgrade block keeps the receipt.
+            let outcome = try await mediaBundle.reserveBundle(
+                ownerID: ownerID,
+                jobID: response.jobID,
+                candidateIDs: [RecipeImportUsageSettleAdapter.primaryCandidateID],
+                receiptID: receipt.receiptID,
+                currentOwner: currentOwner
+            )
+            switch outcome {
+            case .awaitingUpgrade:
+                return
+            case .reserved:
+                _ = try await usage.settle(
+                    ownerID: ownerID,
+                    jobID: response.jobID,
+                    receiptID: receipt.id,
+                    resultPayloadHash: response.resultPayloadHash,
+                    currentOwner: currentOwner,
+                    persist: { recipeID in
+                        recipe.id = recipeID
+                        try store.upsert(recipe)
+                    }
+                )
+                _ = try await mediaBundle.finalizeMedia(
+                    ownerID: ownerID, jobID: response.jobID, currentOwner: currentOwner)
+            }
+        } else if let usage, !isMultiCandidate {
+            // Commercial non-media single-result: durable reserve -> finalize -> persist the
+            // server-authored recipe ID -> acknowledge.
             _ = try await usage.settle(
                 ownerID: ownerID,
                 jobID: response.jobID,
