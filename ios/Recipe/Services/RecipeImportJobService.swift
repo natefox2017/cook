@@ -67,10 +67,8 @@ struct RecipeImportJobService: RecipeImportJobClient {
         ownerID: UUID
     ) async throws -> RecipeImportJobResponse {
         try await verifySession(ownerID: ownerID)
-        return try await RecipeSupabase.client.functions.invoke(
-            "recipe-imports/\(jobID.uuidString.lowercased())",
-            options: FunctionInvokeOptions(method: .get)
-        ) { data, _ in
+        let decode: @Sendable (Data, HTTPURLResponse) throws -> RecipeImportJobResponse = {
+            data, _ in
             var response = try JSONDecoder().decode(RecipeImportJobResponse.self, from: data)
             response.resultPayloadHash = try RecipeImportUsagePayload.canonicalResultHash(
                 responseBody: data
@@ -88,6 +86,11 @@ struct RecipeImportJobService: RecipeImportJobClient {
             }
             return response
         }
+        return try await RecipeSupabase.client.functions.invoke(
+            "recipe-imports/\(jobID.uuidString.lowercased())",
+            options: FunctionInvokeOptions(method: .get),
+            decode: decode
+        )
     }
 
     func retry(

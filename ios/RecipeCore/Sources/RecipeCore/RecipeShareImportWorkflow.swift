@@ -427,9 +427,12 @@ public enum RecipeShareImportWorkflow {
             clientRequestID: response.clientRequestID,
             receiptID: receipt.receiptID
         )
-        if let usage {
-            // Commercial: durable reserve -> finalize -> persist the server-authored recipe ID
-            // -> acknowledge. A quota/upgrade outcome keeps the receipt and skips the local save.
+        // A multi-candidate job persists only its review container here; the Detail owner settles each
+        // selected candidate separately, so the single-result "primary" path never takes an aggregate charge.
+        let isMultiCandidate = result.candidateRecipes?.isEmpty == false
+        if let usage, !isMultiCandidate {
+            // Commercial single-result: durable reserve -> finalize -> persist the server-authored
+            // recipe ID -> acknowledge. A quota/upgrade outcome keeps the receipt and skips the save.
             _ = try await usage.settle(
                 ownerID: ownerID,
                 jobID: response.jobID,
@@ -442,7 +445,7 @@ public enum RecipeShareImportWorkflow {
                 }
             )
         } else {
-            // freeTest: byte-equivalent, unmetered save.
+            // freeTest (any) or multi-candidate container: persist without settling.
             recipe.id = result.recipeID
             try store.upsert(recipe)
         }

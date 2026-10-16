@@ -210,7 +210,8 @@ public enum RecipeImportUsagePayload {
             case "\"":
                 return try readString()
             case "n":
-                return try readLiteral("null").map { _ in nil }
+                _ = try readLiteral("null")
+                return nil
             case "t":
                 return try readLiteral("true")
             case "f":
