@@ -138,44 +138,26 @@ struct AddRecipeView: View {
                     }
                 }
             }
-            .fileImporter(
-                isPresented: $showMediaPicker,
-                allowedContentTypes: [.mp3, .m4aAudio, .wav, .mpeg4Movie, .plainText]
-            ) { result in
-                switch result {
-                case .success(let url):
-                    pendingMediaURL = url
-                    showMediaRights = true
-                case .failure(let error):
-                    let cocoaError = error as NSError
-                    if cocoaError.domain != NSCocoaErrorDomain
-                        || cocoaError.code != NSUserCancelledError
-                    {
-                        errorMessage = error.localizedDescription
+            .modifier(
+                MediaImportModifier(
+                    showMediaPicker: $showMediaPicker,
+                    showMediaRights: $showMediaRights,
+                    pendingMediaURL: $pendingMediaURL,
+                    onImport: { url in
+                        perform("Uploading media…") {
+                            try await importMedia(url)
+                        }
+                    },
+                    onFailure: { error in
+                        let cocoaError = error as NSError
+                        if cocoaError.domain != NSCocoaErrorDomain
+                            || cocoaError.code != NSUserCancelledError
+                        {
+                            errorMessage = error.localizedDescription
+                        }
                     }
-                }
-            }
-            .confirmationDialog(
-                "Upload this media file?",
-                isPresented: $showMediaRights,
-                titleVisibility: .visible
-            ) {
-                Button("I have the rights — upload") {
-                    let url = pendingMediaURL
-                    pendingMediaURL = nil
-                    guard let url else { return }
-                    perform("Uploading media…") {
-                        try await importMedia(url)
-                    }
-                }
-                Button("Cancel", role: .cancel) {
-                    pendingMediaURL = nil
-                }
-            } message: {
-                Text(
-                    "Recipe Pals will upload this file to extract recipe details. You must have the right to process this content."
                 )
-            }
+            )
             .confirmationDialog("Scan documents", isPresented: $showDocumentBatchMenu) {
                 Button("Choose screenshots") {
                     documentBatchPhotos = []
@@ -601,6 +583,52 @@ struct AddRecipeView: View {
                         locale: RecipeLanguage.active))
             }
         }
+    }
+}
+
+/// Applies the finite-media file importer and the one-time rights confirmation as a
+/// single modifier, keeping the AddRecipeView body small enough for the type checker
+/// without changing behavior.
+private struct MediaImportModifier: ViewModifier {
+    @Binding var showMediaPicker: Bool
+    @Binding var showMediaRights: Bool
+    @Binding var pendingMediaURL: URL?
+    let onImport: (URL) -> Void
+    let onFailure: (Error) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .fileImporter(
+                isPresented: $showMediaPicker,
+                allowedContentTypes: [.mp3, .m4aAudio, .wav, .mpeg4Movie, .plainText]
+            ) { result in
+                switch result {
+                case .success(let url):
+                    pendingMediaURL = url
+                    showMediaRights = true
+                case .failure(let error):
+                    onFailure(error)
+                }
+            }
+            .confirmationDialog(
+                "Upload this media file?",
+                isPresented: $showMediaRights,
+                titleVisibility: .visible
+            ) {
+                Button("I have the rights — upload") {
+                    let url = pendingMediaURL
+                    pendingMediaURL = nil
+                    guard let url else { return }
+                    onImport(url)
+                }
+                Button("Cancel", role: .cancel) {
+                    pendingMediaURL = nil
+                }
+            } message: {
+                Text(
+                    "Recipe Pals will upload this file to extract recipe details. You must have the right to process this content."
+                )
+            }
     }
 }
 
