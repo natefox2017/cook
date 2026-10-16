@@ -51,6 +51,11 @@ public struct RecipeMediaBundleReserveResponse: Decodable, Hashable, Sendable {
 public struct RecipeMediaSaveAPIError: Decodable, Hashable, Sendable, Error {
     public let code: String
     public let message: String
+
+    public init(code: String, message: String) {
+        self.code = code
+        self.message = message
+    }
 }
 
 /// Response of `POST /recipe-media-save/finalize` and `/release`; the `code` is authoritative (the HTTP
