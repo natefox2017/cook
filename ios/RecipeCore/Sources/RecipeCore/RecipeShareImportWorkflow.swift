@@ -425,7 +425,9 @@ public enum RecipeShareImportWorkflow {
             jobID: response.jobID,
             result: result,
             clientRequestID: response.clientRequestID,
-            receiptID: receipt.receiptID
+            receiptID: receipt.receiptID,
+            mediaMimeType: RecipeShareInbox.isMediaMimeType(receipt.payload.mimeType)
+                ? receipt.payload.mimeType : nil
         )
         // A multi-candidate job persists only its review container here; the Detail owner settles each
         // selected candidate separately, so the single-result "primary" path never takes an aggregate charge.

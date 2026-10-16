@@ -167,6 +167,13 @@ public struct RecipeShareInbox: Sendable {
         )
     }
 
+    /// Whether a MIME type is a DEV-78 media attachment (audio/video) that routes through the media
+    /// bundle save instead of the normal import settle. Returns false for a nil or non-media MIME.
+    public static func isMediaMimeType(_ mimeType: String?) -> Bool {
+        guard let mimeType else { return false }
+        return DataSourceType.isMedia(mimeType)
+    }
+
     /// Stores a bounded image or document attachment in immutable App Group storage.
     @discardableResult
     public func receiveFile(
@@ -588,6 +595,10 @@ private enum DataSourceType {
         case .url, .text:
             false
         }
+    }
+
+    static func isMedia(_ mimeType: String) -> Bool {
+        mediaTypes.contains(mimeType)
     }
 
     /// Media attachments allow the 20 MiB artifact cap; every other supported type keeps the existing
