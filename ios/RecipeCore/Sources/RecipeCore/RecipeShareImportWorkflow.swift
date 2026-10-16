@@ -424,7 +424,8 @@ public enum RecipeShareImportWorkflow {
         recipe.importRecord = RecipeImportRecord(
             jobID: response.jobID,
             result: result,
-            clientRequestID: response.clientRequestID
+            clientRequestID: response.clientRequestID,
+            receiptID: receipt.receiptID
         )
         if let usage {
             // Commercial: durable reserve -> finalize -> persist the server-authored recipe ID
@@ -588,7 +589,8 @@ public enum RecipeShareImportWorkflow {
             jobID: old.jobID,
             result: mergedResult,
             reviewedAt: old.reviewedAt,
-            clientRequestID: old.clientRequestID
+            clientRequestID: old.clientRequestID,
+            receiptID: old.receiptID
         )
         try store.upsert(updated)
     }
