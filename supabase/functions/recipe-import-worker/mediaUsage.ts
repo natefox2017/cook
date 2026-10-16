@@ -2,7 +2,8 @@
 // Purpose: DEV-78 media-import metering at the user-selected save callsite. One
 //          bounded adapter atomically reserves the media_import quota plus one
 //          smart_import unit per selected candidate in a single transaction via
-//          the additive bundle RPC, then settles/releases per capability.
+//          the additive bundle RPC, using the frozen DEV-430 stable operation id,
+//          then settles/releases per capability.
 
 import {
   computeInternalInputHash,
@@ -38,10 +39,24 @@ export interface SmartImportSource {
   turn_request_id: null;
 }
 
-export interface MediaBundleCandidate {
+interface MediaBundleCandidate {
   candidate_id: string;
+  operation_id: string;
   input_hash: string;
   source: SmartImportSource;
+}
+
+export interface ReservationRef {
+  candidate_id?: string;
+  operation_id: string;
+  owner_id: string;
+  capability: string;
+  period_start: string | null;
+  policy_version: number;
+  tier_at_reserve: string;
+  reserved_units: number;
+  status: string;
+  reserved_until: string;
 }
 
 export type MediaBundleBlockedCode =
@@ -55,11 +70,35 @@ export type ReserveMediaBundleResult =
   | {
       code: "RESERVED" | "REPLAY";
       operationId: string;
-      reservedCandidates: number;
+      media: ReservationRef;
+      candidates: ReservationRef[];
     }
   | { code: MediaBundleBlockedCode | "MEDIA_BUNDLE_BLOCKED"; message: string };
 
-function blockedCode(message: string): MediaBundleBlockedCode | "MEDIA_BUNDLE_BLOCKED" {
+/**
+ * Frozen DEV-430 stable operation id: SHA-256 of `lowercase owner:job:candidate`,
+ * first 16 bytes formatted as a UUID. Deterministic across retries so a replay
+ * derives the same operation id and the existing reserve returns REPLAY.
+ */
+async function stableCandidateOperationID(
+  ownerID: string,
+  jobID: string,
+  candidateID: string,
+): Promise<string> {
+  const input = `${ownerID.toLowerCase()}:${jobID.toLowerCase()}:${candidateID}`;
+  const digest = new Uint8Array(
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input)),
+  );
+  const hex = Array.from(
+    digest.slice(0, 16),
+    (byte) => byte.toString(16).padStart(2, "0"),
+  ).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+function blockedCode(
+  message: string,
+): MediaBundleBlockedCode | "MEDIA_BUNDLE_BLOCKED" {
   const match = /MEDIA_BUNDLE_BLOCKED:(\w+)/.exec(message);
   if (!match) return "MEDIA_BUNDLE_BLOCKED";
   const code = match[1];
@@ -84,11 +123,34 @@ function isBlockedCode(value: string): value is MediaBundleBlockedCode {
   );
 }
 
+function asReservation(value: unknown): ReservationRef {
+  const row: Record<string, unknown> = value !== null &&
+    typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+  const candidateID = typeof row.candidate_id === "string"
+    ? row.candidate_id
+    : undefined;
+  return {
+    ...(candidateID === undefined ? {} : { candidate_id: candidateID }),
+    operation_id: typeof row.operation_id === "string" ? row.operation_id : "",
+    owner_id: typeof row.owner_id === "string" ? row.owner_id : "",
+    capability: typeof row.capability === "string" ? row.capability : "",
+    period_start: typeof row.period_start === "string" ? row.period_start : null,
+    policy_version: typeof row.policy_version === "number" ? row.policy_version : 0,
+    tier_at_reserve: typeof row.tier_at_reserve === "string" ? row.tier_at_reserve : "",
+    reserved_units: typeof row.reserved_units === "number" ? row.reserved_units : 0,
+    status: typeof row.status === "string" ? row.status : "",
+    reserved_until: typeof row.reserved_until === "string" ? row.reserved_until : "",
+  };
+}
+
 /**
  * Atomically reserve the media_import unit plus one smart_import unit per
- * selected candidate under one media import operation. The bundle RPC raises
- * on any block, so the whole transaction rolls back and no partial reservation
- * survives. Stable child operation ids are derived server-side (md5).
+ * selected candidate under one media import operation. The bundle RPC raises on
+ * any block, so the whole transaction rolls back and no partial reservation
+ * survives. Stable candidate operation ids follow the frozen DEV-430
+ * stableOperationID (SHA-256), never md5.
  */
 export async function reserveMediaBundle(
   rpc: InternalUsageRPC,
@@ -107,12 +169,15 @@ export async function reserveMediaBundle(
       session_id: null,
       turn_request_id: null,
     };
-    const inputHash = await canonicalHash({
-      capability: "smart_import",
-      source,
-    });
+    const inputHash = await canonicalHash({ capability: "smart_import", source });
+    const operationID = await stableCandidateOperationID(
+      ownerID,
+      jobID,
+      candidateID,
+    );
     candidates.push({
       candidate_id: candidateID,
+      operation_id: operationID,
       input_hash: inputHash,
       source,
     });
@@ -134,10 +199,12 @@ export async function reserveMediaBundle(
 
   const code = raw.code;
   if (code === "RESERVED" || code === "REPLAY") {
+    const candidateRows = Array.isArray(raw.candidates) ? raw.candidates : [];
     return {
       code,
       operationId: String(raw.operation_id ?? jobID),
-      reservedCandidates: Number(raw.reserved_candidates ?? candidateIDs.length),
+      media: asReservation(raw.media),
+      candidates: candidateRows.map(asReservation),
     };
   }
   const fallback = String(code ?? "INVALID_INPUT");
