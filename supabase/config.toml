@@ -79,3 +79,8 @@ verify_jwt = true
 # DEV-443: private recipe document batch scanning always requires a verified owner JWT.
 [functions.recipe-document-batch]
 verify_jwt = true
+
+# DEV-78: media-import save callsite; only a verified owner may reserve/settle the
+# premium media bundle. Metering is closed by default (freeTest) inside the handler.
+[functions.recipe-media-save]
+verify_jwt = true
