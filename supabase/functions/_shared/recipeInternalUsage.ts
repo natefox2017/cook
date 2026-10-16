@@ -229,3 +229,19 @@ export async function releaseInternal(
     }),
   );
 }
+
+/** Release a dispatched reservation whose outcome the caller has definitively determined is failed
+ *  and non-recoverable (bypasses the unknown-outcome fence deliberately). Used only when the provider
+ *  was invoked and returned a known-invalid result, never for ambiguous transport failures. */
+export async function releaseFailedInternal(
+  rpc: InternalUsageRPC,
+  ownerID: string,
+  operationID: string,
+): Promise<InternalUsageResult> {
+  return rpcRow(
+    await rpc("recipe_usage_release_failed", {
+      p_owner_id: ownerID,
+      p_operation_id: operationID,
+    }),
+  );
+}

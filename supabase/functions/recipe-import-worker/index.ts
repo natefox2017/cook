@@ -27,6 +27,19 @@ import {
   parsePlainTextArtifact,
   type PrivateArtifactRow,
 } from "./artifactText.ts";
+import {
+  attachOwnerUploadedMediaEvidence,
+  isWebVTTText,
+  MediaError,
+  webVTTDurationSeconds,
+} from "./mediaAdapter.ts";
+import {
+  createLedgerRPC,
+  mediaQuotaBlock,
+  releaseMediaImport,
+  reserveMediaImport,
+  settleMediaImport,
+} from "./mediaUsage.ts";
 
 interface QueueMessage {
   msg_id: number;
@@ -89,6 +102,12 @@ Deno.serve(async (request: Request): Promise<Response> => {
   const admin = createClient(url, serviceRole, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  const usageRpc = createLedgerRPC((name, args) => admin.rpc(name, args));
+  // Media metering is closed by default: the freeTest release has no payment
+  // gate (DEV-422). Only the explicit commercial stage reserves/settles the
+  // premium media_import unit; any other value keeps the route free.
+  const commercialStage =
+    Deno.env.get("RECIPE_COMMERCIAL_STAGE") === "commercial";
   const { data: messages, error: readError } = await admin.rpc(
     "recipe_import_v1_queue_read",
     { p_vt: 120, p_qty: 5 },
@@ -181,6 +200,10 @@ Deno.serve(async (request: Request): Promise<Response> => {
           platformHint: claimed.platform_hint,
         });
       let completionError: Record<string, unknown> | null = null;
+      let mediaSettlement:
+        | { kind: "finalize"; payload: Record<string, unknown> }
+        | { kind: "release" }
+        | null = null;
       if (claimed.input_type === "url") {
         let page: SafeHTMLPage | null = null;
         try {
@@ -278,22 +301,78 @@ Deno.serve(async (request: Request): Promise<Response> => {
               file,
               artifact!.size_bytes,
             );
-            result = parsePlainTextArtifact({
-              id: claimed.id,
-              text,
-              artifactID: artifact!.id,
-              platformHint: claimed.platform_hint,
-              originalSourceURL: claimed.original_source_url,
-            });
+            if (isWebVTTText(text)) {
+              // Authorized owner-uploaded WebVTT subtitles (DEV-78). Only the
+              // explicit commercial stage reserves/settles the premium
+              // media_import unit; the freeTest default parses freely with no
+              // metering and no success quota.
+              if (commercialStage) {
+                const reserve = await reserveMediaImport(
+                  usageRpc,
+                  claimed.owner_id,
+                  claimed.id,
+                );
+                const block = mediaQuotaBlock(reserve);
+                if (block) {
+                  completionError = {
+                    ...block,
+                    recoverable: false,
+                    suggested_action:
+                      "Keep the original source and add the recipe details manually.",
+                    request_id: crypto.randomUUID(),
+                  };
+                } else {
+                  mediaSettlement = { kind: "release" };
+                  result = attachOwnerUploadedMediaEvidence(result, {
+                    text,
+                    authorizationReference: "artifact-" + artifact!.id,
+                  });
+                  mediaSettlement = {
+                    kind: "finalize",
+                    payload: {
+                      media_task_id: claimed.id,
+                      artifact_id: artifact!.id,
+                      media_kind: "subtitle",
+                      source_duration_seconds: webVTTDurationSeconds(text),
+                    },
+                  };
+                }
+              } else {
+                result = attachOwnerUploadedMediaEvidence(result, {
+                  text,
+                  authorizationReference: "artifact-" + artifact!.id,
+                });
+              }
+            } else {
+              result = parsePlainTextArtifact({
+                id: claimed.id,
+                text,
+                artifactID: artifact!.id,
+                platformHint: claimed.platform_hint,
+                originalSourceURL: claimed.original_source_url,
+              });
+            }
           } catch (error) {
-            if (!(error instanceof ArtifactTextError)) throw error;
-            completionError = {
-              code: error.code,
-              message: error.message,
-              recoverable: false,
-              suggested_action: "Edit the saved source as text or share a valid UTF-8 text file.",
-              request_id: crypto.randomUUID(),
-            };
+            if (error instanceof MediaError) {
+              completionError = {
+                code: error.code,
+                message: error.message,
+                recoverable: error.recoverable,
+                suggested_action:
+                  "Keep the original source and add the recipe details manually, or share a valid UTF-8 text or WebVTT file.",
+                request_id: crypto.randomUUID(),
+              };
+            } else if (error instanceof ArtifactTextError) {
+              completionError = {
+                code: error.code,
+                message: error.message,
+                recoverable: false,
+                suggested_action: "Edit the saved source as text or share a valid UTF-8 text file.",
+                request_id: crypto.randomUUID(),
+              };
+            } else {
+              throw error;
+            }
           }
         } else if (
           claimed.input_type === "image" ||
@@ -362,6 +441,27 @@ Deno.serve(async (request: Request): Promise<Response> => {
         .maybeSingle();
       if (saveError || !saved) {
         throw saveError ?? new Error("Import state changed before save");
+      }
+
+      // Settle the media_import reservation only after the job row is durable.
+      // A failed finalize under-counts (the reservation expires) and never
+      // orphans a media_task without a persisted job or valid payload.
+      if (mediaSettlement?.kind === "finalize") {
+        try {
+          await settleMediaImport(
+            usageRpc,
+            claimed.owner_id,
+            claimed.id,
+            mediaSettlement.payload,
+          );
+        } catch (error) {
+          console.error("recipe_worker_media_finalize_failed", {
+            msg_id: queueID,
+            message: error instanceof Error ? error.message : "unknown",
+          });
+        }
+      } else if (mediaSettlement?.kind === "release") {
+        await releaseMediaImport(usageRpc, claimed.owner_id, claimed.id);
       }
 
       // Queue ACK is LAST. A worker crash before this line will replay a

@@ -286,6 +286,9 @@ public struct RecipeTranslationProposal: Codable, Equatable, Sendable {
         variant.isFavorite = false
         // A translation is a distinct private recipe, not another import-job result.
         variant.importRecord = nil
+        // Persist the lineage on the variant itself so a saved recipe can recover its
+        // private source, target locale, and explicit translation provenance.
+        variant.translationProvenance = provenance(generatedAt: savedAt)
         return variant
     }
 

@@ -7,10 +7,14 @@ import Foundation
 public struct RecipeTranslationRequest: Equatable, Sendable {
     public let recipe: Recipe
     public let target: RecipeTranslationTarget
+    /// Client-stable idempotency key. The caller generates one per translation attempt and reuses
+    /// it verbatim across retries of that attempt; a fresh attempt gets a fresh UUID.
+    public let proposalID: UUID
 
-    public init(recipe: Recipe, target: RecipeTranslationTarget) {
+    public init(recipe: Recipe, target: RecipeTranslationTarget, proposalID: UUID = UUID()) {
         self.recipe = recipe
         self.target = target
+        self.proposalID = proposalID
     }
 }
 
@@ -72,7 +76,9 @@ public struct RecipeTranslationService: Sendable {
         let variant = try proposal.approvedVariant(from: original)
         return RecipeTranslationApproval(
             variant: variant,
-            provenance: proposal.provenance()
+            // The variant already carries the durable lineage; keep the standalone record
+            // identical so callers never observe two provenance timestamps.
+            provenance: variant.translationProvenance ?? proposal.provenance()
         )
     }
 

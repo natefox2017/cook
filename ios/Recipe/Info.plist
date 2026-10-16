@@ -49,6 +49,12 @@
     <string>https://semsjyrqjnumpvanibip.supabase.co</string>
     <key>RecipeSupabasePublishableKey</key>
     <string>sb_publishable_yhwoE_GwRNtohok44YUwKQ_hi_1uhCO</string>
+    <key>RecipeQASupabaseURL</key>
+    <string>$(RECIPE_QA_SUPABASE_URL)</string>
+    <key>RecipeQASupabasePublishableKey</key>
+    <string>$(RECIPE_QA_SUPABASE_PUBLISHABLE_KEY)</string>
+    <key>RecipeAppGroupID</key>
+    <string>$(RECIPE_APP_GROUP_ID)</string>
     <key>RecipeShareManagementEndpointURL</key>
     <string></string>
     <key>RecipeSubscriptionProductIDs</key>

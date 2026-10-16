@@ -371,10 +371,11 @@ enum RecipeUITestNamespace {
 @MainActor
 struct RecipeApp: App {
     @State private var store: RecipeStore
+    @State private var templateStore: RecipeMealPlanTemplateStore
+    @State private var commerce: RecipeCommerceComposition
     @State private var subscriptions = SubscriptionStore()
     @AppStorage(RecipeLanguage.preferenceKey) private var languageOverride = ""
     @State private var cloudSync: CloudSyncCoordinator
-    @State private var templateStore: RecipeMealPlanTemplateStore
     private let isUITesting: Bool
     private let bypassOnboarding: Bool
 
@@ -491,8 +492,8 @@ struct RecipeApp: App {
 
         _store = State(initialValue: localStore)
         _templateStore = State(
-            initialValue: Self.makeTemplateStore(isUITesting: isUITesting)
-        )
+            initialValue: Self.makeTemplateStore(isUITesting: isUITesting))
+        _commerce = State(initialValue: RecipeCommerceComposition())
     }
 
     private static func makeTemplateStore(isUITesting: Bool) -> RecipeMealPlanTemplateStore {
@@ -518,9 +519,12 @@ struct RecipeApp: App {
         WindowGroup {
             RecipeRootView(isUITesting: isUITesting, bypassOnboarding: bypassOnboarding)
                 .environment(store)
+                .environment(templateStore)
+                .environment(commerce)
+                .environment(commerce.accessStore)
+                .environment(commerce.upgradeRouter)
                 .environment(subscriptions)
                 .environment(cloudSync)
-                .environment(templateStore)
                 .onOpenURL { url in
                     RecipeAuthService.shared.handleAuthCallback(url)
                 }
@@ -616,6 +620,7 @@ private struct RecipeRootTabSwipe: ViewModifier {
 
 private struct RecipeRootView: View {
     @State private var auth = RecipeAuthService.shared
+    @Environment(RecipeCommerceComposition.self) private var commerce
     @Environment(RecipeStore.self) private var store
     @Environment(CloudSyncCoordinator.self) private var cloudSync
     @Environment(SubscriptionStore.self) private var subscriptions
@@ -768,12 +773,29 @@ private struct RecipeRootView: View {
             subscriptions.purchaseAccountBridge.ownerDidChange(
                 to: Self.verifiedOwnerID(in: auth.state)
             )
+            // Bind the unified commercial services and resume any pending import reservation.
+            let ownerID = Self.verifiedOwnerID(in: auth.state)
+            commerce.ownerDidChange(to: ownerID)
+            shareInbox.usage = commerce.importSettlePort
+            if let ownerID {
+                await commerce.recoverPendingImportUsage(ownerID: ownerID)
+            }
         }
         .onChange(of: auth.state) { _, state in
             // Re-bind the purchase identity bridge across sign-in, sign-out, and account switch.
             subscriptions.purchaseAccountBridge.ownerDidChange(
                 to: Self.verifiedOwnerID(in: state)
             )
+            // Re-bind the unified commercial services to the new owner and resume any pending
+            // import reservation left by the previous session.
+            let ownerID = Self.verifiedOwnerID(in: state)
+            commerce.ownerDidChange(to: ownerID)
+            shareInbox.usage = commerce.importSettlePort
+            if let ownerID, !isUITesting {
+                Task {
+                    await commerce.recoverPendingImportUsage(ownerID: ownerID)
+                }
+            }
             // An ACK from the previous account must not hide a receipt from
             // the newly signed-in account after an authentication transition.
             if !isUITesting {
