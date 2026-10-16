@@ -103,6 +103,11 @@ Deno.serve(async (request: Request): Promise<Response> => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const usageRpc = createLedgerRPC((name, args) => admin.rpc(name, args));
+  // Media metering is closed by default: the freeTest release has no payment
+  // gate (DEV-422). Only the explicit commercial stage reserves/settles the
+  // premium media_import unit; any other value keeps the route free.
+  const commercialStage =
+    Deno.env.get("RECIPE_COMMERCIAL_STAGE") === "commercial";
   const { data: messages, error: readError } = await admin.rpc(
     "recipe_import_v1_queue_read",
     { p_vt: 120, p_qty: 5 },
@@ -297,38 +302,46 @@ Deno.serve(async (request: Request): Promise<Response> => {
               artifact!.size_bytes,
             );
             if (isWebVTTText(text)) {
-              // Authorized owner-uploaded WebVTT subtitles (DEV-78). Reserve the
-              // premium media_import unit against the persisted owned job, parse
-              // offline, then settle or release after the durable save below.
-              const reserve = await reserveMediaImport(
-                usageRpc,
-                claimed.owner_id,
-                claimed.id,
-              );
-              const block = mediaQuotaBlock(reserve);
-              if (block) {
-                completionError = {
-                  ...block,
-                  recoverable: false,
-                  suggested_action:
-                    "Keep the original source and add the recipe details manually.",
-                  request_id: crypto.randomUUID(),
-                };
+              // Authorized owner-uploaded WebVTT subtitles (DEV-78). Only the
+              // explicit commercial stage reserves/settles the premium
+              // media_import unit; the freeTest default parses freely with no
+              // metering and no success quota.
+              if (commercialStage) {
+                const reserve = await reserveMediaImport(
+                  usageRpc,
+                  claimed.owner_id,
+                  claimed.id,
+                );
+                const block = mediaQuotaBlock(reserve);
+                if (block) {
+                  completionError = {
+                    ...block,
+                    recoverable: false,
+                    suggested_action:
+                      "Keep the original source and add the recipe details manually.",
+                    request_id: crypto.randomUUID(),
+                  };
+                } else {
+                  mediaSettlement = { kind: "release" };
+                  result = attachOwnerUploadedMediaEvidence(result, {
+                    text,
+                    authorizationReference: "artifact-" + artifact!.id,
+                  });
+                  mediaSettlement = {
+                    kind: "finalize",
+                    payload: {
+                      media_task_id: claimed.id,
+                      artifact_id: artifact!.id,
+                      media_kind: "subtitle",
+                      source_duration_seconds: webVTTDurationSeconds(text),
+                    },
+                  };
+                }
               } else {
-                mediaSettlement = { kind: "release" };
                 result = attachOwnerUploadedMediaEvidence(result, {
                   text,
                   authorizationReference: "artifact-" + artifact!.id,
                 });
-                mediaSettlement = {
-                  kind: "finalize",
-                  payload: {
-                    media_task_id: claimed.id,
-                    artifact_id: artifact!.id,
-                    media_kind: "subtitle",
-                    source_duration_seconds: webVTTDurationSeconds(text),
-                  },
-                };
               }
             } else {
               result = parsePlainTextArtifact({
