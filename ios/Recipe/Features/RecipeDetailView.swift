@@ -2017,16 +2017,20 @@ private struct RecipeCandidateSelectionView: View {
             return
         }
 
-        // Free first release, signed-out owner, or unavailable bridge keep the
-        // existing unmetered save byte-equivalent. Commercial settle requires a bound
-        // owner plus a live bridge; otherwise the source receipt and selection stay put.
-        let startContext = commerce.importUsageContext
-        guard RecipeMonetization.isEnabled,
-            let importUsage = commerce.importUsage,
-            let ownerID = startContext.ownerID
-        else {
+        // Free first release keeps the existing unmetered save byte-equivalent.
+        guard RecipeMonetization.isEnabled else {
             try saveUnmetered(sourceRecord: sourceRecord, chosen: chosen)
             return
+        }
+        // Commercial settle requires a live bridge and a bound owner. A missing
+        // bridge/owner must fail closed (no save, no ACK) so quota can never be
+        // bypassed by silently falling back to the unmetered write.
+        let startContext = commerce.importUsageContext
+        guard let importUsage = commerce.importUsage else {
+            throw RecipeImportCandidateSaveError.bridgeUnavailable
+        }
+        guard let ownerID = startContext.ownerID else {
+            throw RecipeImportCandidateSaveError.signedOut
         }
         // The authoritative share receipt identity must be durable for the bridge to
         // associate each reservation with the same source. A legacy record without it
@@ -2241,6 +2245,8 @@ private struct RecipeCandidateSelectionView: View {
 private enum RecipeImportCandidateSaveError: LocalizedError {
     case missingReceipt
     case ownerChanged
+    case bridgeUnavailable
+    case signedOut
     case missingPayloadHash
     case payloadHashMismatch
     case upgradeRequired
@@ -2252,6 +2258,10 @@ private enum RecipeImportCandidateSaveError: LocalizedError {
             return RecipeLanguage.localized("This source cannot be settled. Try sharing it again.")
         case .ownerChanged:
             return RecipeLanguage.localized("The signed-in account changed. Your selection was kept.")
+        case .bridgeUnavailable:
+            return RecipeLanguage.localized("The import quota service is unavailable. Your selection was kept.")
+        case .signedOut:
+            return RecipeLanguage.localized("Sign in to save these recipes. Your selection was kept.")
         case .missingPayloadHash:
             return RecipeLanguage.localized("The selected recipe is incomplete. Choose another source.")
         case .payloadHashMismatch:
