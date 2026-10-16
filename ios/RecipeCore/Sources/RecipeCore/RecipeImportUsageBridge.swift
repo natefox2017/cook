@@ -160,6 +160,10 @@ public struct RecipeImportUsageBridge: Sendable {
                 } catch {
                     failed[operation.operationID] = .transport(error.localizedDescription)
                 }
+            case .finalizeReady:
+                // Only a media_import unit reaches this state, and those always carry a
+                // mediaBundleJobID so they are skipped above and settled by RecipeMediaBundlePort.
+                break
             }
         }
 
