@@ -25,11 +25,6 @@ final class RecipeCommerceComposition {
     /// `mediaBundlePort` accessor is the only integration point.
     private let mediaSave: RecipeMediaSaveService
 
-    /// Thin bundle port the Detail owner's saveSelected consumes. It reserves the media bundle
-    /// atomically, then finalizes/releases only the media_import unit; per-candidate smart_import
-    /// finalize/ACK stays the existing DEV-430 recipe-usage flow.
-    private let mediaBundle: RecipeMediaBundlePort
-
     /// The owner the composition is currently bound to. Mirrors the access store binding so the
     /// settle port can gate on a matched owner without reaching into `RecipeAccessStore` internals.
     @ObservationIgnored private var boundOwnerID: String?
@@ -61,7 +56,6 @@ final class RecipeCommerceComposition {
 
         let mediaSave = RecipeMediaSaveService()
         self.mediaSave = mediaSave
-        self.mediaBundle = RecipeMediaBundlePort(client: mediaSave)
 
         let usageClient = RecipeImportUsageService()
         if let store = try? RecipeImportUsageStore.default() {
@@ -113,14 +107,15 @@ final class RecipeCommerceComposition {
     }
 
     /// The DEV-78 media bundle port for the Detail owner's saveSelected. `nil` in freeTest and when
-    /// no verified owner is bound (fail-closed); only a commercial stage with a bound owner exposes
-    /// the media reserve/finalize/release port. The port re-verifies the bound owner/generation via
-    /// the `importUsageContext` fence on every call.
+    /// no verified owner is bound or the per-owner usage store is unavailable (fail-closed); only a
+    /// commercial stage with a bound owner exposes the media reserve/finalize/release port. The port
+    /// reuses the existing import usage store and re-verifies the bound owner/generation via the
+    /// `importUsageContext` fence on every call.
     var mediaBundlePort: RecipeMediaBundlePort? {
-        guard RecipeMonetization.isEnabled, boundOwnerID != nil else {
+        guard RecipeMonetization.isEnabled, boundOwnerID != nil, let importUsage else {
             return nil
         }
-        return mediaBundle
+        return RecipeMediaBundlePort(client: mediaSave, store: importUsage.store)
     }
 
     /// Minimal PDF export capability entry for DEV-440's Profile. Returns `true` when the export

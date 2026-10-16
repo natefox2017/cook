@@ -16,6 +16,11 @@ final class RecipeShareInboxCoordinator {
     /// unmetered; DEV-432's commerce composition injects the enabled port before synchronize.
     var usage: (any RecipeImportUsageSettling)? = nil
 
+    /// Optional DEV-78 media bundle port for the single-primary media import path. `nil` keeps the
+    /// freeTest media save unmetered; the commerce composition injects the enabled port before
+    /// synchronize (same lifecycle as `usage`).
+    var mediaBundle: RecipeMediaBundlePort? = nil
+
     func refresh() {
         do {
             let inbox = try RecipeShareInbox.shared()
@@ -55,7 +60,8 @@ final class RecipeShareInboxCoordinator {
                 ownerID: ownerID,
                 currentOwnerID: { self.currentOwnerID },
                 currentOwnerGeneration: { self.currentOwnerGeneration },
-                usage: usage
+                usage: usage,
+                mediaBundle: mediaBundle
             )
             jobStatuses = report.jobStatuses
             refresh()

@@ -777,6 +777,7 @@ private struct RecipeRootView: View {
             let ownerID = Self.verifiedOwnerID(in: auth.state)
             commerce.ownerDidChange(to: ownerID)
             shareInbox.usage = commerce.importSettlePort
+            shareInbox.mediaBundle = commerce.mediaBundlePort
             if let ownerID {
                 await commerce.recoverPendingImportUsage(ownerID: ownerID)
             }
@@ -791,6 +792,7 @@ private struct RecipeRootView: View {
             let ownerID = Self.verifiedOwnerID(in: state)
             commerce.ownerDidChange(to: ownerID)
             shareInbox.usage = commerce.importSettlePort
+            shareInbox.mediaBundle = commerce.mediaBundlePort
             if let ownerID, !isUITesting {
                 Task {
                     await commerce.recoverPendingImportUsage(ownerID: ownerID)
