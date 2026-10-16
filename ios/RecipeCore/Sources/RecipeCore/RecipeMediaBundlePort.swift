@@ -14,6 +14,26 @@ public enum RecipeMediaBundleReserveOutcome: Sendable {
     case awaitingUpgrade
 }
 
+@MainActor
+public struct RecipeMediaBundleRecoveryReport: Sendable {
+    /// Candidate operations replayed to `.reserved` (ready to finalize through the DEV-430 bridge).
+    public let recovered: [RecipeImportUsageOperation]
+    /// Candidate operations still blocked by a 402/409 outcome.
+    public let stillAwaitingUpgrade: [RecipeImportUsageOperation]
+    /// Bundle job IDs whose atomic replay failed, keyed by job ID.
+    public let failed: [UUID: RecipeMediaSaveAPIError]
+
+    public init(
+        recovered: [RecipeImportUsageOperation],
+        stillAwaitingUpgrade: [RecipeImportUsageOperation],
+        failed: [UUID: RecipeMediaSaveAPIError]
+    ) {
+        self.recovered = recovered
+        self.stillAwaitingUpgrade = stillAwaitingUpgrade
+        self.failed = failed
+    }
+}
+
 /// Thin bundle port the View/integration consumes. `reserveBundle` persists each child's stable
 /// `.reserving` intent in the existing operation store before the bundle RPC, maps the `.reserved`
 /// responses back onto those operations, and returns them so the View never raw-client reserves or
@@ -47,8 +67,20 @@ public struct RecipeMediaBundlePort {
         }
         let startGeneration = start.generation
 
-        // Durable intent must exist before the network call so a crash/replay derives the same
-        // operation IDs and the existing store can recover each child.
+        // Durable intents (the media_import unit plus each child) must exist before the network call so
+        // a crash/replay derives the same stable operation IDs and recovery can reach every member.
+        let mediaOperation = RecipeImportUsageOperation(
+            operationID: jobID,
+            ownerID: ownerID,
+            jobID: jobID,
+            candidateID: "",
+            receiptID: receiptID,
+            state: .reserving,
+            mediaBundleJobID: jobID,
+            capability: .mediaImport
+        )
+        try store.save(mediaOperation)
+
         var pending: [RecipeImportUsageOperation] = []
         for candidateID in candidateIDs {
             let operation = RecipeImportUsageOperation(
@@ -58,7 +90,8 @@ public struct RecipeMediaBundlePort {
                 jobID: jobID,
                 candidateID: candidateID,
                 receiptID: receiptID,
-                state: .reserving
+                state: .reserving,
+                mediaBundleJobID: jobID
             )
             try store.save(operation)
             pending.append(operation)
@@ -68,6 +101,9 @@ public struct RecipeMediaBundlePort {
             let response = try await client.reserveMediaBundle(
                 ownerID: ownerID, jobID: jobID, candidateIDs: candidateIDs)
             try requireOwner(ownerID, generation: startGeneration, currentOwner: currentOwner)
+
+            try store.save(
+                mediaOperation.marking(state: .reserved, reservedUntil: response.media.reservedUntil))
 
             var reserved: [RecipeImportUsageOperation] = []
             for candidate in response.candidates {
@@ -80,7 +116,8 @@ public struct RecipeMediaBundlePort {
                     candidateID: candidateID,
                     receiptID: receiptID,
                     state: .reserved,
-                    reservedUntil: candidate.reservedUntil
+                    reservedUntil: candidate.reservedUntil,
+                    mediaBundleJobID: jobID
                 )
                 try store.save(operation)
                 reserved.append(operation)
@@ -89,6 +126,7 @@ public struct RecipeMediaBundlePort {
         } catch let error as RecipeMediaSaveAPIError
             where error.code == "UPGRADE_REQUIRED" || error.code == "QUOTA_EXCEEDED"
         {
+            try store.save(mediaOperation.marking(state: .awaitingUpgrade))
             for operation in pending {
                 try store.save(operation.marking(state: .awaitingUpgrade))
             }
@@ -114,12 +152,91 @@ public struct RecipeMediaBundlePort {
         try requireOwner(ownerID, generation: startGeneration, currentOwner: currentOwner)
         let response = try await client.finalizeMedia(ownerID: ownerID, jobID: jobID)
         try requireOwner(ownerID, generation: startGeneration, currentOwner: currentOwner)
+        if response.code == "FINALIZED",
+            let media = try store.operations(for: ownerID).first(where: {
+                $0.isMediaImport && $0.jobID == jobID
+            })
+        {
+            try store.save(media.marking(state: .finalized))
+        }
         return response
     }
 
     /// Best-effort release of a reserved media_import unit that will not be settled.
     public func releaseMedia(ownerID: UUID, jobID: UUID) async throws -> RecipeMediaActionResponse {
         try await client.releaseMedia(ownerID: ownerID, jobID: jobID)
+    }
+
+    /// Replays pending media bundles atomically, never per-item, and re-drives the media finalize for a
+    /// bundle whose candidates were already acknowledged: it groups the shared-store operations by
+    /// their bundle job, re-reserves each pending bundle (idempotent REPLAY), and finalizes a reserved
+    /// media unit whose settle response was unknown (idempotent by job ID). Candidates returned in
+    /// `recovered` are ready to finalize through the DEV-430 bridge.
+    public func recover(ownerID: UUID) async throws -> RecipeMediaBundleRecoveryReport {
+        let bundleOperations = try store.operations(for: ownerID).filter { $0.mediaBundleJobID != nil }
+        let grouped = Dictionary(grouping: bundleOperations, by: { $0.mediaBundleJobID! })
+
+        var recovered: [RecipeImportUsageOperation] = []
+        var stillAwaitingUpgrade: [RecipeImportUsageOperation] = []
+        var failed: [UUID: RecipeMediaSaveAPIError] = [:]
+
+        for (jobID, operations) in grouped {
+            let media = operations.first(where: { $0.isMediaImport })
+            let candidates = operations.filter { !$0.isMediaImport }
+            let candidateIDs = candidates.map(\.candidateID)
+
+            let hasPending = operations.contains {
+                $0.state == .reserving || $0.state == .awaitingUpgrade
+            }
+            if hasPending {
+                do {
+                    let response = try await client.reserveMediaBundle(
+                        ownerID: ownerID, jobID: jobID, candidateIDs: candidateIDs)
+                    if let media {
+                        try store.save(
+                            media.marking(
+                                state: .reserved, reservedUntil: response.media.reservedUntil))
+                    }
+                    for candidate in response.candidates {
+                        guard let candidateID = candidate.candidateID,
+                            let existing = candidates.first(where: { $0.candidateID == candidateID })
+                        else { continue }
+                        let updated = existing.marking(
+                            state: .reserved, reservedUntil: candidate.reservedUntil)
+                        try store.save(updated)
+                        recovered.append(updated)
+                    }
+                } catch let error as RecipeMediaSaveAPIError
+                    where error.code == "UPGRADE_REQUIRED" || error.code == "QUOTA_EXCEEDED"
+                {
+                    for operation in operations {
+                        let awaiting = operation.marking(state: .awaitingUpgrade)
+                        try store.save(awaiting)
+                        stillAwaitingUpgrade.append(awaiting)
+                    }
+                } catch let error as RecipeMediaSaveAPIError {
+                    failed[jobID] = error
+                }
+            } else if let media, media.state == .reserved {
+                // Candidates were settled/ACKed; the media finalize response was unknown. Replay the
+                // media finalize (idempotent by job ID) so the bundle is fully settled.
+                do {
+                    let response = try await client.finalizeMedia(
+                        ownerID: ownerID, jobID: jobID)
+                    if response.code == "FINALIZED" {
+                        try store.save(media.marking(state: .finalized))
+                    }
+                } catch let error as RecipeMediaSaveAPIError {
+                    failed[jobID] = error
+                }
+            }
+        }
+
+        return RecipeMediaBundleRecoveryReport(
+            recovered: recovered,
+            stillAwaitingUpgrade: stillAwaitingUpgrade,
+            failed: failed
+        )
     }
 
     private func requireOwner(

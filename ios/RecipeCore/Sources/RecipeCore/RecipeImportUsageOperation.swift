@@ -4,6 +4,13 @@
 import CryptoKit
 import Foundation
 
+/// Distinguishes the two capabilities a persisted operation can settle. `nil` is the ordinary
+/// smart_import candidate (old records and every candidate child); `.mediaImport` marks the single
+/// media_import unit of a DEV-78 media bundle whose stable operation ID is the job ID.
+public enum RecipeImportUsageCapability: String, Codable, Hashable, Sendable {
+    case mediaImport = "media_import"
+}
+
 /// One candidate reservation in the import usage lifecycle. A multi-candidate selection produces one
 /// operation per selected candidate; each settles exactly one unit through the frozen usage routes.
 public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifiable {
@@ -33,8 +40,20 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
     public let recipeID: String?
     /// Server-authored payload hash for the settled recipe; persisted together with `recipeID`.
     public let payloadHash: String?
+    /// The media-bundle job this candidate belongs to when it was reserved atomically by the DEV-78
+    /// media save (media_import + N smart_import) instead of the single-candidate DEV-430 reserve.
+    /// `nil` for ordinary smart_import operations, keeping old records decodable.
+    public let mediaBundleJobID: UUID?
+    /// The capability this operation settles. `nil` is the ordinary smart_import candidate (old records);
+    /// `.mediaImport` marks the media_import unit whose operation ID is the job ID.
+    public let capability: RecipeImportUsageCapability?
 
     public var id: UUID { operationID }
+
+    /// True when this operation is the media_import unit of a DEV-78 media bundle.
+    public var isMediaImport: Bool {
+        capability == .mediaImport
+    }
 
     public init(
         operationID: UUID,
@@ -47,7 +66,9 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
         createdAt: Date = .now,
         updatedAt: Date = .now,
         recipeID: String? = nil,
-        payloadHash: String? = nil
+        payloadHash: String? = nil,
+        mediaBundleJobID: UUID? = nil,
+        capability: RecipeImportUsageCapability? = nil
     ) {
         self.operationID = operationID
         self.ownerID = ownerID
@@ -60,6 +81,8 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
         self.updatedAt = updatedAt
         self.recipeID = recipeID
         self.payloadHash = payloadHash
+        self.mediaBundleJobID = mediaBundleJobID
+        self.capability = capability
     }
 
     /// Derives a stable operation ID from the owner + job + candidate so a lost-response retry replays
@@ -99,7 +122,9 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
             createdAt: createdAt,
             updatedAt: .now,
             recipeID: recipeID,
-            payloadHash: payloadHash
+            payloadHash: payloadHash,
+            mediaBundleJobID: mediaBundleJobID,
+            capability: capability
         )
     }
 
@@ -117,7 +142,9 @@ public struct RecipeImportUsageOperation: Codable, Hashable, Sendable, Identifia
             createdAt: createdAt,
             updatedAt: .now,
             recipeID: recipeID,
-            payloadHash: payloadHash
+            payloadHash: payloadHash,
+            mediaBundleJobID: mediaBundleJobID,
+            capability: capability
         )
     }
 }

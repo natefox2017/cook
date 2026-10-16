@@ -118,6 +118,10 @@ public struct RecipeImportUsageBridge: Sendable {
         var failed: [UUID: RecipeUsageFailure] = [:]
 
         for operation in try store.operations(for: ownerID) {
+            // Media-bundle candidates were reserved atomically by the DEV-78 media save and must be
+            // replayed/finalized by RecipeMediaBundlePort, never per-item here (that would drop the
+            // media_import unit and break the bundle's atomicity).
+            guard operation.mediaBundleJobID == nil else { continue }
             switch operation.state {
             case .reserving, .awaitingUpgrade:
                 let source = try operation.usageSource()
