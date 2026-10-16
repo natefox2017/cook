@@ -12,12 +12,30 @@ import Foundation
 public enum RecipeImportUsagePayload {
     public enum PayloadError: Error, Equatable {
         case malformed
+        /// More than one candidate carries the requested `candidate_id`; a canonical hash cannot be
+        /// chosen without risking a wrong payload, so the caller must reject instead of guessing.
+        case ambiguousCandidate
     }
 
     public static func canonicalResultHash(responseBody: Data) throws -> String? {
         let text = String(decoding: responseBody, as: UTF8.self)
         var parser = Parser(text)
         guard let canonical = try parser.canonicalResultValue() else {
+            return nil
+        }
+        return SHA256.hash(data: Data(canonical.utf8))
+            .map { String(format: "%02x", $0) }
+            .joined()
+    }
+
+    /// Returns the canonical key-sorted SHA-256 of the raw `result.candidate_recipes[i]` object whose
+    /// `candidate_id` equals `candidateID`, mirroring the server's `extractImportPayload` for the
+    /// multi-candidate case. Returns `nil` when the candidate is absent; throws `.ambiguousCandidate`
+    /// when more than one candidate matches.
+    public static func canonicalCandidateHash(responseBody: Data, candidateID: String) throws -> String? {
+        let text = String(decoding: responseBody, as: UTF8.self)
+        var parser = Parser(text)
+        guard let canonical = try parser.canonicalCandidateValue(candidateID: candidateID) else {
             return nil
         }
         return SHA256.hash(data: Data(canonical.utf8))
@@ -69,6 +87,110 @@ public enum RecipeImportUsagePayload {
                 if peek() == "}" {
                     _ = try consume("}")
                     return nil
+                }
+                throw PayloadError.malformed
+            }
+        }
+
+        // MARK: - Candidate extraction
+
+        /// Navigates top-level object -> `result` -> `candidate_recipes` and returns the canonical
+        /// form of the candidate whose `candidate_id` equals `candidateID`, or nil when absent.
+        /// Throws `.ambiguousCandidate` when more than one candidate matches.
+        mutating func canonicalCandidateValue(candidateID: String) throws -> String? {
+            skipWhitespace()
+            guard peek() == "{" else { return nil }
+            let resultRaw = try rawObjectValue(forKey: "result")
+            guard let resultRaw else { return nil }
+
+            var resultParser = Parser(resultRaw)
+            let recipesRaw = try resultParser.rawObjectValue(forKey: "candidate_recipes")
+            guard let recipesRaw else { return nil }
+
+            var recipesParser = Parser(recipesRaw)
+            var matches: [String] = []
+            try recipesParser.forEachArrayElement { elementRaw in
+                var candidateParser = Parser(elementRaw)
+                if let idRaw = try candidateParser.rawObjectValue(forKey: "candidate_id"),
+                    Self.decode(idRaw) == candidateID
+                {
+                    matches.append(elementRaw)
+                }
+            }
+
+            guard !matches.isEmpty else { return nil }
+            guard matches.count == 1 else { throw PayloadError.ambiguousCandidate }
+
+            var candidateParser = Parser(matches[0])
+            return try candidateParser.canonicalObject()
+        }
+
+        /// Returns the raw JSON text of the value associated with `targetKey` inside the object at the
+        /// current position, or nil when the key is absent. Does not consume the remainder of the object.
+        private mutating func rawObjectValue(forKey targetKey: String) throws -> String? {
+            skipWhitespace()
+            guard peek() == "{" else { return nil }
+            _ = try consume("{")
+            skipWhitespace()
+            if peek() == "}" {
+                _ = try consume("}")
+                return nil
+            }
+            while true {
+                skipWhitespace()
+                let rawKey = try readString()
+                let key = Self.decode(rawKey)
+                skipWhitespace()
+                guard peek() == ":" else { throw PayloadError.malformed }
+                _ = try consume(":")
+                skipWhitespace()
+                if key == targetKey {
+                    return try rawValue()
+                }
+                try skipValue()
+                skipWhitespace()
+                if peek() == "," {
+                    _ = try consume(",")
+                    continue
+                }
+                if peek() == "}" {
+                    _ = try consume("}")
+                    return nil
+                }
+                throw PayloadError.malformed
+            }
+        }
+
+        /// Returns the raw JSON text of the next value verbatim (no canonicalization).
+        private mutating func rawValue() throws -> String {
+            skipWhitespace()
+            let start = index
+            try skipValue()
+            return String(chars[start..<index])
+        }
+
+        /// Iterates the elements of the array at the current position, passing each element's raw text.
+        private mutating func forEachArrayElement(_ body: (String) throws -> Void) throws {
+            skipWhitespace()
+            guard peek() == "[" else { throw PayloadError.malformed }
+            _ = try consume("[")
+            skipWhitespace()
+            if peek() == "]" {
+                _ = try consume("]")
+                return
+            }
+            while true {
+                skipWhitespace()
+                let element = try rawValue()
+                try body(element)
+                skipWhitespace()
+                if peek() == "," {
+                    _ = try consume(",")
+                    continue
+                }
+                if peek() == "]" {
+                    _ = try consume("]")
+                    return
                 }
                 throw PayloadError.malformed
             }
