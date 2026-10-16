@@ -11,6 +11,7 @@ export const DEADLINE_MS = 60_000;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 // Must agree with RecipeTranslationProposal.preservesNumericTokens in RecipeCore.
 const NUMBER_RE = /\d+\/\d+|\d+(?:\.\d+)?|\.\d+/g;
+const REVISION_RE = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/;
 
 export class TranslationContractError extends Error {
   constructor(
@@ -50,6 +51,12 @@ export interface TranslationRecipeInput {
 export interface TranslationRequest {
   target_locale: TargetLocale;
   recipe: TranslationRecipeInput;
+  /** Source recipe id (owner-scoped revision/ownership fence). */
+  recipe_id: string;
+  /** Source recipe updatedAt, canonical millisecond UTC (server compares to the stored row). */
+  expected_revision: string;
+  /** Client-stable idempotency key retained across retries; binds the metered operation. */
+  proposal_id: string;
 }
 
 export interface TranslationField {
@@ -90,6 +97,17 @@ function requireUUID(value: unknown): string {
     throw new TranslationContractError("validation_error", "Expected a lowercase UUID.");
   }
   return value;
+}
+
+function requireRevision(value: unknown): string {
+  if (typeof value !== "string" || !REVISION_RE.test(value)) {
+    throw new TranslationContractError("validation_error", "Expected an ISO-8601 millisecond revision.");
+  }
+  const parsed = new Date(value);
+  if (!Number.isFinite(parsed.getTime())) {
+    throw new TranslationContractError("validation_error", "Invalid revision.");
+  }
+  return parsed.toISOString();
 }
 
 function requireIngredient(value: unknown): TranslationIngredient {
@@ -167,6 +185,9 @@ export function parseRequest(body: Record<string, unknown>): TranslationRequest 
       source_url: sourceURL,
       source_name: sourceName,
     },
+    recipe_id: requireUUID(body.recipe_id),
+    expected_revision: requireRevision(body.expected_revision),
+    proposal_id: requireUUID(body.proposal_id),
   };
 }
 
@@ -219,7 +240,7 @@ export function validateProviderOutput(
     ? []
     : requireFieldList(output.ingredient_names, 200);
   const names: TranslationField[] = [];
-  if (ingredientNames.length > 0) {
+  if (request.recipe.ingredients.length > 0) {
     if (ingredientNames.length !== request.recipe.ingredients.length) {
       throw new TranslationContractError("invalid_provider_output", "Ingredient count changed.");
     }
@@ -250,7 +271,7 @@ export function validateProviderOutput(
     ? []
     : requireFieldList(output.step_instructions, 200);
   const instructions: TranslationField[] = [];
-  if (stepInstructions.length > 0) {
+  if (request.recipe.steps.length > 0) {
     if (stepInstructions.length !== request.recipe.steps.length) {
       throw new TranslationContractError("invalid_provider_output", "Step count changed.");
     }

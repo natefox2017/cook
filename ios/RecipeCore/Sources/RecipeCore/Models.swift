@@ -113,6 +113,9 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
     public var sourceText: String?
     public var sourceName: String?
     public var importRecord: RecipeImportRecord?
+    /// Translation lineage for a saved variant: the private source recipe, the target locale,
+    /// and the explicit provenance marker. Optional so legacy recipes decode as untranslated.
+    public var translationProvenance: RecipeTranslationProvenance?
     public var coverData: Data?
     public var coverAsset: String?
     public var isFavorite: Bool
@@ -139,6 +142,7 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
         ingredients: [RecipeIngredient] = [], steps: [RecipeStep] = [],
         sourceURL: String? = nil, sourceText: String? = nil, sourceName: String? = nil,
         importRecord: RecipeImportRecord? = nil,
+        translationProvenance: RecipeTranslationProvenance? = nil,
         coverData: Data? = nil, coverAsset: String? = nil,
         isFavorite: Bool = false, notes: String = "",
         difficulty: RecipeDifficulty? = nil, cuisine: String? = nil,
@@ -163,6 +167,7 @@ public struct Recipe: Identifiable, Codable, Hashable, Sendable {
         self.sourceText = sourceText
         self.sourceName = sourceName
         self.importRecord = importRecord
+        self.translationProvenance = translationProvenance
         self.coverData = coverData
         self.coverAsset = coverAsset
         self.isFavorite = isFavorite

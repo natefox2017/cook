@@ -35,6 +35,9 @@ struct AddRecipeView: View {
     @State private var documentBatchProgress: RecipeDocumentBatchProgress?
     @State private var documentBatchJobID: UUID?
     @State private var showDocumentBatchSheet = false
+    @State private var showMediaPicker = false
+    @State private var showMediaRights = false
+    @State private var pendingMediaURL: URL?
 
     private let documentBatchService = RecipeDocumentBatchService()
 
@@ -61,6 +64,9 @@ struct AddRecipeView: View {
                         }
                         importOption("Import a document", icon: "doc") {
                             showFile = true
+                        }
+                        importOption("Import media", icon: "waveform") {
+                            showMediaPicker = true
                         }
                         importOption("Scan documents", icon: "doc.viewfinder") {
                             showDocumentBatchMenu = true
@@ -132,6 +138,26 @@ struct AddRecipeView: View {
                     }
                 }
             }
+            .modifier(
+                MediaImportModifier(
+                    showMediaPicker: $showMediaPicker,
+                    showMediaRights: $showMediaRights,
+                    pendingMediaURL: $pendingMediaURL,
+                    onImport: { url in
+                        perform("Uploading media…") {
+                            try await importMedia(url)
+                        }
+                    },
+                    onFailure: { error in
+                        let cocoaError = error as NSError
+                        if cocoaError.domain != NSCocoaErrorDomain
+                            || cocoaError.code != NSUserCancelledError
+                        {
+                            errorMessage = error.localizedDescription
+                        }
+                    }
+                )
+            )
             .confirmationDialog("Scan documents", isPresented: $showDocumentBatchMenu) {
                 Button("Choose screenshots") {
                     documentBatchPhotos = []
@@ -386,6 +412,33 @@ struct AddRecipeView: View {
         return ownerID
     }
 
+    /// Persists the picked media file as a durable owner receipt so the existing
+    /// artifact/upload/job queue submits and processes it unchanged. The original
+    /// file is preserved; the queue surfaces a server typed-unsupported outcome for
+    /// manual fallback.
+    private func importMedia(_ url: URL) async throws {
+        let mimeType = Self.mediaMIMEType(for: url) ?? "text/plain"
+        let hasAccess = url.startAccessingSecurityScopedResource()
+        defer { if hasAccess { url.stopAccessingSecurityScopedResource() } }
+        let data = try Data(contentsOf: url)
+        _ = try RecipeShareInbox.shared().receiveFile(data, as: .file, mimeType: mimeType)
+    }
+
+    /// Maps a picked media file to the finite-media MIME vocabulary the backend
+    /// gates on. WebVTT rides the existing text/plain upload path. Unknown
+    /// extensions fall back to text/plain so the server returns a typed unsupported
+    /// outcome rather than the client guessing.
+    private static func mediaMIMEType(for url: URL) -> String? {
+        switch url.pathExtension.lowercased() {
+        case "vtt": return "text/plain"
+        case "mp3": return "audio/mpeg"
+        case "m4a": return "audio/x-m4a"
+        case "wav": return "audio/wav"
+        case "mp4": return "video/mp4"
+        default: return nil
+        }
+    }
+
     private func scanDocumentImages(_ items: [PhotosPickerItem]) {
         perform("Scanning your screenshots…") {
             let ownerID = try currentOwnerID()
@@ -530,6 +583,52 @@ struct AddRecipeView: View {
                         locale: RecipeLanguage.active))
             }
         }
+    }
+}
+
+/// Applies the finite-media file importer and the one-time rights confirmation as a
+/// single modifier, keeping the AddRecipeView body small enough for the type checker
+/// without changing behavior.
+private struct MediaImportModifier: ViewModifier {
+    @Binding var showMediaPicker: Bool
+    @Binding var showMediaRights: Bool
+    @Binding var pendingMediaURL: URL?
+    let onImport: (URL) -> Void
+    let onFailure: (Error) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .fileImporter(
+                isPresented: $showMediaPicker,
+                allowedContentTypes: [.mp3, .mpeg4Audio, .wav, .mpeg4Movie, .plainText]
+            ) { result in
+                switch result {
+                case .success(let url):
+                    pendingMediaURL = url
+                    showMediaRights = true
+                case .failure(let error):
+                    onFailure(error)
+                }
+            }
+            .confirmationDialog(
+                "Upload this media file?",
+                isPresented: $showMediaRights,
+                titleVisibility: .visible
+            ) {
+                Button("I have the rights — upload") {
+                    let url = pendingMediaURL
+                    pendingMediaURL = nil
+                    guard let url else { return }
+                    onImport(url)
+                }
+                Button("Cancel", role: .cancel) {
+                    pendingMediaURL = nil
+                }
+            } message: {
+                Text(
+                    "Recipe Pals will upload this file to extract recipe details. You must have the right to process this content."
+                )
+            }
     }
 }
 

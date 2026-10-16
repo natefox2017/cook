@@ -185,17 +185,23 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         public let steps: [String]
         public let evidenceIDs: [UUID]
         public let reviewFields: [String]
+        /// Canonical SHA-256 of this candidate's raw JSON, computed at decode time so the settle can
+        /// verify it against the server finalize payload hash. Not part of the server wire shape; it is
+        /// persisted locally and stays nil for candidates that never reached a completed job.
+        public var payloadHash: String?
 
         private enum CodingKeys: String, CodingKey {
             case candidateID = "candidate_id"
             case title, ingredients, steps
             case evidenceIDs = "evidence_ids"
             case reviewFields = "review_fields"
+            case payloadHash = "payload_hash"
         }
 
         public init(
             candidateID: String, title: String?, ingredients: [String],
-            steps: [String], evidenceIDs: [UUID] = [], reviewFields: [String] = []
+            steps: [String], evidenceIDs: [UUID] = [], reviewFields: [String] = [],
+            payloadHash: String? = nil
         ) {
             self.candidateID = candidateID
             self.title = title
@@ -203,6 +209,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
             self.steps = steps
             self.evidenceIDs = evidenceIDs
             self.reviewFields = reviewFields
+            self.payloadHash = payloadHash
         }
     }
 
@@ -213,7 +220,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         public let fields: [String: Field]
         public let evidence: [Evidence]
         public let reviewFields: [String]?
-        public let candidateRecipes: [Candidate]?
+        public var candidateRecipes: [Candidate]?
 
         public var resultStatus: RecipeImportResultStatus? {
             RecipeImportResultStatus(rawValue: status)
@@ -259,8 +266,12 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
     public let recipeStatus: String?
     public let existingRecipeID: UUID?
     public let reviewCount: Int?
-    public let result: Result?
+    public var result: Result?
     public let error: Failure?
+    /// Client-computed canonical hash of the raw `result` JSON (see `RecipeImportUsagePayload`),
+    /// retained so settle can verify it against the server's `finalize` payload hash. Not decoded
+    /// from the wire; the import client computes it from the raw response body after decoding.
+    public var resultPayloadHash: String?
 
     private enum CodingKeys: String, CodingKey {
         case jobID = "job_id"
@@ -278,6 +289,24 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         case error
     }
 
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        jobID = try container.decode(UUID.self, forKey: .jobID)
+        clientRequestID = try container.decode(UUID.self, forKey: .clientRequestID)
+        status = try container.decode(Status.self, forKey: .status)
+        stage = try container.decodeIfPresent(String.self, forKey: .stage)
+        progressHint = try container.decodeIfPresent(String.self, forKey: .progressHint)
+        attemptCount = try container.decode(Int.self, forKey: .attemptCount)
+        queueConfirmedAt = try container.decodeIfPresent(String.self, forKey: .queueConfirmedAt)
+        recipeID = try container.decodeIfPresent(UUID.self, forKey: .recipeID)
+        recipeStatus = try container.decodeIfPresent(String.self, forKey: .recipeStatus)
+        existingRecipeID = try container.decodeIfPresent(UUID.self, forKey: .existingRecipeID)
+        reviewCount = try container.decodeIfPresent(Int.self, forKey: .reviewCount)
+        result = try container.decodeIfPresent(Result.self, forKey: .result)
+        error = try container.decodeIfPresent(Failure.self, forKey: .error)
+        resultPayloadHash = nil
+    }
+
     public init(
         jobID: UUID,
         clientRequestID: UUID,
@@ -291,7 +320,8 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         existingRecipeID: UUID? = nil,
         reviewCount: Int? = nil,
         result: Result? = nil,
-        error: Failure? = nil
+        error: Failure? = nil,
+        resultPayloadHash: String? = nil
     ) {
         self.jobID = jobID
         self.clientRequestID = clientRequestID
@@ -306,6 +336,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         self.reviewCount = reviewCount
         self.result = result
         self.error = error
+        self.resultPayloadHash = resultPayloadHash
     }
 
     public var isDurablyQueued: Bool {
@@ -382,6 +413,13 @@ public struct RecipeImportRecord: Codable, Hashable, Sendable {
     /// resume the same draft session for this job. Optional so recipes persisted before
     /// the draft flow shipped still decode without it.
     public let clientRequestID: UUID?
+    /// The share receipt's stable identity, so multi-candidate saves recover against the same source
+    /// receipt instead of minting a fresh ID. Optional for recipes persisted before this field shipped.
+    public let receiptID: UUID?
+    /// Durable media-import marker: non-nil (the audio/video MIME type) when the source routed through
+    /// the media bundle save; nil for link/text/image/PDF imports. Set before ACK from the authoritative
+    /// receipt so the View can route primary + multi through the media bundle port.
+    public let mediaMimeType: String?
     public let result: RecipeImportJobResponse.Result
     /// Records explicit local review without altering server fields or evidence.
     public var reviewedAt: Date?
@@ -396,7 +434,9 @@ public struct RecipeImportRecord: Codable, Hashable, Sendable {
         reviewedAt: Date? = nil,
         sourceArtifactDeletedAt: Date? = nil,
         selectedCandidateID: String? = nil,
-        clientRequestID: UUID? = nil
+        clientRequestID: UUID? = nil,
+        receiptID: UUID? = nil,
+        mediaMimeType: String? = nil
     ) {
         self.jobID = jobID
         self.result = result
@@ -404,6 +444,8 @@ public struct RecipeImportRecord: Codable, Hashable, Sendable {
         self.sourceArtifactDeletedAt = sourceArtifactDeletedAt
         self.selectedCandidateID = selectedCandidateID
         self.clientRequestID = clientRequestID
+        self.receiptID = receiptID
+        self.mediaMimeType = mediaMimeType
     }
 }
 

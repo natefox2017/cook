@@ -74,8 +74,34 @@ public enum RecipeShareInboxError: LocalizedError {
 /// of an array in UserDefaults. Source bytes are written before the receipt;
 /// an acknowledgement is a separate immutable file, written only after the
 /// authenticated backend confirms a durable job. No ack is created here.
+public enum RecipeSharedAppGroup {
+    /// Historical production App Group for ordinary Debug/Release builds.
+    public static let productionIdentifier = "group.com.shopkivoo.recipe"
+
+    /// QA App Group matched by `Recipe.qa.entitlements` and
+    /// `ShareExtension.qa.entitlements`.
+    public static let qaIdentifier = "group.com.shopkivoo.recipe.qa"
+
+    /// Info.plist key populated from the `RECIPE_APP_GROUP_ID` build setting.
+    /// Ordinary Debug/Release keep the production value; only QA overrides it.
+    public static let infoPlistKey = "RecipeAppGroupID"
+
+    /// Resolved App Group identifier for this process. Production is the
+    /// default so ordinary builds keep the historical group and its data.
+    /// RecipeCore is an independent Swift package, so the QA selection is a
+    /// runtime read from the host's Info.plist — not a `#if RECIPE_QA` compile
+    /// condition, which would never reach this package.
+    public static var current: String {
+        if let override = Bundle.main.object(forInfoDictionaryKey: infoPlistKey)
+            as? String, !override.isEmpty {
+            return override
+        }
+        return productionIdentifier
+    }
+}
+
 public struct RecipeShareInbox: Sendable {
-    public static let appGroupID = "group.com.shopkivoo.recipe"
+    public static var appGroupID: String { RecipeSharedAppGroup.current }
 
     private let root: URL
 
@@ -167,6 +193,38 @@ public struct RecipeShareInbox: Sendable {
         )
     }
 
+    /// Whether a MIME type is a DEV-78 media attachment (audio/video) that routes through the media
+    /// bundle save instead of the normal import settle. Returns false for a nil or non-media MIME.
+    public static func isMediaMimeType(_ mimeType: String?) -> Bool {
+        guard let mimeType else { return false }
+        return DataSourceType.isMedia(mimeType)
+    }
+
+    /// Resolves the durable media MIME type for a receipt: audio/video MIME types are media, and a
+    /// `text/plain` (or `.text`) receipt whose stored source begins with the authoritative WEBVTT
+    /// header is a VTT media subtitle. Returns nil for ordinary text and non-media sources.
+    public func mediaMimeType(for receipt: RecipeShareReceipt) -> String? {
+        if let mimeType = receipt.payload.mimeType, DataSourceType.isMedia(mimeType) {
+            return mimeType
+        }
+        let isVTTText = receipt.inputType == .text || receipt.payload.mimeType == "text/plain"
+        guard isVTTText else { return nil }
+        let content: String?
+        if receipt.inputType == .text {
+            content = try? source(for: receipt)
+        } else {
+            content = (try? fileData(for: receipt)).flatMap { String(data: $0, encoding: .utf8) }
+        }
+        guard let content else { return nil }
+        // Tolerate a leading UTF-8 byte order mark, matching the server's VTT header check.
+        var header = content
+        if header.first == "\u{FEFF}" {
+            header.removeFirst()
+        }
+        guard header.hasPrefix("WEBVTT") else { return nil }
+        return "text/vtt"
+    }
+
     /// Stores a bounded image or document attachment in immutable App Group storage.
     @discardableResult
     public func receiveFile(
@@ -177,10 +235,8 @@ public struct RecipeShareInbox: Sendable {
         // A zero-byte receipt cannot be uploaded; fileData(for:) rejects it.
         // Reject here so the Share Extension does not falsely report "Saved".
         guard !data.isEmpty,
-            data.count <= 10 * 1024 * 1024,
-            (type == .image
-                && ["image/jpeg", "image/png", "image/heic", "image/heif"].contains(mimeType)
-                || type == .file && ["application/pdf", "text/plain"].contains(mimeType))
+            data.count <= DataSourceType.maximumBytes(for: type, mimeType: mimeType),
+            DataSourceType.isSupported(mimeType, for: type)
         else {
             throw RecipeShareInboxError.invalidInput
         }
@@ -379,7 +435,9 @@ public struct RecipeShareInbox: Sendable {
         }
         let url = root.appendingPathComponent(receipt.payload.reference)
         let data = try Data(contentsOf: url)
-        guard !data.isEmpty, data.count <= 10 * 1024 * 1024 else {
+        guard !data.isEmpty,
+            data.count <= DataSourceType.maximumBytes(for: receipt.inputType, mimeType: mimeType)
+        else {
             throw RecipeShareInboxError.sourceMissing
         }
         return data
@@ -500,7 +558,7 @@ public struct RecipeShareInbox: Sendable {
 
     private func validSourceName(_ name: String) -> Bool {
         name.range(
-            of: "^[0-9a-f]{64}\\.(?:txt|jpg|png|heic|heif|pdf)$",
+            of: "^[0-9a-f]{64}\\.(?:txt|jpg|png|heic|heif|pdf|mp3|m4a|wav|mp4)$",
             options: .regularExpression
         ) != nil
     }
@@ -512,6 +570,10 @@ public struct RecipeShareInbox: Sendable {
         case "image/heic": "heic"
         case "image/heif": "heif"
         case "application/pdf": "pdf"
+        case "audio/mpeg", "audio/mp3": "mp3"
+        case "audio/mp4", "audio/x-m4a", "audio/m4a": "m4a"
+        case "audio/wav", "audio/x-wav": "wav"
+        case "video/mp4": "mp4"
         default: "txt"
         }
     }
@@ -569,14 +631,32 @@ public struct RecipeShareInbox: Sendable {
 }
 
 private enum DataSourceType {
+    /// Backend `SUPPORTED_MEDIA_TYPES` accepted as `.file` attachments (DEV-78).
+    private static let mediaTypes = [
+        "audio/mpeg", "audio/mp3", "audio/mp4", "audio/x-m4a",
+        "audio/m4a", "audio/wav", "audio/x-wav", "video/mp4",
+    ]
+
     static func isSupported(_ mimeType: String, for type: RecipeShareInputType) -> Bool {
         switch type {
         case .image:
             ["image/jpeg", "image/png", "image/heic", "image/heif"].contains(mimeType)
         case .file:
-            ["application/pdf", "text/plain"].contains(mimeType)
+            ["application/pdf", "text/plain"].contains(mimeType) || mediaTypes.contains(mimeType)
         case .url, .text:
             false
         }
+    }
+
+    static func isMedia(_ mimeType: String) -> Bool {
+        mediaTypes.contains(mimeType)
+    }
+
+    /// Media attachments allow the 20 MiB artifact cap; every other supported type keeps the existing
+    /// 10 MiB receipt cap.
+    static func maximumBytes(for type: RecipeShareInputType, mimeType: String) -> Int {
+        type == .file && mediaTypes.contains(mimeType)
+            ? RecipeDocumentBatchLimits.maxFileBytes
+            : 10 * 1024 * 1024
     }
 }

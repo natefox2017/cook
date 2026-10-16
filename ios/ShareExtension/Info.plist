@@ -26,6 +26,8 @@
     <string>$(MARKETING_VERSION)</string>
     <key>CFBundleVersion</key>
     <string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>RecipeAppGroupID</key>
+    <string>$(RECIPE_APP_GROUP_ID)</string>
     <key>CFBundleDisplayName</key>
     <string>Recipe Pals</string>
     <key>CFBundleName</key>
@@ -50,6 +52,8 @@
                 <integer>1</integer>
                 <key>NSExtensionActivationSupportsText</key>
                 <true/>
+                <key>NSExtensionActivationSupportsImageWithMaxCount</key>
+                <integer>1</integer>
             </dict>
         </dict>
     </dict>

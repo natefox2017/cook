@@ -37,6 +37,8 @@ struct RecipeDetailView: View {
     @State private var proposalToReview: RecipeEditReviewContext?
     @State private var editService: RecipeEditProposalService?
     @State private var undoState: RecipeEditUndoState?
+    @State private var isChoosingTranslation = false
+    @State private var translationCoordinator: RecipeTranslationCoordinator?
 
     private struct RecipeEditReviewContext: Identifiable {
         let id = UUID()
@@ -95,6 +97,11 @@ struct RecipeDetailView: View {
                     service: service,
                     onResult: handleEditResult
                 )
+            }
+        }
+        .sheet(isPresented: $isChoosingTranslation) {
+            if let recipe = store.recipe(id: recipeID), let coordinator = translationCoordinator {
+                RecipeTranslationSheet(recipe: recipe, coordinator: coordinator)
             }
         }
         .sheet(item: $proposalToReview) { context in
@@ -916,6 +923,10 @@ struct RecipeDetailView: View {
                         }
                         .accessibilityIdentifier("recipeAdjustRecipe")
                     }
+                    Button("Translate Recipe", systemImage: "globe") {
+                        presentTranslateRecipe()
+                    }
+                    .accessibilityIdentifier("recipeTranslate")
                     Button("Share", systemImage: "square.and.arrow.up") {
                         sharePresentation = SharePresentation(
                             state: ownerSharing.consentState(recipeID: recipeID, store: store)
@@ -972,6 +983,28 @@ struct RecipeDetailView: View {
             editService = try? RecipeEditProposalService(bundle: .main)
         }
         return editService != nil
+    }
+
+    // MARK: - Recipe translation (DEV-439)
+
+    /// The Translate Recipe entry stays ungated in the free first release; the backend is
+    /// closed-by-default and metered, so an ineligible request surfaces a translated error
+    /// from the review sheet instead of a client-side paywall.
+    private func presentTranslateRecipe() {
+        guard ensureTranslationCoordinator() else {
+            feedbackMessage = RecipeTranslationCoordinatorError.invalidConfiguration
+                .localizedDescription
+            return
+        }
+        isChoosingTranslation = true
+    }
+
+    @discardableResult
+    private func ensureTranslationCoordinator() -> Bool {
+        if translationCoordinator == nil {
+            translationCoordinator = try? RecipeTranslationCoordinator(bundle: .main)
+        }
+        return translationCoordinator != nil
     }
 
     private func handleEditResult(_ result: RecipeEditProposalRequestResult) {
@@ -1877,9 +1910,11 @@ private struct DetailIngredientGroup: Identifiable {
 private struct RecipeCandidateSelectionView: View {
     let sourceRecipe: Recipe
     @Environment(RecipeStore.self) private var store
+    @Environment(RecipeCommerceComposition.self) private var commerce
     @Environment(\.dismiss) private var dismiss
     @State private var selected = Set<String>()
     @State private var errorMessage: String?
+    @State private var isSaving = false
 
     private var candidates: [RecipeImportJobResponse.Candidate] {
         Array((sourceRecipe.importRecord?.result.candidateRecipes ?? []).prefix(8))
@@ -1942,12 +1977,16 @@ private struct RecipeCandidateSelectionView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save selected") {
-                        do {
-                            try saveSelected()
-                            dismiss()
-                        } catch { errorMessage = error.localizedDescription }
+                        isSaving = true
+                        Task {
+                            defer { isSaving = false }
+                            do {
+                                try await saveSelected()
+                                dismiss()
+                            } catch { errorMessage = error.localizedDescription }
+                        }
                     }
-                    .disabled(selected.isEmpty)
+                    .disabled(selected.isEmpty || isSaving)
                     .accessibilityIdentifier("saveSelectedCandidateRecipes")
                 }
             }
@@ -1969,58 +2008,310 @@ private struct RecipeCandidateSelectionView: View {
         }
     }
 
-    private func saveSelected() throws {
+    private func saveSelected() async throws {
         guard let sourceRecord = sourceRecipe.importRecord else {
             return
         }
-        for candidate in candidates where selected.contains(candidate.candidateID) {
+        let chosen = candidates.filter { selected.contains($0.candidateID) }
+        guard !chosen.isEmpty else {
+            return
+        }
+
+        // Media-import sources (VTT/audio/video) route through the media bundle port;
+        // the durable mediaMimeType marker is set by the backend, never guessed here.
+        if sourceRecord.mediaMimeType != nil {
+            try await saveMediaSelected(sourceRecord: sourceRecord, chosen: chosen)
+            return
+        }
+
+        // Free first release keeps the existing unmetered save byte-equivalent.
+        guard RecipeMonetization.isEnabled else {
+            try saveUnmetered(sourceRecord: sourceRecord, chosen: chosen)
+            return
+        }
+        // Commercial settle requires a live bridge and a bound owner. A missing
+        // bridge/owner must fail closed (no save, no ACK) so quota can never be
+        // bypassed by silently falling back to the unmetered write.
+        let startContext = commerce.importUsageContext
+        guard let importUsage = commerce.importUsage else {
+            throw RecipeImportCandidateSaveError.bridgeUnavailable
+        }
+        guard let ownerID = startContext.ownerID else {
+            throw RecipeImportCandidateSaveError.signedOut
+        }
+        // The authoritative share receipt identity must be durable for the bridge to
+        // associate each reservation with the same source. A legacy record without it
+        // is never settled under a fabricated id.
+        guard let receiptID = sourceRecord.receiptID else {
+            throw RecipeImportCandidateSaveError.missingReceipt
+        }
+
+        // Phase 1: reserve every selected candidate before any finalize, so a partial
+        // reserve failure can release only the still-unfinalized reservations.
+        var reserved: [ReservedCandidate] = []
+        for candidate in chosen {
+            let outcome: RecipeImportUsageReserveOutcome
+            do {
+                outcome = try await importUsage.reserve(
+                    ownerID: ownerID,
+                    jobID: sourceRecord.jobID,
+                    candidateID: candidate.candidateID,
+                    receiptID: receiptID
+                )
+            } catch {
+                await releaseUnfinalized(reserved, ownerID: ownerID, importUsage: importUsage)
+                throw error
+            }
+            switch outcome {
+            case .awaitingUpgrade:
+                await releaseUnfinalized(reserved, ownerID: ownerID, importUsage: importUsage)
+                throw RecipeImportCandidateSaveError.upgradeRequired
+            case .reserved(let reservation):
+                reserved.append(
+                    ReservedCandidate(
+                        candidate: candidate,
+                        operation: RecipeImportUsageOperation(
+                            operationID: RecipeImportUsageOperation.stableOperationID(
+                                ownerID: ownerID,
+                                jobID: sourceRecord.jobID,
+                                candidateID: candidate.candidateID
+                            ),
+                            ownerID: ownerID,
+                            jobID: sourceRecord.jobID,
+                            candidateID: candidate.candidateID,
+                            receiptID: receiptID,
+                            state: .reserved,
+                            reservedUntil: reservation.reservedUntil
+                        )
+                    )
+                )
+            }
+        }
+
+        // Phase 2: finalize -> hash match -> durable save -> ACK, per candidate.
+        for item in reserved {
+            try await settleReserved(
+                item,
+                sourceRecord: sourceRecord,
+                ownerID: ownerID,
+                startContext: startContext,
+                importUsage: importUsage
+            )
+        }
+    }
+
+    private func saveMediaSelected(
+        sourceRecord: RecipeImportRecord,
+        chosen: [RecipeImportJobResponse.Candidate]
+    ) async throws {
+        // Free first release: media metering is closed by default, so keep the
+        // existing unmetered save (the media bundle port is unavailable).
+        guard RecipeMonetization.isEnabled else {
+            try saveUnmetered(sourceRecord: sourceRecord, chosen: chosen)
+            return
+        }
+        let startContext = commerce.importUsageContext
+        guard let mediaPort = commerce.mediaBundlePort else {
+            throw RecipeImportCandidateSaveError.bridgeUnavailable
+        }
+        guard let importUsage = commerce.importUsage else {
+            throw RecipeImportCandidateSaveError.bridgeUnavailable
+        }
+        guard let ownerID = startContext.ownerID else {
+            throw RecipeImportCandidateSaveError.signedOut
+        }
+        guard let receiptID = sourceRecord.receiptID else {
+            throw RecipeImportCandidateSaveError.missingReceipt
+        }
+
+        // Atomic media bundle reserve persists each candidate's durable intent before
+        // the RPC and returns the stored `.reserved` operations.
+        let outcome = try await mediaPort.reserveBundle(
+            ownerID: ownerID,
+            jobID: sourceRecord.jobID,
+            candidateIDs: chosen.map(\.candidateID),
+            receiptID: receiptID,
+            currentOwner: { self.currentOwnerContext() }
+        )
+        switch outcome {
+        case .awaitingUpgrade:
+            throw RecipeImportCandidateSaveError.upgradeRequired
+        case .reserved(_, let operations):
+            var pending = operations
+            do {
+                for candidate in chosen {
+                    guard let index = pending.firstIndex(where: {
+                        $0.candidateID == candidate.candidateID
+                    }) else {
+                        throw RecipeImportCandidateSaveError.invalidResponse
+                    }
+                    let operation = pending.remove(at: index)
+                    try await settleReserved(
+                        ReservedCandidate(candidate: candidate, operation: operation),
+                        sourceRecord: sourceRecord,
+                        ownerID: ownerID,
+                        startContext: startContext,
+                        importUsage: importUsage
+                    )
+                }
+                // Settle the reserved media_import unit after every candidate settles.
+                _ = try await mediaPort.finalizeMedia(
+                    ownerID: ownerID,
+                    jobID: sourceRecord.jobID,
+                    currentOwner: { self.currentOwnerContext() }
+                )
+            } catch {
+                // Partial failure: release only the still-unfinalized candidate
+                // reservations, then the media unit; finalized/failed operations stay
+                // in the recovery store.
+                for operation in pending {
+                    try? await importUsage.cancel(ownerID: ownerID, operation: operation)
+                }
+                try? await mediaPort.releaseMedia(ownerID: ownerID, jobID: sourceRecord.jobID)
+                throw error
+            }
+        }
+    }
+
+    private func currentOwnerContext() -> (ownerID: UUID?, generation: Int) {
+        let context = commerce.importUsageContext
+        return (context.ownerID, context.generation)
+    }
+
+    private func settleReserved(
+        _ item: ReservedCandidate,
+        sourceRecord: RecipeImportRecord,
+        ownerID: UUID,
+        startContext: RecipeCommerceComposition.ImportUsageContext,
+        importUsage: RecipeImportUsageBridge
+    ) async throws {
+        let response = try await importUsage.finalize(
+            ownerID: ownerID, operation: item.operation
+        )
+        // Owner/session must be unchanged before any local write or ACK.
+        try requireContext(startContext)
+
+        // Raw payload hash match: a missing or mismatched hash fails closed so an
+        // unverified candidate is never persisted, and the finalized operation stays
+        // in the recovery store.
+        guard let candidateHash = item.candidate.payloadHash else {
+            throw RecipeImportCandidateSaveError.missingPayloadHash
+        }
+        guard candidateHash == response.payloadHash else {
+            throw RecipeImportCandidateSaveError.payloadHashMismatch
+        }
+        guard let recipeID = UUID(uuidString: response.recipeID) else {
+            throw RecipeImportCandidateSaveError.invalidResponse
+        }
+
+        let recipe = Self.buildCandidateRecipe(
+            item.candidate,
+            sourceRecipe: sourceRecipe,
+            sourceRecord: sourceRecord,
+            recipeID: recipeID
+        )
+        // Never overwrite a locally edited recipe with a replayed settle result.
+        try requireContext(startContext)
+        if store.recipe(id: recipeID) == nil {
+            try store.upsert(recipe)
+        }
+        try requireContext(startContext)
+        try await importUsage.acknowledge(ownerID: ownerID, operation: item.operation)
+    }
+
+    private func requireContext(
+        _ start: RecipeCommerceComposition.ImportUsageContext
+    ) throws {
+        guard commerce.importUsageContext == start else {
+            throw RecipeImportCandidateSaveError.ownerChanged
+        }
+    }
+
+    private func releaseUnfinalized(
+        _ reserved: [ReservedCandidate],
+        ownerID: UUID,
+        importUsage: RecipeImportUsageBridge
+    ) async {
+        for item in reserved {
+            try? await importUsage.cancel(ownerID: ownerID, operation: item.operation)
+        }
+    }
+
+    private func saveUnmetered(
+        sourceRecord: RecipeImportRecord,
+        chosen: [RecipeImportJobResponse.Candidate]
+    ) throws {
+        for candidate in chosen {
             let targetID = Self.stableChildID(
                 sourceID: sourceRecipe.id, candidateID: candidate.candidateID)
             // Repeated saves do not duplicate a dish or overwrite user edits.
             if store.recipe(id: targetID) != nil {
                 continue
             }
-            let title = candidate.title ?? "Untitled Recipe"
-            let content =
-                title
-                + "\n\nIngredients\n" + candidate.ingredients.joined(separator: "\n")
-                + "\n\nInstructions\n" + candidate.steps.joined(separator: "\n")
-            var recipe = RecipeDocumentParser.recipe(fromText: content, title: title)
-            recipe.id = targetID
-            recipe.sourceURL = sourceRecipe.sourceURL
-            recipe.sourceName = sourceRecipe.sourceName
-            recipe.sourceText = sourceRecipe.sourceText
-
-            var fields: [String: RecipeImportJobResponse.Field] = [:]
-            let evidenceIDs = candidate.evidenceIDs
-            fields["title"] = .init(rawValue: title, evidenceIDs: evidenceIDs)
-            for (index, raw) in candidate.ingredients.enumerated() {
-                let field = RecipeImportJobResponse.Field(
-                    rawValue: raw, evidenceIDs: evidenceIDs)
-                fields["ingredients[\(index)].raw_text"] = field
-                fields["ingredients[\(index)].amount"] = field
-            }
-            for (index, instruction) in candidate.steps.enumerated() {
-                fields["steps[\(index)].instruction"] = .init(
-                    rawValue: instruction, evidenceIDs: evidenceIDs)
-            }
-            let evidence = sourceRecord.result.evidence.filter {
-                evidenceIDs.contains($0.id)
-            }
-            let result = RecipeImportJobResponse.Result(
-                recipeID: targetID,
-                status: candidate.reviewFields.isEmpty ? "ready" : "needs_review",
-                source: sourceRecord.result.source,
-                fields: fields,
-                evidence: evidence,
-                reviewFields: candidate.reviewFields
+            let recipe = Self.buildCandidateRecipe(
+                candidate,
+                sourceRecipe: sourceRecipe,
+                sourceRecord: sourceRecord,
+                recipeID: targetID
             )
-            recipe.importRecord = RecipeImportRecord(
-                jobID: sourceRecord.jobID,
-                result: result,
-                selectedCandidateID: candidate.candidateID)
             try store.upsert(recipe)
         }
+    }
+
+    private static func buildCandidateRecipe(
+        _ candidate: RecipeImportJobResponse.Candidate,
+        sourceRecipe: Recipe,
+        sourceRecord: RecipeImportRecord,
+        recipeID: UUID
+    ) -> Recipe {
+        let title = candidate.title ?? "Untitled Recipe"
+        let content =
+            title
+            + "\n\nIngredients\n" + candidate.ingredients.joined(separator: "\n")
+            + "\n\nInstructions\n" + candidate.steps.joined(separator: "\n")
+        var recipe = RecipeDocumentParser.recipe(fromText: content, title: title)
+        recipe.id = recipeID
+        recipe.sourceURL = sourceRecipe.sourceURL
+        recipe.sourceName = sourceRecipe.sourceName
+        recipe.sourceText = sourceRecipe.sourceText
+
+        var fields: [String: RecipeImportJobResponse.Field] = [:]
+        let evidenceIDs = candidate.evidenceIDs
+        fields["title"] = .init(rawValue: title, evidenceIDs: evidenceIDs)
+        for (index, raw) in candidate.ingredients.enumerated() {
+            let field = RecipeImportJobResponse.Field(
+                rawValue: raw, evidenceIDs: evidenceIDs)
+            fields["ingredients[\(index)].raw_text"] = field
+            fields["ingredients[\(index)].amount"] = field
+        }
+        for (index, instruction) in candidate.steps.enumerated() {
+            fields["steps[\(index)].instruction"] = .init(
+                rawValue: instruction, evidenceIDs: evidenceIDs)
+        }
+        let evidence = sourceRecord.result.evidence.filter {
+            evidenceIDs.contains($0.id)
+        }
+        let result = RecipeImportJobResponse.Result(
+            recipeID: recipeID,
+            status: candidate.reviewFields.isEmpty ? "ready" : "needs_review",
+            source: sourceRecord.result.source,
+            fields: fields,
+            evidence: evidence,
+            reviewFields: candidate.reviewFields
+        )
+        recipe.importRecord = RecipeImportRecord(
+            jobID: sourceRecord.jobID,
+            result: result,
+            selectedCandidateID: candidate.candidateID,
+            clientRequestID: sourceRecord.clientRequestID,
+            receiptID: sourceRecord.receiptID
+        )
+        return recipe
+    }
+
+    private struct ReservedCandidate {
+        let candidate: RecipeImportJobResponse.Candidate
+        let operation: RecipeImportUsageOperation
     }
 
     private static func stableChildID(sourceID: UUID, candidateID: String) -> UUID {
@@ -2033,6 +2324,38 @@ private struct RecipeCandidateSelectionView: View {
                 digest[8], digest[9], digest[10], digest[11],
                 digest[12], digest[13], digest[14], digest[15]
             ))
+    }
+}
+
+private enum RecipeImportCandidateSaveError: LocalizedError {
+    case missingReceipt
+    case ownerChanged
+    case bridgeUnavailable
+    case signedOut
+    case missingPayloadHash
+    case payloadHashMismatch
+    case upgradeRequired
+    case invalidResponse
+
+    var errorDescription: String? {
+        switch self {
+        case .missingReceipt:
+            return RecipeLanguage.localized("This source cannot be settled. Try sharing it again.")
+        case .ownerChanged:
+            return RecipeLanguage.localized("The signed-in account changed. Your selection was kept.")
+        case .bridgeUnavailable:
+            return RecipeLanguage.localized("The import quota service is unavailable. Your selection was kept.")
+        case .signedOut:
+            return RecipeLanguage.localized("Sign in to save these recipes. Your selection was kept.")
+        case .missingPayloadHash:
+            return RecipeLanguage.localized("The selected recipe is incomplete. Choose another source.")
+        case .payloadHashMismatch:
+            return RecipeLanguage.localized("The saved result did not match the source. Nothing was changed.")
+        case .upgradeRequired:
+            return RecipeLanguage.localized("Saving more recipes requires Premium.")
+        case .invalidResponse:
+            return RecipeLanguage.localized("The service returned an invalid response.")
+        }
     }
 }
 

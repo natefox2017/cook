@@ -27,6 +27,13 @@ import {
   parsePlainTextArtifact,
   type PrivateArtifactRow,
 } from "./artifactText.ts";
+import {
+  attachOwnerUploadedMediaEvidence,
+  isWebVTTText,
+  MediaError,
+  unsupportedMediaError,
+} from "./mediaAdapter.ts";
+import { SUPPORTED_MEDIA_TYPES } from "../_shared/mediaProbe.ts";
 
 interface QueueMessage {
   msg_id: number;
@@ -278,23 +285,64 @@ Deno.serve(async (request: Request): Promise<Response> => {
               file,
               artifact!.size_bytes,
             );
-            result = parsePlainTextArtifact({
-              id: claimed.id,
-              text,
-              artifactID: artifact!.id,
-              platformHint: claimed.platform_hint,
-              originalSourceURL: claimed.original_source_url,
-            });
+            if (isWebVTTText(text)) {
+              // Authorized owner-uploaded WebVTT subtitles (DEV-78). This only
+              // appends timestamped subtitle evidence; the premium media_import
+              // quota is reserved later at the user-selected save callsite.
+              result = attachOwnerUploadedMediaEvidence(result, {
+                text,
+                authorizationReference: "artifact-" + artifact!.id,
+              });
+            } else {
+              result = parsePlainTextArtifact({
+                id: claimed.id,
+                text,
+                artifactID: artifact!.id,
+                platformHint: claimed.platform_hint,
+                originalSourceURL: claimed.original_source_url,
+              });
+            }
           } catch (error) {
-            if (!(error instanceof ArtifactTextError)) throw error;
-            completionError = {
-              code: error.code,
-              message: error.message,
-              recoverable: false,
-              suggested_action: "Edit the saved source as text or share a valid UTF-8 text file.",
-              request_id: crypto.randomUUID(),
-            };
+            if (error instanceof MediaError) {
+              completionError = {
+                code: error.code,
+                message: error.message,
+                recoverable: error.recoverable,
+                suggested_action:
+                  "Keep the original source and add the recipe details manually, or share a valid UTF-8 text or WebVTT file.",
+                request_id: crypto.randomUUID(),
+              };
+            } else if (error instanceof ArtifactTextError) {
+              completionError = {
+                code: error.code,
+                message: error.message,
+                recoverable: false,
+                suggested_action: "Edit the saved source as text or share a valid UTF-8 text file.",
+                request_id: crypto.randomUUID(),
+              };
+            } else {
+              throw error;
+            }
           }
+        } else if (
+          claimed.input_type === "file" &&
+          SUPPORTED_MEDIA_TYPES[artifact!.mime_type] === true
+        ) {
+          // Finite media audio/video: no bounded ASR or keyframe capability
+          // exists in Edge, so fail actionably without a provider call and
+          // preserve the source for manual entry.
+          const unsupported = unsupportedMediaError(
+            artifact!.mime_type.startsWith("audio/") ? "audio" : "video",
+            artifact!.mime_type,
+          );
+          completionError = {
+            code: unsupported.code,
+            message: unsupported.message,
+            recoverable: unsupported.recoverable,
+            suggested_action:
+              "Keep the original source and add the recipe details manually.",
+            request_id: crypto.randomUUID(),
+          };
         } else if (
           claimed.input_type === "image" ||
           (claimed.input_type === "file" &&

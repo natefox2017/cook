@@ -12,6 +12,14 @@ final class RecipeShareInboxCoordinator {
     private(set) var failureMessage: String?
     private var statusOwnerID: UUID?
     private var isSynchronizing = false
+    /// Optional commercial usage settle port. `nil` keeps the normal import save byte-equivalent and
+    /// unmetered; DEV-432's commerce composition injects the enabled port before synchronize.
+    var usage: (any RecipeImportUsageSettling)? = nil
+
+    /// Optional DEV-78 media bundle port for the single-primary media import path. `nil` keeps the
+    /// freeTest media save unmetered; the commerce composition injects the enabled port before
+    /// synchronize (same lifecycle as `usage`).
+    var mediaBundle: RecipeMediaBundlePort? = nil
 
     func refresh() {
         do {
@@ -50,7 +58,10 @@ final class RecipeShareInboxCoordinator {
                 store: store,
                 client: RecipeImportJobService(),
                 ownerID: ownerID,
-                currentOwnerID: { self.currentOwnerID }
+                currentOwnerID: { self.currentOwnerID },
+                currentOwnerGeneration: { self.currentOwnerGeneration },
+                usage: usage,
+                mediaBundle: mediaBundle
             )
             jobStatuses = report.jobStatuses
             refresh()
@@ -74,6 +85,12 @@ final class RecipeShareInboxCoordinator {
             return nil
         }
         return ownerID
+    }
+
+    /// Account-generation counter that advances on sign-in/sign-out/switch, so a settle can reject a
+    /// stale result after an account change even when the same owner signs back in.
+    private var currentOwnerGeneration: Int {
+        RecipeAuthService.shared.sharingSessionGeneration
     }
 
     /// The previous release wrote a read-modify-write UserDefaults array.
