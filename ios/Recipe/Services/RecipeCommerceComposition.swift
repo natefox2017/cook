@@ -46,8 +46,12 @@ final class RecipeCommerceComposition {
     }
 
     /// Resumes pending import reservations (`.reserving`/`.awaitingUpgrade`) for the owner after an
-    /// upgrade or a relaunch. Returns immediately when the usage store is unavailable.
+    /// upgrade or a relaunch. In freeTest it returns immediately without touching the network or the
+    /// persisted pending records; only an enabled commercial stage reopens the recovery path.
     func recoverPendingImportUsage(ownerID: UUID) async {
+        guard RecipeMonetization.isEnabled else {
+            return
+        }
         guard let importUsage else {
             return
         }
