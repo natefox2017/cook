@@ -413,6 +413,9 @@ public struct RecipeImportRecord: Codable, Hashable, Sendable {
     /// resume the same draft session for this job. Optional so recipes persisted before
     /// the draft flow shipped still decode without it.
     public let clientRequestID: UUID?
+    /// The share receipt's stable identity, so multi-candidate saves recover against the same source
+    /// receipt instead of minting a fresh ID. Optional for recipes persisted before this field shipped.
+    public let receiptID: UUID?
     public let result: RecipeImportJobResponse.Result
     /// Records explicit local review without altering server fields or evidence.
     public var reviewedAt: Date?
@@ -427,7 +430,8 @@ public struct RecipeImportRecord: Codable, Hashable, Sendable {
         reviewedAt: Date? = nil,
         sourceArtifactDeletedAt: Date? = nil,
         selectedCandidateID: String? = nil,
-        clientRequestID: UUID? = nil
+        clientRequestID: UUID? = nil,
+        receiptID: UUID? = nil
     ) {
         self.jobID = jobID
         self.result = result
@@ -435,6 +439,7 @@ public struct RecipeImportRecord: Codable, Hashable, Sendable {
         self.sourceArtifactDeletedAt = sourceArtifactDeletedAt
         self.selectedCandidateID = selectedCandidateID
         self.clientRequestID = clientRequestID
+        self.receiptID = receiptID
     }
 }
 
