@@ -203,10 +203,8 @@ public struct RecipeShareInbox: Sendable {
         // A zero-byte receipt cannot be uploaded; fileData(for:) rejects it.
         // Reject here so the Share Extension does not falsely report "Saved".
         guard !data.isEmpty,
-            data.count <= 10 * 1024 * 1024,
-            (type == .image
-                && ["image/jpeg", "image/png", "image/heic", "image/heif"].contains(mimeType)
-                || type == .file && ["application/pdf", "text/plain"].contains(mimeType))
+            data.count <= DataSourceType.maximumBytes(for: type, mimeType: mimeType),
+            DataSourceType.isSupported(mimeType, for: type)
         else {
             throw RecipeShareInboxError.invalidInput
         }
@@ -405,7 +403,9 @@ public struct RecipeShareInbox: Sendable {
         }
         let url = root.appendingPathComponent(receipt.payload.reference)
         let data = try Data(contentsOf: url)
-        guard !data.isEmpty, data.count <= 10 * 1024 * 1024 else {
+        guard !data.isEmpty,
+            data.count <= DataSourceType.maximumBytes(for: receipt.inputType, mimeType: mimeType)
+        else {
             throw RecipeShareInboxError.sourceMissing
         }
         return data
@@ -526,7 +526,7 @@ public struct RecipeShareInbox: Sendable {
 
     private func validSourceName(_ name: String) -> Bool {
         name.range(
-            of: "^[0-9a-f]{64}\\.(?:txt|jpg|png|heic|heif|pdf)$",
+            of: "^[0-9a-f]{64}\\.(?:txt|jpg|png|heic|heif|pdf|mp3|m4a|wav|mp4)$",
             options: .regularExpression
         ) != nil
     }
@@ -538,6 +538,10 @@ public struct RecipeShareInbox: Sendable {
         case "image/heic": "heic"
         case "image/heif": "heif"
         case "application/pdf": "pdf"
+        case "audio/mpeg", "audio/mp3": "mp3"
+        case "audio/mp4", "audio/x-m4a", "audio/m4a": "m4a"
+        case "audio/wav", "audio/x-wav": "wav"
+        case "video/mp4": "mp4"
         default: "txt"
         }
     }
@@ -595,14 +599,28 @@ public struct RecipeShareInbox: Sendable {
 }
 
 private enum DataSourceType {
+    /// Backend `SUPPORTED_MEDIA_TYPES` accepted as `.file` attachments (DEV-78).
+    private static let mediaTypes = [
+        "audio/mpeg", "audio/mp3", "audio/mp4", "audio/x-m4a",
+        "audio/m4a", "audio/wav", "audio/x-wav", "video/mp4",
+    ]
+
     static func isSupported(_ mimeType: String, for type: RecipeShareInputType) -> Bool {
         switch type {
         case .image:
             ["image/jpeg", "image/png", "image/heic", "image/heif"].contains(mimeType)
         case .file:
-            ["application/pdf", "text/plain"].contains(mimeType)
+            ["application/pdf", "text/plain"].contains(mimeType) || mediaTypes.contains(mimeType)
         case .url, .text:
             false
         }
+    }
+
+    /// Media attachments allow the 20 MiB artifact cap; every other supported type keeps the existing
+    /// 10 MiB receipt cap.
+    static func maximumBytes(for type: RecipeShareInputType, mimeType: String) -> Int {
+        type == .file && mediaTypes.contains(mimeType)
+            ? RecipeDocumentBatch.maxFileBytes
+            : 10 * 1024 * 1024
     }
 }
