@@ -215,7 +215,13 @@ public struct RecipeShareInbox: Sendable {
         } else {
             content = (try? fileData(for: receipt)).flatMap { String(data: $0, encoding: .utf8) }
         }
-        guard let content, content.hasPrefix("WEBVTT") else { return nil }
+        guard let content else { return nil }
+        // Tolerate a leading UTF-8 byte order mark, matching the server's VTT header check.
+        var header = content
+        if header.first == "\u{FEFF}" {
+            header.removeFirst()
+        }
+        guard header.hasPrefix("WEBVTT") else { return nil }
         return "text/vtt"
     }
 
@@ -650,7 +656,7 @@ private enum DataSourceType {
     /// 10 MiB receipt cap.
     static func maximumBytes(for type: RecipeShareInputType, mimeType: String) -> Int {
         type == .file && mediaTypes.contains(mimeType)
-            ? RecipeDocumentBatch.maxFileBytes
+            ? RecipeDocumentBatchLimits.maxFileBytes
             : 10 * 1024 * 1024
     }
 }
