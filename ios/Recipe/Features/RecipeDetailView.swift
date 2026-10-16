@@ -37,6 +37,8 @@ struct RecipeDetailView: View {
     @State private var proposalToReview: RecipeEditReviewContext?
     @State private var editService: RecipeEditProposalService?
     @State private var undoState: RecipeEditUndoState?
+    @State private var isChoosingTranslation = false
+    @State private var translationCoordinator: RecipeTranslationCoordinator?
 
     private struct RecipeEditReviewContext: Identifiable {
         let id = UUID()
@@ -95,6 +97,11 @@ struct RecipeDetailView: View {
                     service: service,
                     onResult: handleEditResult
                 )
+            }
+        }
+        .sheet(isPresented: $isChoosingTranslation) {
+            if let recipe = store.recipe(id: recipeID), let coordinator = translationCoordinator {
+                RecipeTranslationSheet(recipe: recipe, coordinator: coordinator)
             }
         }
         .sheet(item: $proposalToReview) { context in
@@ -916,6 +923,10 @@ struct RecipeDetailView: View {
                         }
                         .accessibilityIdentifier("recipeAdjustRecipe")
                     }
+                    Button("Translate Recipe", systemImage: "globe") {
+                        presentTranslateRecipe()
+                    }
+                    .accessibilityIdentifier("recipeTranslate")
                     Button("Share", systemImage: "square.and.arrow.up") {
                         sharePresentation = SharePresentation(
                             state: ownerSharing.consentState(recipeID: recipeID, store: store)
@@ -972,6 +983,28 @@ struct RecipeDetailView: View {
             editService = try? RecipeEditProposalService(bundle: .main)
         }
         return editService != nil
+    }
+
+    // MARK: - Recipe translation (DEV-439)
+
+    /// The Translate Recipe entry stays ungated in the free first release; the backend is
+    /// closed-by-default and metered, so an ineligible request surfaces a translated error
+    /// from the review sheet instead of a client-side paywall.
+    private func presentTranslateRecipe() {
+        guard ensureTranslationCoordinator() else {
+            feedbackMessage = RecipeTranslationCoordinatorError.invalidConfiguration
+                .localizedDescription
+            return
+        }
+        isChoosingTranslation = true
+    }
+
+    @discardableResult
+    private func ensureTranslationCoordinator() -> Bool {
+        if translationCoordinator == nil {
+            translationCoordinator = try? RecipeTranslationCoordinator(bundle: .main)
+        }
+        return translationCoordinator != nil
     }
 
     private func handleEditResult(_ result: RecipeEditProposalRequestResult) {
