@@ -38,8 +38,14 @@ struct RecipeTranslationSheet: View {
                     languageSection
                     if let errorMessage {
                         Section {
-                            Label(errorMessage, systemImage: "exclamationmark.triangle")
-                                .foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: RecipeSpacing.small) {
+                                Label(errorMessage, systemImage: "exclamationmark.triangle")
+                                    .foregroundStyle(.secondary)
+                                Button("Try Again") {
+                                    Task { await requestTranslation() }
+                                }
+                                .disabled(isTranslating)
+                            }
                         }
                     }
                     if proposal != nil {
