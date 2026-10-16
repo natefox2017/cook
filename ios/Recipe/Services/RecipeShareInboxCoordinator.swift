@@ -54,6 +54,7 @@ final class RecipeShareInboxCoordinator {
                 client: RecipeImportJobService(),
                 ownerID: ownerID,
                 currentOwnerID: { self.currentOwnerID },
+                currentOwnerGeneration: { self.currentOwnerGeneration },
                 usage: usage
             )
             jobStatuses = report.jobStatuses
@@ -78,6 +79,12 @@ final class RecipeShareInboxCoordinator {
             return nil
         }
         return ownerID
+    }
+
+    /// Account-generation counter that advances on sign-in/sign-out/switch, so a settle can reject a
+    /// stale result after an account change even when the same owner signs back in.
+    private var currentOwnerGeneration: Int {
+        RecipeAuthService.shared.sharingSessionGeneration
     }
 
     /// The previous release wrote a read-modify-write UserDefaults array.

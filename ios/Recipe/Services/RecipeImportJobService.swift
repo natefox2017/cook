@@ -70,7 +70,13 @@ struct RecipeImportJobService: RecipeImportJobClient {
         return try await RecipeSupabase.client.functions.invoke(
             "recipe-imports/\(jobID.uuidString.lowercased())",
             options: FunctionInvokeOptions(method: .get)
-        )
+        ) { data, _ in
+            var response = try JSONDecoder().decode(RecipeImportJobResponse.self, from: data)
+            response.resultPayloadHash = try RecipeImportUsagePayload.canonicalResultHash(
+                responseBody: data
+            )
+            return response
+        }
     }
 
     func retry(
