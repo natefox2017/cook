@@ -185,17 +185,23 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         public let steps: [String]
         public let evidenceIDs: [UUID]
         public let reviewFields: [String]
+        /// Canonical SHA-256 of this candidate's raw JSON, computed at decode time so the settle can
+        /// verify it against the server finalize payload hash. Not part of the server wire shape; it is
+        /// persisted locally and stays nil for candidates that never reached a completed job.
+        public var payloadHash: String?
 
         private enum CodingKeys: String, CodingKey {
             case candidateID = "candidate_id"
             case title, ingredients, steps
             case evidenceIDs = "evidence_ids"
             case reviewFields = "review_fields"
+            case payloadHash = "payload_hash"
         }
 
         public init(
             candidateID: String, title: String?, ingredients: [String],
-            steps: [String], evidenceIDs: [UUID] = [], reviewFields: [String] = []
+            steps: [String], evidenceIDs: [UUID] = [], reviewFields: [String] = [],
+            payloadHash: String? = nil
         ) {
             self.candidateID = candidateID
             self.title = title
@@ -203,6 +209,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
             self.steps = steps
             self.evidenceIDs = evidenceIDs
             self.reviewFields = reviewFields
+            self.payloadHash = payloadHash
         }
     }
 
@@ -213,7 +220,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         public let fields: [String: Field]
         public let evidence: [Evidence]
         public let reviewFields: [String]?
-        public let candidateRecipes: [Candidate]?
+        public var candidateRecipes: [Candidate]?
 
         public var resultStatus: RecipeImportResultStatus? {
             RecipeImportResultStatus(rawValue: status)
@@ -259,7 +266,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
     public let recipeStatus: String?
     public let existingRecipeID: UUID?
     public let reviewCount: Int?
-    public let result: Result?
+    public var result: Result?
     public let error: Failure?
     /// Client-computed canonical hash of the raw `result` JSON (see `RecipeImportUsagePayload`),
     /// retained so settle can verify it against the server's `finalize` payload hash. Not decoded

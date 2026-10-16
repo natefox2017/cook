@@ -75,6 +75,17 @@ struct RecipeImportJobService: RecipeImportJobClient {
             response.resultPayloadHash = try RecipeImportUsagePayload.canonicalResultHash(
                 responseBody: data
             )
+            if var result = response.result, let candidates = result.candidateRecipes {
+                result.candidateRecipes = try candidates.map { candidate in
+                    var updated = candidate
+                    updated.payloadHash = try RecipeImportUsagePayload.canonicalCandidateHash(
+                        responseBody: data,
+                        candidateID: candidate.candidateID
+                    )
+                    return updated
+                }
+                response.result = result
+            }
             return response
         }
     }
