@@ -261,6 +261,10 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
     public let reviewCount: Int?
     public let result: Result?
     public let error: Failure?
+    /// Client-computed canonical hash of the raw `result` JSON (see `RecipeImportUsagePayload`),
+    /// retained so settle can verify it against the server's `finalize` payload hash. Not decoded
+    /// from the wire; the import client computes it from the raw response body after decoding.
+    public var resultPayloadHash: String?
 
     private enum CodingKeys: String, CodingKey {
         case jobID = "job_id"
@@ -278,6 +282,24 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         case error
     }
 
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        jobID = try container.decode(UUID.self, forKey: .jobID)
+        clientRequestID = try container.decode(UUID.self, forKey: .clientRequestID)
+        status = try container.decode(Status.self, forKey: .status)
+        stage = try container.decodeIfPresent(String.self, forKey: .stage)
+        progressHint = try container.decodeIfPresent(String.self, forKey: .progressHint)
+        attemptCount = try container.decode(Int.self, forKey: .attemptCount)
+        queueConfirmedAt = try container.decodeIfPresent(String.self, forKey: .queueConfirmedAt)
+        recipeID = try container.decodeIfPresent(UUID.self, forKey: .recipeID)
+        recipeStatus = try container.decodeIfPresent(String.self, forKey: .recipeStatus)
+        existingRecipeID = try container.decodeIfPresent(UUID.self, forKey: .existingRecipeID)
+        reviewCount = try container.decodeIfPresent(Int.self, forKey: .reviewCount)
+        result = try container.decodeIfPresent(Result.self, forKey: .result)
+        error = try container.decodeIfPresent(Failure.self, forKey: .error)
+        resultPayloadHash = nil
+    }
+
     public init(
         jobID: UUID,
         clientRequestID: UUID,
@@ -291,7 +313,8 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         existingRecipeID: UUID? = nil,
         reviewCount: Int? = nil,
         result: Result? = nil,
-        error: Failure? = nil
+        error: Failure? = nil,
+        resultPayloadHash: String? = nil
     ) {
         self.jobID = jobID
         self.clientRequestID = clientRequestID
@@ -306,6 +329,7 @@ public struct RecipeImportJobResponse: Decodable, Sendable {
         self.reviewCount = reviewCount
         self.result = result
         self.error = error
+        self.resultPayloadHash = resultPayloadHash
     }
 
     public var isDurablyQueued: Bool {

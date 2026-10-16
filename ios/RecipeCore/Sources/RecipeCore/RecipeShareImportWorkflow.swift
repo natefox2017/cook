@@ -52,6 +52,7 @@ public enum RecipeShareImportWorkflow {
         client: any RecipeImportJobClient,
         ownerID: UUID,
         currentOwnerID: @escaping @MainActor () -> UUID?,
+        currentOwnerGeneration: @escaping @MainActor () -> Int = { 0 },
         usage: (any RecipeImportUsageSettling)? = nil,
         maxPollRounds: Int = 12,
         pollInterval: Duration = .seconds(5)
@@ -211,7 +212,10 @@ public enum RecipeShareImportWorkflow {
                                 source: source,
                                 store: store,
                                 ownerID: ownerID,
-                                usage: usage
+                                usage: usage,
+                                currentOwner: {
+                                    (ownerID: currentOwnerID(), generation: currentOwnerGeneration())
+                                }
                             )
                         } else if response.status == .failed {
                             let serverMessage =
@@ -319,7 +323,8 @@ public enum RecipeShareImportWorkflow {
         source: String,
         store: RecipeStore,
         ownerID: UUID,
-        usage: (any RecipeImportUsageSettling)?
+        usage: (any RecipeImportUsageSettling)?,
+        currentOwner: @escaping @MainActor () -> (ownerID: UUID?, generation: Int)
     ) async throws {
         guard let result = response.result else {
             throw RecipeShareImportWorkflowError.completedResultMissing
@@ -428,6 +433,8 @@ public enum RecipeShareImportWorkflow {
                 ownerID: ownerID,
                 jobID: response.jobID,
                 receiptID: receipt.id,
+                resultPayloadHash: response.resultPayloadHash,
+                currentOwner: currentOwner,
                 persist: { recipeID in
                     recipe.id = recipeID
                     try store.upsert(recipe)
