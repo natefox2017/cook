@@ -25,7 +25,7 @@ final class RecipeCommerceComposition {
         self.accessStore = access
         self.upgradeRouter = UpgradeRouter(access: access)
 
-        let usageClient = RecipeUsageService()
+        let usageClient = RecipeImportUsageService()
         if let store = try? RecipeImportUsageStore.default() {
             self.importUsage = RecipeImportUsageBridge(client: usageClient, store: store)
         } else {
