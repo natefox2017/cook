@@ -74,8 +74,34 @@ public enum RecipeShareInboxError: LocalizedError {
 /// of an array in UserDefaults. Source bytes are written before the receipt;
 /// an acknowledgement is a separate immutable file, written only after the
 /// authenticated backend confirms a durable job. No ack is created here.
+public enum RecipeSharedAppGroup {
+    /// Historical production App Group for ordinary Debug/Release builds.
+    public static let productionIdentifier = "group.com.shopkivoo.recipe"
+
+    /// QA App Group matched by `Recipe.qa.entitlements` and
+    /// `ShareExtension.qa.entitlements`.
+    public static let qaIdentifier = "group.com.shopkivoo.recipe.qa"
+
+    /// Info.plist key populated from the `RECIPE_APP_GROUP_ID` build setting.
+    /// Ordinary Debug/Release keep the production value; only QA overrides it.
+    public static let infoPlistKey = "RecipeAppGroupID"
+
+    /// Resolved App Group identifier for this process. Production is the
+    /// default so ordinary builds keep the historical group and its data.
+    /// RecipeCore is an independent Swift package, so the QA selection is a
+    /// runtime read from the host's Info.plist — not a `#if RECIPE_QA` compile
+    /// condition, which would never reach this package.
+    public static var current: String {
+        if let override = Bundle.main.object(forInfoDictionaryKey: infoPlistKey)
+            as? String, !override.isEmpty {
+            return override
+        }
+        return productionIdentifier
+    }
+}
+
 public struct RecipeShareInbox: Sendable {
-    public static let appGroupID = "group.com.shopkivoo.recipe"
+    public static var appGroupID: String { RecipeSharedAppGroup.current }
 
     private let root: URL
 

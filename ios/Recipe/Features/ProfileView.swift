@@ -689,8 +689,10 @@ enum RecipeLocalDataDeletion {
         }
 
         // Share receipts can contain private URLs. They live in the deployed
-        // App Group, independently of the main app's defaults database.
-        if let shareDefaults = UserDefaults(suiteName: "group.com.shopkivoo.recipe") {
+        // App Group, independently of the main app's defaults database. The
+        // group identifier follows the runtime QA selection so the QA build
+        // clears the QA container rather than the production one.
+        if let shareDefaults = UserDefaults(suiteName: RecipeShareInbox.appGroupID) {
             shareDefaults.removeObject(forKey: "recipe.shareInbox")
             shareDefaults.removeObject(forKey: "cook.shareInbox")
         }
