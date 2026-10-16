@@ -52,6 +52,8 @@ public enum RecipeShareImportWorkflow {
         client: any RecipeImportJobClient,
         ownerID: UUID,
         currentOwnerID: @escaping @MainActor () -> UUID?,
+        currentOwnerGeneration: @escaping @MainActor () -> Int = { 0 },
+        usage: (any RecipeImportUsageSettling)? = nil,
         maxPollRounds: Int = 12,
         pollInterval: Duration = .seconds(5)
     ) async -> RecipeShareImportReport {
@@ -204,11 +206,16 @@ public enum RecipeShareImportWorkflow {
                             throw RecipeShareImportWorkflowError.localSourceChanged
                         }
                         if response.status == .completed {
-                            try saveCompletedResult(
+                            try await saveCompletedResult(
                                 response,
                                 receipt: receipt,
                                 source: source,
-                                store: store
+                                store: store,
+                                ownerID: ownerID,
+                                usage: usage,
+                                currentOwner: {
+                                    (ownerID: currentOwnerID(), generation: currentOwnerGeneration())
+                                }
                             )
                         } else if response.status == .failed {
                             let serverMessage =
@@ -314,8 +321,11 @@ public enum RecipeShareImportWorkflow {
         _ response: RecipeImportJobResponse,
         receipt: RecipeShareReceipt,
         source: String,
-        store: RecipeStore
-    ) throws {
+        store: RecipeStore,
+        ownerID: UUID,
+        usage: (any RecipeImportUsageSettling)?,
+        currentOwner: @escaping @MainActor () -> (ownerID: UUID?, generation: Int)
+    ) async throws {
         guard let result = response.result else {
             throw RecipeShareImportWorkflowError.completedResultMissing
         }
@@ -396,7 +406,6 @@ public enum RecipeShareImportWorkflow {
                 recipe.steps = sourceRecipe.steps
             }
         }
-        recipe.id = result.recipeID
         recipe.servings = nil
         recipe.sourceText = receipt.inputType == .text ? source : nil
         let sharedURL =
@@ -415,9 +424,31 @@ public enum RecipeShareImportWorkflow {
         recipe.importRecord = RecipeImportRecord(
             jobID: response.jobID,
             result: result,
-            clientRequestID: response.clientRequestID
+            clientRequestID: response.clientRequestID,
+            receiptID: receipt.receiptID
         )
-        try store.upsert(recipe)
+        // A multi-candidate job persists only its review container here; the Detail owner settles each
+        // selected candidate separately, so the single-result "primary" path never takes an aggregate charge.
+        let isMultiCandidate = result.candidateRecipes?.isEmpty == false
+        if let usage, !isMultiCandidate {
+            // Commercial single-result: durable reserve -> finalize -> persist the server-authored
+            // recipe ID -> acknowledge. A quota/upgrade outcome keeps the receipt and skips the save.
+            _ = try await usage.settle(
+                ownerID: ownerID,
+                jobID: response.jobID,
+                receiptID: receipt.id,
+                resultPayloadHash: response.resultPayloadHash,
+                currentOwner: currentOwner,
+                persist: { recipeID in
+                    recipe.id = recipeID
+                    try store.upsert(recipe)
+                }
+            )
+        } else {
+            // freeTest (any) or multi-candidate container: persist without settling.
+            recipe.id = result.recipeID
+            try store.upsert(recipe)
+        }
     }
 
     /// Add only whole missing sections with traceable evidence from the same
@@ -561,7 +592,8 @@ public enum RecipeShareImportWorkflow {
             jobID: old.jobID,
             result: mergedResult,
             reviewedAt: old.reviewedAt,
-            clientRequestID: old.clientRequestID
+            clientRequestID: old.clientRequestID,
+            receiptID: old.receiptID
         )
         try store.upsert(updated)
     }
