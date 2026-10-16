@@ -174,6 +174,25 @@ public struct RecipeShareInbox: Sendable {
         return DataSourceType.isMedia(mimeType)
     }
 
+    /// Resolves the durable media MIME type for a receipt: audio/video MIME types are media, and a
+    /// `text/plain` (or `.text`) receipt whose stored source begins with the authoritative WEBVTT
+    /// header is a VTT media subtitle. Returns nil for ordinary text and non-media sources.
+    public func mediaMimeType(for receipt: RecipeShareReceipt) -> String? {
+        if let mimeType = receipt.payload.mimeType, DataSourceType.isMedia(mimeType) {
+            return mimeType
+        }
+        let isVTTText = receipt.inputType == .text || receipt.payload.mimeType == "text/plain"
+        guard isVTTText else { return nil }
+        let content: String?
+        if receipt.inputType == .text {
+            content = try? source(for: receipt)
+        } else {
+            content = (try? fileData(for: receipt)).flatMap { String(data: $0, encoding: .utf8) }
+        }
+        guard let content, content.hasPrefix("WEBVTT") else { return nil }
+        return "text/vtt"
+    }
+
     /// Stores a bounded image or document attachment in immutable App Group storage.
     @discardableResult
     public func receiveFile(

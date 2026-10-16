@@ -211,6 +211,7 @@ public enum RecipeShareImportWorkflow {
                                 receipt: receipt,
                                 source: source,
                                 store: store,
+                                inbox: inbox,
                                 ownerID: ownerID,
                                 usage: usage,
                                 currentOwner: {
@@ -322,6 +323,7 @@ public enum RecipeShareImportWorkflow {
         receipt: RecipeShareReceipt,
         source: String,
         store: RecipeStore,
+        inbox: RecipeShareInbox,
         ownerID: UUID,
         usage: (any RecipeImportUsageSettling)?,
         currentOwner: @escaping @MainActor () -> (ownerID: UUID?, generation: Int)
@@ -426,8 +428,7 @@ public enum RecipeShareImportWorkflow {
             result: result,
             clientRequestID: response.clientRequestID,
             receiptID: receipt.receiptID,
-            mediaMimeType: RecipeShareInbox.isMediaMimeType(receipt.payload.mimeType)
-                ? receipt.payload.mimeType : nil
+            mediaMimeType: inbox.mediaMimeType(for: receipt)
         )
         // A multi-candidate job persists only its review container here; the Detail owner settles each
         // selected candidate separately, so the single-result "primary" path never takes an aggregate charge.
